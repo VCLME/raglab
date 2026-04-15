@@ -1,0 +1,153 @@
+# Choix techniques
+
+## 1. Stack retenue
+
+### Langage et outillage
+
+- Python 3.12
+- Typer pour la CLI
+- Pydantic Settings pour la configuration
+- pytest pour les tests
+
+### Données
+
+- PostgreSQL 16
+- pgvector pour la similarité vectorielle
+- SQLAlchemy 2.x pour le modèle relationnel et la persistance
+
+### LLM
+
+- Ollama pour la génération locale
+- modèle de génération recommandé pour le MVP : `llama3.2:3b`
+
+### Embeddings
+
+- modèle de référence recommandé pour le MVP : `intfloat/multilingual-e5-small`
+
+### Parsing documentaire
+
+- `pypdf` pour les PDF texte
+- `python-docx` pour les `.docx`
+- lecteur natif Python pour les `.txt`
+
+## 2. Pourquoi PostgreSQL + pgvector
+
+Avantages pour ce projet :
+
+- stack simple et robuste
+- stockage du relationnel et du vectoriel au même endroit
+- traçabilité des runs d’indexation
+- facilité pour les jointures entre documents, chunks, embeddings et expériences
+- bon compromis avant de complexifier l’architecture
+
+Ce choix est particulièrement cohérent ici car le projet n’est pas seulement un moteur de recherche sémantique ; c’est aussi un banc d’essai expérimental.
+
+## 3. Pourquoi Ollama pour la génération
+
+Ollama apporte :
+
+- déploiement local simple
+- API standardisée
+- bon confort de test
+- possibilité de changer rapidement de modèle
+
+### Modèle recommandé : `llama3.2:3b`
+
+Raisons :
+
+- léger pour un usage local
+- officiellement présenté comme adapté aux usages multilingues et de résumé
+- bon compromis entre coût mémoire, vitesse et qualité pour un MVP RAG local
+
+Alternatives plus tard :
+
+- `qwen2.5:3b` si on privilégie davantage la robustesse instructionnelle
+- modèles plus gros si la machine cible le permet
+
+## 4. Réflexion pragmatique sur les embeddings
+
+### Recommandation MVP : `intfloat/multilingual-e5-small`
+
+Raisons pragmatiques :
+
+- multilingue
+- léger pour un usage local
+- dimension de sortie raisonnable : 384
+- très bon candidat de baseline pour un corpus mixte français / anglais
+- surtout : il se prête bien à une implémentation locale contrôlée via `transformers`, utile pour expérimenter du late chunking contextualisé
+
+### Pourquoi ne pas choisir Ollama pour le modèle d’embeddings du MVP
+
+Ollama propose aujourd’hui des modèles d’embeddings intéressants comme `embeddinggemma` et `all-minilm`.
+
+Mais pour ce projet précis, le MVP doit aussi préparer :
+
+- plusieurs stratégies de chunking
+- une variante de late chunking contextualisé
+- une interface expérimentale flexible
+
+Le choix d’un provider local basé sur `transformers` offre plus de contrôle sur :
+
+- la tokenisation
+- le pooling
+- la contextualisation
+- l’évolution future vers du token-level pooling plus fidèle
+
+### Position de conception
+
+Le MVP part donc sur :
+
+- génération : Ollama
+- embeddings : provider Python local de référence
+
+L’architecture garde néanmoins une interface `EmbeddingProvider` pour ajouter ensuite :
+
+- un provider Ollama embeddings
+- un provider SentenceTransformers
+- un provider OpenAI ou autre si un mode distant est souhaité plus tard
+
+## 5. Pourquoi SQLAlchemy
+
+SQLAlchemy est pertinent ici car on manipule des objets métier stables :
+
+- corpus
+- documents
+- runs d’indexation
+- chunks
+- expériences
+
+Cela améliore :
+
+- la lisibilité du modèle de données
+- la maintenabilité
+- la capacité à migrer vers Alembic ensuite
+
+## 6. Pourquoi Typer
+
+Typer est adapté à un projet orienté opérations locales :
+
+- commandes claires
+- autocomplétion
+- typage simple
+- bonne ergonomie pour un workflow `ingest -> index -> query -> experiment`
+
+## 7. Pourquoi une architecture orientée expérimentation
+
+Sans cette séparation, les comparaisons deviennent vite floues :
+
+- quel chunking a été utilisé ?
+- avec quel recouvrement ?
+- avec quel modèle d’embeddings ?
+- sur quel corpus exact ?
+
+Le projet stocke donc explicitement le contexte expérimental, même pour le MVP.
+
+## 8. Limites assumées du MVP
+
+- pas d’OCR PDF image dans cette version
+- pas de reranker cross-encoder dans cette version
+- pas de Neo4j branché immédiatement
+- pas de UI web
+- pas de pipeline asynchrone distribué
+
+Ces limites sont volontaires pour conserver un premier socle simple, testable et extensible.

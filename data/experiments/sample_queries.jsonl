@@ -1,0 +1,2 @@
+{"id":"q1","question":"Quel est le sujet principal du document ?","expected_substrings":["document"]}
+{"id":"q2","question":"Quels éléments sont mentionnés dans le corpus ?","expected_substrings":["corpus"]}

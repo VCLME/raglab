@@ -1,0 +1,40 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: raglab-postgres
+    environment:
+      POSTGRES_DB: raglab
+      POSTGRES_USER: raglab
+      POSTGRES_PASSWORD: raglab
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: raglab-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+
+  app:
+    build: .
+    container_name: raglab-app
+    working_dir: /workspace
+    command: sleep infinity
+    volumes:
+      - .:/workspace
+    environment:
+      RAGLAB_DATABASE_URL: postgresql+psycopg://raglab:raglab@postgres:5432/raglab
+      RAGLAB_OLLAMA_BASE_URL: http://ollama:11434
+    depends_on:
+      - postgres
+      - ollama
+    profiles:
+      - app
+
+volumes:
+  postgres_data:
+  ollama_data:
