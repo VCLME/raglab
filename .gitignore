@@ -4,6 +4,7 @@ __pycache__/
 .mypy_cache/
 *.pyc
 *.pyo
+*.egg-info/
 .env
 
 data/documents/*

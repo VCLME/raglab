@@ -1,0 +1,239 @@
+# Lancer et tester le projet
+
+## Objectif
+
+Ce document explique comment :
+
+- preparer l'environnement local
+- lancer les dependances du projet
+- initialiser la base
+- ingerer des documents
+- indexer le corpus
+- interroger le RAG
+- executer les tests
+
+Les commandes ci-dessous sont pensees pour Windows PowerShell.
+
+## 1. Prerequis
+
+Il faut disposer de :
+
+- Python 3.12
+- Docker Desktop avec `docker compose`
+- un acces reseau pour telecharger les dependances Python et les modeles
+
+Sur cette machine, Python a ete installe ici :
+
+```powershell
+C:\Users\lucme\AppData\Local\Programs\Python\Python312\python.exe
+```
+
+Si `python` ou `py -3.12` ne fonctionne pas encore dans ton terminal, utilise directement ce chemin.
+
+## 2. Creer l'environnement virtuel
+
+### Option recommandee
+
+```powershell
+& 'C:\Users\lucme\AppData\Local\Programs\Python\Python312\python.exe' -m venv .venv
+```
+
+### Activer l'environnement
+
+```powershell
+.venv\Scripts\Activate.ps1
+```
+
+### Installer les dependances
+
+```powershell
+python -m pip install --upgrade pip
+python -m pip install -e .[dev]
+```
+
+## 3. Configurer le projet
+
+Copier le fichier d'environnement :
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Variables importantes :
+
+- `RAGLAB_DATABASE_URL`
+- `RAGLAB_OLLAMA_BASE_URL`
+- `RAGLAB_GENERATION_MODEL`
+- `RAGLAB_EMBEDDING_MODEL_NAME`
+
+## 4. Lancer les services
+
+Demarrer PostgreSQL + pgvector et Ollama :
+
+```powershell
+docker compose up -d postgres ollama
+```
+
+Telecharger le modele de generation recommande :
+
+```powershell
+docker compose exec ollama ollama pull llama3.2:3b
+```
+
+## 5. Initialiser la base
+
+```powershell
+raglab db init
+```
+
+Si le script `raglab` n'est pas resolu dans le shell, utiliser :
+
+```powershell
+.venv\Scripts\raglab.exe db init
+```
+
+## 6. Ajouter des documents
+
+Placer les fichiers `.txt`, `.pdf`, `.docx` dans `data/documents/`, puis lancer :
+
+```powershell
+raglab ingest data/documents --corpus demo
+```
+
+## 7. Construire les index
+
+### Traditional chunking
+
+```powershell
+raglab index --corpus demo --strategy traditional
+```
+
+### Slide chunking
+
+```powershell
+raglab index --corpus demo --strategy slide
+```
+
+### Late chunking
+
+```powershell
+raglab index --corpus demo --strategy late
+```
+
+### Tester un autre modele d'embeddings plus tard
+
+```powershell
+raglab index --corpus demo --strategy traditional --embedding-provider transformers --embedding-model intfloat/multilingual-e5-small
+```
+
+## 8. Poser une question au RAG
+
+```powershell
+raglab query "Que dit le document sur la maintenance ?" --corpus demo --strategy traditional
+```
+
+## 9. Lancer une experience comparative
+
+Le projet contient un exemple de dataset ici :
+
+```text
+data/experiments/sample_queries.jsonl
+```
+
+Commande :
+
+```powershell
+raglab experiment run data/experiments/sample_queries.jsonl --corpus demo --strategy traditional --strategy slide --strategy late
+```
+
+Les rapports sont produits dans :
+
+```text
+data/reports/
+```
+
+## 10. Executer les tests
+
+### Suite de tests
+
+```powershell
+.venv\Scripts\python.exe -m pytest
+```
+
+Resultat verifie sur cette machine :
+
+```text
+4 passed
+```
+
+### Verifier que la CLI demarre
+
+```powershell
+.venv\Scripts\raglab.exe --help
+```
+
+## 11. Sequence minimale recommandee
+
+Si tu veux juste verifier rapidement que tout tourne :
+
+```powershell
+.venv\Scripts\Activate.ps1
+python -m pip install -e .[dev]
+docker compose up -d postgres ollama
+docker compose exec ollama ollama pull llama3.2:3b
+raglab db init
+raglab ingest data/documents --corpus demo
+raglab index --corpus demo --strategy traditional
+raglab query "Quel est le sujet principal ?" --corpus demo --strategy traditional
+python -m pytest
+```
+
+## 12. Depannage
+
+### `python` n'est pas reconnu
+
+Utiliser le chemin complet :
+
+```powershell
+& 'C:\Users\lucme\AppData\Local\Programs\Python\Python312\python.exe' --version
+```
+
+### `raglab` n'est pas reconnu
+
+Utiliser directement l'executable du venv :
+
+```powershell
+.venv\Scripts\raglab.exe --help
+```
+
+### Ollama ne repond pas
+
+Verifier les conteneurs :
+
+```powershell
+docker compose ps
+```
+
+Puis tester le modele :
+
+```powershell
+docker compose exec ollama ollama list
+```
+
+### PostgreSQL ne repond pas
+
+Verifier :
+
+```powershell
+docker compose logs postgres
+```
+
+## 13. Etat valide actuellement
+
+Validation effectuee :
+
+- Python 3.12.10 installe
+- environnement virtuel cree
+- dependances installees
+- `pytest` execute avec succes
+- CLI `raglab --help` verifiee

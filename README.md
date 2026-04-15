@@ -20,6 +20,7 @@ Le projet fournit :
 - [Plan d'expérimentation](docs/experimentation-plan.md)
 - [Roadmap](docs/roadmap.md)
 - [Modèle de données](docs/data-model.md)
+- [Lancer et tester le projet](docs/run-and-test.md)
 
 ## Structure
 
