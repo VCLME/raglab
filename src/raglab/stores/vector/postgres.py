@@ -4,10 +4,28 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from raglab.db.models import Chunk, ChunkEmbedding, Document, IndexRun
-from raglab.domain.schemas import RetrievedChunk
+from raglab.domain.schemas import RetrievalFilters, RetrievedChunk
 
 
 class PostgresVectorStore:
+    @staticmethod
+    def _apply_filters(stmt, filters: RetrievalFilters | None):
+        if filters is None or filters.is_empty():
+            return stmt
+
+        if filters.document_ids:
+            stmt = stmt.where(Chunk.document_id.in_(filters.document_ids))
+        if filters.file_names:
+            stmt = stmt.where(Document.file_name.in_(filters.file_names))
+        if filters.source_path_contains:
+            stmt = stmt.where(Document.source_path.contains(filters.source_path_contains, autoescape=True))
+        for tag in filters.tags:
+            stmt = stmt.where(Document.metadata_json.contains({"tags": [tag]}))
+        for key, value in filters.metadata_equals.items():
+            stmt = stmt.where(Document.metadata_json.contains({key: value}))
+
+        return stmt
+
     def search(
         self,
         session: Session,
@@ -15,6 +33,7 @@ class PostgresVectorStore:
         index_run: IndexRun,
         query_embedding: list[float],
         top_k: int,
+        filters: RetrievalFilters | None = None,
     ) -> list[RetrievedChunk]:
         distance = ChunkEmbedding.embedding.cosine_distance(query_embedding)
         stmt = (
@@ -25,9 +44,9 @@ class PostgresVectorStore:
                 Chunk.index_run_id == index_run.id,
                 ChunkEmbedding.embedding_space_id == index_run.embedding_space_id,
             )
-            .order_by(distance)
-            .limit(top_k)
         )
+        stmt = self._apply_filters(stmt, filters)
+        stmt = stmt.order_by(distance).limit(top_k)
 
         rows = session.execute(stmt).all()
         results: list[RetrievedChunk] = []

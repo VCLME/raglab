@@ -100,6 +100,12 @@ Placer les fichiers `.txt`, `.pdf`, `.docx` dans `data/documents/`, puis lancer 
 raglab ingest data/documents --corpus demo
 ```
 
+Si un document possede un sidecar JSON adjacent, par exemple `sample.txt` et `sample.json`, les champs du JSON sont fusionnes dans `metadata_json` au moment de l'ingestion. Les tags peuvent aussi etre poses en CLI :
+
+```powershell
+raglab ingest data/documents --corpus demo --tag legal --tag hr
+```
+
 ## 7. Construire les index
 
 ### Traditional chunking
@@ -130,6 +136,14 @@ raglab index --corpus demo --strategy traditional --embedding-provider transform
 
 ```powershell
 raglab query "Que dit le document sur la maintenance ?" --corpus demo --strategy traditional
+```
+
+Exemples de filtres :
+
+```powershell
+raglab query "Resume la loi" --corpus lexml --strategy traditional --tag legal
+raglab query "Resume la loi" --corpus lexml --strategy traditional --metadata-eq authority="Senado Federal"
+raglab query "Resume la loi" --corpus lexml --strategy traditional --source-path-contains lexml
 ```
 
 ## 9. Lancer une experience comparative
@@ -176,6 +190,8 @@ Pour injecter ensuite ces donnees dans le pipeline RAG :
 raglab lexml ingest --corpus lexml
 ```
 
+Les fichiers `*.json` generes a cote des `*.txt` LexML sont automatiquement relus comme metadata au moment de cette ingestion.
+
 ## 11. Lancer le benchmark de recall
 
 Une fois le corpus LexML ingere et indexe :
@@ -203,7 +219,7 @@ Le benchmark :
 Resultat verifie sur cette machine :
 
 ```text
-4 passed
+16 passed
 ```
 
 ### Verifier que la CLI demarre

@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from raglab.config import Settings, get_settings
 from raglab.db.crud import get_index_run, resolve_latest_index_run
 from raglab.domain.enums import ChunkingStrategy
-from raglab.domain.schemas import QueryResponse
+from raglab.domain.schemas import QueryResponse, RetrievalFilters
 from raglab.embeddings.factory import build_embedding_provider
 from raglab.generation.service import OllamaGenerator
 from raglab.stores.vector.postgres import PostgresVectorStore
@@ -50,6 +50,7 @@ class QueryService:
         index_run_id: str | None = None,
         top_k: int | None = None,
         generate_answer: bool = True,
+        filters: RetrievalFilters | None = None,
     ) -> QueryResponse:
         index_run = self._resolve_index_run(
             corpus_name=corpus_name,
@@ -81,6 +82,7 @@ class QueryService:
             index_run=index_run,
             query_embedding=query_embedding,
             top_k=top_k or self.settings.default_top_k,
+            filters=filters,
         )
         answer = self.generator.generate_answer(question, retrieved) if generate_answer else None
         elapsed_ms = (perf_counter() - started) * 1000
@@ -90,6 +92,7 @@ class QueryService:
             index_run_id=index_run.id,
             strategy=ChunkingStrategy(index_run.strategy),
             retrieved_chunks=retrieved,
+            filters=filters,
             answer=answer,
             elapsed_ms=elapsed_ms,
         )
