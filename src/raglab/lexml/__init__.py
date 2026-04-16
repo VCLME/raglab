@@ -3,5 +3,6 @@ from raglab.lexml.getDataFromLexML import (
     GetDataFromLexMLService,
     getDataFromLexML,
 )
+from raglab.lexml.load import LexMLLoadService
 
-__all__ = ["GetDataFromLexMLService", "MAX_LEXML_DOWNLOAD_BYTES", "getDataFromLexML"]
+__all__ = ["GetDataFromLexMLService", "LexMLLoadService", "MAX_LEXML_DOWNLOAD_BYTES", "getDataFromLexML"]
