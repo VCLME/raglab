@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from collections import defaultdict
 from collections.abc import Iterable
 
@@ -20,8 +21,10 @@ from raglab.db.crud import (
 from raglab.db.models import Chunk, ChunkEmbedding, Document, EmbeddingSpace, IndexRun
 from raglab.domain.enums import ChunkingStrategy, IndexStatus
 from raglab.embeddings.factory import build_embedding_provider
+from raglab.logging_utils import log_event
 
 INDEXING_METADATA_KEY = "_raglab"
+LOGGER = logging.getLogger(__name__)
 
 
 class IndexingService:
@@ -310,6 +313,18 @@ class IndexingService:
                 documents=documents,
             )
         )
+        log_event(
+            LOGGER,
+            logging.INFO,
+            "indexing.plan_resolved",
+            corpus_name=corpus_name,
+            strategy=strategy.value,
+            incremental=incremental,
+            base_index_run_id=base_index_run.id if base_index_run else None,
+            documents=len(documents),
+            reusable_documents=len(reusable_documents),
+            documents_to_index=len(documents_to_index),
+        )
 
         index_run.config_json = {
             **index_run.config_json,
@@ -353,6 +368,14 @@ class IndexingService:
             complete_index_run(self.session, index_run, IndexStatus.COMPLETED)
             self.session.commit()
         except Exception:
+            log_event(
+                LOGGER,
+                logging.ERROR,
+                "indexing.failed",
+                corpus_name=corpus_name,
+                strategy=strategy.value,
+                index_run_id=index_run.id,
+            )
             self.session.rollback()
             failed_run = self.session.get(type(index_run), index_run.id)
             if failed_run is not None:
@@ -360,7 +383,7 @@ class IndexingService:
                 self.session.commit()
             raise
 
-        return {
+        result = {
             "index_run_id": index_run.id,
             "documents": len(documents),
             "chunks": reused_chunks + new_chunks,
@@ -371,3 +394,12 @@ class IndexingService:
             "reused_chunks": reused_chunks,
             "new_chunks": new_chunks,
         }
+        log_event(
+            LOGGER,
+            logging.INFO,
+            "indexing.completed",
+            corpus_name=corpus_name,
+            strategy=strategy.value,
+            **result,
+        )
+        return result

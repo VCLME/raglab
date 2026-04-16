@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     app_name: str = "raglab"
     environment: str = "dev"
     log_level: str = "INFO"
+    log_format: str = "text"
 
     database_url: str = "postgresql+psycopg://raglab:raglab@localhost:5432/raglab"
     ollama_base_url: str = "http://localhost:11434"

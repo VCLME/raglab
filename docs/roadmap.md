@@ -35,7 +35,7 @@
 - filtres par corpus / document / tags / metadata sidecar
 - prompts plus robustes
 - métriques supplémentaires de retrieval (`Recall@K`, `Precision@K`, `MRR`)
-- logs structurés
+- logs structurés JSON côté CLI et services
 - meilleure gestion de réindexation incrémentale
 
 ## Phase 5 - Embeddings multi-providers

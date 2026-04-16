@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from time import perf_counter
 
 from sqlalchemy.orm import Session
@@ -10,7 +11,10 @@ from raglab.domain.enums import ChunkingStrategy
 from raglab.domain.schemas import QueryResponse, RetrievalFilters
 from raglab.embeddings.factory import build_embedding_provider
 from raglab.generation.service import OllamaGenerator
+from raglab.logging_utils import log_event
 from raglab.stores.vector.postgres import PostgresVectorStore
+
+LOGGER = logging.getLogger(__name__)
 
 
 class QueryService:
@@ -86,6 +90,20 @@ class QueryService:
         )
         answer = self.generator.generate_answer(question, retrieved) if generate_answer else None
         elapsed_ms = (perf_counter() - started) * 1000
+        log_event(
+            LOGGER,
+            logging.INFO,
+            "query.completed",
+            corpus_name=corpus_name,
+            strategy=index_run.strategy,
+            index_run_id=index_run.id,
+            top_k=top_k or self.settings.default_top_k,
+            generate_answer=generate_answer,
+            retrieved_chunks=len(retrieved),
+            filters=filters.model_dump() if filters else {},
+            question_length=len(question),
+            elapsed_ms=round(elapsed_ms, 3),
+        )
 
         return QueryResponse(
             question=question,

@@ -13,6 +13,7 @@ from urllib.parse import urljoin
 import requests
 
 from raglab.config import Settings, get_settings
+from raglab.logging_utils import log_event
 
 LOGGER = logging.getLogger(__name__)
 
@@ -127,20 +128,32 @@ class GetDataFromLexMLService:
                             break
 
                 if limit_hit:
-                    LOGGER.info("LexML collection stopped because the 2GB hard limit was reached.")
+                    log_event(
+                        LOGGER,
+                        logging.INFO,
+                        "lexml.limit_reached",
+                        downloaded_bytes=self.total_downloaded_bytes,
+                    )
                     return None, True
 
                 return buffer.decode("utf-8", errors="ignore"), False
             except requests.RequestException as exc:
-                LOGGER.warning(
-                    "LexML page fetch failed on attempt %s/%s for startDoc=%s: %s",
-                    attempt,
-                    LEXML_REQUEST_MAX_ATTEMPTS,
-                    start_doc or 1,
-                    exc,
+                log_event(
+                    LOGGER,
+                    logging.WARNING,
+                    "lexml.page_fetch_failed",
+                    attempt=attempt,
+                    max_attempts=LEXML_REQUEST_MAX_ATTEMPTS,
+                    start_doc=start_doc or 1,
+                    error=str(exc),
                 )
 
-        LOGGER.error("LexML collection aborted after repeated network failures for startDoc=%s.", start_doc or 1)
+        log_event(
+            LOGGER,
+            logging.ERROR,
+            "lexml.page_fetch_aborted",
+            start_doc=start_doc or 1,
+        )
         return None, False
 
     def _parse_search_page(self, html: str, *, page_number: int, search_page_url: str) -> list[LexMLDocumentRecord]:
@@ -220,7 +233,13 @@ class GetDataFromLexMLService:
         target_dir.mkdir(parents=True, exist_ok=True)
 
         if _has_local_lexml_data(target_dir):
-            LOGGER.info("LexML collection skipped because local data already exists in %s.", target_dir)
+            log_event(
+                LOGGER,
+                logging.INFO,
+                "lexml.collection_skipped",
+                output_dir=target_dir,
+                reason="local_data_exists",
+            )
             return {
                 "status": "skipped",
                 "output_dir": str(target_dir),
@@ -230,7 +249,13 @@ class GetDataFromLexMLService:
                 "limit_hit": False,
             }
 
-        LOGGER.info("Starting LexML collection into %s.", target_dir)
+        log_event(
+            LOGGER,
+            logging.INFO,
+            "lexml.collection_started",
+            output_dir=target_dir,
+            page_limit=page_limit,
+        )
 
         downloaded_files = 0
         pages_processed = 0
@@ -255,7 +280,13 @@ class GetDataFromLexMLService:
             page_number = pages_processed + 1
             records = self._parse_search_page(html, page_number=page_number, search_page_url=query_url)
             if not records:
-                LOGGER.info("LexML collection stopped because no more records were found on page %s.", page_number)
+                log_event(
+                    LOGGER,
+                    logging.INFO,
+                    "lexml.collection_stopped",
+                    reason="no_more_records",
+                    page_number=page_number,
+                )
                 break
 
             new_records = 0
@@ -268,27 +299,45 @@ class GetDataFromLexMLService:
                 new_records += 1
 
             pages_processed += 1
-            LOGGER.info(
-                "LexML page %s processed: %s new files, %s total files, %s total downloaded bytes.",
-                page_number,
-                new_records,
-                downloaded_files,
-                self.total_downloaded_bytes,
+            log_event(
+                LOGGER,
+                logging.INFO,
+                "lexml.page_processed",
+                page_number=page_number,
+                new_files=new_records,
+                total_files=downloaded_files,
+                downloaded_bytes=self.total_downloaded_bytes,
             )
 
             if new_records == 0:
-                LOGGER.info("LexML collection stopped because the current page only contained duplicates.")
+                log_event(
+                    LOGGER,
+                    logging.INFO,
+                    "lexml.collection_stopped",
+                    reason="duplicates_only",
+                    page_number=page_number,
+                )
                 break
 
             start_doc += LEXML_PAGE_SIZE
 
         if limit_hit:
-            LOGGER.info("LexML collection stopped at the 2GB hard limit.")
+            log_event(
+                LOGGER,
+                logging.INFO,
+                "lexml.collection_stopped",
+                reason="hard_limit_reached",
+                downloaded_bytes=self.total_downloaded_bytes,
+            )
 
-        LOGGER.info(
-            "LexML collection completed with %s files and %s downloaded bytes.",
-            downloaded_files,
-            self.total_downloaded_bytes,
+        log_event(
+            LOGGER,
+            logging.INFO,
+            "lexml.collection_completed",
+            downloaded_files=downloaded_files,
+            downloaded_bytes=self.total_downloaded_bytes,
+            pages_processed=pages_processed,
+            limit_hit=limit_hit,
         )
 
         status = "completed"

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -11,7 +12,10 @@ from sqlalchemy.orm import Session
 from raglab.config import Settings, get_settings
 from raglab.domain.enums import ChunkingStrategy
 from raglab.experiments.metrics import first_relevant_rank, hit_at_k, precision_at_k, reciprocal_rank, relevance_flags
+from raglab.logging_utils import log_event
 from raglab.retrieval.service import QueryService
+
+LOGGER = logging.getLogger(__name__)
 
 
 @dataclass(slots=True)
@@ -103,6 +107,14 @@ class RecallBenchmarkService:
                     )
                     + "\n"
                 )
+        log_event(
+            LOGGER,
+            logging.INFO,
+            "recall.dataset_generated",
+            documents_dir=metadata_dir,
+            dataset_path=dataset_path,
+            cases=len(cases),
+        )
         return dataset_path, cases
 
     @staticmethod
@@ -136,6 +148,16 @@ class RecallBenchmarkService:
             )
         else:
             cases = self._load_cases(dataset_path.resolve())
+        log_event(
+            LOGGER,
+            logging.INFO,
+            "recall.started",
+            corpus_name=corpus_name,
+            strategy=strategy.value,
+            dataset_path=dataset_path,
+            cases=len(cases),
+            k_values=list(k_values),
+        )
 
         max_k = max(k_values)
         details: list[dict[str, Any]] = []
@@ -203,4 +225,15 @@ class RecallBenchmarkService:
         }
         report_path = self._write_report("lexml-recall-benchmark", payload)
         payload["report_path"] = str(report_path)
+        log_event(
+            LOGGER,
+            logging.INFO,
+            "recall.completed",
+            corpus_name=corpus_name,
+            strategy=strategy.value,
+            dataset_path=dataset_path,
+            report_path=report_path,
+            total_cases=total_cases,
+            summary=summary,
+        )
         return payload
