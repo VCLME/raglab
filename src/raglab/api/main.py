@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from raglab.api.routers import (
     corpora,
@@ -33,6 +34,14 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    @app.exception_handler(ValueError)
+    async def _value_error_handler(_: Request, exc: ValueError) -> JSONResponse:
+        return JSONResponse(status_code=400, content={"detail": str(exc)})
+
+    @app.exception_handler(FileNotFoundError)
+    async def _not_found_handler(_: Request, exc: FileNotFoundError) -> JSONResponse:
+        return JSONResponse(status_code=400, content={"detail": str(exc)})
 
     app.include_router(health.router)
     app.include_router(ollama.router)
