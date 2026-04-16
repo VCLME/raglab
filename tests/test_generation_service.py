@@ -1,5 +1,7 @@
 from unittest.mock import Mock, patch
 
+import requests
+
 from raglab.config import Settings
 from raglab.domain.schemas import RetrievedChunk
 from raglab.generation.prompts import build_prompt_bundle
@@ -45,7 +47,7 @@ def test_generate_answer_returns_fallback_without_calling_ollama():
 
 
 def test_generate_answer_sends_structured_messages_to_ollama():
-    settings = Settings(generation_model="llama3.2:3b")
+    settings = Settings(generation_model="qwen2.5:7b")
     generator = OllamaGenerator(settings)
     response = Mock()
     response.json.return_value = {"message": {"content": "Réponse fondée."}}
@@ -56,8 +58,24 @@ def test_generate_answer_sends_structured_messages_to_ollama():
 
     assert answer == "Réponse fondée."
     _, kwargs = requests_post.call_args
-    assert kwargs["json"]["model"] == "llama3.2:3b"
+    assert kwargs["json"]["model"] == "qwen2.5:7b"
     assert len(kwargs["json"]["messages"]) == 2
     assert kwargs["json"]["messages"][0]["role"] == "system"
     assert kwargs["json"]["messages"][1]["role"] == "user"
     assert "Sources:" in kwargs["json"]["messages"][0]["content"]
+
+
+def test_raise_for_status_returns_hint_when_model_is_missing():
+    settings = Settings(generation_model="qwen2.5:7b")
+    generator = OllamaGenerator(settings)
+    response = Mock()
+    response.status_code = 404
+    response.text = "model 'qwen2.5:7b' not found, try pulling it first"
+    response.raise_for_status.side_effect = requests.HTTPError("missing")
+
+    try:
+        generator._raise_for_status(response)
+    except RuntimeError as exc:
+        assert "raglab ollama pull --model qwen2.5:7b" in str(exc)
+    else:
+        raise AssertionError("Expected RuntimeError when the Ollama model is missing")

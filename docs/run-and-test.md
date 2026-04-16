@@ -63,6 +63,7 @@ Variables importantes :
 
 - `RAGLAB_DATABASE_URL`
 - `RAGLAB_OLLAMA_BASE_URL`
+- `RAGLAB_OLLAMA_PULL_TIMEOUT_SECONDS`
 - `RAGLAB_GENERATION_MODEL`
 - `RAGLAB_GENERATION_NO_CONTEXT_ANSWER`
 - `RAGLAB_EMBEDDING_MODEL_NAME`
@@ -94,7 +95,24 @@ Acces Adminer :
 Telecharger le modele de generation recommande :
 
 ```powershell
-docker compose exec ollama ollama pull llama3.2:3b
+docker compose exec ollama ollama pull qwen2.5:7b
+```
+
+Ou via la CLI du projet :
+
+```powershell
+raglab ollama pull --model qwen2.5:7b
+raglab ollama list
+raglab ollama status
+```
+
+En mode 100 % Docker :
+
+```powershell
+docker compose --profile app up -d app
+docker compose exec app python -m raglab.cli ollama pull --model qwen2.5:7b
+docker compose exec app python -m raglab.cli ollama list
+docker compose exec app python -m raglab.cli ollama status
 ```
 
 ## 5. Initialiser la base
@@ -272,7 +290,7 @@ Tu peux verifier visuellement le contenu dans Adminer sur `http://localhost:8080
 Resultat verifie sur cette machine :
 
 ```text
-28 passed
+35 passed
 ```
 
 ### Verifier que la CLI demarre
@@ -289,7 +307,7 @@ Si tu veux juste verifier rapidement que tout tourne :
 .venv\Scripts\Activate.ps1
 python -m pip install -e .[dev]
 docker compose up -d postgres ollama
-docker compose exec ollama ollama pull llama3.2:3b
+docker compose exec ollama ollama pull qwen2.5:7b
 raglab db init
 raglab ingest data/documents --corpus demo
 raglab index --corpus demo --strategy traditional
@@ -334,7 +352,8 @@ docker compose ps
 Puis tester le modele :
 
 ```powershell
-docker compose exec ollama ollama list
+raglab ollama status
+raglab ollama list
 ```
 
 ### PostgreSQL ne repond pas
@@ -354,3 +373,5 @@ Validation effectuee :
 - dependances installees
 - `pytest` execute avec succes
 - CLI `raglab --help` verifiee
+- `raglab ollama status` et `raglab ollama list` verifies
+- `qwen2.5:7b` telecharge avec succes via Ollama

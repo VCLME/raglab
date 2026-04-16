@@ -18,7 +18,7 @@
 ### LLM
 
 - Ollama pour la génération locale
-- modèle de génération recommandé pour le MVP : `llama3.2:3b`
+- modèle de génération recommandé pour le MVP : `qwen2.5:7b`
 
 ### Embeddings
 
@@ -51,17 +51,18 @@ Ollama apporte :
 - bon confort de test
 - possibilité de changer rapidement de modèle
 
-### Modèle recommandé : `llama3.2:3b`
+### Modèle recommandé : `qwen2.5:7b`
 
 Raisons :
 
-- léger pour un usage local
-- officiellement présenté comme adapté aux usages multilingues et de résumé
-- bon compromis entre coût mémoire, vitesse et qualité pour un MVP RAG local
+- meilleure robustesse instructionnelle pour un usage RAG
+- bon comportement multilingue pour un corpus juridique local
+- compromis qualité / coût adapté à une machine locale correctement dimensionnée
+- intégration simple avec Ollama et bonne cohérence avec un workflow 100 % local
 
 Alternatives plus tard :
 
-- `qwen2.5:3b` si on privilégie davantage la robustesse instructionnelle
+- `llama3.2:3b` si la machine cible est plus contrainte
 - modèles plus gros si la machine cible le permet
 
 ## 4. Réflexion pragmatique sur les embeddings

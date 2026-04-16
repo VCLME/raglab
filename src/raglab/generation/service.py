@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 
 import requests
+from requests import HTTPError
 
 from raglab.config import Settings, get_settings
 from raglab.domain.schemas import RetrievedChunk
@@ -54,7 +55,7 @@ class OllamaGenerator:
             },
             timeout=self.settings.generation_timeout_seconds,
         )
-        response.raise_for_status()
+        self._raise_for_status(response)
         payload = response.json()
         answer = payload["message"]["content"].strip()
         log_event(
@@ -66,3 +67,19 @@ class OllamaGenerator:
             answer_length=len(answer),
         )
         return answer
+
+    def _raise_for_status(self, response: requests.Response) -> None:
+        try:
+            response.raise_for_status()
+        except HTTPError as exc:
+            response_text = ""
+            try:
+                response_text = response.text
+            except Exception:
+                response_text = ""
+            if response.status_code == 404 and "not found" in response_text.lower():
+                raise RuntimeError(
+                    "Le modele Ollama configure n'est pas disponible localement. "
+                    f"Telechargez-le avec `raglab ollama pull --model {self.settings.generation_model}`."
+                ) from exc
+            raise
