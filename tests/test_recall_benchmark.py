@@ -1,0 +1,114 @@
+import json
+from pathlib import Path
+from types import SimpleNamespace
+
+from raglab.domain.enums import ChunkingStrategy
+from raglab.domain.schemas import RetrievedChunk
+from raglab.experiments.recall import RecallBenchmarkService
+
+
+class StubQueryService:
+    def __init__(self, responses):
+        self.responses = responses
+        self.calls = 0
+
+    def query(self, **kwargs):
+        response = self.responses[self.calls]
+        self.calls += 1
+        return response
+
+
+def _write_lexml_sidecar(base_dir: Path, stem: str, *, title: str, urn: str, summary: str) -> None:
+    (base_dir / f"{stem}.txt").write_text(title, encoding="utf-8")
+    (base_dir / f"{stem}.json").write_text(
+        json.dumps(
+            {
+                "title": title,
+                "summary": summary,
+                "urn": urn,
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+
+def test_recall_benchmark_generates_cases_and_metrics(tmp_path: Path):
+    _write_lexml_sidecar(
+        tmp_path,
+        "doc1",
+        title="Lei nº 8.078, de 11 de setembro de 1990",
+        urn="urn:lex:br:federal:lei:1990-09-11;8078",
+        summary="Dispõe sobre a proteção do consumidor.",
+    )
+    _write_lexml_sidecar(
+        tmp_path,
+        "doc2",
+        title="Lei nº 11.340, de 7 de agosto de 2006",
+        urn="urn:lex:br:federal:lei:2006-08-07;11340",
+        summary="Cria mecanismos para coibir a violência doméstica e familiar contra a mulher.",
+    )
+
+    service = RecallBenchmarkService(session=None)
+    service.query_service = StubQueryService(
+        [
+            SimpleNamespace(
+                retrieved_chunks=[
+                    RetrievedChunk(
+                        chunk_id="c1",
+                        document_id="d1",
+                        file_name="doc1.txt",
+                        source_path="doc1.txt",
+                        chunk_text="URN: urn:lex:br:federal:lei:1990-09-11;8078",
+                        score=0.9,
+                        rank=1,
+                    ),
+                    RetrievedChunk(
+                        chunk_id="c2",
+                        document_id="d2",
+                        file_name="other.txt",
+                        source_path="other.txt",
+                        chunk_text="other",
+                        score=0.2,
+                        rank=2,
+                    ),
+                ]
+            ),
+            SimpleNamespace(
+                retrieved_chunks=[
+                    RetrievedChunk(
+                        chunk_id="c3",
+                        document_id="d3",
+                        file_name="other.txt",
+                        source_path="other.txt",
+                        chunk_text="other",
+                        score=0.7,
+                        rank=1,
+                    ),
+                    RetrievedChunk(
+                        chunk_id="c4",
+                        document_id="d4",
+                        file_name="doc2.txt",
+                        source_path="doc2.txt",
+                        chunk_text="URN: urn:lex:br:federal:lei:2006-08-07;11340",
+                        score=0.6,
+                        rank=2,
+                    ),
+                ]
+            ),
+        ]
+    )
+
+    result = service.run(
+        corpus_name="lexml",
+        strategy=ChunkingStrategy.TRADITIONAL,
+        dataset_path=None,
+        lexml_documents_dir=tmp_path,
+        case_limit=2,
+        k_values=(1, 5),
+    )
+
+    assert Path(result["dataset_path"]).exists()
+    assert result["summary"]["recall@1"] == 0.5
+    assert result["summary"]["recall@5"] == 1.0
+    assert Path(result["report_path"]).exists()

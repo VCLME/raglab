@@ -1,25 +1,27 @@
 # raglab
 
-Projet RAG local orienté expérimentation sur des dossiers de documents `.txt`, `.pdf`, `.docx`.
+Projet RAG local oriente experimentation sur des dossiers de documents `.txt`, `.pdf`, `.docx`.
 
 Le projet fournit :
 
 - PostgreSQL + pgvector pour le stockage vectoriel
-- Ollama pour la génération locale
-- une CLI pour ingérer, indexer, requêter et lancer des expériences
-- trois stratégies de chunking comparables :
+- Ollama pour la generation locale
+- une CLI pour ingerer, indexer, requeter et lancer des experiences
+- trois strategies de chunking comparables :
   - `traditional`
   - `slide`
   - `late`
-- une architecture prête pour une future coexistence PostgreSQL vectoriel + Neo4j
+- une architecture prete pour une future coexistence PostgreSQL vectoriel + Neo4j
+- une collecte dediee LexML Brasil pour constituer un corpus juridique local
+- un benchmark de recall pour evaluer la qualite du retrieval
 
 ## Documents de cadrage
 
 - [Architecture](docs/architecture.md)
 - [Choix techniques](docs/technical-choices.md)
-- [Plan d'expérimentation](docs/experimentation-plan.md)
+- [Plan d'experimentation](docs/experimentation-plan.md)
 - [Roadmap](docs/roadmap.md)
-- [Modèle de données](docs/data-model.md)
+- [Modele de donnees](docs/data-model.md)
 - [Lancer et tester le projet](docs/run-and-test.md)
 
 ## Structure
@@ -30,6 +32,9 @@ Le projet fournit :
 ├── data/
 │   ├── documents/
 │   ├── experiments/
+│   ├── lexml/
+│   │   ├── benchmark/
+│   │   └── documents/
 │   └── reports/
 ├── src/raglab/
 │   ├── chunking/
@@ -40,6 +45,7 @@ Le projet fournit :
 │   ├── graph/
 │   ├── indexing/
 │   ├── ingestion/
+│   ├── lexml/
 │   ├── retrieval/
 │   └── stores/
 ├── tests/
@@ -48,7 +54,7 @@ Le projet fournit :
 └── pyproject.toml
 ```
 
-## Démarrage rapide
+## Demarrage rapide
 
 ### 1. Lancer les services
 
@@ -56,13 +62,13 @@ Le projet fournit :
 docker compose up -d postgres ollama
 ```
 
-### 2. Télécharger le modèle de génération Ollama
+### 2. Telecharger le modele de generation Ollama
 
 ```bash
 docker compose exec ollama ollama pull llama3.2:3b
 ```
 
-### 3. Installer le projet côté Python
+### 3. Installer le projet cote Python
 
 ```bash
 python -m venv .venv
@@ -70,7 +76,7 @@ python -m venv .venv
 pip install -e .[dev]
 ```
 
-### 4. Préparer la configuration
+### 4. Preparer la configuration
 
 ```bash
 copy .env.example .env
@@ -82,7 +88,7 @@ copy .env.example .env
 raglab db init
 ```
 
-### 6. Ingestion
+### 6. Ingestion locale classique
 
 ```bash
 raglab ingest data/documents --corpus demo
@@ -96,29 +102,49 @@ raglab index --corpus demo --strategy slide
 raglab index --corpus demo --strategy late
 ```
 
-Exemple pour préparer un run avec un autre provider ou modèle plus tard :
+Exemple pour preparer un run avec un autre provider ou modele plus tard :
 
 ```bash
 raglab index --corpus demo --strategy traditional --embedding-provider transformers --embedding-model intfloat/multilingual-e5-small
 ```
 
-### 8. Requête
+### 8. Requete
 
 ```bash
 raglab query "Que dit le document sur la maintenance ?" --corpus demo --strategy traditional
 ```
 
-### 9. Expérimentation
+### 9. Experimentation classique
 
 ```bash
 raglab experiment run data/experiments/sample_queries.jsonl --corpus demo --strategy traditional --strategy slide --strategy late
 ```
 
-## Paramètres MVP retenus
+## LexML Brasil
 
-- génération : `llama3.2:3b` via Ollama
+La fonctionnalite LexML collecte des fiches documentaires juridiques depuis le portail public LexML Brasil, les stocke localement en `.txt` et `.json`, puis les reinjecte dans le pipeline RAG existant.
+
+Commandes principales :
+
+```bash
+raglab lexml get-data --output-dir data/lexml/documents --page-limit 3
+raglab lexml ingest --corpus lexml
+raglab index --corpus lexml --strategy traditional
+raglab experiment recall --corpus lexml --strategy traditional
+```
+
+Points importants :
+
+- les donnees LexML sont stockees dans `data/lexml/documents`
+- si des donnees LexML locales existent deja, la collecte est skippee integralement
+- la limite dure est codee en dur dans `MAX_LEXML_DOWNLOAD_BYTES = 2 * 1024 * 1024 * 1024`
+- le benchmark Recall genere un jeu de requetes simple depuis les metadata LexML locales puis calcule `Recall@1`, `Recall@5` et `Recall@10`
+
+## Parametres MVP retenus
+
+- generation : `llama3.2:3b` via Ollama
 - embeddings : `intfloat/multilingual-e5-small`
-- top-k par défaut : `5`
+- top-k par defaut : `5`
 - `traditional` : `900 / 150`
 - `slide` : `900 / 300`
 - `late` : chunk focal `700`, contexte `500`
@@ -127,5 +153,6 @@ raglab experiment run data/experiments/sample_queries.jsonl --corpus demo --stra
 
 - pas d'OCR pour PDF image
 - pas de reranker
-- pas de Neo4j branché dans cette première version
-- dimension d'embeddings homogène par instance de projet
+- pas de Neo4j branche dans cette premiere version
+- dimension d'embeddings homogene par instance de projet
+- la collecte LexML V1 sauvegarde des fiches documentaires structurees issues du portail LexML, sans suivre encore les liens de texte integral des fournisseurs

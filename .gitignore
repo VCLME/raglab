@@ -11,3 +11,7 @@ data/documents/*
 !data/documents/.gitkeep
 data/reports/*
 !data/reports/.gitkeep
+data/lexml/documents/*
+!data/lexml/documents/.gitkeep
+data/lexml/benchmark/*
+!data/lexml/benchmark/.gitkeep
