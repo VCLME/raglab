@@ -23,6 +23,8 @@ class Settings(BaseSettings):
     default_top_k: int = 5
     data_dir: Path = Field(default_factory=lambda: Path("data"))
     reports_dir: Path = Field(default_factory=lambda: Path("data/reports"))
+    lexml_documents_dir: Path = Field(default_factory=lambda: Path("data/lexml/documents"))
+    lexml_benchmark_dir: Path = Field(default_factory=lambda: Path("data/lexml/benchmark"))
 
     generation_model: str = "llama3.2:3b"
     generation_temperature: float = 0.1

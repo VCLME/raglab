@@ -152,7 +152,47 @@ Les rapports sont produits dans :
 data/reports/
 ```
 
-## 10. Executer les tests
+## 10. Collecter des donnees LexML Brasil
+
+Collecte des fiches documentaires LexML dans un dossier dedie :
+
+```powershell
+raglab lexml get-data --output-dir data/lexml/documents --page-limit 3
+```
+
+Points a connaitre :
+
+- les fichiers sont ecrits dans `data/lexml/documents`
+- si ce dossier contient deja des donnees, la collecte est entierement skippee
+- la collecte applique une limite dure codee dans le projet :
+
+```python
+MAX_LEXML_DOWNLOAD_BYTES = 2 * 1024 * 1024 * 1024
+```
+
+Pour injecter ensuite ces donnees dans le pipeline RAG :
+
+```powershell
+raglab lexml ingest --corpus lexml
+```
+
+## 11. Lancer le benchmark de recall
+
+Une fois le corpus LexML ingere et indexe :
+
+```powershell
+raglab index --corpus lexml --strategy traditional
+raglab experiment recall --corpus lexml --strategy traditional
+```
+
+Le benchmark :
+
+- genere un jeu de requetes de test a partir des metadata LexML locales si aucun dataset n'est fourni
+- utilise une verite terrain simple basee sur les noms de fichiers et les URN attendues
+- calcule `Recall@1`, `Recall@5` et `Recall@10`
+- ecrit un rapport JSON dans `data/reports/`
+
+## 12. Executer les tests
 
 ### Suite de tests
 
@@ -172,7 +212,7 @@ Resultat verifie sur cette machine :
 .venv\Scripts\raglab.exe --help
 ```
 
-## 11. Sequence minimale recommandee
+## 13. Sequence minimale recommandee
 
 Si tu veux juste verifier rapidement que tout tourne :
 
@@ -188,7 +228,7 @@ raglab query "Quel est le sujet principal ?" --corpus demo --strategy traditiona
 python -m pytest
 ```
 
-## 12. Depannage
+## 14. Depannage
 
 ### `python` n'est pas reconnu
 
@@ -228,7 +268,7 @@ Verifier :
 docker compose logs postgres
 ```
 
-## 13. Etat valide actuellement
+## 15. Etat valide actuellement
 
 Validation effectuee :
 

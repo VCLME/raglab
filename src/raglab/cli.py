@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
 
 import typer
@@ -8,17 +9,27 @@ import typer
 from raglab.config import get_settings
 from raglab.db import initialize_database, session_scope
 from raglab.domain.enums import ChunkingStrategy
+from raglab.experiments.recall import RecallBenchmarkService
 from raglab.experiments.service import ExperimentService
 from raglab.indexing.service import IndexingService
 from raglab.ingestion.service import IngestionService
+from raglab.lexml import getDataFromLexML
 from raglab.retrieval.service import QueryService
 
 app = typer.Typer(no_args_is_help=True, help="RAG local oriente experimentation.")
 db_app = typer.Typer(no_args_is_help=True, help="Commandes base de donnees.")
 experiment_app = typer.Typer(no_args_is_help=True, help="Commandes d'experimentation.")
+lexml_app = typer.Typer(no_args_is_help=True, help="Collecte LexML Brasil.")
 
 app.add_typer(db_app, name="db")
 app.add_typer(experiment_app, name="experiment")
+app.add_typer(lexml_app, name="lexml")
+
+
+def _configure_logging() -> None:
+    settings = get_settings()
+    level = getattr(logging, settings.log_level.upper(), logging.INFO)
+    logging.basicConfig(level=level, format="%(levelname)s %(message)s", force=True)
 
 
 @db_app.command("init")
@@ -32,6 +43,40 @@ def ingest(
     folder: Path = typer.Argument(..., exists=True, file_okay=False, dir_okay=True),
     corpus: str = typer.Option(get_settings().default_corpus_name, "--corpus", help="Nom du corpus cible."),
     description: str | None = typer.Option(None, "--description", help="Description optionnelle du corpus."),
+) -> None:
+    with session_scope() as session:
+        service = IngestionService(session)
+        summary = service.ingest_folder(folder, corpus_name=corpus, description=description)
+    typer.echo(json.dumps({"corpus": corpus, **summary}, indent=2, ensure_ascii=False))
+
+
+@lexml_app.command("get-data")
+def lexml_get_data(
+    output_dir: Path = typer.Option(
+        get_settings().lexml_documents_dir,
+        "--output-dir",
+        help="Dossier de sortie pour les documents LexML.",
+    ),
+    page_limit: int | None = typer.Option(
+        None,
+        "--page-limit",
+        help="Nombre maximum de pages de resultats LexML a collecter. Par defaut, le run s'arrete seulement sur fin des resultats, erreur reseau ou limite 2GB.",
+    ),
+) -> None:
+    _configure_logging()
+    result = getDataFromLexML(output_dir=output_dir, page_limit=page_limit)
+    typer.echo(json.dumps(result, indent=2, ensure_ascii=False))
+
+
+@lexml_app.command("ingest")
+def lexml_ingest(
+    corpus: str = typer.Option("lexml", "--corpus", help="Corpus cible pour les donnees LexML."),
+    description: str | None = typer.Option("Corpus legal collecte depuis LexML Brasil.", "--description"),
+    folder: Path = typer.Option(
+        get_settings().lexml_documents_dir,
+        "--folder",
+        help="Dossier local contenant les fichiers LexML deja collectes.",
+    ),
 ) -> None:
     with session_scope() as session:
         service = IngestionService(session)
@@ -115,6 +160,36 @@ def experiment_run(
             top_k=top_k,
             generate_answers=generate,
             name=name,
+        )
+    typer.echo(json.dumps(result, indent=2, ensure_ascii=False))
+
+
+@experiment_app.command("recall")
+def experiment_recall(
+    corpus: str = typer.Option(..., "--corpus", help="Corpus a evaluer."),
+    strategy: ChunkingStrategy = typer.Option(..., "--strategy", help="Strategie de retrieval a evaluer."),
+    dataset_path: Path | None = typer.Option(
+        None,
+        "--dataset-path",
+        exists=True,
+        dir_okay=False,
+        help="Dataset Recall JSONL. Si absent, il est genere depuis les metadata LexML locales.",
+    ),
+    lexml_documents_dir: Path = typer.Option(
+        get_settings().lexml_documents_dir,
+        "--lexml-documents-dir",
+        help="Dossier LexML utilise pour generer le dataset Recall par defaut.",
+    ),
+    case_limit: int = typer.Option(10, "--case-limit", min=1, help="Nombre max de cas si generation auto."),
+) -> None:
+    with session_scope() as session:
+        service = RecallBenchmarkService(session)
+        result = service.run(
+            corpus_name=corpus,
+            strategy=strategy,
+            dataset_path=dataset_path,
+            lexml_documents_dir=lexml_documents_dir,
+            case_limit=case_limit,
         )
     typer.echo(json.dumps(result, indent=2, ensure_ascii=False))
 
