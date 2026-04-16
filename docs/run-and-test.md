@@ -299,6 +299,45 @@ Resultat verifie sur cette machine :
 .venv\Scripts\raglab.exe --help
 ```
 
+### Lancer l'API et le frontend
+
+L'API FastAPI est cablee sur les memes services que la CLI. Dev local :
+
+```powershell
+raglab serve --dev
+```
+
+Puis dans un autre terminal :
+
+```powershell
+cd frontend
+npm install
+npm run build
+npm run dev
+```
+
+- API : http://localhost:8000 (Swagger sur `/docs`)
+- Frontend Vite : http://localhost:5173
+
+Verification rapide :
+
+```powershell
+Invoke-RestMethod http://localhost:8000/api/health
+```
+
+La reponse doit contenir `api = ok` et `postgres = ok`.
+
+Pour un lancement 100 % Docker :
+
+```powershell
+docker compose up -d postgres ollama adminer
+docker compose --profile app up -d api frontend
+```
+
+Frontend Nginx : http://localhost:8081.
+
+Plus de details dans [frontend-ui.md](frontend-ui.md).
+
 ## 14. Sequence minimale recommandee
 
 Si tu veux juste verifier rapidement que tout tourne :
