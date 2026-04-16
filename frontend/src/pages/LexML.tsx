@@ -8,10 +8,12 @@ import { FieldRow } from "../components/FieldRow";
 import { JsonViewer } from "../components/JsonViewer";
 import { SelectWithOther } from "../components/SelectWithOther";
 import { Spinner } from "../components/Spinner";
+import { useConfig } from "../hooks/useConfig";
 
 const STRATEGIES: ChunkingStrategy[] = ["traditional", "slide", "late"];
 
 export function LexML() {
+  const config = useConfig();
   const [outputDir, setOutputDir] = useState("");
   const [pageLimit, setPageLimit] = useState<string>("1");
   const collect = useApiAction((body: unknown) => post<unknown>("/api/lexml/get-data", body));
@@ -81,11 +83,23 @@ export function LexML() {
               Reutiliser un run compatible si possible
             </label>
           </FieldRow>
-          <FieldRow label="Embedding provider" hint="Optionnel, override">
-            <SelectWithOther value={embProvider} onChange={setEmbProvider} options={EMBEDDING_PROVIDERS} placeholder="ex : transformers" />
+          <FieldRow label="Embedding provider" hint={`Optionnel${config ? ` — defaut : ${config.embedding_provider}` : ""}`}>
+            <SelectWithOther
+              value={embProvider}
+              onChange={setEmbProvider}
+              options={EMBEDDING_PROVIDERS}
+              placeholder="ex : transformers"
+              emptyLabel={config ? `defaut (${config.embedding_provider})` : "(defaut)"}
+            />
           </FieldRow>
-          <FieldRow label="Embedding model" hint="Optionnel, override">
-            <SelectWithOther value={embModel} onChange={setEmbModel} options={EMBEDDING_MODELS} placeholder="ex : intfloat/multilingual-e5-small" />
+          <FieldRow label="Embedding model" hint={`Optionnel${config ? ` — defaut : ${config.embedding_model_name}` : ""}`}>
+            <SelectWithOther
+              value={embModel}
+              onChange={setEmbModel}
+              options={EMBEDDING_MODELS}
+              placeholder="ex : intfloat/multilingual-e5-small"
+              emptyLabel={config ? `defaut (${config.embedding_model_name})` : "(defaut)"}
+            />
           </FieldRow>
           <button
             onClick={() =>

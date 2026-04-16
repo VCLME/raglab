@@ -8,10 +8,12 @@ import { FieldRow } from "../components/FieldRow";
 import { JsonViewer } from "../components/JsonViewer";
 import { SelectWithOther } from "../components/SelectWithOther";
 import { Spinner } from "../components/Spinner";
+import { useConfig } from "../hooks/useConfig";
 
 const STRATEGIES: ChunkingStrategy[] = ["traditional", "slide", "late"];
 
 export function IndexPage() {
+  const config = useConfig();
   const corpora = useApiLoad<CorpusSummary[]>(() => get("/api/corpora"));
   const [corpus, setCorpus] = useState("");
   const [strategy, setStrategy] = useState<ChunkingStrategy>("traditional");
@@ -70,20 +72,22 @@ export function IndexPage() {
           <FieldRow label="Run name" hint="Optionnel">
             <input value={runName} onChange={(e) => setRunName(e.target.value)} />
           </FieldRow>
-          <FieldRow label="Embedding provider" hint="Optionnel, override (vide = settings)">
+          <FieldRow label="Embedding provider" hint={`Optionnel${config ? ` — defaut : ${config.embedding_provider}` : ""}`}>
             <SelectWithOther
               value={embProvider}
               onChange={setEmbProvider}
               options={EMBEDDING_PROVIDERS}
               placeholder="ex : transformers"
+              emptyLabel={config ? `defaut (${config.embedding_provider})` : "(defaut)"}
             />
           </FieldRow>
-          <FieldRow label="Embedding model" hint="Optionnel, override (vide = settings)">
+          <FieldRow label="Embedding model" hint={`Optionnel${config ? ` — defaut : ${config.embedding_model_name}` : ""}`}>
             <SelectWithOther
               value={embModel}
               onChange={setEmbModel}
               options={EMBEDDING_MODELS}
               placeholder="ex : intfloat/multilingual-e5-small"
+              emptyLabel={config ? `defaut (${config.embedding_model_name})` : "(defaut)"}
             />
           </FieldRow>
           <FieldRow label="Incremental">

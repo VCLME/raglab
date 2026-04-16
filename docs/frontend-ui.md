@@ -56,16 +56,37 @@ npm run dev
 
 Ouvrir http://localhost:5173. Le serveur Vite proxy `/api` vers `http://localhost:8000` (voir `frontend/vite.config.ts`).
 
+## Deux modes
+
+L'interface se scinde en deux modes accessibles via un toggle en haut a droite :
+
+- **Mode Chat** (route `/`, icone bulle) : interface conversationnelle epuree pour interroger le RAG. Un seul ecran avec barre de parametres compacte, suggestions de questions, conversation et composer.
+- **Mode Expert** (route `/expert`, icone fiole) : ensemble des ecrans techniques (Dashboard, RAG Query avec filtres fins, Playground Ollama, Ingestion, Indexation, LexML, Ollama, Experiments).
+
+Le top-bar affiche en plus un indicateur de sante (point colore) qui ping `/api/health` toutes les 15 s.
+
+## Mode Chat (`/`)
+
+Ecran par defaut. Trois elements verticaux :
+
+1. **Barre de parametres compacte** : dropdown corpus (auto-selectionne sur le premier disponible), dropdown strategie (`auto`, `traditional`, `slide`, `late`), affichage en lecture seule de l'embedding (fixe au moment de l'indexation).
+2. **Zone de conversation** :
+   - Etat vide : carte de bienvenue + 4 suggestions de questions cliquables calibrees sur le corpus LexML Brasil (Portaria AGU, acquisitions TI, etc.).
+   - Etat rempli : bulles user/assistant. Chaque reponse assistant affiche les sources en pills (`1 fichier.txt · 0.84`), filtrables par clic ; un toggle « Afficher les N chunks » deplie les ChunkCard detailles (score, rank, texte, source_path). Bas de bulle : strategie, `index_run_id` tronque, temps d'execution.
+3. **Composer** sticky en bas : textarea (Ctrl/Cmd + Entree pour envoyer), selecteur compact du modele LLM avec la valeur par defaut visible, bouton envoyer, bouton « Nouvelle conversation » dans la barre de parametres pour reset.
+
+Chaque envoi declenche un appel `/api/query` independant. L'historique conversationnel est conserve cote React (pas de multi-tour cote backend : le Playground couvre ce cas sans RAG).
+
 ## Pages de l'interface
 
-### Dashboard (`/`)
+### Dashboard (`/expert`)
 
 - Cartes d'etat : API, PostgreSQL, Ollama, Adminer.
 - Badge « installe / manquant » sur le modele de generation par defaut + bouton de pull direct.
 - Liste des corpus avec nombre de documents et de index runs.
 - Tableau des 10 derniers index runs avec strategie, statut, nombre de chunks.
 
-### RAG Query (`/query`)
+### RAG Query (`/expert/query`)
 
 Le cœur experimental. Deux colonnes :
 
@@ -73,7 +94,7 @@ Le cœur experimental. Deux colonnes :
 - Colonne droite : reponse LLM (si generation activee), liste des `ChunkCard` avec score, rank, file_name, source_path et apercu du texte, temps d'execution, payload brut.
 - Historique local (localStorage, 20 dernieres requetes) avec bouton « Rejouer ».
 
-### Prompt Playground (`/playground`)
+### Prompt Playground (`/expert/playground`)
 
 Dialogue direct avec Ollama, **sans** retrieval. Conforme a la suggestion de livrable « interaction directe avec le modele Ollama ».
 
@@ -97,20 +118,20 @@ Affichage :
 - Temps d'execution (ms) renvoye par l'API.
 - Bouton « Reset » pour repartir d'une conversation vide.
 
-### Ingestion (`/ingest`)
+### Ingestion (`/expert/ingest`)
 
 - Chemin de dossier **cote serveur** (memes semantiques que la CLI — le front n'upload pas de fichier pour le MVP).
 - Nom de corpus, description optionnelle, tags separes par virgules.
 - Resume visuel des compteurs `ingeres / maj / ignores` + payload JSON complet.
 
-### Indexation (`/index`)
+### Indexation (`/expert/index`)
 
 - Corpus via dropdown alimente depuis `/api/corpora`.
 - Strategie radio `traditional` / `slide` / `late`.
 - Run name, embedding provider et embedding model optionnels.
 - Toggle incremental pour reutiliser le dernier run compatible.
 
-### LexML (`/lexml`)
+### LexML (`/expert/lexml`)
 
 Deux cartes :
 
@@ -119,13 +140,13 @@ Deux cartes :
 
 Note : `load` est tres long. Le spinner indique simplement que l'appel est en cours — laissez la page ouverte.
 
-### Ollama (`/ollama`)
+### Ollama (`/expert/ollama`)
 
 - Statut (URL, joignabilite, nombre de modeles, modele par defaut, installation).
 - Tableau des modeles installes avec nom, taille, date, digest tronque. `qwen2.5:7b` est mis en valeur par la ligne surlignee « defaut ».
 - Formulaire pour `pull` d'un modele arbitraire.
 
-### Experiments (`/experiments`)
+### Experiments (`/expert/experiments`)
 
 - Exposition du benchmark Recall existant. Parametres corpus, strategie, `dataset_path` optionnel, `case_limit`.
 - Reponse affichee en JSON.

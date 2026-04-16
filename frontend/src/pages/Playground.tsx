@@ -79,9 +79,9 @@ export function Playground() {
         <div>
           <div className="card">
             <h3>Parametres modele</h3>
-            <FieldRow label="Modele">
+            <FieldRow label="Modele" hint={`defaut : ${modelsLoad.data?.default_generation_model ?? "qwen2.5:7b"}`}>
               <select value={model} onChange={(e) => setModel(e.target.value)}>
-                <option value="">(defaut : {modelsLoad.data?.default_generation_model ?? "qwen2.5:7b"})</option>
+                <option value="">defaut ({modelsLoad.data?.default_generation_model ?? "qwen2.5:7b"})</option>
                 {(modelsLoad.data?.models ?? []).map((m) => (
                   <option key={m.name} value={m.name}>
                     {m.name}

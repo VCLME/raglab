@@ -12,6 +12,7 @@ import { ErrorBanner } from "../components/ErrorBanner";
 import { FieldRow } from "../components/FieldRow";
 import { JsonViewer } from "../components/JsonViewer";
 import { Spinner } from "../components/Spinner";
+import { useConfig } from "../hooks/useConfig";
 import { useLocalHistory } from "../hooks/useLocalHistory";
 
 const STRATEGIES: ("" | ChunkingStrategy)[] = ["", "traditional", "slide", "late"];
@@ -26,6 +27,7 @@ interface HistoryEntry {
 }
 
 export function Query() {
+  const config = useConfig();
   const corpora = useApiLoad<CorpusSummary[]>(() => get("/api/corpora"));
   const [corpus, setCorpus] = useState("");
   const [strategy, setStrategy] = useState<"" | ChunkingStrategy>("");
@@ -144,8 +146,8 @@ export function Query() {
                 ))}
               </select>
             </FieldRow>
-            <FieldRow label="Top-K" hint="Vide = defaut backend">
-              <input type="number" value={topK} onChange={(e) => setTopK(e.target.value)} min={1} max={50} />
+            <FieldRow label="Top-K" hint={`Vide = defaut backend${config ? ` (${config.default_top_k})` : ""}`}>
+              <input type="number" value={topK} onChange={(e) => setTopK(e.target.value)} min={1} max={50} placeholder={config ? String(config.default_top_k) : ""} />
             </FieldRow>
             <FieldRow label="Generation">
               <label className="inline" style={{ gap: 4 }}>
