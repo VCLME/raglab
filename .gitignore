@@ -16,3 +16,7 @@ data/lexml/documents/*
 !data/lexml/documents/.gitkeep
 data/lexml/benchmark/*
 !data/lexml/benchmark/.gitkeep
+
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
