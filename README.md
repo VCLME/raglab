@@ -23,6 +23,7 @@ Le projet fournit :
 - [Roadmap](docs/roadmap.md)
 - [Modele de donnees](docs/data-model.md)
 - [Lancer et tester le projet](docs/run-and-test.md)
+- [Cas réel RAG sans LLM](docs/real-rag-lexml-load.md)
 
 ## Structure
 
@@ -61,6 +62,20 @@ Le projet fournit :
 ```bash
 docker compose up -d postgres ollama
 ```
+
+Pour ouvrir la base dans un navigateur avec Adminer :
+
+```bash
+docker compose up -d postgres adminer
+```
+
+Puis ouvrir `http://localhost:8080` avec :
+
+- systeme : `PostgreSQL`
+- serveur : `postgres`
+- utilisateur : `raglab`
+- mot de passe : `raglab`
+- base : `raglab`
 
 Pour obtenir des logs structures JSON dans la CLI :
 
@@ -168,6 +183,13 @@ raglab index --corpus lexml --strategy traditional
 raglab experiment recall --corpus lexml --strategy traditional
 ```
 
+Pour un vrai chargement sans LLM, tu peux aussi tout enchainer en une commande :
+
+```bash
+docker compose up -d postgres
+raglab lexml load --corpus lexml_real --strategy traditional --page-limit 1
+```
+
 Points importants :
 
 - les donnees LexML sont stockees dans `data/lexml/documents`
@@ -175,6 +197,8 @@ Points importants :
 - la limite dure est codee en dur dans `MAX_LEXML_DOWNLOAD_BYTES = 2 * 1024 * 1024 * 1024`
 - le benchmark Recall genere un jeu de requetes simple depuis les metadata LexML locales puis calcule `Recall@K`, `Precision@K`, `MRR` et `mean_first_relevant_rank`
 - les sidecars `.json` produits par LexML sont automatiquement reintegres comme metadata lors de `raglab lexml ingest`
+- la persistance PostgreSQL est assuree par le volume Docker `raglab_postgres_data`
+- Adminer est disponible sur `http://localhost:8080` pour explorer la base visuellement
 
 ## Parametres MVP retenus
 

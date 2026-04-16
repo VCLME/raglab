@@ -1,6 +1,7 @@
 from collections.abc import Iterator
 from contextlib import contextmanager
 
+import psycopg
 from pgvector.psycopg import register_vector
 from sqlalchemy import event
 from sqlalchemy import create_engine
@@ -12,6 +13,14 @@ _ENGINE = None
 _SESSION_FACTORY = None
 
 
+def register_vector_if_available(dbapi_connection) -> None:
+    try:
+        register_vector(dbapi_connection)
+    except psycopg.ProgrammingError as exc:
+        if "vector type not found in the database" not in str(exc):
+            raise
+
+
 def get_engine():
     global _ENGINE
     if _ENGINE is None:
@@ -20,7 +29,7 @@ def get_engine():
 
         @event.listens_for(_ENGINE, "connect")
         def connect(dbapi_connection, connection_record):  # type: ignore[unused-argument]
-            register_vector(dbapi_connection)
+            register_vector_if_available(dbapi_connection)
 
     return _ENGINE
 

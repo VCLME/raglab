@@ -12,7 +12,7 @@ from raglab.experiments.recall import RecallBenchmarkService
 from raglab.experiments.service import ExperimentService
 from raglab.indexing.service import IndexingService
 from raglab.ingestion.service import IngestionService
-from raglab.lexml import getDataFromLexML
+from raglab.lexml import LexMLLoadService, getDataFromLexML
 from raglab.logging_utils import configure_logging
 from raglab.retrieval.filters import build_retrieval_filters
 from raglab.retrieval.service import QueryService
@@ -94,6 +94,60 @@ def lexml_ingest(
         service = IngestionService(session)
         summary = service.ingest_folder(folder, corpus_name=corpus, description=description, tags=tags)
     typer.echo(json.dumps({"corpus": corpus, **summary}, indent=2, ensure_ascii=False))
+
+
+@lexml_app.command("load")
+def lexml_load(
+    corpus: str = typer.Option("lexml_real", "--corpus", help="Corpus cible pour le cas reel LexML."),
+    strategy: ChunkingStrategy = typer.Option(
+        ChunkingStrategy.TRADITIONAL,
+        "--strategy",
+        help="Strategie de chunking a indexer dans PostgreSQL+pgvector.",
+    ),
+    output_dir: Path = typer.Option(
+        get_settings().lexml_documents_dir,
+        "--output-dir",
+        help="Dossier local pour stocker ou relire les documents LexML.",
+    ),
+    page_limit: int | None = typer.Option(
+        None,
+        "--page-limit",
+        help="Nombre maximum de pages LexML a collecter pour ce chargement.",
+    ),
+    incremental: bool = typer.Option(
+        True,
+        "--incremental/--full",
+        help="Reutiliser le dernier index_run compatible quand c'est possible.",
+    ),
+    tags: list[str] | None = typer.Option(
+        ["legal", "lexml", "brasil"],
+        "--tag",
+        help="Tags a appliquer a tous les documents charges.",
+    ),
+    embedding_provider: str | None = typer.Option(
+        None,
+        "--embedding-provider",
+        help="Override du provider d'embeddings pour ce chargement.",
+    ),
+    embedding_model: str | None = typer.Option(
+        None,
+        "--embedding-model",
+        help="Override du modele d'embeddings pour ce chargement.",
+    ),
+) -> None:
+    service = LexMLLoadService()
+    result = service.run(
+        output_dir=output_dir,
+        corpus_name=corpus,
+        strategy=strategy,
+        page_limit=page_limit,
+        incremental=incremental,
+        tags=tags,
+        embedding_provider=embedding_provider,
+        embedding_model_name=embedding_model,
+        initialize_db=True,
+    )
+    typer.echo(json.dumps(result, indent=2, ensure_ascii=False))
 
 
 @app.command()

@@ -76,6 +76,21 @@ Demarrer PostgreSQL + pgvector et Ollama :
 docker compose up -d postgres ollama
 ```
 
+Si tu veux inspecter PostgreSQL dans un navigateur, demarre aussi Adminer :
+
+```powershell
+docker compose up -d postgres adminer
+```
+
+Acces Adminer :
+
+- URL : `http://localhost:8080`
+- Systeme : `PostgreSQL`
+- Serveur : `postgres`
+- Utilisateur : `raglab`
+- Mot de passe : `raglab`
+- Base : `raglab`
+
 Telecharger le modele de generation recommande :
 
 ```powershell
@@ -226,7 +241,27 @@ Le benchmark :
 - calcule `Recall@K`, `Precision@K`, `MRR` et `mean_first_relevant_rank`
 - ecrit un rapport JSON dans `data/reports/`
 
-## 12. Executer les tests
+## 12. Cas reel sans LLM
+
+Pour charger un vrai corpus LexML dans PostgreSQL + pgvector sans phase de prompting :
+
+```powershell
+docker compose up -d postgres
+raglab lexml load --corpus lexml_real --strategy traditional --page-limit 1
+```
+
+Cette commande :
+
+- collecte LexML si necessaire
+- initialise la base
+- ingere les documents dans `documents`
+- cree un `index_run`
+- remplit `chunks` et `chunk_embeddings`
+
+Le stockage PostgreSQL est persistant via le volume Docker `raglab_postgres_data`.
+Tu peux verifier visuellement le contenu dans Adminer sur `http://localhost:8080`.
+
+## 13. Executer les tests
 
 ### Suite de tests
 
@@ -246,7 +281,7 @@ Resultat verifie sur cette machine :
 .venv\Scripts\raglab.exe --help
 ```
 
-## 13. Sequence minimale recommandee
+## 14. Sequence minimale recommandee
 
 Si tu veux juste verifier rapidement que tout tourne :
 
@@ -262,7 +297,7 @@ raglab query "Quel est le sujet principal ?" --corpus demo --strategy traditiona
 python -m pytest
 ```
 
-## 14. Depannage
+## 15. Depannage
 
 ### `python` n'est pas reconnu
 
@@ -310,7 +345,7 @@ Verifier :
 docker compose logs postgres
 ```
 
-## 15. Etat valide actuellement
+## 16. Etat valide actuellement
 
 Validation effectuee :
 

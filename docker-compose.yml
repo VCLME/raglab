@@ -2,6 +2,7 @@ services:
   postgres:
     image: pgvector/pgvector:pg16
     container_name: raglab-postgres
+    restart: unless-stopped
     environment:
       POSTGRES_DB: raglab
       POSTGRES_USER: raglab
@@ -10,10 +11,29 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U raglab -d raglab"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 5s
+
+  adminer:
+    image: adminer:4
+    container_name: raglab-adminer
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   ollama:
     image: ollama/ollama:latest
     container_name: raglab-ollama
+    restart: unless-stopped
     ports:
       - "11434:11434"
     volumes:
@@ -30,11 +50,15 @@ services:
       RAGLAB_DATABASE_URL: postgresql+psycopg://raglab:raglab@postgres:5432/raglab
       RAGLAB_OLLAMA_BASE_URL: http://ollama:11434
     depends_on:
-      - postgres
-      - ollama
+      postgres:
+        condition: service_healthy
+      ollama:
+        condition: service_started
     profiles:
       - app
 
 volumes:
   postgres_data:
+    name: raglab_postgres_data
   ollama_data:
+    name: raglab_ollama_data
