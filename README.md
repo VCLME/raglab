@@ -142,6 +142,13 @@ raglab query "Que dit la loi ?" --corpus lexml --strategy traditional --metadata
 raglab experiment run data/experiments/sample_queries.jsonl --corpus demo --strategy traditional --strategy slide --strategy late
 ```
 
+Le rapport compare maintenant aussi des metriques de ranking utiles pour le retrieval :
+
+- `retrieval_hit_rate`
+- `retrieval_precision`
+- `retrieval_mrr`
+- `mean_first_relevant_rank`
+
 ## LexML Brasil
 
 La fonctionnalite LexML collecte des fiches documentaires juridiques depuis le portail public LexML Brasil, les stocke localement en `.txt` et `.json`, puis les reinjecte dans le pipeline RAG existant.
@@ -160,7 +167,7 @@ Points importants :
 - les donnees LexML sont stockees dans `data/lexml/documents`
 - si des donnees LexML locales existent deja, la collecte est skippee integralement
 - la limite dure est codee en dur dans `MAX_LEXML_DOWNLOAD_BYTES = 2 * 1024 * 1024 * 1024`
-- le benchmark Recall genere un jeu de requetes simple depuis les metadata LexML locales puis calcule `Recall@1`, `Recall@5` et `Recall@10`
+- le benchmark Recall genere un jeu de requetes simple depuis les metadata LexML locales puis calcule `Recall@K`, `Precision@K`, `MRR` et `mean_first_relevant_rank`
 - les sidecars `.json` produits par LexML sont automatiquement reintegres comme metadata lors de `raglab lexml ingest`
 
 ## Parametres MVP retenus

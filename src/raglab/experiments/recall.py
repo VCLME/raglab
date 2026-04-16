@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from raglab.config import Settings, get_settings
 from raglab.domain.enums import ChunkingStrategy
+from raglab.experiments.metrics import first_relevant_rank, hit_at_k, precision_at_k, reciprocal_rank, relevance_flags
 from raglab.retrieval.service import QueryService
 
 
@@ -105,15 +106,11 @@ class RecallBenchmarkService:
         return dataset_path, cases
 
     @staticmethod
-    def _case_hit(case: RecallBenchmarkCase, retrieved_chunks: list[dict[str, Any]], top_k: int) -> bool:
-        candidates = retrieved_chunks[:top_k]
-        for chunk in candidates:
-            if chunk["file_name"] in case.expected_file_names:
-                return True
-            chunk_text = chunk["chunk_text"]
-            if any(expected_urn and expected_urn in chunk_text for expected_urn in case.expected_urns):
-                return True
-        return False
+    def _is_relevant(case: RecallBenchmarkCase, chunk: dict[str, Any]) -> bool:
+        if chunk["file_name"] in case.expected_file_names:
+            return True
+        chunk_text = chunk["chunk_text"]
+        return any(expected_urn and expected_urn in chunk_text for expected_urn in case.expected_urns)
 
     def _write_report(self, name: str, payload: dict[str, Any]) -> Path:
         self.settings.reports_dir.mkdir(parents=True, exist_ok=True)
@@ -142,7 +139,11 @@ class RecallBenchmarkService:
 
         max_k = max(k_values)
         details: list[dict[str, Any]] = []
-        hits = {k: 0 for k in k_values}
+        recall_sums = {k: 0 for k in k_values}
+        precision_sums = {k: 0.0 for k in k_values}
+        reciprocal_rank_sum = 0.0
+        first_rank_sum = 0
+        first_rank_count = 0
 
         for case in cases:
             response = self.query_service.query(
@@ -153,22 +154,44 @@ class RecallBenchmarkService:
                 generate_answer=False,
             )
             retrieved = [chunk.model_dump() for chunk in response.retrieved_chunks]
+            flags = relevance_flags(retrieved, is_relevant=lambda chunk: self._is_relevant(case, chunk))
+            first_rank = first_relevant_rank(flags)
+            case_reciprocal_rank = reciprocal_rank(flags)
             case_result = {
                 "id": case.case_id,
                 "question": case.question,
                 "expected_file_names": case.expected_file_names,
                 "expected_urns": case.expected_urns,
                 "retrieved_chunks": retrieved,
-                "hits": {},
+                "metrics": {
+                    "first_relevant_rank": first_rank,
+                    "reciprocal_rank": case_reciprocal_rank,
+                },
             }
             for k in k_values:
-                hit = self._case_hit(case, retrieved, k)
-                hits[k] += int(hit)
-                case_result["hits"][f"recall@{k}"] = hit
+                hit = hit_at_k(flags, k)
+                precision = precision_at_k(flags, k)
+                recall_sums[k] += int(hit)
+                precision_sums[k] += precision
+                case_result["metrics"][f"recall@{k}"] = hit
+                case_result["metrics"][f"precision@{k}"] = precision
+
+            reciprocal_rank_sum += case_reciprocal_rank
+            if first_rank is not None:
+                first_rank_sum += first_rank
+                first_rank_count += 1
             details.append(case_result)
 
         total_cases = len(cases)
-        summary = {f"recall@{k}": hits[k] / total_cases for k in k_values}
+        summary: dict[str, float | None] = {
+            f"recall@{k}": recall_sums[k] / total_cases for k in k_values
+        }
+        for k in k_values:
+            summary[f"precision@{k}"] = precision_sums[k] / total_cases
+        summary["mrr"] = reciprocal_rank_sum / total_cases
+        summary["mean_first_relevant_rank"] = (
+            first_rank_sum / first_rank_count if first_rank_count else None
+        )
         payload = {
             "benchmark": "lexml-recall",
             "corpus_name": corpus_name,

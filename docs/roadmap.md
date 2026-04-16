@@ -34,7 +34,7 @@
 
 - filtres par corpus / document / tags / metadata sidecar
 - prompts plus robustes
-- métriques supplémentaires
+- métriques supplémentaires de retrieval (`Recall@K`, `Precision@K`, `MRR`)
 - logs structurés
 - meilleure gestion de réindexation incrémentale
 
