@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import requests
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -42,6 +43,22 @@ def create_app() -> FastAPI:
     @app.exception_handler(FileNotFoundError)
     async def _not_found_handler(_: Request, exc: FileNotFoundError) -> JSONResponse:
         return JSONResponse(status_code=400, content={"detail": str(exc)})
+
+    @app.exception_handler(requests.exceptions.Timeout)
+    async def _ollama_timeout_handler(_: Request, exc: requests.exceptions.Timeout) -> JSONResponse:
+        message = (
+            f"Timeout Ollama ({settings.generation_timeout_seconds}s) : le modele "
+            f"{settings.generation_model} n'a pas repondu a temps. "
+            "Augmente RAGLAB_GENERATION_TIMEOUT_SECONDS ou reduis num_predict / num_ctx."
+        )
+        return JSONResponse(status_code=504, content={"detail": message, "cause": str(exc)})
+
+    @app.exception_handler(requests.exceptions.ConnectionError)
+    async def _ollama_conn_handler(_: Request, exc: requests.exceptions.ConnectionError) -> JSONResponse:
+        return JSONResponse(
+            status_code=502,
+            content={"detail": f"Connexion Ollama impossible a {settings.ollama_base_url}", "cause": str(exc)},
+        )
 
     app.include_router(health.router)
     app.include_router(ollama.router)
