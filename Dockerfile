@@ -18,4 +18,6 @@ COPY tests /app/tests
 RUN pip install --upgrade pip setuptools wheel \
     && pip install -e .[dev]
 
+EXPOSE 8000
+
 CMD ["raglab", "--help"]

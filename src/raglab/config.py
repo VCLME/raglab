@@ -51,6 +51,18 @@ class Settings(BaseSettings):
     late_chunk_size: int = 700
     late_context_chars: int = 500
 
+    api_host: str = "0.0.0.0"
+    api_port: int = 8000
+    api_cors_origins: list[str] = Field(
+        default_factory=lambda: [
+            "http://localhost:5173",
+            "http://localhost:8081",
+            "http://127.0.0.1:5173",
+            "http://127.0.0.1:8081",
+        ]
+    )
+    adminer_url: str = "http://localhost:8080"
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
