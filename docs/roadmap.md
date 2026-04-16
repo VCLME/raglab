@@ -32,7 +32,7 @@
 
 ## Phase 4 - Qualité et optimisation
 
-- filtres par corpus / document / tags
+- filtres par corpus / document / tags / metadata sidecar
 - prompts plus robustes
 - métriques supplémentaires
 - logs structurés

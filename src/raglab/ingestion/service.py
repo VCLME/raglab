@@ -4,6 +4,7 @@ from pathlib import Path
 
 from sqlalchemy.orm import Session
 
+from raglab.document_metadata import build_document_metadata
 from raglab.db.crud import get_or_create_corpus, upsert_document
 from raglab.domain.schemas import DocumentPayload
 from raglab.ingestion.readers import SUPPORTED_EXTENSIONS, compute_checksum, extract_text, guess_mime_type
@@ -19,6 +20,7 @@ class IngestionService:
         *,
         corpus_name: str,
         description: str | None = None,
+        tags: list[str] | None = None,
     ) -> dict[str, int]:
         root = folder.resolve()
         corpus = get_or_create_corpus(
@@ -49,10 +51,7 @@ class IngestionService:
                 checksum=compute_checksum(path),
                 content=text,
                 char_count=len(text),
-                metadata_json={
-                    "relative_path": str(path.relative_to(root)),
-                    "size_bytes": path.stat().st_size,
-                },
+                metadata_json=build_document_metadata(path, root=root, extra_tags=tags),
             )
 
             _, is_new = upsert_document(self.session, corpus=corpus, payload=payload)

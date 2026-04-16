@@ -94,6 +94,13 @@ raglab db init
 raglab ingest data/documents --corpus demo
 ```
 
+Les fichiers `.txt`, `.pdf` et `.docx` peuvent embarquer des metadonnees via un sidecar JSON portant le meme nom logique, par exemple `contrat.txt` + `contrat.json`.
+Des tags peuvent aussi etre ajoutes a l'ingestion :
+
+```bash
+raglab ingest data/documents --corpus demo --tag legal --tag contrat
+```
+
 ### 7. Indexation
 
 ```bash
@@ -112,6 +119,15 @@ raglab index --corpus demo --strategy traditional --embedding-provider transform
 
 ```bash
 raglab query "Que dit le document sur la maintenance ?" --corpus demo --strategy traditional
+```
+
+Exemples de filtres de retrieval :
+
+```bash
+raglab query "Que dit la loi ?" --corpus lexml --strategy traditional --tag legal
+raglab query "Que dit la loi ?" --corpus lexml --strategy traditional --file-name lexml_abc.txt
+raglab query "Que dit la loi ?" --corpus lexml --strategy traditional --metadata-eq authority="Senado Federal"
+raglab query "Que dit la loi ?" --corpus lexml --strategy traditional --metadata-eq locality=Brasil --source-path-contains lexml
 ```
 
 ### 9. Experimentation classique
@@ -139,6 +155,7 @@ Points importants :
 - si des donnees LexML locales existent deja, la collecte est skippee integralement
 - la limite dure est codee en dur dans `MAX_LEXML_DOWNLOAD_BYTES = 2 * 1024 * 1024 * 1024`
 - le benchmark Recall genere un jeu de requetes simple depuis les metadata LexML locales puis calcule `Recall@1`, `Recall@5` et `Recall@10`
+- les sidecars `.json` produits par LexML sont automatiquement reintegres comme metadata lors de `raglab lexml ingest`
 
 ## Parametres MVP retenus
 

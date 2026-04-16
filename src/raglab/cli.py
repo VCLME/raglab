@@ -14,6 +14,7 @@ from raglab.experiments.service import ExperimentService
 from raglab.indexing.service import IndexingService
 from raglab.ingestion.service import IngestionService
 from raglab.lexml import getDataFromLexML
+from raglab.retrieval.filters import build_retrieval_filters
 from raglab.retrieval.service import QueryService
 
 app = typer.Typer(no_args_is_help=True, help="RAG local oriente experimentation.")
@@ -43,10 +44,11 @@ def ingest(
     folder: Path = typer.Argument(..., exists=True, file_okay=False, dir_okay=True),
     corpus: str = typer.Option(get_settings().default_corpus_name, "--corpus", help="Nom du corpus cible."),
     description: str | None = typer.Option(None, "--description", help="Description optionnelle du corpus."),
+    tags: list[str] | None = typer.Option(None, "--tag", help="Tag a appliquer a tous les documents ingeres."),
 ) -> None:
     with session_scope() as session:
         service = IngestionService(session)
-        summary = service.ingest_folder(folder, corpus_name=corpus, description=description)
+        summary = service.ingest_folder(folder, corpus_name=corpus, description=description, tags=tags)
     typer.echo(json.dumps({"corpus": corpus, **summary}, indent=2, ensure_ascii=False))
 
 
@@ -77,10 +79,11 @@ def lexml_ingest(
         "--folder",
         help="Dossier local contenant les fichiers LexML deja collectes.",
     ),
+    tags: list[str] | None = typer.Option(None, "--tag", help="Tag a appliquer a tous les documents LexML ingeres."),
 ) -> None:
     with session_scope() as session:
         service = IngestionService(session)
-        summary = service.ingest_folder(folder, corpus_name=corpus, description=description)
+        summary = service.ingest_folder(folder, corpus_name=corpus, description=description, tags=tags)
     typer.echo(json.dumps({"corpus": corpus, **summary}, indent=2, ensure_ascii=False))
 
 
@@ -120,7 +123,27 @@ def query(
     index_run_id: str | None = typer.Option(None, "--index-run-id", help="Run d'indexation explicite."),
     top_k: int | None = typer.Option(None, "--top-k", help="Nombre de chunks a recuperer."),
     generate: bool = typer.Option(True, "--generate/--no-generate", help="Activer la generation finale."),
+    document_ids: list[str] | None = typer.Option(None, "--document-id", help="Limiter a un ou plusieurs documents."),
+    file_names: list[str] | None = typer.Option(None, "--file-name", help="Limiter a un ou plusieurs noms de fichier."),
+    source_path_contains: str | None = typer.Option(
+        None,
+        "--source-path-contains",
+        help="Limiter aux documents dont le chemin contient cette valeur.",
+    ),
+    tags: list[str] | None = typer.Option(None, "--tag", help="Limiter aux documents portant ces tags."),
+    metadata_equals: list[str] | None = typer.Option(
+        None,
+        "--metadata-eq",
+        help="Filtre metadata exact, repetable, au format cle=valeur.",
+    ),
 ) -> None:
+    filters = build_retrieval_filters(
+        document_ids=document_ids,
+        file_names=file_names,
+        source_path_contains=source_path_contains,
+        tags=tags,
+        metadata_equals=metadata_equals,
+    )
     with session_scope() as session:
         service = QueryService(session)
         response = service.query(
@@ -130,6 +153,7 @@ def query(
             index_run_id=index_run_id,
             top_k=top_k,
             generate_answer=generate,
+            filters=filters,
         )
     typer.echo(response.model_dump_json(indent=2))
 

@@ -41,11 +41,29 @@ class RetrievedChunk(BaseModel):
     rank: int
 
 
+class RetrievalFilters(BaseModel):
+    document_ids: list[str] = Field(default_factory=list)
+    file_names: list[str] = Field(default_factory=list)
+    source_path_contains: str | None = None
+    tags: list[str] = Field(default_factory=list)
+    metadata_equals: dict[str, str] = Field(default_factory=dict)
+
+    def is_empty(self) -> bool:
+        return not (
+            self.document_ids
+            or self.file_names
+            or self.source_path_contains
+            or self.tags
+            or self.metadata_equals
+        )
+
+
 class QueryResponse(BaseModel):
     question: str
     index_run_id: str
     strategy: ChunkingStrategy
     retrieved_chunks: list[RetrievedChunk]
+    filters: RetrievalFilters | None = None
     answer: str | None = None
     elapsed_ms: float = 0.0
 
