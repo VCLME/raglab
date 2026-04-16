@@ -174,6 +174,8 @@ Les rapports sont produits dans :
 data/reports/
 ```
 
+Les rapports incluent maintenant aussi des metriques de ranking de retrieval comme `retrieval_precision`, `retrieval_mrr` et `mean_first_relevant_rank`.
+
 ## 10. Collecter des donnees LexML Brasil
 
 Collecte des fiches documentaires LexML dans un dossier dedie :
@@ -213,7 +215,7 @@ Le benchmark :
 
 - genere un jeu de requetes de test a partir des metadata LexML locales si aucun dataset n'est fourni
 - utilise une verite terrain simple basee sur les noms de fichiers et les URN attendues
-- calcule `Recall@1`, `Recall@5` et `Recall@10`
+- calcule `Recall@K`, `Precision@K`, `MRR` et `mean_first_relevant_rank`
 - ecrit un rapport JSON dans `data/reports/`
 
 ## 12. Executer les tests
@@ -227,7 +229,7 @@ Le benchmark :
 Resultat verifie sur cette machine :
 
 ```text
-19 passed
+22 passed
 ```
 
 ### Verifier que la CLI demarre

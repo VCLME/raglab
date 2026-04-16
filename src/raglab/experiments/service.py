@@ -11,6 +11,7 @@ from raglab.config import Settings, get_settings
 from raglab.db.crud import complete_experiment_run, create_experiment_run, store_experiment_result
 from raglab.domain.enums import ChunkingStrategy, ExperimentStatus
 from raglab.domain.schemas import ExperimentCase
+from raglab.experiments.metrics import first_relevant_rank, precision_at_k, reciprocal_rank, relevance_flags
 from raglab.retrieval.service import QueryService
 
 
@@ -41,6 +42,11 @@ class ExperimentService:
         if not expected_substrings:
             return None
         haystack = (text or "").lower()
+        return any(expected.lower() in haystack for expected in expected_substrings)
+
+    @staticmethod
+    def _is_relevant_chunk(expected_substrings: list[str], chunk_text: str) -> bool:
+        haystack = chunk_text.lower()
         return any(expected.lower() in haystack for expected in expected_substrings)
 
     def _write_report(self, name: str, payload: dict) -> Path:
@@ -82,8 +88,15 @@ class ExperimentService:
                 "retrieval_scored": 0,
                 "answer_hits": 0,
                 "answer_scored": 0,
+                "ranked_scored": 0,
+                "elapsed_scored": 0,
             }
         )
+        reciprocal_rank_sums: dict[str, float] = defaultdict(float)
+        precision_sums: dict[str, float] = defaultdict(float)
+        first_rank_sums: dict[str, int] = defaultdict(int)
+        first_rank_counts: dict[str, int] = defaultdict(int)
+        elapsed_sums: dict[str, float] = defaultdict(float)
 
         try:
             for strategy in strategies:
@@ -98,11 +111,38 @@ class ExperimentService:
                     context_text = "\n".join(chunk.chunk_text for chunk in response.retrieved_chunks)
                     retrieval_hit = self._hit(case.expected_substrings, context_text)
                     answer_hit = self._hit(case.expected_substrings, response.answer)
+                    relevance = None
+                    retrieval_precision = None
+                    retrieval_rr = None
+                    first_rank = None
+                    if case.expected_substrings:
+                        relevance = relevance_flags(
+                            response.retrieved_chunks,
+                            is_relevant=lambda chunk: self._is_relevant_chunk(
+                                case.expected_substrings,
+                                chunk.chunk_text,
+                            ),
+                        )
+                        retrieval_precision = precision_at_k(
+                            relevance,
+                            max(len(response.retrieved_chunks), 1),
+                        )
+                        retrieval_rr = reciprocal_rank(relevance)
+                        first_rank = first_relevant_rank(relevance)
 
                     counters[strategy.value]["cases"] += 1
+                    counters[strategy.value]["elapsed_scored"] += 1
+                    elapsed_sums[strategy.value] += response.elapsed_ms
                     if retrieval_hit is not None:
                         counters[strategy.value]["retrieval_scored"] += 1
                         counters[strategy.value]["retrieval_hits"] += int(retrieval_hit)
+                    if relevance is not None:
+                        counters[strategy.value]["ranked_scored"] += 1
+                        precision_sums[strategy.value] += retrieval_precision or 0.0
+                        reciprocal_rank_sums[strategy.value] += retrieval_rr or 0.0
+                        if first_rank is not None:
+                            first_rank_sums[strategy.value] += first_rank
+                            first_rank_counts[strategy.value] += 1
                     if answer_hit is not None:
                         counters[strategy.value]["answer_scored"] += 1
                         counters[strategy.value]["answer_hits"] += int(answer_hit)
@@ -110,6 +150,9 @@ class ExperimentService:
                     metrics = {
                         "retrieval_hit": retrieval_hit,
                         "answer_hit": answer_hit,
+                        "retrieval_precision": retrieval_precision,
+                        "retrieval_reciprocal_rank": retrieval_rr,
+                        "first_relevant_rank": first_rank,
                         "elapsed_ms": response.elapsed_ms,
                     }
                     store_experiment_result(
@@ -130,6 +173,9 @@ class ExperimentService:
                             "question": case.question,
                             "retrieval_hit": retrieval_hit,
                             "answer_hit": answer_hit,
+                            "retrieval_precision": retrieval_precision,
+                            "retrieval_reciprocal_rank": retrieval_rr,
+                            "first_relevant_rank": first_rank,
                             "elapsed_ms": response.elapsed_ms,
                             "retrieved_chunks": [chunk.model_dump() for chunk in response.retrieved_chunks],
                             "answer": response.answer,
@@ -154,10 +200,25 @@ class ExperimentService:
             answer_rate = None
             if values["answer_scored"]:
                 answer_rate = values["answer_hits"] / values["answer_scored"]
+            retrieval_precision = None
+            retrieval_mrr = None
+            if values["ranked_scored"]:
+                retrieval_precision = precision_sums[strategy] / values["ranked_scored"]
+                retrieval_mrr = reciprocal_rank_sums[strategy] / values["ranked_scored"]
+            mean_first_rank = None
+            if first_rank_counts[strategy]:
+                mean_first_rank = first_rank_sums[strategy] / first_rank_counts[strategy]
+            average_elapsed_ms = None
+            if values["elapsed_scored"]:
+                average_elapsed_ms = elapsed_sums[strategy] / values["elapsed_scored"]
             summary[strategy] = {
                 "cases": values["cases"],
                 "retrieval_hit_rate": retrieval_rate,
                 "answer_hit_rate": answer_rate,
+                "retrieval_precision": retrieval_precision,
+                "retrieval_mrr": retrieval_mrr,
+                "mean_first_relevant_rank": mean_first_rank,
+                "average_elapsed_ms": average_elapsed_ms,
             }
 
         payload = {

@@ -111,4 +111,8 @@ def test_recall_benchmark_generates_cases_and_metrics(tmp_path: Path):
     assert Path(result["dataset_path"]).exists()
     assert result["summary"]["recall@1"] == 0.5
     assert result["summary"]["recall@5"] == 1.0
+    assert result["summary"]["precision@1"] == 0.5
+    assert result["summary"]["precision@5"] == 0.2
+    assert result["summary"]["mrr"] == 0.75
+    assert result["summary"]["mean_first_relevant_rank"] == 1.5
     assert Path(result["report_path"]).exists()
