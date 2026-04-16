@@ -184,6 +184,7 @@ Points importants :
 - `traditional` : `900 / 150`
 - `slide` : `900 / 300`
 - `late` : chunk focal `700`, contexte `500`
+- generation : fallback explicite si le contexte est insuffisant, avec consigne de citation des sources
 
 ## Limites actuelles
 
