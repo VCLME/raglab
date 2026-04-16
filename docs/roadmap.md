@@ -33,7 +33,7 @@
 ## Phase 4 - Qualité et optimisation
 
 - filtres par corpus / document / tags / metadata sidecar
-- prompts plus robustes
+- prompts plus robustes pour grounding, fallback et citations
 - métriques supplémentaires de retrieval (`Recall@K`, `Precision@K`, `MRR`)
 - logs structurés JSON côté CLI et services
 - meilleure gestion de réindexation incrémentale

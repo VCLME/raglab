@@ -64,6 +64,7 @@ Variables importantes :
 - `RAGLAB_DATABASE_URL`
 - `RAGLAB_OLLAMA_BASE_URL`
 - `RAGLAB_GENERATION_MODEL`
+- `RAGLAB_GENERATION_NO_CONTEXT_ANSWER`
 - `RAGLAB_EMBEDDING_MODEL_NAME`
 - `RAGLAB_LOG_FORMAT`
 
@@ -146,6 +147,12 @@ raglab index --corpus demo --strategy traditional --embedding-provider transform
 ```powershell
 raglab query "Que dit le document sur la maintenance ?" --corpus demo --strategy traditional
 ```
+
+Le prompt de generation est maintenant plus robuste :
+
+- il force la reponse a rester strictement ancree dans le contexte
+- il impose un fallback explicite si le contexte est insuffisant
+- il demande une ligne `Sources:` quand des sources ont effectivement ete utilisees
 
 Exemples de filtres :
 
@@ -230,7 +237,7 @@ Le benchmark :
 Resultat verifie sur cette machine :
 
 ```text
-25 passed
+28 passed
 ```
 
 ### Verifier que la CLI demarre

@@ -30,6 +30,9 @@ class Settings(BaseSettings):
     generation_model: str = "llama3.2:3b"
     generation_temperature: float = 0.1
     generation_timeout_seconds: int = 120
+    generation_no_context_answer: str = (
+        "Je ne peux pas répondre de façon fiable avec le contexte actuellement récupéré."
+    )
 
     embedding_provider: str = "transformers"
     embedding_model_name: str = "intfloat/multilingual-e5-small"
