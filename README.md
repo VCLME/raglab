@@ -62,6 +62,12 @@ Le projet fournit :
 docker compose up -d postgres ollama
 ```
 
+Pour obtenir des logs structures JSON dans la CLI :
+
+```bash
+raglab --log-json query "Que dit le document ?" --corpus demo --strategy traditional
+```
+
 ### 2. Telecharger le modele de generation Ollama
 
 ```bash

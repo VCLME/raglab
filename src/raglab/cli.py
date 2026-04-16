@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import logging
 from pathlib import Path
 
 import typer
@@ -14,6 +13,7 @@ from raglab.experiments.service import ExperimentService
 from raglab.indexing.service import IndexingService
 from raglab.ingestion.service import IngestionService
 from raglab.lexml import getDataFromLexML
+from raglab.logging_utils import configure_logging
 from raglab.retrieval.filters import build_retrieval_filters
 from raglab.retrieval.service import QueryService
 
@@ -27,10 +27,20 @@ app.add_typer(experiment_app, name="experiment")
 app.add_typer(lexml_app, name="lexml")
 
 
-def _configure_logging() -> None:
-    settings = get_settings()
-    level = getattr(logging, settings.log_level.upper(), logging.INFO)
-    logging.basicConfig(level=level, format="%(levelname)s %(message)s", force=True)
+@app.callback()
+def main(
+    log_json: bool | None = typer.Option(
+        None,
+        "--log-json/--no-log-json",
+        help="Activer des logs structures au format JSON.",
+    ),
+    log_level: str | None = typer.Option(
+        None,
+        "--log-level",
+        help="Override du niveau de log.",
+    ),
+) -> None:
+    configure_logging(settings=get_settings(), log_level=log_level, log_json=log_json)
 
 
 @db_app.command("init")
@@ -65,7 +75,6 @@ def lexml_get_data(
         help="Nombre maximum de pages de resultats LexML a collecter. Par defaut, le run s'arrete seulement sur fin des resultats, erreur reseau ou limite 2GB.",
     ),
 ) -> None:
-    _configure_logging()
     result = getDataFromLexML(output_dir=output_dir, page_limit=page_limit)
     typer.echo(json.dumps(result, indent=2, ensure_ascii=False))
 

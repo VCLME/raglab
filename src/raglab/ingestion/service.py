@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 from sqlalchemy.orm import Session
@@ -8,6 +9,9 @@ from raglab.document_metadata import build_document_metadata
 from raglab.db.crud import get_or_create_corpus, upsert_document
 from raglab.domain.schemas import DocumentPayload
 from raglab.ingestion.readers import SUPPORTED_EXTENSIONS, compute_checksum, extract_text, guess_mime_type
+from raglab.logging_utils import log_event
+
+LOGGER = logging.getLogger(__name__)
 
 
 class IngestionService:
@@ -23,6 +27,14 @@ class IngestionService:
         tags: list[str] | None = None,
     ) -> dict[str, int]:
         root = folder.resolve()
+        log_event(
+            LOGGER,
+            logging.INFO,
+            "ingestion.started",
+            corpus_name=corpus_name,
+            folder=root,
+            tags=tags or [],
+        )
         corpus = get_or_create_corpus(
             self.session,
             name=corpus_name,
@@ -61,4 +73,13 @@ class IngestionService:
                 updated += 1
 
         self.session.commit()
-        return {"ingested": ingested, "updated": updated, "skipped": skipped}
+        summary = {"ingested": ingested, "updated": updated, "skipped": skipped}
+        log_event(
+            LOGGER,
+            logging.INFO,
+            "ingestion.completed",
+            corpus_name=corpus_name,
+            folder=root,
+            **summary,
+        )
+        return summary

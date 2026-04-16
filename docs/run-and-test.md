@@ -65,6 +65,7 @@ Variables importantes :
 - `RAGLAB_OLLAMA_BASE_URL`
 - `RAGLAB_GENERATION_MODEL`
 - `RAGLAB_EMBEDDING_MODEL_NAME`
+- `RAGLAB_LOG_FORMAT`
 
 ## 4. Lancer les services
 
@@ -229,7 +230,7 @@ Le benchmark :
 Resultat verifie sur cette machine :
 
 ```text
-22 passed
+25 passed
 ```
 
 ### Verifier que la CLI demarre
@@ -270,6 +271,14 @@ Utiliser directement l'executable du venv :
 
 ```powershell
 .venv\Scripts\raglab.exe --help
+```
+
+### Logs structures JSON
+
+Tu peux aussi activer les logs structures pour n'importe quelle commande :
+
+```powershell
+raglab --log-json query "Resume le document" --corpus demo --strategy traditional
 ```
 
 ### Ollama ne repond pas

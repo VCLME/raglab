@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
@@ -12,7 +13,10 @@ from raglab.db.crud import complete_experiment_run, create_experiment_run, store
 from raglab.domain.enums import ChunkingStrategy, ExperimentStatus
 from raglab.domain.schemas import ExperimentCase
 from raglab.experiments.metrics import first_relevant_rank, precision_at_k, reciprocal_rank, relevance_flags
+from raglab.logging_utils import log_event
 from raglab.retrieval.service import QueryService
+
+LOGGER = logging.getLogger(__name__)
 
 
 class ExperimentService:
@@ -67,6 +71,18 @@ class ExperimentService:
         name: str = "chunking-benchmark",
     ) -> dict[str, str | int | dict]:
         cases = self._load_cases(dataset_path)
+        log_event(
+            LOGGER,
+            logging.INFO,
+            "experiment.started",
+            name=name,
+            corpus_name=corpus_name,
+            dataset_path=dataset_path,
+            strategies=[strategy.value for strategy in strategies],
+            cases=len(cases),
+            top_k=top_k or self.settings.default_top_k,
+            generate_answers=generate_answers,
+        )
         experiment_run = create_experiment_run(
             self.session,
             name=name,
@@ -185,6 +201,14 @@ class ExperimentService:
             complete_experiment_run(self.session, experiment_run, ExperimentStatus.COMPLETED)
             self.session.commit()
         except Exception:
+            log_event(
+                LOGGER,
+                logging.ERROR,
+                "experiment.failed",
+                name=name,
+                corpus_name=corpus_name,
+                experiment_run_id=experiment_run.id,
+            )
             self.session.rollback()
             failed_run = self.session.get(type(experiment_run), experiment_run.id)
             if failed_run is not None:
@@ -232,9 +256,20 @@ class ExperimentService:
         }
         report_path = self._write_report(name, payload)
 
-        return {
+        result = {
             "experiment_run_id": experiment_run.id,
             "cases": len(cases),
             "report_path": str(report_path),
             "summary": summary,
         }
+        log_event(
+            LOGGER,
+            logging.INFO,
+            "experiment.completed",
+            name=name,
+            corpus_name=corpus_name,
+            experiment_run_id=experiment_run.id,
+            report_path=report_path,
+            cases=len(cases),
+        )
+        return result
