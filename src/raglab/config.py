@@ -27,9 +27,10 @@ class Settings(BaseSettings):
     lexml_documents_dir: Path = Field(default_factory=lambda: Path("data/lexml/documents"))
     lexml_benchmark_dir: Path = Field(default_factory=lambda: Path("data/lexml/benchmark"))
 
-    generation_model: str = "llama3.2:3b"
+    generation_model: str = "qwen2.5:7b"
     generation_temperature: float = 0.1
     generation_timeout_seconds: int = 120
+    ollama_pull_timeout_seconds: int = 7200
     generation_no_context_answer: str = (
         "Je ne peux pas répondre de façon fiable avec le contexte actuellement récupéré."
     )

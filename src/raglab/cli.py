@@ -14,6 +14,7 @@ from raglab.indexing.service import IndexingService
 from raglab.ingestion.service import IngestionService
 from raglab.lexml import LexMLLoadService, getDataFromLexML
 from raglab.logging_utils import configure_logging
+from raglab.ollama import OllamaService
 from raglab.retrieval.filters import build_retrieval_filters
 from raglab.retrieval.service import QueryService
 
@@ -21,10 +22,12 @@ app = typer.Typer(no_args_is_help=True, help="RAG local oriente experimentation.
 db_app = typer.Typer(no_args_is_help=True, help="Commandes base de donnees.")
 experiment_app = typer.Typer(no_args_is_help=True, help="Commandes d'experimentation.")
 lexml_app = typer.Typer(no_args_is_help=True, help="Collecte LexML Brasil.")
+ollama_app = typer.Typer(no_args_is_help=True, help="Pilotage du service Ollama.")
 
 app.add_typer(db_app, name="db")
 app.add_typer(experiment_app, name="experiment")
 app.add_typer(lexml_app, name="lexml")
+app.add_typer(ollama_app, name="ollama")
 
 
 @app.callback()
@@ -47,6 +50,30 @@ def main(
 def db_init() -> None:
     initialize_database()
     typer.echo("Base initialisee avec pgvector.")
+
+
+@ollama_app.command("status")
+def ollama_status() -> None:
+    service = OllamaService()
+    typer.echo(json.dumps(service.status(), indent=2, ensure_ascii=False))
+
+
+@ollama_app.command("list")
+def ollama_list() -> None:
+    service = OllamaService()
+    typer.echo(json.dumps(service.list_models(), indent=2, ensure_ascii=False))
+
+
+@ollama_app.command("pull")
+def ollama_pull(
+    model: str = typer.Option(
+        get_settings().generation_model,
+        "--model",
+        help="Modele Ollama a telecharger.",
+    ),
+) -> None:
+    service = OllamaService()
+    typer.echo(json.dumps(service.pull_model(model), indent=2, ensure_ascii=False))
 
 
 @app.command()

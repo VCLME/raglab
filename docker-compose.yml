@@ -38,6 +38,12 @@ services:
       - "11434:11434"
     volumes:
       - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+      start_period: 10s
 
   app:
     build: .
@@ -49,11 +55,13 @@ services:
     environment:
       RAGLAB_DATABASE_URL: postgresql+psycopg://raglab:raglab@postgres:5432/raglab
       RAGLAB_OLLAMA_BASE_URL: http://ollama:11434
+      RAGLAB_GENERATION_MODEL: qwen2.5:7b
+      PYTHONPATH: /workspace/src
     depends_on:
       postgres:
         condition: service_healthy
       ollama:
-        condition: service_started
+        condition: service_healthy
     profiles:
       - app
 

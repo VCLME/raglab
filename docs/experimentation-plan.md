@@ -23,7 +23,7 @@ Sur ce corpus local, quelle stratégie offre le meilleur compromis entre :
 
 Configuration de référence pour démarrer :
 
-- génération : `llama3.2:3b` via Ollama
+- génération : `qwen2.5:7b` via Ollama
 - embeddings : `intfloat/multilingual-e5-small`
 - distance : cosine
 - top-k retrieval : 5

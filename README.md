@@ -86,7 +86,23 @@ raglab --log-json query "Que dit le document ?" --corpus demo --strategy traditi
 ### 2. Telecharger le modele de generation Ollama
 
 ```bash
-docker compose exec ollama ollama pull llama3.2:3b
+docker compose exec ollama ollama pull qwen2.5:7b
+```
+
+Ou via la CLI du projet :
+
+```bash
+raglab ollama pull --model qwen2.5:7b
+raglab ollama list
+raglab ollama status
+```
+
+En mode 100 % Docker :
+
+```bash
+docker compose --profile app up -d app
+docker compose exec app python -m raglab.cli ollama pull --model qwen2.5:7b
+docker compose exec app python -m raglab.cli ollama list
 ```
 
 ### 3. Installer le projet cote Python
@@ -202,13 +218,31 @@ Points importants :
 
 ## Parametres MVP retenus
 
-- generation : `llama3.2:3b` via Ollama
+- generation : `qwen2.5:7b` via Ollama
 - embeddings : `intfloat/multilingual-e5-small`
 - top-k par defaut : `5`
 - `traditional` : `900 / 150`
 - `slide` : `900 / 300`
 - `late` : chunk focal `700`, contexte `500`
 - generation : fallback explicite si le contexte est insuffisant, avec consigne de citation des sources
+
+## Ollama
+
+Le projet expose maintenant une CLI dediee a Ollama :
+
+```bash
+raglab ollama status
+raglab ollama list
+raglab ollama pull --model qwen2.5:7b
+```
+
+Le modele de generation par defaut est `qwen2.5:7b`.
+
+Notes pratiques :
+
+- le conteneur `ollama` persiste ses modeles dans le volume `raglab_ollama_data`
+- `qwen2.5:7b` est plus exigeant que `llama3.2:3b` en RAM/VRAM
+- si le modele n'est pas present localement, la generation indique maintenant explicitement la commande de pull a lancer
 
 ## Limites actuelles
 
