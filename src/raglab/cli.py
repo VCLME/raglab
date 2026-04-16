@@ -102,6 +102,11 @@ def index(
         "--embedding-model",
         help="Override du modele d'embeddings pour ce run.",
     ),
+    incremental: bool = typer.Option(
+        False,
+        "--incremental/--full",
+        help="Reutiliser les chunks/embeddings du dernier run compatible pour les documents inchanges.",
+    ),
 ) -> None:
     with session_scope() as session:
         service = IndexingService(session)
@@ -111,6 +116,7 @@ def index(
             run_name=run_name,
             embedding_provider=embedding_provider,
             embedding_model_name=embedding_model,
+            incremental=incremental,
         )
     typer.echo(json.dumps(result, indent=2, ensure_ascii=False))
 

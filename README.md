@@ -109,6 +109,12 @@ raglab index --corpus demo --strategy slide
 raglab index --corpus demo --strategy late
 ```
 
+Pour ne reindexer que les documents nouveaux ou modifies, tout en reutilisant les chunks/embeddings du dernier run compatible :
+
+```bash
+raglab index --corpus demo --strategy traditional --incremental
+```
+
 Exemple pour preparer un run avec un autre provider ou modele plus tard :
 
 ```bash
