@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { get, post } from "../api/client";
+import { ApiError, extractErrorDetail, get, post } from "../api/client";
 import type {
   ChunkingStrategy,
   CorpusSummary,
@@ -9,10 +9,8 @@ import type {
   RetrievedChunk,
 } from "../api/types";
 import { ChunkCard } from "../components/ChunkCard";
-import { ErrorBanner } from "../components/ErrorBanner";
 import { SendIcon } from "../components/Icon";
 import { SourceList } from "../components/SourcePill";
-import { Spinner } from "../components/Spinner";
 import { SuggestionChips } from "../components/SuggestionChips";
 import { useApiAction, useApiLoad } from "../hooks/useApi";
 import { useConfig } from "../hooks/useConfig";
@@ -27,7 +25,7 @@ interface ChatTurn {
   index_run_id: string | null;
   strategy: string | null;
   elapsed_ms: number | null;
-  error?: string;
+  error?: { message: string; detail: string | null };
 }
 
 const DEFAULT_SUGGESTIONS = [
@@ -117,9 +115,15 @@ export function Chat() {
         )
       );
     } catch (e) {
-      const message = e instanceof Error ? e.message : "Erreur inconnue";
+      const message =
+        e instanceof ApiError
+          ? e.message
+          : e instanceof Error
+          ? e.message
+          : "Erreur inconnue";
+      const detail = e instanceof ApiError ? extractErrorDetail(e) : null;
       setTurns((prev) =>
-        prev.map((t) => (t.id === id ? { ...t, error: message } : t))
+        prev.map((t) => (t.id === id ? { ...t, error: { message, detail } } : t))
       );
     }
   };
@@ -226,8 +230,6 @@ export function Chat() {
         </div>
       )}
 
-      <ErrorBanner error={action.error && turns.every((t) => !t.error) ? action.error : null} />
-
       <div className="composer">
         <textarea
           value={question}
@@ -256,15 +258,12 @@ export function Chat() {
               {strategy ? ` · ${STRATEGY_LABELS[strategy]}` : ""}
             </span>
           </div>
-          <div className="inline">
-            {action.loading ? <Spinner label="retrieval + generation…" /> : null}
-            <button
-              onClick={() => send()}
-              disabled={action.loading || !question.trim() || !corpus}
-            >
-              <SendIcon size={14} /> Envoyer
-            </button>
-          </div>
+          <button
+            onClick={() => send()}
+            disabled={action.loading || !question.trim() || !corpus}
+          >
+            <SendIcon size={14} /> Envoyer
+          </button>
         </div>
       </div>
     </div>
@@ -286,56 +285,80 @@ function ChatTurnView({
   onToggleDetails,
   onSelectSource,
 }: TurnProps) {
+  const [showDetail, setShowDetail] = useState(false);
   const visibleChunks = highlight
     ? turn.chunks.filter((c) => c.file_name === highlight)
     : turn.chunks;
+
   return (
     <>
       <div className="bubble user">
         <div className="role">Vous</div>
         {turn.question}
       </div>
-      <div className="bubble assistant">
-        <div className="role">raglab</div>
-        {turn.error ? (
-          <div className="error-banner" style={{ margin: 0 }}>{turn.error}</div>
-        ) : turn.answer === null ? (
-          <div className="muted"><Spinner label="recherche et generation…" /></div>
-        ) : (
-          <>
-            <div style={{ whiteSpace: "pre-wrap" }}>{turn.answer}</div>
-            {turn.chunks.length > 0 ? (
-              <div className="sources">
-                <div className="sources-label">
-                  Sources · {new Set(turn.chunks.map((c) => c.file_name)).size} fichier(s)
-                </div>
-                <SourceList
-                  chunks={turn.chunks}
-                  onSelect={onSelectSource}
-                  activeFile={highlight}
-                />
-                <button className="details-toggle" onClick={onToggleDetails}>
-                  {expanded ? "Masquer" : "Afficher"} les {visibleChunks.length} chunk(s){highlight ? " filtre(s)" : ""}
-                </button>
-                {expanded ? (
-                  <div style={{ marginTop: 12 }}>
-                    {visibleChunks.map((c) => (
-                      <ChunkCard key={c.chunk_id} chunk={c} />
-                    ))}
-                  </div>
-                ) : null}
-              </div>
+
+      {turn.answer === null && !turn.error ? (
+        <div className="inline-status" role="status">
+          <span className="dots"><span /><span /><span /></span>
+          raglab cherche et genere…
+        </div>
+      ) : null}
+
+      {turn.error ? (
+        <>
+          <div className="inline-status error">
+            <span>⚠</span>
+            {turn.error.message}
+            {turn.error.detail ? (
+              <button
+                className="detail-toggle"
+                onClick={() => setShowDetail((v) => !v)}
+              >
+                {showDetail ? "masquer detail" : "detail"}
+              </button>
             ) : null}
-            <div className="answer-meta">
-              {turn.strategy ? <span>strategie <code>{turn.strategy}</code></span> : null}
-              {turn.index_run_id ? (
-                <span title={turn.index_run_id}>index run <code>{turn.index_run_id.slice(0, 8)}</code></span>
+          </div>
+          {showDetail && turn.error.detail ? (
+            <div className="inline-detail">{turn.error.detail}</div>
+          ) : null}
+        </>
+      ) : null}
+
+      {turn.answer !== null ? (
+        <div className="bubble assistant">
+          <div className="role">raglab</div>
+          <div style={{ whiteSpace: "pre-wrap" }}>{turn.answer}</div>
+          {turn.chunks.length > 0 ? (
+            <div className="sources">
+              <div className="sources-label">
+                Sources · {new Set(turn.chunks.map((c) => c.file_name)).size} fichier(s)
+              </div>
+              <SourceList
+                chunks={turn.chunks}
+                onSelect={onSelectSource}
+                activeFile={highlight}
+              />
+              <button className="details-toggle" onClick={onToggleDetails}>
+                {expanded ? "Masquer" : "Afficher"} les {visibleChunks.length} chunk(s){highlight ? " filtre(s)" : ""}
+              </button>
+              {expanded ? (
+                <div style={{ marginTop: 12 }}>
+                  {visibleChunks.map((c) => (
+                    <ChunkCard key={c.chunk_id} chunk={c} />
+                  ))}
+                </div>
               ) : null}
-              {turn.elapsed_ms != null ? <span>{turn.elapsed_ms.toFixed(0)} ms</span> : null}
             </div>
-          </>
-        )}
-      </div>
+          ) : null}
+          <div className="answer-meta">
+            {turn.strategy ? <span>strategie <code>{turn.strategy}</code></span> : null}
+            {turn.index_run_id ? (
+              <span title={turn.index_run_id}>index run <code>{turn.index_run_id.slice(0, 8)}</code></span>
+            ) : null}
+            {turn.elapsed_ms != null ? <span>{turn.elapsed_ms.toFixed(0)} ms</span> : null}
+          </div>
+        </div>
+      ) : null}
     </>
   );
 }

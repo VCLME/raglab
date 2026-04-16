@@ -10,6 +10,16 @@ export class ApiError extends Error {
   }
 }
 
+export function extractErrorDetail(error: unknown): string | null {
+  if (error instanceof ApiError) {
+    if (error.detail && typeof error.detail === "object" && "cause" in error.detail) {
+      const cause = (error.detail as { cause?: unknown }).cause;
+      if (typeof cause === "string") return cause;
+    }
+  }
+  return null;
+}
+
 export async function apiFetch<T>(
   path: string,
   options: RequestInit = {}
