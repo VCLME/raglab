@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { get, post } from "../api/client";
 import { useApiAction, useApiLoad } from "../hooks/useApi";
 import type {
@@ -44,6 +44,12 @@ export function Query() {
     () => get(`/api/index-runs${corpus ? `?corpus=${encodeURIComponent(corpus)}` : ""}`),
     [corpus]
   );
+
+  useEffect(() => {
+    if (!corpus && corpora.data && corpora.data.length > 0) {
+      setCorpus(corpora.data[0].name);
+    }
+  }, [corpus, corpora.data]);
 
   const history = useLocalHistory<HistoryEntry>("raglab.query.history", 20);
   const action = useApiAction((body: unknown) => post<QueryResponse>("/api/query", body));
@@ -109,9 +115,9 @@ export function Query() {
             <FieldRow label="Question">
               <textarea value={question} onChange={(e) => setQuestion(e.target.value)} rows={3} />
             </FieldRow>
-            <FieldRow label="Corpus">
+            <FieldRow label="Corpus" hint="Requis par le retrieval">
               <select value={corpus} onChange={(e) => setCorpus(e.target.value)}>
-                <option value="">(defaut)</option>
+                <option value="">— selectionner —</option>
                 {(corpora.data ?? []).map((c) => (
                   <option key={c.id} value={c.name}>
                     {c.name}
@@ -166,7 +172,10 @@ export function Query() {
             <FieldRow label="metadata equals" hint="Une ligne par paire cle=valeur">
               <textarea rows={3} value={metadataEqualsRaw} onChange={(e) => setMetadataEqualsRaw(e.target.value)} placeholder="authority=Senado Federal" />
             </FieldRow>
-            <button onClick={submit} disabled={action.loading || !question.trim()}>
+            <button
+              onClick={submit}
+              disabled={action.loading || !question.trim() || (!corpus && !indexRunId)}
+            >
               {action.loading ? "Recherche…" : "Executer"}
             </button>
           </div>

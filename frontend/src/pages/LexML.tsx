@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { post } from "../api/client";
+import { EMBEDDING_MODELS, EMBEDDING_PROVIDERS } from "../api/options";
 import { useApiAction } from "../hooks/useApi";
 import type { ChunkingStrategy } from "../api/types";
 import { ErrorBanner } from "../components/ErrorBanner";
 import { FieldRow } from "../components/FieldRow";
 import { JsonViewer } from "../components/JsonViewer";
+import { SelectWithOther } from "../components/SelectWithOther";
 import { Spinner } from "../components/Spinner";
 
 const STRATEGIES: ChunkingStrategy[] = ["traditional", "slide", "late"];
@@ -18,6 +20,8 @@ export function LexML() {
   const [strategy, setStrategy] = useState<ChunkingStrategy>("traditional");
   const [tagsRaw, setTagsRaw] = useState("legal,lexml,brasil");
   const [incremental, setIncremental] = useState(true);
+  const [embProvider, setEmbProvider] = useState("");
+  const [embModel, setEmbModel] = useState("");
   const load = useApiAction((body: unknown) => post<unknown>("/api/lexml/load", body));
 
   return (
@@ -77,6 +81,12 @@ export function LexML() {
               Reutiliser un run compatible si possible
             </label>
           </FieldRow>
+          <FieldRow label="Embedding provider" hint="Optionnel, override">
+            <SelectWithOther value={embProvider} onChange={setEmbProvider} options={EMBEDDING_PROVIDERS} placeholder="ex : transformers" />
+          </FieldRow>
+          <FieldRow label="Embedding model" hint="Optionnel, override">
+            <SelectWithOther value={embModel} onChange={setEmbModel} options={EMBEDDING_MODELS} placeholder="ex : intfloat/multilingual-e5-small" />
+          </FieldRow>
           <button
             onClick={() =>
               load.run({
@@ -86,6 +96,8 @@ export function LexML() {
                 page_limit: pageLimit ? Number(pageLimit) : null,
                 incremental,
                 tags: tagsRaw.split(",").map((t) => t.trim()).filter(Boolean),
+                embedding_provider: embProvider || null,
+                embedding_model: embModel || null,
               })
             }
             disabled={load.loading || !corpus}

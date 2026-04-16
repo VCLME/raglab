@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { get, post } from "../api/client";
+import { EMBEDDING_MODELS, EMBEDDING_PROVIDERS } from "../api/options";
 import { useApiAction, useApiLoad } from "../hooks/useApi";
 import type { ChunkingStrategy, CorpusSummary, IndexResponse } from "../api/types";
 import { ErrorBanner } from "../components/ErrorBanner";
 import { FieldRow } from "../components/FieldRow";
 import { JsonViewer } from "../components/JsonViewer";
+import { SelectWithOther } from "../components/SelectWithOther";
 import { Spinner } from "../components/Spinner";
 
 const STRATEGIES: ChunkingStrategy[] = ["traditional", "slide", "late"];
@@ -68,11 +70,21 @@ export function IndexPage() {
           <FieldRow label="Run name" hint="Optionnel">
             <input value={runName} onChange={(e) => setRunName(e.target.value)} />
           </FieldRow>
-          <FieldRow label="Embedding provider" hint="Optionnel, override">
-            <input value={embProvider} onChange={(e) => setEmbProvider(e.target.value)} placeholder="transformers, ollama" />
+          <FieldRow label="Embedding provider" hint="Optionnel, override (vide = settings)">
+            <SelectWithOther
+              value={embProvider}
+              onChange={setEmbProvider}
+              options={EMBEDDING_PROVIDERS}
+              placeholder="ex : transformers"
+            />
           </FieldRow>
-          <FieldRow label="Embedding model" hint="Optionnel, override">
-            <input value={embModel} onChange={(e) => setEmbModel(e.target.value)} placeholder="intfloat/multilingual-e5-small" />
+          <FieldRow label="Embedding model" hint="Optionnel, override (vide = settings)">
+            <SelectWithOther
+              value={embModel}
+              onChange={setEmbModel}
+              options={EMBEDDING_MODELS}
+              placeholder="ex : intfloat/multilingual-e5-small"
+            />
           </FieldRow>
           <FieldRow label="Incremental">
             <label className="inline" style={{ gap: 4 }}>
