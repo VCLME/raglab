@@ -114,6 +114,14 @@ raglab ingest data/documents --corpus demo --tag legal --tag hr
 raglab index --corpus demo --strategy traditional
 ```
 
+### Reindexation incrementale legere
+
+Le mode incremental cree un nouveau `index_run`, mais reutilise les chunks et embeddings du dernier run compatible pour les documents inchanges. Seuls les documents nouveaux ou modifies sont recalcules.
+
+```powershell
+raglab index --corpus demo --strategy traditional --incremental
+```
+
 ### Slide chunking
 
 ```powershell
@@ -219,7 +227,7 @@ Le benchmark :
 Resultat verifie sur cette machine :
 
 ```text
-16 passed
+19 passed
 ```
 
 ### Verifier que la CLI demarre

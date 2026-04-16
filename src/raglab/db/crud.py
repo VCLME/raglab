@@ -7,7 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from raglab.config import get_settings
-from raglab.db.models import Corpus, Document, EmbeddingSpace, ExperimentResult, ExperimentRun, IndexRun
+from raglab.db.models import Chunk, ChunkEmbedding, Corpus, Document, EmbeddingSpace, ExperimentResult, ExperimentRun, IndexRun
 from raglab.domain.enums import ChunkingStrategy, ExperimentStatus, IndexStatus
 from raglab.domain.schemas import DocumentPayload
 
@@ -163,6 +163,58 @@ def resolve_latest_index_run(
     if strategy is not None:
         stmt = stmt.where(IndexRun.strategy == strategy.value)
     return session.scalar(stmt)
+
+
+def _nullable_equals(column, value):
+    if value is None:
+        return column.is_(None)
+    return column == value
+
+
+def resolve_latest_compatible_index_run(
+    session: Session,
+    *,
+    corpus_id: str,
+    strategy: ChunkingStrategy,
+    embedding_space_id: str,
+    chunk_size: int,
+    chunk_overlap: int,
+    slide_stride: int | None,
+    late_context_chars: int | None,
+) -> IndexRun | None:
+    stmt = (
+        select(IndexRun)
+        .where(
+            IndexRun.corpus_id == corpus_id,
+            IndexRun.strategy == strategy.value,
+            IndexRun.embedding_space_id == embedding_space_id,
+            IndexRun.chunk_size == chunk_size,
+            IndexRun.chunk_overlap == chunk_overlap,
+            _nullable_equals(IndexRun.slide_stride, slide_stride),
+            _nullable_equals(IndexRun.late_context_chars, late_context_chars),
+            IndexRun.status == IndexStatus.COMPLETED.value,
+        )
+        .order_by(IndexRun.started_at.desc())
+    )
+    return session.scalar(stmt)
+
+
+def list_chunk_embeddings_for_index_run(
+    session: Session,
+    *,
+    index_run_id: str,
+    embedding_space_id: str,
+) -> list[tuple[Chunk, ChunkEmbedding]]:
+    stmt = (
+        select(Chunk, ChunkEmbedding)
+        .join(ChunkEmbedding, ChunkEmbedding.chunk_id == Chunk.id)
+        .where(
+            Chunk.index_run_id == index_run_id,
+            ChunkEmbedding.embedding_space_id == embedding_space_id,
+        )
+        .order_by(Chunk.document_id, Chunk.chunk_order)
+    )
+    return list(session.execute(stmt).all())
 
 
 def create_experiment_run(
