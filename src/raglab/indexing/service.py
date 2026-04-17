@@ -18,6 +18,7 @@ from raglab.db.crud import (
     list_documents_for_corpus,
     resolve_latest_compatible_index_run,
 )
+from raglab.db.indexes import ensure_partial_hnsw_index
 from raglab.db.models import Chunk, ChunkEmbedding, Document, EmbeddingSpace, IndexRun
 from raglab.domain.enums import ChunkingStrategy, IndexStatus
 from raglab.embeddings.factory import build_embedding_provider
@@ -283,6 +284,8 @@ class IndexingService:
             query_prefix=effective_settings.query_prefix,
             passage_prefix=effective_settings.passage_prefix,
         )
+        ensure_partial_hnsw_index(self.session, embedding_space.dimension)
+        self.session.commit()
         chunk_config = self._build_chunk_config(strategy)
 
         index_run = create_index_run(
