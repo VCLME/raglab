@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { get, post } from "../api/client";
 import { useApiAction, useApiLoad } from "../hooks/useApi";
 import type {
@@ -12,6 +13,7 @@ import { JsonViewer } from "../components/JsonViewer";
 import { Spinner } from "../components/Spinner";
 
 export function Playground() {
+  const { t } = useTranslation();
   const modelsLoad = useApiLoad<OllamaModelsResponse>(() => get("/api/ollama/models"));
   const [model, setModel] = useState("");
   const [system, setSystem] = useState("");
@@ -28,7 +30,8 @@ export function Playground() {
     post<OllamaChatResponse>("/api/ollama/chat", body)
   );
 
-  const effectiveModel = model || modelsLoad.data?.default_generation_model || "";
+  const defaultModel = modelsLoad.data?.default_generation_model ?? "qwen2.5:7b";
+  const effectiveModel = model || defaultModel;
 
   const parsedAdvanced = useMemo(() => {
     if (!advancedRaw.trim()) return null;
@@ -72,16 +75,21 @@ export function Playground() {
   return (
     <div>
       <div className="page-header">
-        <h2>Prompt Playground</h2>
-        <span className="muted">Ollama direct, sans retrieval.</span>
+        <h2>{t("playground.title")}</h2>
+        <span className="muted">{t("playground.subtitle")}</span>
       </div>
       <div className="split">
         <div>
           <div className="card">
-            <h3>Parametres modele</h3>
-            <FieldRow label="Modele" hint={`defaut : ${modelsLoad.data?.default_generation_model ?? "qwen2.5:7b"}`}>
+            <h3>{t("playground.model_params")}</h3>
+            <FieldRow
+              label={t("playground.model_label")}
+              hint={t("playground.model_default_hint", { value: defaultModel })}
+            >
               <select value={model} onChange={(e) => setModel(e.target.value)}>
-                <option value="">defaut ({modelsLoad.data?.default_generation_model ?? "qwen2.5:7b"})</option>
+                <option value="">
+                  {t("playground.model_default_option", { value: defaultModel })}
+                </option>
                 {(modelsLoad.data?.models ?? []).map((m) => (
                   <option key={m.name} value={m.name}>
                     {m.name}
@@ -89,70 +97,100 @@ export function Playground() {
                 ))}
               </select>
             </FieldRow>
-            <FieldRow label="System prompt" hint="Optionnel, applique une fois par echange">
+            <FieldRow label={t("playground.system_label")} hint={t("playground.system_hint")}>
               <textarea value={system} onChange={(e) => setSystem(e.target.value)} rows={4} />
             </FieldRow>
-            <FieldRow label={`Temperature (${temperature.toFixed(2)})`}>
-              <input type="range" min={0} max={2} step={0.05} value={temperature} onChange={(e) => setTemperature(Number(e.target.value))} />
+            <FieldRow label={t("playground.temperature_label", { value: temperature.toFixed(2) })}>
+              <input
+                type="range"
+                min={0}
+                max={2}
+                step={0.05}
+                value={temperature}
+                onChange={(e) => setTemperature(Number(e.target.value))}
+              />
             </FieldRow>
-            <FieldRow label={`top_p (${topP.toFixed(2)})`}>
-              <input type="range" min={0} max={1} step={0.05} value={topP} onChange={(e) => setTopP(Number(e.target.value))} />
+            <FieldRow label={t("playground.top_p_label", { value: topP.toFixed(2) })}>
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.05}
+                value={topP}
+                onChange={(e) => setTopP(Number(e.target.value))}
+              />
             </FieldRow>
-            <FieldRow label="num_predict" hint="Limite de tokens en sortie">
+            <FieldRow label={t("playground.num_predict_label")} hint={t("playground.num_predict_hint")}>
               <input type="number" value={numPredict} onChange={(e) => setNumPredict(e.target.value)} />
             </FieldRow>
-            <FieldRow label="num_ctx" hint="Taille de la fenetre de contexte">
+            <FieldRow label={t("playground.num_ctx_label")} hint={t("playground.num_ctx_hint")}>
               <input type="number" value={numCtx} onChange={(e) => setNumCtx(e.target.value)} />
             </FieldRow>
-            <FieldRow label="seed" hint="Pour de la reproductibilite">
+            <FieldRow label={t("playground.seed_label")} hint={t("playground.seed_hint")}>
               <input type="number" value={seed} onChange={(e) => setSeed(e.target.value)} />
             </FieldRow>
-            <FieldRow label="options JSON avancees" hint="Fusionnees avec les champs ci-dessus">
-              <textarea value={advancedRaw} onChange={(e) => setAdvancedRaw(e.target.value)} rows={3} placeholder='{"repeat_penalty": 1.1}' />
+            <FieldRow label={t("playground.options_label")} hint={t("playground.options_hint")}>
+              <textarea
+                value={advancedRaw}
+                onChange={(e) => setAdvancedRaw(e.target.value)}
+                rows={3}
+                placeholder='{"repeat_penalty": 1.1}'
+              />
             </FieldRow>
-            {advancedInvalid ? <div className="error-banner">JSON invalide dans options avancees</div> : null}
+            {advancedInvalid ? (
+              <div className="error-banner">{t("playground.options_invalid")}</div>
+            ) : null}
           </div>
         </div>
 
         <div>
           <div className="card">
             <div className="inline" style={{ justifyContent: "space-between" }}>
-              <h3 style={{ margin: 0 }}>Conversation</h3>
+              <h3 style={{ margin: 0 }}>{t("playground.conversation")}</h3>
               <div className="inline">
                 <span className="muted">
-                  Modele : <code>{effectiveModel || "defaut"}</code>
+                  {t("playground.model_prefix")} <code>{effectiveModel || t("playground.model_fallback")}</code>
                 </span>
-                <button className="ghost" onClick={reset}>Reset</button>
+                <button className="ghost" onClick={reset}>
+                  {t("common.reset")}
+                </button>
               </div>
             </div>
             <div className="chat" style={{ marginTop: 12 }}>
               {conversation.length === 0 ? (
-                <p className="muted">Aucun message encore. Envoyez un prompt ci-dessous.</p>
+                <p className="muted">{t("playground.no_messages")}</p>
               ) : null}
               {conversation.map((m, i) => (
                 <div key={i} className={`bubble ${m.role}`}>
-                  <div className="muted" style={{ fontSize: 10, marginBottom: 4 }}>{m.role}</div>
+                  <div className="muted" style={{ fontSize: 10, marginBottom: 4 }}>
+                    {m.role}
+                  </div>
                   {m.content}
                 </div>
               ))}
             </div>
-            <FieldRow label="User prompt">
+            <FieldRow label={t("playground.user_prompt")}>
               <textarea value={userPrompt} onChange={(e) => setUserPrompt(e.target.value)} rows={4} />
             </FieldRow>
             <div className="inline">
-              <button onClick={send} disabled={action.loading || !userPrompt.trim() || advancedInvalid}>
-                {action.loading ? "Envoi…" : "Envoyer"}
+              <button
+                onClick={send}
+                disabled={action.loading || !userPrompt.trim() || advancedInvalid}
+              >
+                {action.loading ? t("playground.sending") : t("playground.send")}
               </button>
               {action.loading ? <Spinner /> : null}
               {action.data ? (
-                <span className="muted">reponse en {action.data.elapsed_ms.toFixed(0)} ms</span>
+                <span className="muted">
+                  {t("playground.elapsed", { ms: action.data.elapsed_ms.toFixed(0) })}
+                </span>
               ) : null}
             </div>
             <ErrorBanner error={action.error} />
           </div>
           {action.data ? (
             <div className="card">
-              <h3>Payload envoye</h3>
+              <h3>{t("playground.payload_sent")}</h3>
               <JsonViewer value={action.data.payload_sent} maxHeight={300} />
             </div>
           ) : null}

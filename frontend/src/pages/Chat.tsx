@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ApiError, extractErrorDetail, get, post } from "../api/client";
 import type {
   ChunkingStrategy,
@@ -28,20 +29,6 @@ interface ChatTurn {
   elapsed_ms: number | null;
   error?: { message: string; detail: string | null };
 }
-
-const DEFAULT_SUGGESTIONS = [
-  "Que dit la Portaria AGU 343 de septembre 2013 ?",
-  "Quels textes traitent de l'acquisition de solutions de technologie de l'information ?",
-  "Qui encadre la manutenção de sistemas informatizados a l'AGU ?",
-  "Quels sont les fluxos e procedimentos de contratação mentionnes ?",
-];
-
-const STRATEGY_LABELS: Record<string, string> = {
-  "": "auto",
-  traditional: "traditional",
-  slide: "slide",
-  late: "late",
-};
 
 function newTurnId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -102,6 +89,7 @@ function renderAnswer(
 }
 
 export function Chat() {
+  const { t } = useTranslation();
   const config = useConfig();
   const corpora = useApiLoad<CorpusSummary[]>(() => get("/api/corpora"));
   const models = useApiLoad<OllamaModelsResponse>(() => get("/api/ollama/models"));
@@ -136,6 +124,8 @@ export function Chat() {
 
   const action = useApiAction((body: unknown) => post<QueryResponse>("/api/query", body));
 
+  const suggestions = (t("chat.suggestions", { returnObjects: true }) as unknown) as string[];
+
   const send = async (overrideQuestion?: string) => {
     const q = (overrideQuestion ?? question).trim();
     if (!q || !corpus) return;
@@ -153,20 +143,21 @@ export function Chat() {
       top_k: 5,
       generate: true,
     };
+    if (llmModel) body.llm_model = llmModel;
     try {
       const result = await action.run(body);
       setTurns((prev) =>
-        prev.map((t) =>
-          t.id === id
+        prev.map((tn) =>
+          tn.id === id
             ? {
-                ...t,
-                answer: result.answer ?? "(Pas de reponse generee)",
+                ...tn,
+                answer: result.answer ?? t("chat.no_answer_generated"),
                 chunks: result.retrieved_chunks,
                 index_run_id: result.index_run_id,
                 strategy: result.strategy,
                 elapsed_ms: result.elapsed_ms,
               }
-            : t
+            : tn
         )
       );
     } catch (e) {
@@ -178,7 +169,7 @@ export function Chat() {
           : "Erreur inconnue";
       const detail = e instanceof ApiError ? extractErrorDetail(e) : null;
       setTurns((prev) =>
-        prev.map((t) => (t.id === id ? { ...t, error: { message, detail } } : t))
+        prev.map((tn) => (tn.id === id ? { ...tn, error: { message, detail } } : tn))
       );
     }
   };
@@ -212,41 +203,41 @@ export function Chat() {
     <div className="chat-page">
       <div className="settings-bar">
         <div className="compact-field">
-          <label>Corpus</label>
+          <label>{t("chat.corpus_label")}</label>
           <select value={corpus} onChange={(e) => setCorpus(e.target.value)}>
             {(corpora.data ?? []).length === 0 ? (
-              <option value="">— aucun corpus indexe —</option>
+              <option value="">{t("chat.no_corpus_indexed")}</option>
             ) : null}
             {(corpora.data ?? []).map((c) => (
               <option key={c.id} value={c.name}>
-                {c.name} · {c.documents_count} docs
+                {t("chat.corpus_option", { name: c.name, count: c.documents_count })}
               </option>
             ))}
           </select>
         </div>
 
         <div className="compact-field">
-          <label>Strategie</label>
+          <label>{t("chat.strategy_label")}</label>
           <select
             value={strategy}
             onChange={(e) => setStrategy(e.target.value as StrategyChoice)}
           >
-            <option value="">auto (dernier run)</option>
+            <option value="">{t("chat.strategy_auto")}</option>
             <option value="traditional">traditional</option>
             <option value="slide">slide</option>
             <option value="late">late</option>
           </select>
         </div>
 
-        <div className="compact-field" title="Fixe au moment de l'indexation. Change-le via le mode Expert.">
-          <label>Embedding (lecture seule)</label>
+        <div className="compact-field" title={t("chat.embedding_title")}>
+          <label>{t("chat.embedding_label")}</label>
           <div className="read-only">{embeddingLabel}</div>
         </div>
 
         <div className="settings-actions">
           {turns.length > 0 ? (
             <button className="ghost sm" onClick={reset}>
-              Nouvelle conversation
+              {t("chat.new_conversation")}
             </button>
           ) : null}
         </div>
@@ -255,29 +246,26 @@ export function Chat() {
       {empty ? (
         <div>
           <div className="welcome">
-            <h1>Pose une question a tes documents</h1>
-            <p className="muted">
-              Le modele cherche dans le corpus selectionne, cite les extraits utilises et produit une reponse.
-              Choisis une suggestion ci-dessous ou ecris ta question.
-            </p>
+            <h1>{t("chat.welcome_title")}</h1>
+            <p className="muted">{t("chat.welcome_subtitle")}</p>
           </div>
-          <SuggestionChips suggestions={DEFAULT_SUGGESTIONS} onPick={(s) => send(s)} />
+          <SuggestionChips suggestions={suggestions} onPick={(s) => send(s)} />
         </div>
       ) : (
         <div className="chat-stream" ref={streamRef}>
-          {turns.map((t) => (
+          {turns.map((turn) => (
             <ChatTurnView
-              key={t.id}
-              turn={t}
-              expanded={!!expanded[t.id]}
-              highlight={highlight[t.id] ?? null}
+              key={turn.id}
+              turn={turn}
+              expanded={!!expanded[turn.id]}
+              highlight={highlight[turn.id] ?? null}
               onToggleDetails={() =>
-                setExpanded((prev) => ({ ...prev, [t.id]: !prev[t.id] }))
+                setExpanded((prev) => ({ ...prev, [turn.id]: !prev[turn.id] }))
               }
               onSelectSource={(file) =>
                 setHighlight((prev) => ({
                   ...prev,
-                  [t.id]: prev[t.id] === file ? null : file,
+                  [turn.id]: prev[turn.id] === file ? null : file,
                 }))
               }
             />
@@ -290,18 +278,18 @@ export function Chat() {
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
           onKeyDown={onKeyDown}
-          placeholder={
-            corpus
-              ? "Pose ta question… (Ctrl/Cmd + Entree pour envoyer)"
-              : "Choisis d'abord un corpus dans la barre au-dessus"
-          }
+          placeholder={corpus ? t("chat.placeholder") : t("chat.placeholder_empty")}
           rows={2}
         />
         <div className="composer-row">
           <div className="model-pick">
-            <span>LLM</span>
-            <select value={llmModel} onChange={(e) => setLlmModel(e.target.value)} title="Modele utilise pour la generation finale">
-              <option value="">defaut : {defaultModel}</option>
+            <span>{t("chat.llm_label")}</span>
+            <select
+              value={llmModel}
+              onChange={(e) => setLlmModel(e.target.value)}
+              title={t("chat.llm_title")}
+            >
+              <option value="">{t("common.defaut_is", { value: defaultModel })}</option>
               {modelsList.map((m) => (
                 <option key={m.name} value={m.name}>
                   {m.name}
@@ -309,15 +297,17 @@ export function Chat() {
               ))}
             </select>
             <span className="dim">
-              {corpus ? `sur ${corpus}` : "aucun corpus"}
-              {strategy ? ` · ${STRATEGY_LABELS[strategy]}` : ""}
+              {corpus
+                ? t("chat.composer_on_corpus", { corpus })
+                : t("chat.composer_no_corpus")}
+              {strategy ? ` · ${strategy}` : ""}
             </span>
           </div>
           <button
             onClick={() => send()}
             disabled={action.loading || !question.trim() || !corpus}
           >
-            <SendIcon size={14} /> Envoyer
+            <SendIcon size={14} /> {t("common.submit")}
           </button>
         </div>
       </div>
@@ -340,6 +330,7 @@ function ChatTurnView({
   onToggleDetails,
   onSelectSource,
 }: TurnProps) {
+  const { t } = useTranslation();
   const [showDetail, setShowDetail] = useState(false);
   const visibleChunks = highlight
     ? turn.chunks.filter((c) => c.file_name === highlight)
@@ -348,14 +339,14 @@ function ChatTurnView({
   return (
     <>
       <div className="bubble user">
-        <div className="role">Vous</div>
+        <div className="role">{t("chat.user_role")}</div>
         {turn.question}
       </div>
 
       {turn.answer === null && !turn.error ? (
         <div className="inline-status" role="status">
           <span className="dots"><span /><span /><span /></span>
-          raglab cherche et genere…
+          {t("chat.loading")}
         </div>
       ) : null}
 
@@ -369,7 +360,7 @@ function ChatTurnView({
                 className="detail-toggle"
                 onClick={() => setShowDetail((v) => !v)}
               >
-                {showDetail ? "masquer detail" : "detail"}
+                {showDetail ? t("chat.error_hide_detail") : t("chat.error_detail")}
               </button>
             ) : null}
           </div>
@@ -381,14 +372,16 @@ function ChatTurnView({
 
       {turn.answer !== null ? (
         <div className="bubble assistant">
-          <div className="role">raglab</div>
+          <div className="role">{t("chat.assistant_role")}</div>
           <div style={{ whiteSpace: "pre-wrap" }}>
             {renderAnswer(turn.answer, turn.chunks, highlight, onSelectSource)}
           </div>
           {turn.chunks.length > 0 ? (
             <div className="sources">
               <div className="sources-label">
-                Sources · {new Set(turn.chunks.map((c) => c.file_name)).size} fichier(s)
+                {t("chat.sources_header", {
+                  count: new Set(turn.chunks.map((c) => c.file_name)).size,
+                })}
               </div>
               <SourceList
                 chunks={turn.chunks}
@@ -397,7 +390,15 @@ function ChatTurnView({
                 citedRanks={turn.answer ? extractCitedRanks(turn.answer) : undefined}
               />
               <button className="details-toggle" onClick={onToggleDetails}>
-                {expanded ? "Masquer" : "Afficher"} les {visibleChunks.length} chunk(s){highlight ? " filtre(s)" : ""}
+                {(expanded
+                  ? t("chat.chunks_hide", {
+                      count: visibleChunks.length,
+                      filtered: highlight ? t("chat.chunks_filtered_suffix") : "",
+                    })
+                  : t("chat.chunks_show", {
+                      count: visibleChunks.length,
+                      filtered: highlight ? t("chat.chunks_filtered_suffix") : "",
+                    }))}
               </button>
               {expanded ? (
                 <div style={{ marginTop: 12 }}>
@@ -409,11 +410,20 @@ function ChatTurnView({
             </div>
           ) : null}
           <div className="answer-meta">
-            {turn.strategy ? <span>strategie <code>{turn.strategy}</code></span> : null}
-            {turn.index_run_id ? (
-              <span title={turn.index_run_id}>index run <code>{turn.index_run_id.slice(0, 8)}</code></span>
+            {turn.strategy ? (
+              <span>
+                {t("chat.meta_strategy")} <code>{turn.strategy}</code>
+              </span>
             ) : null}
-            {turn.elapsed_ms != null ? <span>{turn.elapsed_ms.toFixed(0)} ms</span> : null}
+            {turn.index_run_id ? (
+              <span title={turn.index_run_id}>
+                {t("chat.meta_index_run")}{" "}
+                <code>{turn.index_run_id.slice(0, 8)}</code>
+              </span>
+            ) : null}
+            {turn.elapsed_ms != null ? (
+              <span>{t("chat.meta_ms", { ms: turn.elapsed_ms.toFixed(0) })}</span>
+            ) : null}
           </div>
         </div>
       ) : null}

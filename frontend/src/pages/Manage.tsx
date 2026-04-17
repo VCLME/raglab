@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { apiFetch, get, post } from "../api/client";
 import { useApiAction, useApiLoad } from "../hooks/useApi";
@@ -26,6 +27,7 @@ interface CorpusDeleteResponse {
 }
 
 export function Manage() {
+  const { t } = useTranslation();
   const corpora = useApiLoad<CorpusSummary[]>(() => get("/api/corpora"));
   const models = useApiLoad<OllamaModelsResponse>(() => get("/api/ollama/models"));
 
@@ -49,8 +51,8 @@ export function Manage() {
   const onDeleteCorpus = async (name: string, docs: number, runs: number) => {
     const msg =
       docs === 0 && runs === 0
-        ? `Supprimer le corpus "${name}" (vide) ?`
-        : `Supprimer "${name}" et ses ${docs} document(s) + ${runs} run(s) d'indexation ? Irreversible.`;
+        ? t("manage.confirm_delete_empty", { name })
+        : t("manage.confirm_delete_full", { name, docs, runs });
     if (!confirm(msg)) return;
     await deleteCorpus.run(name);
     corpora.refresh();
@@ -58,8 +60,8 @@ export function Manage() {
 
   const onDeleteModel = async (name: string, isDefault: boolean) => {
     const msg = isDefault
-      ? `Supprimer "${name}" ? C'est le modele de generation par defaut — les queries echoueront tant qu'il n'est pas retelecharge.`
-      : `Supprimer le modele "${name}" d'Ollama ?`;
+      ? t("manage.confirm_delete_default_model", { name })
+      : t("manage.confirm_delete_model", { name });
     if (!confirm(msg)) return;
     await deleteModel.run(name);
     models.refresh();
@@ -75,24 +77,33 @@ export function Manage() {
   return (
     <div>
       <div className="page-header">
-        <h2>Gestion</h2>
-        <span className="sub muted">Supprimer ou importer corpus et modeles Ollama.</span>
+        <h2>{t("manage.title")}</h2>
+        <span className="sub muted">{t("manage.subtitle")}</span>
       </div>
 
       <div className="card">
-        <h3>Corpus ({corpora.data?.length ?? 0})</h3>
+        <h3>{t("manage.corpora_section", { count: corpora.data?.length ?? 0 })}</h3>
         {corpora.loading ? <Spinner /> : null}
         <ErrorBanner error={corpora.error || deleteCorpus.error} />
         {deleteCorpus.data ? (
           <div className="badge ok" style={{ marginBottom: 12 }}>
-            "{deleteCorpus.data.corpus}" supprime : {deleteCorpus.data.documents_deleted} doc(s),{" "}
-            {deleteCorpus.data.index_runs_deleted} run(s), {deleteCorpus.data.chunks_deleted} chunk(s)
+            {t("manage.corpora_deleted", {
+              corpus: deleteCorpus.data.corpus,
+              docs: deleteCorpus.data.documents_deleted,
+              runs: deleteCorpus.data.index_runs_deleted,
+              chunks: deleteCorpus.data.chunks_deleted,
+            })}
           </div>
         ) : null}
         {corpora.data && corpora.data.length > 0 ? (
           <table className="table">
             <thead>
-              <tr><th>Nom</th><th>Documents</th><th>Index runs</th><th></th></tr>
+              <tr>
+                <th>{t("common.name")}</th>
+                <th>{t("common.documents")}</th>
+                <th>{t("common.index_runs")}</th>
+                <th></th>
+              </tr>
             </thead>
             <tbody>
               {corpora.data.map((c) => (
@@ -106,7 +117,7 @@ export function Manage() {
                       onClick={() => onDeleteCorpus(c.name, c.documents_count, c.index_runs_count)}
                       disabled={deleteCorpus.loading}
                     >
-                      Supprimer
+                      {t("common.delete")}
                     </button>
                   </td>
                 </tr>
@@ -114,26 +125,30 @@ export function Manage() {
             </tbody>
           </table>
         ) : corpora.data ? (
-          <p className="muted">Aucun corpus enregistre.</p>
+          <p className="muted">{t("manage.no_corpora")}</p>
         ) : null}
         <div style={{ marginTop: 12 }}>
           <Link to="/expert/ingest">
-            <button className="ghost sm">Importer un dossier…</button>
+            <button className="ghost sm">{t("manage.import_folder")}</button>
           </Link>{" "}
           <Link to="/expert/lexml">
-            <button className="ghost sm">Charger depuis LexML…</button>
+            <button className="ghost sm">{t("manage.import_lexml")}</button>
           </Link>
         </div>
       </div>
 
       <div className="card">
-        <h3>Modeles Ollama ({models.data?.models.length ?? 0})</h3>
+        <h3>{t("manage.models_section", { count: models.data?.models.length ?? 0 })}</h3>
         {models.loading ? <Spinner /> : null}
         <ErrorBanner error={models.error || deleteModel.error || pullModel.error} />
         {models.data && models.data.models.length > 0 ? (
           <table className="table">
             <thead>
-              <tr><th>Nom</th><th>Taille</th><th></th></tr>
+              <tr>
+                <th>{t("common.name")}</th>
+                <th>{t("common.size")}</th>
+                <th></th>
+              </tr>
             </thead>
             <tbody>
               {models.data.models.map((m) => {
@@ -142,7 +157,11 @@ export function Manage() {
                   <tr key={m.name} className={isDefault ? "highlight" : undefined}>
                     <td>
                       <code>{m.name}</code>
-                      {isDefault ? <span className="tag" style={{ marginLeft: 6 }}>defaut</span> : null}
+                      {isDefault ? (
+                        <span className="tag" style={{ marginLeft: 6 }}>
+                          {t("ollama.default_model_tag")}
+                        </span>
+                      ) : null}
                     </td>
                     <td>{formatSize(m.size)}</td>
                     <td style={{ textAlign: "right" }}>
@@ -151,7 +170,7 @@ export function Manage() {
                         onClick={() => onDeleteModel(m.name, isDefault)}
                         disabled={deleteModel.loading}
                       >
-                        Supprimer
+                        {t("common.delete")}
                       </button>
                     </td>
                   </tr>
@@ -160,13 +179,13 @@ export function Manage() {
             </tbody>
           </table>
         ) : models.data ? (
-          <p className="muted">Aucun modele installe.</p>
+          <p className="muted">{t("manage.no_models")}</p>
         ) : null}
 
         <div style={{ marginTop: 14, borderTop: "1px solid var(--border)", paddingTop: 14 }}>
           <FieldRow
-            label="Importer un modele"
-            hint="Nom exact comme sur ollama.com (ex : qwen2.5:7b, llama3.2:3b, nomic-embed-text)"
+            label={t("manage.import_model")}
+            hint={t("manage.import_model_hint")}
           >
             <input
               value={toPull}
@@ -176,11 +195,13 @@ export function Manage() {
           </FieldRow>
           <div className="inline">
             <button onClick={onPull} disabled={pullModel.loading || !toPull.trim()}>
-              {pullModel.loading ? "Telechargement…" : "Telecharger"}
+              {pullModel.loading ? t("manage.downloading") : t("manage.download")}
             </button>
             {pullModel.loading ? <Spinner /> : null}
             {pullModel.data ? (
-              <span className="muted">statut : {pullModel.data.status}</span>
+              <span className="muted">
+                {t("manage.pull_status", { status: pullModel.data.status })}
+              </span>
             ) : null}
           </div>
         </div>

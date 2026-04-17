@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { get, post } from "../api/client";
 import { useApiAction, useApiLoad } from "../hooks/useApi";
 import type {
@@ -27,6 +28,7 @@ interface HistoryEntry {
 }
 
 export function Query() {
+  const { t } = useTranslation();
   const config = useConfig();
   const corpora = useApiLoad<CorpusSummary[]>(() => get("/api/corpora"));
   const [corpus, setCorpus] = useState("");
@@ -107,19 +109,19 @@ export function Query() {
   return (
     <div>
       <div className="page-header">
-        <h2>RAG Query</h2>
-        <span className="muted">Retrieval + generation</span>
+        <h2>{t("query.title")}</h2>
+        <span className="muted">{t("query.subtitle")}</span>
       </div>
       <div className="split">
         <div>
           <div className="card">
-            <h3>Parametres</h3>
-            <FieldRow label="Question">
+            <h3>{t("query.parameters")}</h3>
+            <FieldRow label={t("query.question")}>
               <textarea value={question} onChange={(e) => setQuestion(e.target.value)} rows={3} />
             </FieldRow>
-            <FieldRow label="Corpus" hint="Requis par le retrieval">
+            <FieldRow label={t("common.corpus")} hint={t("query.corpus_hint")}>
               <select value={corpus} onChange={(e) => setCorpus(e.target.value)}>
-                <option value="">— selectionner —</option>
+                <option value="">{t("common.selected_placeholder")}</option>
                 {(corpora.data ?? []).map((c) => (
                   <option key={c.id} value={c.name}>
                     {c.name}
@@ -127,18 +129,18 @@ export function Query() {
                 ))}
               </select>
             </FieldRow>
-            <FieldRow label="Strategie">
+            <FieldRow label={t("common.strategy")}>
               <select value={strategy} onChange={(e) => setStrategy(e.target.value as "" | ChunkingStrategy)}>
                 {STRATEGIES.map((s) => (
                   <option key={s} value={s}>
-                    {s || "(auto)"}
+                    {s || t("query.strategy_auto")}
                   </option>
                 ))}
               </select>
             </FieldRow>
-            <FieldRow label="Index run" hint="Optionnel, prioritaire">
+            <FieldRow label={t("query.index_run")} hint={t("query.index_run_hint")}>
               <select value={indexRunId} onChange={(e) => setIndexRunId(e.target.value)}>
-                <option value="">(auto)</option>
+                <option value="">{t("query.index_run_auto")}</option>
                 {(indexRuns.data ?? []).map((r) => (
                   <option key={r.id} value={r.id}>
                     {r.name} — {r.strategy}
@@ -146,91 +148,140 @@ export function Query() {
                 ))}
               </select>
             </FieldRow>
-            <FieldRow label="Top-K" hint={`Vide = defaut backend${config ? ` (${config.default_top_k})` : ""}`}>
-              <input type="number" value={topK} onChange={(e) => setTopK(e.target.value)} min={1} max={50} placeholder={config ? String(config.default_top_k) : ""} />
+            <FieldRow
+              label={t("query.top_k")}
+              hint={
+                config
+                  ? t("query.top_k_hint_value", { value: config.default_top_k })
+                  : t("query.top_k_hint")
+              }
+            >
+              <input
+                type="number"
+                value={topK}
+                onChange={(e) => setTopK(e.target.value)}
+                min={1}
+                max={50}
+                placeholder={config ? String(config.default_top_k) : ""}
+              />
             </FieldRow>
-            <FieldRow label="Generation">
+            <FieldRow label={t("query.generate_label")}>
               <label className="inline" style={{ gap: 4 }}>
-                <input type="checkbox" checked={generate} onChange={(e) => setGenerate(e.target.checked)} />
-                Produire une reponse LLM
+                <input
+                  type="checkbox"
+                  checked={generate}
+                  onChange={(e) => setGenerate(e.target.checked)}
+                />
+                {t("query.generate_checkbox")}
               </label>
             </FieldRow>
           </div>
 
           <div className="card">
-            <h3>Filtres</h3>
-            <FieldRow label="Document IDs" hint="Virgules">
+            <h3>{t("query.filters")}</h3>
+            <FieldRow label={t("query.document_ids")} hint={t("query.document_ids_hint")}>
               <input value={documentIdsRaw} onChange={(e) => setDocumentIdsRaw(e.target.value)} />
             </FieldRow>
-            <FieldRow label="File names" hint="Virgules">
+            <FieldRow label={t("query.file_names")} hint={t("query.file_names_hint")}>
               <input value={fileNamesRaw} onChange={(e) => setFileNamesRaw(e.target.value)} />
             </FieldRow>
-            <FieldRow label="source_path contient">
+            <FieldRow label={t("query.source_path_contains")}>
               <input value={sourcePathContains} onChange={(e) => setSourcePathContains(e.target.value)} />
             </FieldRow>
-            <FieldRow label="Tags" hint="Virgules">
+            <FieldRow label={t("query.tags")} hint={t("query.tags_hint")}>
               <input value={tagsRaw} onChange={(e) => setTagsRaw(e.target.value)} />
             </FieldRow>
-            <FieldRow label="metadata equals" hint="Une ligne par paire cle=valeur">
-              <textarea rows={3} value={metadataEqualsRaw} onChange={(e) => setMetadataEqualsRaw(e.target.value)} placeholder="authority=Senado Federal" />
+            <FieldRow label={t("query.metadata_equals")} hint={t("query.metadata_equals_hint")}>
+              <textarea
+                rows={3}
+                value={metadataEqualsRaw}
+                onChange={(e) => setMetadataEqualsRaw(e.target.value)}
+                placeholder="authority=Senado Federal"
+              />
             </FieldRow>
             <button
               onClick={submit}
               disabled={action.loading || !question.trim() || (!corpus && !indexRunId)}
             >
-              {action.loading ? "Recherche…" : "Executer"}
+              {action.loading ? t("query.searching") : t("query.execute")}
             </button>
           </div>
 
           {history.items.length > 0 ? (
             <div className="card">
-              <h3>Historique local ({history.items.length})</h3>
+              <h3>{t("query.history_title", { count: history.items.length })}</h3>
               <table className="table">
                 <tbody>
                   {history.items.map((h, i) => (
                     <tr key={i}>
-                      <td><button className="ghost" onClick={() => replay(h)} style={{ padding: "2px 8px" }}>Rejouer</button></td>
-                      <td style={{ maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      <td>
+                        <button
+                          className="ghost"
+                          onClick={() => replay(h)}
+                          style={{ padding: "2px 8px" }}
+                        >
+                          {t("query.replay")}
+                        </button>
+                      </td>
+                      <td
+                        style={{
+                          maxWidth: 220,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
                         {h.question}
                       </td>
                       <td className="muted">{h.corpus || "—"}</td>
-                      <td><span className="tag">{h.strategy || "auto"}</span></td>
+                      <td>
+                        <span className="tag">{h.strategy || t("common.auto")}</span>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-              <button className="ghost" onClick={history.clear} style={{ marginTop: 8 }}>Vider</button>
+              <button className="ghost" onClick={history.clear} style={{ marginTop: 8 }}>
+                {t("query.clear_history")}
+              </button>
             </div>
           ) : null}
         </div>
 
         <div>
           {action.loading ? (
-            <div className="card"><Spinner label="interrogation du RAG…" /></div>
+            <div className="card">
+              <Spinner label={t("query.loading")} />
+            </div>
           ) : null}
           <ErrorBanner error={action.error} />
           {action.data ? (
             <>
               <div className="card">
-                <h3>Reponse</h3>
+                <h3>{t("query.answer_header")}</h3>
                 <div className="muted" style={{ marginBottom: 8 }}>
-                  index_run_id <code>{action.data.index_run_id}</code> · strategie{" "}
-                  <span className="tag">{action.data.strategy}</span> · {action.data.elapsed_ms.toFixed(0)} ms
+                  {t("query.answer_meta", {
+                    run: action.data.index_run_id,
+                    strategy: action.data.strategy,
+                    ms: action.data.elapsed_ms.toFixed(0),
+                  })}
                 </div>
                 {action.data.answer ? (
-                  <pre style={{ whiteSpace: "pre-wrap", margin: 0, fontFamily: "inherit" }}>{action.data.answer}</pre>
+                  <pre style={{ whiteSpace: "pre-wrap", margin: 0, fontFamily: "inherit" }}>
+                    {action.data.answer}
+                  </pre>
                 ) : (
-                  <p className="muted">Aucune generation demandee.</p>
+                  <p className="muted">{t("query.no_generation")}</p>
                 )}
               </div>
               <div className="card">
-                <h3>Chunks recuperes ({action.data.retrieved_chunks.length})</h3>
+                <h3>{t("query.chunks_header", { count: action.data.retrieved_chunks.length })}</h3>
                 {action.data.retrieved_chunks.map((c) => (
                   <ChunkCard key={c.chunk_id} chunk={c} />
                 ))}
               </div>
               <div className="card">
-                <h3>Payload brut</h3>
+                <h3>{t("query.raw_payload")}</h3>
                 <JsonViewer value={action.data} maxHeight={300} />
               </div>
             </>

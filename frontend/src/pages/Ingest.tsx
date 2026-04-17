@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { post } from "../api/client";
 import { useApiAction } from "../hooks/useApi";
 import type { IngestResponse } from "../api/types";
@@ -9,6 +10,7 @@ import { Spinner } from "../components/Spinner";
 import { StatusBadge } from "../components/StatusBadge";
 
 export function Ingest() {
+  const { t } = useTranslation();
   const [folder, setFolder] = useState("data/documents");
   const [corpus, setCorpus] = useState("demo");
   const [description, setDescription] = useState("");
@@ -34,43 +36,56 @@ export function Ingest() {
   return (
     <div>
       <div className="page-header">
-        <h2>Ingestion d'un dossier</h2>
-        <span className="muted">Chemin cote serveur raglab.</span>
+        <h2>{t("ingest.title")}</h2>
+        <span className="muted">{t("ingest.subtitle")}</span>
       </div>
       <div className="split">
         <div className="card">
-          <h3>Parametres</h3>
-          <FieldRow label="Dossier (serveur)" hint="Ex : data/documents, /workspace/data/lexml/documents">
+          <h3>{t("query.parameters")}</h3>
+          <FieldRow label={t("ingest.folder_label")} hint={t("ingest.folder_hint")}>
             <input value={folder} onChange={(e) => setFolder(e.target.value)} />
           </FieldRow>
-          <FieldRow label="Corpus">
+          <FieldRow label={t("ingest.corpus_label")}>
             <input value={corpus} onChange={(e) => setCorpus(e.target.value)} />
           </FieldRow>
-          <FieldRow label="Description" hint="Optionnel">
+          <FieldRow label={t("ingest.description_label")} hint={t("ingest.description_hint")}>
             <input value={description} onChange={(e) => setDescription(e.target.value)} />
           </FieldRow>
-          <FieldRow label="Tags" hint="Separes par des virgules">
-            <input value={tagsRaw} onChange={(e) => setTagsRaw(e.target.value)} placeholder="legal, contrat" />
+          <FieldRow label={t("ingest.tags_label")} hint={t("ingest.tags_hint")}>
+            <input
+              value={tagsRaw}
+              onChange={(e) => setTagsRaw(e.target.value)}
+              placeholder="legal, contrat"
+            />
           </FieldRow>
           <button onClick={submit} disabled={action.loading || !folder || !corpus}>
-            {action.loading ? "Ingestion…" : "Lancer l'ingestion"}
+            {action.loading ? t("ingest.ingesting") : t("ingest.launch")}
           </button>
         </div>
         <div className="card">
-          <h3>Resultat</h3>
-          {action.loading ? <Spinner label="ingestion en cours…" /> : null}
+          <h3>{t("common.result")}</h3>
+          {action.loading ? <Spinner label={t("ingest.ingesting")} /> : null}
           <ErrorBanner error={action.error} />
           {action.data ? (
             <>
               <div className="inline" style={{ marginBottom: 12 }}>
-                <StatusBadge state="ok" label={`ingeres ${action.data.ingested}`} />
-                <StatusBadge state="info" label={`maj ${action.data.updated}`} />
-                <StatusBadge state="warn" label={`ignores ${action.data.skipped}`} />
+                <StatusBadge
+                  state="ok"
+                  label={t("ingest.ingested_badge", { count: action.data.ingested })}
+                />
+                <StatusBadge
+                  state="info"
+                  label={t("ingest.updated_badge", { count: action.data.updated })}
+                />
+                <StatusBadge
+                  state="warn"
+                  label={t("ingest.skipped_badge", { count: action.data.skipped })}
+                />
               </div>
               <JsonViewer value={action.data} />
             </>
           ) : (
-            <p className="muted">Lancez l'ingestion pour voir le resume ici.</p>
+            <p className="muted">{t("ingest.empty_result")}</p>
           )}
         </div>
       </div>
