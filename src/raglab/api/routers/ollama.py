@@ -38,6 +38,16 @@ def ollama_pull(body: OllamaPullRequest) -> dict[str, Any]:
         raise HTTPException(status_code=502, detail=f"Ollama pull failed: {exc}") from exc
 
 
+@router.delete("/models/{model_name:path}")
+def ollama_delete(model_name: str) -> dict[str, Any]:
+    try:
+        return OllamaService().delete_model(model_name)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Ollama delete failed: {exc}") from exc
+
+
 @router.post("/chat", response_model=OllamaChatResponse)
 def ollama_chat(body: OllamaChatRequest) -> OllamaChatResponse:
     options: dict[str, Any] = dict(body.options or {})
