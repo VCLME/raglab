@@ -81,6 +81,10 @@ export interface IndexRunSummary {
   started_at: string | null;
   completed_at: string | null;
   chunks_count: number;
+  embedding_space_name: string | null;
+  embedding_provider: string | null;
+  embedding_model_name: string | null;
+  embedding_dimension: number | null;
 }
 
 export interface IngestResponse {

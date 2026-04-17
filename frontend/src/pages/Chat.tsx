@@ -1,8 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ApiError, extractErrorDetail, get, post } from "../api/client";
 import type {
-  ChunkingStrategy,
   CorpusSummary,
   IndexRunSummary,
   OllamaModelsResponse,
@@ -17,8 +16,6 @@ import { SuggestionChips } from "../components/SuggestionChips";
 import { useApiAction, useApiLoad } from "../hooks/useApi";
 import { useConfig } from "../hooks/useConfig";
 
-type StrategyChoice = "" | ChunkingStrategy;
-
 interface ChatTurn {
   id: string;
   question: string;
@@ -32,6 +29,24 @@ interface ChatTurn {
 
 function newTurnId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function shortDate(iso: string | null): string {
+  if (!iso) return "—";
+  try {
+    const d = new Date(iso);
+    const pad = (n: number) => n.toString().padStart(2, "0");
+    return `${pad(d.getDate())}/${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(
+      d.getMinutes()
+    )}`;
+  } catch {
+    return iso;
+  }
+}
+
+function formatRunLabel(run: IndexRunSummary): string {
+  const parts = [run.strategy, run.embedding_model_name ?? "—", shortDate(run.started_at)];
+  return parts.join(" · ");
 }
 
 const CITATION_REGEX = /\[(?:Rank|rank|Source\s+rank\s*=)\s*(\d+)\]/g;
@@ -95,7 +110,7 @@ export function Chat() {
   const models = useApiLoad<OllamaModelsResponse>(() => get("/api/ollama/models"));
 
   const [corpus, setCorpus] = useState("");
-  const [strategy, setStrategy] = useState<StrategyChoice>("");
+  const [indexRunId, setIndexRunId] = useState("");
   const [llmModel, setLlmModel] = useState("");
   const [question, setQuestion] = useState("");
   const [turns, setTurns] = useState<ChatTurn[]>([]);
@@ -111,18 +126,25 @@ export function Chat() {
   }, [corpus, corpora.data]);
 
   const indexRuns = useApiLoad<IndexRunSummary[]>(
-    () => (corpus ? get(`/api/index-runs?corpus=${encodeURIComponent(corpus)}`) : Promise.resolve([])),
+    () =>
+      corpus
+        ? get(`/api/index-runs?corpus=${encodeURIComponent(corpus)}`)
+        : Promise.resolve([]),
     [corpus]
   );
 
-  const embeddingLabel = useMemo(() => {
-    if (!indexRuns.data || indexRuns.data.length === 0) {
-      return config?.embedding_model_name ?? "—";
-    }
-    return config?.embedding_model_name ?? "—";
-  }, [indexRuns.data, config]);
+  // Reset explicit index choice when corpus changes.
+  useEffect(() => {
+    setIndexRunId("");
+  }, [corpus]);
 
-  const action = useApiAction((body: unknown) => post<QueryResponse>("/api/query", body));
+  const runsForCorpus = indexRuns.data ?? [];
+  const resolvedRun =
+    runsForCorpus.find((r) => r.id === indexRunId) ?? runsForCorpus[0] ?? null;
+
+  const action = useApiAction((body: unknown) =>
+    post<QueryResponse>("/api/query", body)
+  );
 
   const suggestions = (t("chat.suggestions", { returnObjects: true }) as unknown) as string[];
 
@@ -132,14 +154,22 @@ export function Chat() {
     const id = newTurnId();
     setTurns((prev) => [
       ...prev,
-      { id, question: q, answer: null, chunks: [], index_run_id: null, strategy: null, elapsed_ms: null },
+      {
+        id,
+        question: q,
+        answer: null,
+        chunks: [],
+        index_run_id: null,
+        strategy: null,
+        elapsed_ms: null,
+      },
     ]);
     setQuestion("");
 
     const body: Record<string, unknown> = {
       question: q,
       corpus,
-      strategy: strategy || null,
+      index_run_id: indexRunId || null,
       top_k: 5,
       generate: true,
     };
@@ -195,9 +225,11 @@ export function Chat() {
   };
 
   const modelsList = models.data?.models ?? [];
-  const defaultModel = config?.generation_model ?? models.data?.default_generation_model ?? "qwen2.5:7b";
+  const defaultModel =
+    config?.generation_model ?? models.data?.default_generation_model ?? "qwen2.5:7b";
 
   const empty = turns.length === 0;
+  const noRuns = !indexRuns.loading && runsForCorpus.length === 0;
 
   return (
     <div className="chat-page">
@@ -216,22 +248,30 @@ export function Chat() {
           </select>
         </div>
 
-        <div className="compact-field">
-          <label>{t("chat.strategy_label")}</label>
+        <div
+          className="compact-field"
+          style={{ minWidth: 300 }}
+          title={t("chat.index_title")}
+        >
+          <label>{t("chat.index_label")}</label>
           <select
-            value={strategy}
-            onChange={(e) => setStrategy(e.target.value as StrategyChoice)}
+            value={indexRunId}
+            onChange={(e) => setIndexRunId(e.target.value)}
+            disabled={noRuns}
           >
-            <option value="">{t("chat.strategy_auto")}</option>
-            <option value="traditional">traditional</option>
-            <option value="slide">slide</option>
-            <option value="late">late</option>
+            <option value="">
+              {noRuns
+                ? t("chat.index_empty")
+                : resolvedRun
+                ? t("chat.index_latest_with", { label: formatRunLabel(resolvedRun) })
+                : t("chat.index_latest")}
+            </option>
+            {runsForCorpus.map((r) => (
+              <option key={r.id} value={r.id}>
+                {formatRunLabel(r)}
+              </option>
+            ))}
           </select>
-        </div>
-
-        <div className="compact-field" title={t("chat.embedding_title")}>
-          <label>{t("chat.embedding_label")}</label>
-          <div className="read-only">{embeddingLabel}</div>
         </div>
 
         <div className="settings-actions">
@@ -297,15 +337,19 @@ export function Chat() {
               ))}
             </select>
             <span className="dim">
-              {corpus
-                ? t("chat.composer_on_corpus", { corpus })
+              {resolvedRun
+                ? t("chat.composer_on_index", {
+                    strategy: resolvedRun.strategy,
+                    model: resolvedRun.embedding_model_name ?? "—",
+                  })
+                : corpus
+                ? t("chat.composer_no_index")
                 : t("chat.composer_no_corpus")}
-              {strategy ? ` · ${strategy}` : ""}
             </span>
           </div>
           <button
             onClick={() => send()}
-            disabled={action.loading || !question.trim() || !corpus}
+            disabled={action.loading || !question.trim() || !corpus || noRuns}
           >
             <SendIcon size={14} /> {t("common.submit")}
           </button>
@@ -345,7 +389,11 @@ function ChatTurnView({
 
       {turn.answer === null && !turn.error ? (
         <div className="inline-status" role="status">
-          <span className="dots"><span /><span /><span /></span>
+          <span className="dots">
+            <span />
+            <span />
+            <span />
+          </span>
           {t("chat.loading")}
         </div>
       ) : null}
@@ -390,7 +438,7 @@ function ChatTurnView({
                 citedRanks={turn.answer ? extractCitedRanks(turn.answer) : undefined}
               />
               <button className="details-toggle" onClick={onToggleDetails}>
-                {(expanded
+                {expanded
                   ? t("chat.chunks_hide", {
                       count: visibleChunks.length,
                       filtered: highlight ? t("chat.chunks_filtered_suffix") : "",
@@ -398,7 +446,7 @@ function ChatTurnView({
                   : t("chat.chunks_show", {
                       count: visibleChunks.length,
                       filtered: highlight ? t("chat.chunks_filtered_suffix") : "",
-                    }))}
+                    })}
               </button>
               {expanded ? (
                 <div style={{ marginTop: 12 }}>

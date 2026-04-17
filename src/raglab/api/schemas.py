@@ -131,6 +131,10 @@ class IndexRunSummary(BaseModel):
     started_at: str | None = None
     completed_at: str | None = None
     chunks_count: int
+    embedding_space_name: str | None = None
+    embedding_provider: str | None = None
+    embedding_model_name: str | None = None
+    embedding_dimension: int | None = None
 
 
 class LexMLGetDataRequest(BaseModel):
