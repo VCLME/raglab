@@ -8,10 +8,7 @@ from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, Text, Uniqu
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from raglab.config import get_settings
 from raglab.db.base import Base
-
-SETTINGS = get_settings()
 
 
 class TimestampMixin:
@@ -137,7 +134,7 @@ class ChunkEmbedding(Base):
         ForeignKey("embedding_spaces.id", ondelete="CASCADE"),
         nullable=False,
     )
-    embedding: Mapped[list[float]] = mapped_column(VECTOR(SETTINGS.embedding_dimension), nullable=False)
+    embedding: Mapped[list[float]] = mapped_column(VECTOR(), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
     chunk: Mapped["Chunk"] = relationship(back_populates="embedding_records")
@@ -183,10 +180,10 @@ Index("ix_documents_corpus_id", Document.corpus_id)
 Index("ix_chunks_index_run_id", Chunk.index_run_id)
 Index("ix_chunks_document_id", Chunk.document_id)
 Index("ix_chunk_embeddings_embedding_space_id", ChunkEmbedding.embedding_space_id)
-Index(
-    "ix_chunk_embeddings_embedding_hnsw",
-    ChunkEmbedding.embedding,
-    postgresql_using="hnsw",
-    postgresql_ops={"embedding": "vector_cosine_ops"},
-    postgresql_with={"m": 16, "ef_construction": 64},
-)
+
+# HNSW indexes on chunk_embeddings.embedding are partial, one per embedding
+# dimension encountered at indexing time, created on demand via
+# `ensure_partial_hnsw_index(session, dim)` in raglab.db.indexes. Having them
+# declared here as a single static SQLAlchemy Index would freeze a fixed
+# dimension and prevent coexistence of multiple embedding spaces with
+# different dimensions in the same database.
