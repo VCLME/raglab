@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { get, post } from "../api/client";
 import { EMBEDDING_MODELS, EMBEDDING_PROVIDERS } from "../api/options";
 import { useApiAction, useApiLoad } from "../hooks/useApi";
@@ -13,6 +14,7 @@ import { useConfig } from "../hooks/useConfig";
 const STRATEGIES: ChunkingStrategy[] = ["traditional", "slide", "late"];
 
 export function IndexPage() {
+  const { t } = useTranslation();
   const config = useConfig();
   const corpora = useApiLoad<CorpusSummary[]>(() => get("/api/corpora"));
   const [corpus, setCorpus] = useState("");
@@ -38,15 +40,15 @@ export function IndexPage() {
   return (
     <div>
       <div className="page-header">
-        <h2>Indexation</h2>
-        <span className="muted">Chunking + embeddings + stockage pgvector.</span>
+        <h2>{t("index.title")}</h2>
+        <span className="muted">{t("index.subtitle")}</span>
       </div>
       <div className="split">
         <div className="card">
-          <h3>Parametres</h3>
-          <FieldRow label="Corpus">
+          <h3>{t("query.parameters")}</h3>
+          <FieldRow label={t("common.corpus")}>
             <select value={corpus} onChange={(e) => setCorpus(e.target.value)}>
-              <option value="">— selectionner —</option>
+              <option value="">{t("common.selected_placeholder")}</option>
               {(corpora.data ?? []).map((c) => (
                 <option key={c.id} value={c.name}>
                   {c.name} ({c.documents_count} docs)
@@ -54,7 +56,7 @@ export function IndexPage() {
               ))}
             </select>
           </FieldRow>
-          <FieldRow label="Strategie">
+          <FieldRow label={t("common.strategy")}>
             <div className="inline">
               {STRATEGIES.map((s) => (
                 <label key={s} className="inline" style={{ gap: 4 }}>
@@ -69,42 +71,68 @@ export function IndexPage() {
               ))}
             </div>
           </FieldRow>
-          <FieldRow label="Run name" hint="Optionnel">
+          <FieldRow label={t("index.run_name_label")} hint={t("common.optional")}>
             <input value={runName} onChange={(e) => setRunName(e.target.value)} />
           </FieldRow>
-          <FieldRow label="Embedding provider" hint={`Optionnel${config ? ` — defaut : ${config.embedding_provider}` : ""}`}>
+          <FieldRow
+            label={t("dashboard.embedding_provider")}
+            hint={
+              config
+                ? t("index.embedding_provider_hint", { value: config.embedding_provider })
+                : t("index.embedding_provider_hint_no_value")
+            }
+          >
             <SelectWithOther
               value={embProvider}
               onChange={setEmbProvider}
               options={EMBEDDING_PROVIDERS}
               placeholder="ex : transformers"
-              emptyLabel={config ? `defaut (${config.embedding_provider})` : "(defaut)"}
+              emptyLabel={
+                config
+                  ? t("common.default_with", { value: config.embedding_provider })
+                  : t("common.default")
+              }
             />
           </FieldRow>
-          <FieldRow label="Embedding model" hint={`Optionnel${config ? ` — defaut : ${config.embedding_model_name}` : ""}`}>
+          <FieldRow
+            label={t("dashboard.embedding_model")}
+            hint={
+              config
+                ? t("index.embedding_model_hint", { value: config.embedding_model_name })
+                : t("index.embedding_model_hint_no_value")
+            }
+          >
             <SelectWithOther
               value={embModel}
               onChange={setEmbModel}
               options={EMBEDDING_MODELS}
               placeholder="ex : intfloat/multilingual-e5-small"
-              emptyLabel={config ? `defaut (${config.embedding_model_name})` : "(defaut)"}
+              emptyLabel={
+                config
+                  ? t("common.default_with", { value: config.embedding_model_name })
+                  : t("common.default")
+              }
             />
           </FieldRow>
-          <FieldRow label="Incremental">
+          <FieldRow label={t("index.incremental_label")}>
             <label className="inline" style={{ gap: 4 }}>
-              <input type="checkbox" checked={incremental} onChange={(e) => setIncremental(e.target.checked)} />
-              Reutiliser les chunks/embeddings du dernier run compatible
+              <input
+                type="checkbox"
+                checked={incremental}
+                onChange={(e) => setIncremental(e.target.checked)}
+              />
+              {t("index.incremental_checkbox")}
             </label>
           </FieldRow>
           <button onClick={submit} disabled={action.loading || !corpus}>
-            {action.loading ? "Indexation…" : "Lancer l'indexation"}
+            {action.loading ? t("index.indexing") : t("index.launch")}
           </button>
         </div>
         <div className="card">
-          <h3>Resultat</h3>
-          {action.loading ? <Spinner label="indexation en cours (peut etre long)…" /> : null}
+          <h3>{t("common.result")}</h3>
+          {action.loading ? <Spinner label={t("index.loading")} /> : null}
           <ErrorBanner error={action.error} />
-          {action.data ? <JsonViewer value={action.data} /> : <p className="muted">Lancez l'indexation.</p>}
+          {action.data ? <JsonViewer value={action.data} /> : <p className="muted">{t("index.empty_result")}</p>}
         </div>
       </div>
     </div>

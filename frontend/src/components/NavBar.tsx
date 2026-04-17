@@ -1,25 +1,26 @@
+import { useTranslation } from "react-i18next";
 import { NavLink } from "react-router-dom";
 
-const LINKS = [
-  { to: "/expert", label: "Dashboard", end: true },
-  { to: "/expert/query", label: "RAG Query" },
-  { to: "/expert/playground", label: "Playground" },
-  { to: "/expert/ingest", label: "Ingestion" },
-  { to: "/expert/index", label: "Indexation" },
-  { to: "/expert/lexml", label: "LexML" },
-  { to: "/expert/ollama", label: "Ollama" },
-  { to: "/expert/experiments", label: "Experiments" },
-  { to: "/expert/manage", label: "Gestion" },
-];
-
 export function NavBar() {
+  const { t } = useTranslation();
+  const links = [
+    { to: "/expert", labelKey: "nav.dashboard", end: true },
+    { to: "/expert/query", labelKey: "nav.query" },
+    { to: "/expert/playground", labelKey: "nav.playground" },
+    { to: "/expert/ingest", labelKey: "nav.ingest" },
+    { to: "/expert/index", labelKey: "nav.index" },
+    { to: "/expert/lexml", labelKey: "nav.lexml" },
+    { to: "/expert/ollama", labelKey: "nav.ollama" },
+    { to: "/expert/experiments", labelKey: "nav.experiments" },
+    { to: "/expert/manage", labelKey: "nav.manage" },
+  ];
   return (
     <aside className="sidebar">
-      <div className="section-title">Mode expert</div>
+      <div className="section-title">{t("nav.expert_section")}</div>
       <nav>
-        {LINKS.map((link) => (
+        {links.map((link) => (
           <NavLink key={link.to} to={link.to} end={link.end}>
-            {link.label}
+            {t(link.labelKey)}
           </NavLink>
         ))}
       </nav>
