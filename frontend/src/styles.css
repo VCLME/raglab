@@ -519,6 +519,35 @@ button.sm {
   font-weight: 600;
   margin-bottom: 6px;
 }
+.citation {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 5px;
+  margin: 0 3px;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  line-height: 1;
+  vertical-align: baseline;
+  font-family: var(--mono);
+  transition: background 0.15s, border-color 0.15s;
+  translate: 0 -1px;
+}
+.citation:hover {
+  border-color: var(--accent);
+}
+.citation.active {
+  background: var(--accent);
+  color: #0b0d12;
+}
+
 .bubble .answer-meta {
   display: flex;
   gap: 10px;

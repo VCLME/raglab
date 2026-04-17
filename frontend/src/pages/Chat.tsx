@@ -9,6 +9,7 @@ import type {
   RetrievedChunk,
 } from "../api/types";
 import { ChunkCard } from "../components/ChunkCard";
+import { Citation } from "../components/Citation";
 import { SendIcon } from "../components/Icon";
 import { SourceList } from "../components/SourcePill";
 import { SuggestionChips } from "../components/SuggestionChips";
@@ -44,6 +45,49 @@ const STRATEGY_LABELS: Record<string, string> = {
 
 function newTurnId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+const CITATION_REGEX = /\[(?:Rank|rank|Source\s+rank\s*=)\s*(\d+)\]/g;
+const TRAILING_SOURCES_REGEX = /\n+\s*Sources?\s*:[\s\S]*$/i;
+
+function stripTrailingSources(answer: string): string {
+  return answer.replace(TRAILING_SOURCES_REGEX, "").trimEnd();
+}
+
+function renderAnswer(
+  answer: string,
+  chunks: RetrievedChunk[],
+  activeFile: string | null,
+  onSelectFile: (fileName: string) => void
+): React.ReactNode[] {
+  const cleaned = stripTrailingSources(answer);
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  CITATION_REGEX.lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = CITATION_REGEX.exec(cleaned)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(cleaned.slice(lastIndex, match.index));
+    }
+    const rank = Number(match[1]);
+    const chunk = chunks.find((c) => c.rank === rank);
+    parts.push(
+      <Citation
+        key={`c-${match.index}-${rank}`}
+        rank={rank}
+        fileName={chunk?.file_name}
+        active={chunk ? activeFile === chunk.file_name : false}
+        onClick={() => {
+          if (chunk) onSelectFile(chunk.file_name);
+        }}
+      />
+    );
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < cleaned.length) {
+    parts.push(cleaned.slice(lastIndex));
+  }
+  return parts.length > 0 ? parts : [cleaned];
 }
 
 export function Chat() {
@@ -327,7 +371,9 @@ function ChatTurnView({
       {turn.answer !== null ? (
         <div className="bubble assistant">
           <div className="role">raglab</div>
-          <div style={{ whiteSpace: "pre-wrap" }}>{turn.answer}</div>
+          <div style={{ whiteSpace: "pre-wrap" }}>
+            {renderAnswer(turn.answer, turn.chunks, highlight, onSelectSource)}
+          </div>
           {turn.chunks.length > 0 ? (
             <div className="sources">
               <div className="sources-label">

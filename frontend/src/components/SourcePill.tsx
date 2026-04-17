@@ -20,10 +20,10 @@ function aggregate(chunks: RetrievedChunk[]): Aggregated[] {
       map.set(c.file_name, { file_name: c.file_name, best: c, count: 1 });
     } else {
       entry.count += 1;
-      if (c.score > entry.best.score) entry.best = c;
+      if (c.rank < entry.best.rank) entry.best = c;
     }
   });
-  return Array.from(map.values()).sort((a, b) => b.best.score - a.best.score);
+  return Array.from(map.values()).sort((a, b) => a.best.rank - b.best.rank);
 }
 
 export function SourceList({ chunks, onSelect, activeFile }: Props) {
@@ -31,7 +31,7 @@ export function SourceList({ chunks, onSelect, activeFile }: Props) {
   const aggregated = aggregate(chunks);
   return (
     <div className="source-list">
-      {aggregated.map((entry, i) => {
+      {aggregated.map((entry) => {
         const isActive = activeFile === entry.file_name;
         return (
           <button
@@ -45,7 +45,7 @@ export function SourceList({ chunks, onSelect, activeFile }: Props) {
             }
             title={entry.best.source_path}
           >
-            <span className="num">{i + 1}</span>
+            <span className="num">{entry.best.rank}</span>
             <span>{entry.file_name}</span>
             <span className="score">
               {entry.count > 1 ? `${entry.count} chunks · ` : ""}
