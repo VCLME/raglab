@@ -151,6 +151,15 @@ Note : `load` est tres long. Le spinner indique simplement que l'appel est en co
 - Exposition du benchmark Recall existant. Parametres corpus, strategie, `dataset_path` optionnel, `case_limit`.
 - Reponse affichee en JSON.
 
+### Gestion (`/expert/manage`)
+
+Ecran de maintenance pour garder une base et un stock de modeles propres. Deux cartes :
+
+- **Corpus** : tableau des corpus avec compteurs documents / index runs + bouton `Supprimer` (confirmation navigateur, cascade `documents -> chunks -> embeddings` + `index_runs`). Boutons `Importer un dossier…` et `Charger depuis LexML…` qui redirigent vers les pages dediees.
+- **Modeles Ollama** : tableau des modeles installes avec taille et bouton `Supprimer` par ligne (refuse par defaut si c'est le modele de generation, simple avertissement via `confirm`). Formulaire `Importer un modele` pour declencher un `ollama pull` sans quitter la page.
+
+La meme capacite de suppression est exposee sur la page Ollama (`/expert/ollama`) ligne par ligne.
+
 ## Endpoints API
 
 Tous prefixes par `/api`. Swagger disponible sur http://localhost:8000/docs.
@@ -162,8 +171,10 @@ Tous prefixes par `/api`. Swagger disponible sur http://localhost:8000/docs.
 | GET | `/api/ollama/status` | Delegation a `OllamaService.status()` |
 | GET | `/api/ollama/models` | Delegation a `OllamaService.list_models()` |
 | POST | `/api/ollama/pull` | Delegation a `OllamaService.pull_model(model)` |
+| DELETE | `/api/ollama/models/{name}` | Delegation a `OllamaService.delete_model(name)` |
 | POST | `/api/ollama/chat` | Delegation a `OllamaService.chat(...)` — appel direct Ollama `/api/chat` sans RAG |
 | GET | `/api/corpora` | Liste des corpus + compteurs |
+| DELETE | `/api/corpora/{name}` | Supprime un corpus et cascade sur documents, chunks, embeddings et index runs |
 | GET | `/api/index-runs?corpus=…` | Liste des index runs, filtrable par corpus |
 | POST | `/api/ingest` | `IngestionService.ingest_folder(...)` |
 | POST | `/api/index` | `IndexingService.index_corpus(...)` |

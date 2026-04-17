@@ -52,6 +52,20 @@ def test_ollama_chat_merges_options_and_returns_response(client):
     assert body["elapsed_ms"] == 42.0
 
 
+def test_ollama_delete_model_endpoint(client):
+    with patch("raglab.api.routers.ollama.OllamaService") as cls:
+        cls.return_value.delete_model.return_value = {
+            "base_url": "http://ollama:11434",
+            "model": "qwen2.5:7b",
+            "status": "deleted",
+        }
+        response = client.delete("/api/ollama/models/qwen2.5:7b")
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "deleted"
+    cls.return_value.delete_model.assert_called_once_with("qwen2.5:7b")
+
+
 def test_ollama_chat_returns_404_when_model_missing(client):
     with patch("raglab.api.routers.ollama.OllamaService") as cls:
         cls.return_value.chat.side_effect = RuntimeError(

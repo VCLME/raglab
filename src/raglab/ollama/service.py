@@ -92,6 +92,31 @@ class OllamaService:
         )
         return result
 
+    def delete_model(self, model_name: str) -> dict[str, Any]:
+        log_event(
+            LOGGER,
+            logging.INFO,
+            "ollama.delete_started",
+            model=model_name,
+        )
+        response = requests.delete(
+            f"{self.settings.ollama_base_url}/api/delete",
+            json={"name": model_name},
+            timeout=self.settings.generation_timeout_seconds,
+        )
+        self._raise_for_status(response, model_name)
+        log_event(
+            LOGGER,
+            logging.INFO,
+            "ollama.delete_completed",
+            model=model_name,
+        )
+        return {
+            "base_url": self.settings.ollama_base_url,
+            "model": model_name,
+            "status": "deleted",
+        }
+
     def chat(
         self,
         messages: list[dict[str, str]],

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { get, post } from "../api/client";
+import { apiFetch, get, post } from "../api/client";
 import { useApiAction, useApiLoad } from "../hooks/useApi";
 import type { OllamaModelsResponse, OllamaStatus } from "../api/types";
 import { ErrorBanner } from "../components/ErrorBanner";
@@ -21,6 +21,11 @@ export function OllamaPage() {
   const [toPull, setToPull] = useState("qwen2.5:7b");
   const pull = useApiAction((model: string) =>
     post<{ status: string }>("/api/ollama/pull", { model })
+  );
+  const del = useApiAction((model: string) =>
+    apiFetch<{ status: string }>(`/api/ollama/models/${encodeURIComponent(model)}`, {
+      method: "DELETE",
+    })
   );
 
   const refresh = () => {
@@ -59,27 +64,43 @@ export function OllamaPage() {
         {models.data ? (
           <table className="table">
             <thead>
-              <tr><th>Nom</th><th>Taille</th><th>Modifie</th><th>Digest</th></tr>
+              <tr><th>Nom</th><th>Taille</th><th>Modifie</th><th>Digest</th><th></th></tr>
             </thead>
             <tbody>
-              {models.data.models.map((m) => (
-                <tr key={m.name} className={m.name === models.data?.default_generation_model ? "highlight" : undefined}>
-                  <td>
-                    <code>{m.name}</code>
-                    {m.name === models.data?.default_generation_model ? (
-                      <span className="tag" style={{ marginLeft: 6 }}>defaut</span>
-                    ) : null}
-                  </td>
-                  <td>{formatSize(m.size)}</td>
-                  <td className="muted">{m.modified_at ?? "—"}</td>
-                  <td className="muted" style={{ fontFamily: "var(--mono)", fontSize: 11 }}>
-                    {m.digest ? m.digest.slice(0, 16) + "…" : "—"}
-                  </td>
-                </tr>
-              ))}
+              {models.data.models.map((m) => {
+                const isDefault = m.name === models.data?.default_generation_model;
+                return (
+                  <tr key={m.name} className={isDefault ? "highlight" : undefined}>
+                    <td>
+                      <code>{m.name}</code>
+                      {isDefault ? <span className="tag" style={{ marginLeft: 6 }}>defaut</span> : null}
+                    </td>
+                    <td>{formatSize(m.size)}</td>
+                    <td className="muted">{m.modified_at ?? "—"}</td>
+                    <td className="muted" style={{ fontFamily: "var(--mono)", fontSize: 11 }}>
+                      {m.digest ? m.digest.slice(0, 16) + "…" : "—"}
+                    </td>
+                    <td style={{ textAlign: "right" }}>
+                      <button
+                        className="ghost sm"
+                        onClick={async () => {
+                          if (!confirm(`Supprimer le modele ${m.name} d'Ollama ?`)) return;
+                          await del.run(m.name);
+                          refresh();
+                        }}
+                        disabled={del.loading}
+                        title={isDefault ? "Modele par defaut — supprime-le avec precaution" : "Supprimer"}
+                      >
+                        Supprimer
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         ) : null}
+        <ErrorBanner error={del.error} />
       </div>
 
       <div className="card">

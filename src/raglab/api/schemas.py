@@ -114,6 +114,13 @@ class CorpusSummary(BaseModel):
     index_runs_count: int
 
 
+class CorpusDeleteResponse(BaseModel):
+    corpus: str
+    documents_deleted: int
+    index_runs_deleted: int
+    chunks_deleted: int
+
+
 class IndexRunSummary(BaseModel):
     id: str
     corpus_id: str

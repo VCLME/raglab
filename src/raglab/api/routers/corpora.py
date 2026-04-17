@@ -5,7 +5,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from raglab.api.deps import get_db
-from raglab.api.schemas import CorpusSummary, IndexRunSummary
+from raglab.api.schemas import CorpusDeleteResponse, CorpusSummary, IndexRunSummary
 from raglab.db.models import Chunk, Corpus, Document, IndexRun
 
 router = APIRouter(tags=["corpora"])
@@ -32,6 +32,33 @@ def list_corpora(session: Session = Depends(get_db)) -> list[CorpusSummary]:
             )
         )
     return summaries
+
+
+@router.delete("/api/corpora/{name}", response_model=CorpusDeleteResponse)
+def delete_corpus(name: str, session: Session = Depends(get_db)) -> CorpusDeleteResponse:
+    corpus = session.execute(select(Corpus).where(Corpus.name == name)).scalar_one_or_none()
+    if corpus is None:
+        raise HTTPException(status_code=404, detail=f"Corpus '{name}' introuvable")
+    docs_count = session.execute(
+        select(func.count()).select_from(Document).where(Document.corpus_id == corpus.id)
+    ).scalar_one() or 0
+    runs_count = session.execute(
+        select(func.count()).select_from(IndexRun).where(IndexRun.corpus_id == corpus.id)
+    ).scalar_one() or 0
+    chunks_count = session.execute(
+        select(func.count())
+        .select_from(Chunk)
+        .join(IndexRun, IndexRun.id == Chunk.index_run_id)
+        .where(IndexRun.corpus_id == corpus.id)
+    ).scalar_one() or 0
+    session.delete(corpus)
+    session.flush()
+    return CorpusDeleteResponse(
+        corpus=name,
+        documents_deleted=docs_count,
+        index_runs_deleted=runs_count,
+        chunks_deleted=chunks_count,
+    )
 
 
 @router.get("/api/index-runs", response_model=list[IndexRunSummary])
