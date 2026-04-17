@@ -43,6 +43,20 @@ def test_chat_sends_messages_with_merged_options():
     assert result["payload_sent"]["options"]["temperature"] == 0.3
 
 
+def test_delete_model_sends_delete_request():
+    service = OllamaService(_settings())
+    response = Mock()
+    response.raise_for_status.return_value = None
+
+    with patch("raglab.ollama.service.requests.delete", return_value=response) as requests_delete:
+        result = service.delete_model("qwen2.5:7b")
+
+    _, kwargs = requests_delete.call_args
+    assert kwargs["json"] == {"name": "qwen2.5:7b"}
+    assert result["model"] == "qwen2.5:7b"
+    assert result["status"] == "deleted"
+
+
 def test_chat_raises_friendly_error_when_model_missing():
     service = OllamaService(_settings())
 
