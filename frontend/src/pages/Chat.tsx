@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ApiError, extractErrorDetail, get, post } from "../api/client";
 import type {
-  ChunkingStrategy,
   CorpusSummary,
   IndexRunSummary,
   OllamaModelsResponse,
@@ -15,8 +14,6 @@ import { SourceList } from "../components/SourcePill";
 import { SuggestionChips } from "../components/SuggestionChips";
 import { useApiAction, useApiLoad } from "../hooks/useApi";
 import { useConfig } from "../hooks/useConfig";
-
-type StrategyChoice = "" | ChunkingStrategy;
 
 interface ChatTurn {
   id: string;
@@ -36,15 +33,26 @@ const DEFAULT_SUGGESTIONS = [
   "Quels sont les fluxos e procedimentos de contratação mentionnes ?",
 ];
 
-const STRATEGY_LABELS: Record<string, string> = {
-  "": "auto",
-  traditional: "traditional",
-  slide: "slide",
-  late: "late",
-};
-
 function newTurnId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function shortDate(iso: string | null): string {
+  if (!iso) return "—";
+  try {
+    const d = new Date(iso);
+    const pad = (n: number) => n.toString().padStart(2, "0");
+    return `${pad(d.getDate())}/${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(
+      d.getMinutes()
+    )}`;
+  } catch {
+    return iso;
+  }
+}
+
+function formatRunLabel(run: IndexRunSummary): string {
+  const parts = [run.strategy, run.embedding_model_name ?? "—", shortDate(run.started_at)];
+  return parts.join(" · ");
 }
 
 const CITATION_REGEX = /\[(?:Rank|rank|Source\s+rank\s*=)\s*(\d+)\]/g;
@@ -107,7 +115,7 @@ export function Chat() {
   const models = useApiLoad<OllamaModelsResponse>(() => get("/api/ollama/models"));
 
   const [corpus, setCorpus] = useState("");
-  const [strategy, setStrategy] = useState<StrategyChoice>("");
+  const [indexRunId, setIndexRunId] = useState("");
   const [llmModel, setLlmModel] = useState("");
   const [question, setQuestion] = useState("");
   const [turns, setTurns] = useState<ChatTurn[]>([]);
@@ -123,18 +131,25 @@ export function Chat() {
   }, [corpus, corpora.data]);
 
   const indexRuns = useApiLoad<IndexRunSummary[]>(
-    () => (corpus ? get(`/api/index-runs?corpus=${encodeURIComponent(corpus)}`) : Promise.resolve([])),
+    () =>
+      corpus
+        ? get(`/api/index-runs?corpus=${encodeURIComponent(corpus)}`)
+        : Promise.resolve([]),
     [corpus]
   );
 
-  const embeddingLabel = useMemo(() => {
-    if (!indexRuns.data || indexRuns.data.length === 0) {
-      return config?.embedding_model_name ?? "—";
-    }
-    return config?.embedding_model_name ?? "—";
-  }, [indexRuns.data, config]);
+  // Reset explicit index choice when corpus changes.
+  useEffect(() => {
+    setIndexRunId("");
+  }, [corpus]);
 
-  const action = useApiAction((body: unknown) => post<QueryResponse>("/api/query", body));
+  const runsForCorpus = indexRuns.data ?? [];
+  const resolvedRun =
+    runsForCorpus.find((r) => r.id === indexRunId) ?? runsForCorpus[0] ?? null;
+
+  const action = useApiAction((body: unknown) =>
+    post<QueryResponse>("/api/query", body)
+  );
 
   const send = async (overrideQuestion?: string) => {
     const q = (overrideQuestion ?? question).trim();
@@ -142,14 +157,22 @@ export function Chat() {
     const id = newTurnId();
     setTurns((prev) => [
       ...prev,
-      { id, question: q, answer: null, chunks: [], index_run_id: null, strategy: null, elapsed_ms: null },
+      {
+        id,
+        question: q,
+        answer: null,
+        chunks: [],
+        index_run_id: null,
+        strategy: null,
+        elapsed_ms: null,
+      },
     ]);
     setQuestion("");
 
     const body: Record<string, unknown> = {
       question: q,
       corpus,
-      strategy: strategy || null,
+      index_run_id: indexRunId || null,
       top_k: 5,
       generate: true,
     };
@@ -204,9 +227,11 @@ export function Chat() {
   };
 
   const modelsList = models.data?.models ?? [];
-  const defaultModel = config?.generation_model ?? models.data?.default_generation_model ?? "qwen2.5:7b";
+  const defaultModel =
+    config?.generation_model ?? models.data?.default_generation_model ?? "qwen2.5:7b";
 
   const empty = turns.length === 0;
+  const noRuns = !indexRuns.loading && runsForCorpus.length === 0;
 
   return (
     <div className="chat-page">
@@ -225,22 +250,30 @@ export function Chat() {
           </select>
         </div>
 
-        <div className="compact-field">
-          <label>Strategie</label>
+        <div
+          className="compact-field"
+          style={{ minWidth: 300 }}
+          title="Chaque index est un build precalcule : stratégie de chunking + embedding, produits a l'indexation dans le mode Expert."
+        >
+          <label>Index</label>
           <select
-            value={strategy}
-            onChange={(e) => setStrategy(e.target.value as StrategyChoice)}
+            value={indexRunId}
+            onChange={(e) => setIndexRunId(e.target.value)}
+            disabled={noRuns}
           >
-            <option value="">auto (dernier run)</option>
-            <option value="traditional">traditional</option>
-            <option value="slide">slide</option>
-            <option value="late">late</option>
+            <option value="">
+              {noRuns
+                ? "— aucun index pour ce corpus —"
+                : resolvedRun
+                ? `(plus recent) · ${formatRunLabel(resolvedRun)}`
+                : "(plus recent)"}
+            </option>
+            {runsForCorpus.map((r) => (
+              <option key={r.id} value={r.id}>
+                {formatRunLabel(r)}
+              </option>
+            ))}
           </select>
-        </div>
-
-        <div className="compact-field" title="Fixe au moment de l'indexation. Change-le via le mode Expert.">
-          <label>Embedding (lecture seule)</label>
-          <div className="read-only">{embeddingLabel}</div>
         </div>
 
         <div className="settings-actions">
@@ -257,27 +290,27 @@ export function Chat() {
           <div className="welcome">
             <h1>Pose une question a tes documents</h1>
             <p className="muted">
-              Le modele cherche dans le corpus selectionne, cite les extraits utilises et produit une reponse.
-              Choisis une suggestion ci-dessous ou ecris ta question.
+              Le modele cherche dans l'index selectionne, cite les extraits utilises et
+              produit une reponse. Choisis une suggestion ci-dessous ou ecris ta question.
             </p>
           </div>
           <SuggestionChips suggestions={DEFAULT_SUGGESTIONS} onPick={(s) => send(s)} />
         </div>
       ) : (
         <div className="chat-stream" ref={streamRef}>
-          {turns.map((t) => (
+          {turns.map((turn) => (
             <ChatTurnView
-              key={t.id}
-              turn={t}
-              expanded={!!expanded[t.id]}
-              highlight={highlight[t.id] ?? null}
+              key={turn.id}
+              turn={turn}
+              expanded={!!expanded[turn.id]}
+              highlight={highlight[turn.id] ?? null}
               onToggleDetails={() =>
-                setExpanded((prev) => ({ ...prev, [t.id]: !prev[t.id] }))
+                setExpanded((prev) => ({ ...prev, [turn.id]: !prev[turn.id] }))
               }
               onSelectSource={(file) =>
                 setHighlight((prev) => ({
                   ...prev,
-                  [t.id]: prev[t.id] === file ? null : file,
+                  [turn.id]: prev[turn.id] === file ? null : file,
                 }))
               }
             />
@@ -300,7 +333,11 @@ export function Chat() {
         <div className="composer-row">
           <div className="model-pick">
             <span>LLM</span>
-            <select value={llmModel} onChange={(e) => setLlmModel(e.target.value)} title="Modele utilise pour la generation finale">
+            <select
+              value={llmModel}
+              onChange={(e) => setLlmModel(e.target.value)}
+              title="Modele utilise pour la generation finale"
+            >
               <option value="">defaut : {defaultModel}</option>
               {modelsList.map((m) => (
                 <option key={m.name} value={m.name}>
@@ -309,13 +346,18 @@ export function Chat() {
               ))}
             </select>
             <span className="dim">
-              {corpus ? `sur ${corpus}` : "aucun corpus"}
-              {strategy ? ` · ${STRATEGY_LABELS[strategy]}` : ""}
+              {resolvedRun
+                ? `index : ${resolvedRun.strategy} · ${
+                    resolvedRun.embedding_model_name ?? "—"
+                  }`
+                : corpus
+                ? "aucun index"
+                : "aucun corpus"}
             </span>
           </div>
           <button
             onClick={() => send()}
-            disabled={action.loading || !question.trim() || !corpus}
+            disabled={action.loading || !question.trim() || !corpus || noRuns}
           >
             <SendIcon size={14} /> Envoyer
           </button>
@@ -354,7 +396,11 @@ function ChatTurnView({
 
       {turn.answer === null && !turn.error ? (
         <div className="inline-status" role="status">
-          <span className="dots"><span /><span /><span /></span>
+          <span className="dots">
+            <span />
+            <span />
+            <span />
+          </span>
           raglab cherche et genere…
         </div>
       ) : null}
@@ -397,7 +443,8 @@ function ChatTurnView({
                 citedRanks={turn.answer ? extractCitedRanks(turn.answer) : undefined}
               />
               <button className="details-toggle" onClick={onToggleDetails}>
-                {expanded ? "Masquer" : "Afficher"} les {visibleChunks.length} chunk(s){highlight ? " filtre(s)" : ""}
+                {expanded ? "Masquer" : "Afficher"} les {visibleChunks.length} chunk(s)
+                {highlight ? " filtre(s)" : ""}
               </button>
               {expanded ? (
                 <div style={{ marginTop: 12 }}>
@@ -409,9 +456,15 @@ function ChatTurnView({
             </div>
           ) : null}
           <div className="answer-meta">
-            {turn.strategy ? <span>strategie <code>{turn.strategy}</code></span> : null}
+            {turn.strategy ? (
+              <span>
+                strategie <code>{turn.strategy}</code>
+              </span>
+            ) : null}
             {turn.index_run_id ? (
-              <span title={turn.index_run_id}>index run <code>{turn.index_run_id.slice(0, 8)}</code></span>
+              <span title={turn.index_run_id}>
+                index run <code>{turn.index_run_id.slice(0, 8)}</code>
+              </span>
             ) : null}
             {turn.elapsed_ms != null ? <span>{turn.elapsed_ms.toFixed(0)} ms</span> : null}
           </div>
