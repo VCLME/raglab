@@ -6,6 +6,7 @@ interface Props {
   onSelect?: (fileName: string) => void;
   activeFile?: string | null;
   collapseAfter?: number;
+  citedRanks?: number[];
 }
 
 interface Aggregated {
@@ -33,16 +34,22 @@ export function SourceList({
   onSelect,
   activeFile,
   collapseAfter = 5,
+  citedRanks,
 }: Props) {
   const [expanded, setExpanded] = useState(false);
   if (!chunks.length) return null;
   const aggregated = aggregate(chunks);
 
-  const activeIsHidden =
-    !!activeFile &&
-    aggregated.findIndex((a) => a.file_name === activeFile) >= collapseAfter;
+  const hasCitations = !!citedRanks && citedRanks.length > 0;
+  const citedSet = new Set(citedRanks ?? []);
+  const defaultVisible = hasCitations
+    ? aggregated.filter((a) => citedSet.has(a.best.rank))
+    : aggregated.slice(0, collapseAfter);
+  const defaultVisibleFiles = new Set(defaultVisible.map((a) => a.file_name));
+
+  const activeIsHidden = !!activeFile && !defaultVisibleFiles.has(activeFile);
   const shouldExpand = expanded || activeIsHidden;
-  const visible = shouldExpand ? aggregated : aggregated.slice(0, collapseAfter);
+  const visible = shouldExpand ? aggregated : defaultVisible;
   const hiddenCount = aggregated.length - visible.length;
 
   return (
@@ -70,20 +77,25 @@ export function SourceList({
           </button>
         );
       })}
-      {hiddenCount > 0 ? (
+      {hiddenCount > 0 && !shouldExpand ? (
         <button
           className="source-pill more"
           onClick={() => setExpanded(true)}
-          title={`Afficher les ${hiddenCount} autres sources`}
+          title={
+            hasCitations
+              ? `Afficher les ${hiddenCount} autres sources non citees`
+              : `Afficher les ${hiddenCount} autres sources`
+          }
         >
-          +{hiddenCount} autre{hiddenCount > 1 ? "s" : ""}
+          +{hiddenCount} {hasCitations ? "non cite" : "autre"}
+          {hiddenCount > 1 ? "s" : ""}
         </button>
       ) : null}
-      {shouldExpand && aggregated.length > collapseAfter && !activeIsHidden ? (
+      {shouldExpand && aggregated.length > defaultVisible.length && !activeIsHidden ? (
         <button
           className="source-pill more"
           onClick={() => setExpanded(false)}
-          title="Masquer les sources supplementaires"
+          title="Masquer les sources non citees"
         >
           masquer
         </button>

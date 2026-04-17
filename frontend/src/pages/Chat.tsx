@@ -54,6 +54,17 @@ function stripTrailingSources(answer: string): string {
   return answer.replace(TRAILING_SOURCES_REGEX, "").trimEnd();
 }
 
+function extractCitedRanks(answer: string): number[] {
+  const cleaned = stripTrailingSources(answer);
+  const ranks = new Set<number>();
+  CITATION_REGEX.lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = CITATION_REGEX.exec(cleaned)) !== null) {
+    ranks.add(Number(match[1]));
+  }
+  return Array.from(ranks);
+}
+
 function renderAnswer(
   answer: string,
   chunks: RetrievedChunk[],
@@ -383,6 +394,7 @@ function ChatTurnView({
                 chunks={turn.chunks}
                 onSelect={onSelectSource}
                 activeFile={highlight}
+                citedRanks={turn.answer ? extractCitedRanks(turn.answer) : undefined}
               />
               <button className="details-toggle" onClick={onToggleDetails}>
                 {expanded ? "Masquer" : "Afficher"} les {visibleChunks.length} chunk(s){highlight ? " filtre(s)" : ""}
