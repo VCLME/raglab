@@ -9,6 +9,7 @@ const LINKS = [
   { to: "/expert/lexml", label: "LexML" },
   { to: "/expert/ollama", label: "Ollama" },
   { to: "/expert/experiments", label: "Experiments" },
+  { to: "/expert/manage", label: "Gestion" },
 ];
 
 export function NavBar() {
