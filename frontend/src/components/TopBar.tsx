@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
 import { get } from "../api/client";
 import type { HealthResponse } from "../api/types";
 import { ChatIcon, FlaskIcon } from "./Icon";
+import { LanguageSwitcher } from "./LanguageSwitcher";
 
 export function TopBar() {
+  const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
   const isExpert = location.pathname.startsWith("/expert");
@@ -37,36 +40,43 @@ export function TopBar() {
     : "err";
 
   const dotLabel = !health
-    ? "API injoignable"
-    : `API ${health.api} · PostgreSQL ${health.postgres} · Ollama ${health.ollama}`;
+    ? t("topbar.api_unreachable")
+    : t("topbar.api_label", {
+        api: health.api,
+        postgres: health.postgres,
+        ollama: health.ollama,
+      });
 
   return (
     <header className="topbar">
       <div className="brand">
         <span className={`dot ${dotClass}`} title={dotLabel} />
-        raglab
+        {t("topbar.brand")}
       </div>
-      <div className="mode-switch" role="tablist" aria-label="Mode">
-        <button
-          role="tab"
-          aria-selected={!isExpert}
-          className={!isExpert ? "active" : ""}
-          onClick={() => navigate("/")}
-          title="Mode chat : poser des questions au RAG simplement"
-        >
-          <ChatIcon />
-          Chat
-        </button>
-        <button
-          role="tab"
-          aria-selected={isExpert}
-          className={isExpert ? "active" : ""}
-          onClick={() => navigate("/expert")}
-          title="Mode expert : ingestion, indexation, Ollama, benchmarks"
-        >
-          <FlaskIcon />
-          Expert
-        </button>
+      <div className="inline" style={{ gap: 10 }}>
+        <LanguageSwitcher />
+        <div className="mode-switch" role="tablist" aria-label="Mode">
+          <button
+            role="tab"
+            aria-selected={!isExpert}
+            className={!isExpert ? "active" : ""}
+            onClick={() => navigate("/")}
+            title={t("topbar.chat_title")}
+          >
+            <ChatIcon />
+            {t("topbar.chat")}
+          </button>
+          <button
+            role="tab"
+            aria-selected={isExpert}
+            className={isExpert ? "active" : ""}
+            onClick={() => navigate("/expert")}
+            title={t("topbar.expert_title")}
+          >
+            <FlaskIcon />
+            {t("topbar.expert")}
+          </button>
+        </div>
       </div>
     </header>
   );
