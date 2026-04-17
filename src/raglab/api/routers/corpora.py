@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from raglab.api.deps import get_db
 from raglab.api.schemas import CorpusDeleteResponse, CorpusSummary, IndexRunSummary
-from raglab.db.models import Chunk, Corpus, Document, IndexRun
+from raglab.db.models import Chunk, Corpus, Document, EmbeddingSpace, IndexRun
 
 router = APIRouter(tags=["corpora"])
 
@@ -67,8 +67,9 @@ def list_index_runs(
     session: Session = Depends(get_db),
 ) -> list[IndexRunSummary]:
     stmt = (
-        select(IndexRun, Corpus.name)
+        select(IndexRun, Corpus.name, EmbeddingSpace)
         .join(Corpus, Corpus.id == IndexRun.corpus_id)
+        .join(EmbeddingSpace, EmbeddingSpace.id == IndexRun.embedding_space_id)
         .order_by(IndexRun.started_at.desc())
     )
     if corpus:
@@ -77,7 +78,7 @@ def list_index_runs(
             raise HTTPException(status_code=404, detail=f"Corpus '{corpus}' introuvable")
         stmt = stmt.where(IndexRun.corpus_id == corpus_row.id)
     results: list[IndexRunSummary] = []
-    for run, corpus_name in session.execute(stmt).all():
+    for run, corpus_name, embedding_space in session.execute(stmt).all():
         chunks_count = session.execute(
             select(func.count()).select_from(Chunk).where(Chunk.index_run_id == run.id)
         ).scalar_one()
@@ -92,6 +93,10 @@ def list_index_runs(
                 started_at=run.started_at.isoformat() if run.started_at else None,
                 completed_at=run.completed_at.isoformat() if run.completed_at else None,
                 chunks_count=chunks_count or 0,
+                embedding_space_name=embedding_space.name if embedding_space else None,
+                embedding_provider=embedding_space.provider if embedding_space else None,
+                embedding_model_name=embedding_space.model_name if embedding_space else None,
+                embedding_dimension=embedding_space.dimension if embedding_space else None,
             )
         )
     return results
