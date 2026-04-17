@@ -45,8 +45,9 @@ def build_prompt_bundle(question: str, chunks: list[RetrievedChunk], *, no_conte
         Si le contexte est insuffisant, réponds exactement :
         "{no_context_answer}"
         Si plusieurs sources se contredisent, signale l'incertitude.
-        Quand tu réponds, cite les sources utiles à la fin sous la forme :
-        Sources: [Rank X] nom_fichier
+        Quand tu affirmes un fait issu du contexte, cite-le inline en placant
+        [Rank X] immédiatement après l'affirmation (X = le rank du chunk utilisé).
+        N'ajoute jamais de ligne `Sources:` séparée à la fin : les citations inline suffisent.
         Garde une réponse concise, factuelle et directement exploitable.
         """
     ).strip()
@@ -63,7 +64,7 @@ def build_prompt_bundle(question: str, chunks: list[RetrievedChunk], *, no_conte
         Consigne de sortie:
         1. Répondre en t'appuyant uniquement sur le contexte.
         2. Si l'information manque, utiliser exactement la phrase de fallback.
-        3. Ajouter une ligne `Sources:` uniquement si au moins une source a été réellement utilisée.
+        3. Citer les sources inline avec [Rank X] juste après chaque fait cité. Pas de section `Sources:` finale.
         """
     ).strip()
     return PromptBundle(system_prompt=system_prompt, user_prompt=user_prompt)
