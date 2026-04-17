@@ -91,6 +91,10 @@ def test_index_corpus_incremental_reuses_all_documents_without_loading_models():
         query_prefix="query: ",
         passage_prefix="passage: ",
     )
+    # IndexingService.index_corpus peeks at the session to decide whether the
+    # embedding space already exists (skip probing) or needs a probe. Wire
+    # the mock so it behaves like an existing space for this scenario.
+    session.scalar.return_value = embedding_space
     index_run = SimpleNamespace(id="run-1", config_json={})
     base_run = SimpleNamespace(id="run-0")
 

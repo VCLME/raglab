@@ -85,3 +85,46 @@ def ensure_partial_hnsw_index(session: Session, dim: int) -> None:
     if dim <= 0:
         raise ValueError(f"Invalid embedding dimension: {dim}")
     _create_partial_hnsw(session, dim)
+
+
+def reconcile_embedding_space_dimensions(connection: Connection) -> list[tuple[str, int, int]]:
+    """Align `embedding_spaces.dimension` with the actual vectors stored.
+
+    Older indexing runs created an `embedding_space` row using the global
+    settings dimension, even when the embedding model produced a different
+    size. This left metadata inconsistent with the stored vectors and broke
+    retrieval (the cast to `vector(N)` rejected rows). This helper scans
+    every `embedding_space`, samples one of its `chunk_embeddings` rows,
+    and updates the stored dimension when it diverges from reality. It
+    also ensures a partial HNSW index exists for each reconciled dim.
+
+    Returns the list of (embedding_space_id, old_dim, new_dim) rows that
+    were actually updated — useful for logging/debugging.
+    """
+    rows = connection.execute(
+        text(
+            "SELECT es.id, es.dimension, ("
+            "  SELECT vector_dims(ce.embedding) "
+            "  FROM chunk_embeddings ce "
+            "  WHERE ce.embedding_space_id = es.id LIMIT 1"
+            ") AS actual_dim "
+            "FROM embedding_spaces es"
+        )
+    ).all()
+    updated: list[tuple[str, int, int]] = []
+    for space_id, declared_dim, actual_dim in rows:
+        if actual_dim is None:
+            continue
+        if int(actual_dim) != int(declared_dim):
+            connection.execute(
+                text("UPDATE embedding_spaces SET dimension = :d WHERE id = :id"),
+                {"d": int(actual_dim), "id": str(space_id)},
+            )
+            updated.append((str(space_id), int(declared_dim), int(actual_dim)))
+        _create_partial_hnsw(connection, int(actual_dim))
+    if updated:
+        LOGGER.warning(
+            "db.reconcile.embedding_space_dimensions",
+            extra={"updated": updated},
+        )
+    return updated
