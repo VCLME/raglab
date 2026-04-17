@@ -61,12 +61,11 @@ class QueryService:
             strategy=strategy,
             index_run_id=index_run_id,
         )
-        if index_run.embedding_space.dimension != self.settings.embedding_dimension:
-            raise ValueError(
-                "La dimension d'embeddings de l'instance ne correspond pas a l'index courant. "
-                "Reinitialisez le projet ou utilisez une dimension homogene."
-            )
 
+        # Each index_run points to an embedding_space that carries the exact
+        # provider, model and dimension used at indexing time. We use those to
+        # build an embedder that matches the index, which is what lets multiple
+        # embedding spaces with different dimensions coexist in the same DB.
         effective_settings = self.settings.model_copy(
             update={
                 "embedding_provider": index_run.embedding_space.provider,

@@ -9,6 +9,8 @@ from sqlalchemy.orm import Session
 from raglab.chunking.base import ChunkingConfig
 from raglab.chunking.factory import build_chunker
 from raglab.config import Settings, get_settings
+from sqlalchemy import select
+
 from raglab.db.crud import (
     complete_index_run,
     create_index_run,
@@ -18,6 +20,7 @@ from raglab.db.crud import (
     list_documents_for_corpus,
     resolve_latest_compatible_index_run,
 )
+from raglab.db.indexes import ensure_partial_hnsw_index
 from raglab.db.models import Chunk, ChunkEmbedding, Document, EmbeddingSpace, IndexRun
 from raglab.domain.enums import ChunkingStrategy, IndexStatus
 from raglab.embeddings.factory import build_embedding_provider
@@ -274,15 +277,50 @@ class IndexingService:
                 "embedding_model_name": embedding_model_name or self.settings.embedding_model_name,
             }
         )
+
+        # The embedding_space name is the provider:model pair. If one already
+        # exists for this pair we trust its dimension (authoritative metadata
+        # of vectors already stored under that space). Otherwise, we probe
+        # the embedder once to learn the true output dimension before
+        # creating the row — that's the only way to avoid settings drift
+        # when a user overrides the embedding model without touching
+        # RAGLAB_EMBEDDING_DIMENSION.
+        space_name = f"{effective_settings.embedding_provider}:{effective_settings.embedding_model_name}"
+        existing_space = self.session.scalar(
+            select(EmbeddingSpace).where(EmbeddingSpace.name == space_name)
+        )
+        if existing_space is not None:
+            resolved_dim = int(existing_space.dimension)
+        else:
+            probe_embedder = build_embedding_provider(effective_settings)
+            probe_vector = probe_embedder.embed_query("dimension probe")
+            resolved_dim = len(probe_vector)
+            if resolved_dim != effective_settings.embedding_dimension:
+                log_event(
+                    LOGGER,
+                    logging.INFO,
+                    "indexing.dimension_auto_adjust",
+                    declared=effective_settings.embedding_dimension,
+                    actual=resolved_dim,
+                    model=effective_settings.embedding_model_name,
+                )
+
+        if resolved_dim != effective_settings.embedding_dimension:
+            effective_settings = effective_settings.model_copy(
+                update={"embedding_dimension": resolved_dim}
+            )
+
         embedding_space = get_or_create_embedding_space(
             self.session,
             provider=effective_settings.embedding_provider,
             model_name=effective_settings.embedding_model_name,
-            dimension=effective_settings.embedding_dimension,
+            dimension=resolved_dim,
             distance_metric=effective_settings.distance_metric,
             query_prefix=effective_settings.query_prefix,
             passage_prefix=effective_settings.passage_prefix,
         )
+        ensure_partial_hnsw_index(self.session, embedding_space.dimension)
+        self.session.commit()
         chunk_config = self._build_chunk_config(strategy)
 
         index_run = create_index_run(
