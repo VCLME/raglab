@@ -678,6 +678,14 @@ button.sm {
   min-width: 16px;
   text-align: center;
 }
+.source-pill.more {
+  color: var(--muted);
+  border-style: dashed;
+}
+.source-pill.more:hover {
+  color: var(--text);
+  border-style: solid;
+}
 
 .details-toggle {
   margin-top: 12px;

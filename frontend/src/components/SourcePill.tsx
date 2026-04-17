@@ -1,9 +1,11 @@
+import { useState } from "react";
 import type { RetrievedChunk } from "../api/types";
 
 interface Props {
   chunks: RetrievedChunk[];
   onSelect?: (fileName: string) => void;
   activeFile?: string | null;
+  collapseAfter?: number;
 }
 
 interface Aggregated {
@@ -26,12 +28,26 @@ function aggregate(chunks: RetrievedChunk[]): Aggregated[] {
   return Array.from(map.values()).sort((a, b) => a.best.rank - b.best.rank);
 }
 
-export function SourceList({ chunks, onSelect, activeFile }: Props) {
+export function SourceList({
+  chunks,
+  onSelect,
+  activeFile,
+  collapseAfter = 5,
+}: Props) {
+  const [expanded, setExpanded] = useState(false);
   if (!chunks.length) return null;
   const aggregated = aggregate(chunks);
+
+  const activeIsHidden =
+    !!activeFile &&
+    aggregated.findIndex((a) => a.file_name === activeFile) >= collapseAfter;
+  const shouldExpand = expanded || activeIsHidden;
+  const visible = shouldExpand ? aggregated : aggregated.slice(0, collapseAfter);
+  const hiddenCount = aggregated.length - visible.length;
+
   return (
     <div className="source-list">
-      {aggregated.map((entry) => {
+      {visible.map((entry) => {
         const isActive = activeFile === entry.file_name;
         return (
           <button
@@ -54,6 +70,24 @@ export function SourceList({ chunks, onSelect, activeFile }: Props) {
           </button>
         );
       })}
+      {hiddenCount > 0 ? (
+        <button
+          className="source-pill more"
+          onClick={() => setExpanded(true)}
+          title={`Afficher les ${hiddenCount} autres sources`}
+        >
+          +{hiddenCount} autre{hiddenCount > 1 ? "s" : ""}
+        </button>
+      ) : null}
+      {shouldExpand && aggregated.length > collapseAfter && !activeIsHidden ? (
+        <button
+          className="source-pill more"
+          onClick={() => setExpanded(false)}
+          title="Masquer les sources supplementaires"
+        >
+          masquer
+        </button>
+      ) : null}
     </div>
   );
 }
