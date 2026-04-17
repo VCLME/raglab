@@ -160,13 +160,16 @@ Le MVP prépare le support multi-modèles via `embedding_spaces`.
 Choix pragmatique d’implémentation :
 
 - un espace d’embeddings de référence est utilisé par défaut
-- la base est structurée pour suivre plusieurs espaces
-- la stratégie la plus simple pour la V1 reste d’utiliser une dimension active homogène par instance de projet
+- la base est structurée pour suivre plusieurs espaces, avec des provider / modèle / dimension différents
+- la colonne `chunk_embeddings.embedding` est stockée en `vector` variable (pgvector ≥ 0.7) : plusieurs dimensions coexistent dans la même table
+- un index HNSW partiel par dimension est créé à la volée au moment de l’indexation via `raglab.db.indexes.ensure_partial_hnsw_index`, avec le prédicat `WHERE vector_dims(embedding) = N` pour que le planner l’utilise
+- la recherche ajoute explicitement le cast `embedding::vector(N)` et le filtre `vector_dims(embedding) = N` pour matcher l’index partiel (voir `src/raglab/stores/vector/postgres.py`)
 
 Conséquence :
 
-- l’interface métier est prête pour plusieurs modèles
-- une évolution future pourra gérer plusieurs dimensions simultanées avec des index partiels ou des tables dédiées
+- l’interface métier est compatible multi-modèles et multi-dimensions sans schéma séparé
+- changer d’`embedding_model_name` entre deux `index_run` pour un même corpus est supporté, chaque run pointe vers son propre `embedding_space` avec sa dimension réelle
+- la variable `RAGLAB_EMBEDDING_DIMENSION` ne joue plus que comme défaut logique pour créer un nouvel `embedding_space` quand elle n’est pas déduite du modèle ; elle ne contraint plus la colonne
 
 ## 5. Préparation Neo4j
 

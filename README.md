@@ -290,6 +290,6 @@ L'UI est en http://localhost:5173 et parle a l'API http://localhost:8000 via pro
 - pas d'OCR pour PDF image
 - pas de reranker
 - pas de Neo4j branche dans cette premiere version
-- dimension d'embeddings homogene par instance de projet
+- plusieurs dimensions d'embeddings coexistent maintenant dans la meme BDD : la colonne `chunk_embeddings.embedding` est stockee en `vector` variable (pgvector >= 0.7), et un index HNSW partiel par dimension est cree a la volee par `raglab.db.indexes.ensure_partial_hnsw_index` au moment de l'indexation
 - la collecte LexML V1 sauvegarde des fiches documentaires structurees issues du portail LexML, sans suivre encore les liens de texte integral des fournisseurs
 - l'API web execute les operations longues (ingest, index, lexml load) en synchrone, sans file de jobs
