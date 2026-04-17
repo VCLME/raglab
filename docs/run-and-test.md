@@ -299,6 +299,29 @@ Resultat verifie sur cette machine :
 .venv\Scripts\raglab.exe --help
 ```
 
+### Activer le GPU Nvidia pour Ollama (optionnel)
+
+Si tu as un GPU Nvidia et le `nvidia-container-toolkit` (ou Docker Desktop + WSL2 sous Windows), combine `docker-compose.gpu.yml` pour que le conteneur Ollama exploite le GPU :
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d ollama
+```
+
+Verifie la detection :
+
+```bash
+docker logs raglab-ollama 2>&1 | grep -i "inference compute"
+```
+
+Tu dois voir une ligne type `library=CUDA ... description="NVIDIA ..."` avec la VRAM disponible. Sans l'override, le conteneur tourne en CPU (fallback).
+
+Bench observe sur RTX 3070 Ti Laptop 8 Go, `qwen2.5:7b` Q4 :
+
+| Mode | eval tok/s | eval duration (40 tokens) |
+| --- | --- | --- |
+| CPU | 10.7 | 3.74 s |
+| GPU CUDA | 38.2 | 1.04 s |
+
 ### Lancer l'API et le frontend
 
 L'API FastAPI est cablee sur les memes services que la CLI. Dev local :

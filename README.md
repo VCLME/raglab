@@ -245,6 +245,23 @@ Notes pratiques :
 - `qwen2.5:7b` est plus exigeant que `llama3.2:3b` en RAM/VRAM
 - si le modele n'est pas present localement, la generation indique maintenant explicitement la commande de pull a lancer
 
+### Accelerer avec un GPU Nvidia (optionnel)
+
+Par defaut le conteneur `ollama` tourne sur CPU. Si tu disposes d'un GPU Nvidia et du `nvidia-container-toolkit` (ou Docker Desktop + WSL2 sur Windows), utilise l'override `docker-compose.gpu.yml` :
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d ollama
+```
+
+Verification :
+
+```bash
+docker logs raglab-ollama 2>&1 | grep "inference compute"
+# attendu : library=CUDA name=CUDA0 description="NVIDIA GeForce ..."
+```
+
+Gain observe sur RTX 3070 Ti Laptop avec `qwen2.5:7b` Q4 : **CPU ~10.7 tok/s vs GPU ~38 tok/s** (3.6x). VRAM consommee par le modele : ~4.7 GiB.
+
 ## Interface web
 
 Une UI web React est disponible pour piloter ingestion, indexation, retrieval, generation et Ollama sans quitter le navigateur, ainsi qu'un Prompt Playground pour dialoguer directement avec Ollama. Voir [docs/frontend-ui.md](docs/frontend-ui.md).

@@ -1,0 +1,21 @@
+# Override optionnel pour activer le GPU Nvidia sur le conteneur ollama.
+# Usage :
+#   docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d ollama
+#
+# Prerequis :
+#   - driver Nvidia installe sur l'hote
+#   - nvidia-container-toolkit (Linux) ou Docker Desktop + WSL2 avec GPU paging (Windows)
+#   - runtime nvidia visible dans `docker info` (Runtimes)
+#
+# Gain observe sur RTX 3070 Ti Laptop avec qwen2.5:7b Q4 :
+#   CPU  : ~10.7 tok/s
+#   GPU  : ~38.2 tok/s (3.6x)
+services:
+  ollama:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
