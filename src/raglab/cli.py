@@ -77,6 +77,24 @@ def ollama_pull(
 
 
 @app.command()
+def serve(
+    host: str | None = typer.Option(None, "--host", help="Interface d'ecoute pour l'API."),
+    port: int | None = typer.Option(None, "--port", help="Port d'ecoute pour l'API."),
+    dev: bool = typer.Option(False, "--dev", help="Activer le mode reload pour le developpement."),
+) -> None:
+    """Lancer l'API FastAPI raglab (uvicorn)."""
+    import uvicorn
+
+    settings = get_settings()
+    uvicorn.run(
+        "raglab.api.main:app",
+        host=host or settings.api_host,
+        port=port or settings.api_port,
+        reload=dev,
+    )
+
+
+@app.command()
 def ingest(
     folder: Path = typer.Argument(..., exists=True, file_okay=False, dir_okay=True),
     corpus: str = typer.Option(get_settings().default_corpus_name, "--corpus", help="Nom du corpus cible."),

@@ -29,7 +29,8 @@ def test_build_prompt_bundle_includes_grounding_and_sources_instruction():
 
     assert "Réponds uniquement à partir du contexte fourni." in bundle.system_prompt
     assert '"Pas assez de contexte."' in bundle.system_prompt
-    assert "Sources: [Rank X] nom_fichier" in bundle.system_prompt
+    assert "[Rank X]" in bundle.system_prompt
+    assert "inline" in bundle.system_prompt
     assert "Fichier: law.txt" in bundle.user_prompt
     assert "Chemin: data/documents/law.txt" in bundle.user_prompt
     assert "Extrait:" in bundle.user_prompt
@@ -62,7 +63,7 @@ def test_generate_answer_sends_structured_messages_to_ollama():
     assert len(kwargs["json"]["messages"]) == 2
     assert kwargs["json"]["messages"][0]["role"] == "system"
     assert kwargs["json"]["messages"][1]["role"] == "user"
-    assert "Sources:" in kwargs["json"]["messages"][0]["content"]
+    assert "[Rank X]" in kwargs["json"]["messages"][0]["content"]
 
 
 def test_raise_for_status_returns_hint_when_model_is_missing():

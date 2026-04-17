@@ -24,6 +24,7 @@ Le projet fournit :
 - [Modele de donnees](docs/data-model.md)
 - [Lancer et tester le projet](docs/run-and-test.md)
 - [Cas réel RAG sans LLM](docs/real-rag-lexml-load.md)
+- [Interface web raglab](docs/frontend-ui.md)
 
 ## Structure
 
@@ -244,6 +245,29 @@ Notes pratiques :
 - `qwen2.5:7b` est plus exigeant que `llama3.2:3b` en RAM/VRAM
 - si le modele n'est pas present localement, la generation indique maintenant explicitement la commande de pull a lancer
 
+## Interface web
+
+Une UI web React est disponible pour piloter ingestion, indexation, retrieval, generation et Ollama sans quitter le navigateur, ainsi qu'un Prompt Playground pour dialoguer directement avec Ollama. Voir [docs/frontend-ui.md](docs/frontend-ui.md).
+
+Lancement Docker complet :
+
+```bash
+docker compose up -d postgres ollama adminer
+docker compose --profile app up -d api frontend
+```
+
+- Frontend : http://localhost:8081
+- API Swagger : http://localhost:8000/docs
+
+Lancement dev local :
+
+```bash
+raglab serve --dev
+cd frontend && npm install && npm run dev
+```
+
+L'UI est en http://localhost:5173 et parle a l'API http://localhost:8000 via proxy Vite.
+
 ## Limites actuelles
 
 - pas d'OCR pour PDF image
@@ -251,3 +275,4 @@ Notes pratiques :
 - pas de Neo4j branche dans cette premiere version
 - dimension d'embeddings homogene par instance de projet
 - la collecte LexML V1 sauvegarde des fiches documentaires structurees issues du portail LexML, sans suivre encore les liens de texte integral des fournisseurs
+- l'API web execute les operations longues (ingest, index, lexml load) en synchrone, sans file de jobs

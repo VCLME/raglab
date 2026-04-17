@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import logging
+import time
 from typing import Any
 
 import requests
+from requests import HTTPError
 
 from raglab.config import Settings, get_settings
 from raglab.logging_utils import log_event
@@ -89,6 +91,85 @@ class OllamaService:
             status=result["status"],
         )
         return result
+
+    def chat(
+        self,
+        messages: list[dict[str, str]],
+        *,
+        model: str | None = None,
+        system: str | None = None,
+        options: dict[str, Any] | None = None,
+        timeout: int | None = None,
+    ) -> dict[str, Any]:
+        selected_model = model or self.settings.generation_model
+        effective_timeout = timeout or self.settings.generation_timeout_seconds
+
+        payload_messages: list[dict[str, str]] = []
+        if system:
+            payload_messages.append({"role": "system", "content": system})
+        payload_messages.extend(messages)
+
+        payload: dict[str, Any] = {
+            "model": selected_model,
+            "messages": payload_messages,
+            "stream": False,
+        }
+        if options:
+            payload["options"] = options
+
+        log_event(
+            LOGGER,
+            logging.INFO,
+            "ollama.chat_started",
+            model=selected_model,
+            messages=len(payload_messages),
+            options=sorted(options.keys()) if options else [],
+        )
+
+        started = time.perf_counter()
+        response = requests.post(
+            f"{self.settings.ollama_base_url}/api/chat",
+            json=payload,
+            timeout=effective_timeout,
+        )
+        self._raise_for_status(response, selected_model)
+        raw = response.json()
+        elapsed_ms = (time.perf_counter() - started) * 1000.0
+        answer = raw.get("message", {}).get("content", "").strip()
+
+        log_event(
+            LOGGER,
+            logging.INFO,
+            "ollama.chat_completed",
+            model=selected_model,
+            answer_length=len(answer),
+            elapsed_ms=round(elapsed_ms, 2),
+        )
+
+        return {
+            "model": selected_model,
+            "answer": answer,
+            "elapsed_ms": round(elapsed_ms, 2),
+            "payload_sent": payload,
+            "raw": raw,
+        }
+
+    def _raise_for_status(self, response: requests.Response, model: str | None = None) -> None:
+        try:
+            response.raise_for_status()
+        except HTTPError as exc:
+            response_text = ""
+            try:
+                response_text = response.text
+            except Exception:
+                response_text = ""
+            if response.status_code == 404 and "not found" in response_text.lower():
+                missing_model = model or self.settings.generation_model
+                raise RuntimeError(
+                    "Le modele Ollama demande n'est pas disponible localement. "
+                    f"Telechargez-le avec `raglab ollama pull --model {missing_model}`."
+                ) from exc
+            raise
 
     def _get_tags(self) -> dict[str, Any]:
         response = requests.get(

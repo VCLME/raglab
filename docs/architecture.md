@@ -22,6 +22,7 @@ Chaque couche a une responsabilité explicite :
 - `db` / `stores.vector` : persistance et recherche vectorielle
 - `generation` : synthèse finale avec Ollama
 - `experiments` : exécution comparative et reporting
+- `api` : couche HTTP FastAPI réutilisant les services ci-dessus (`src/raglab/api/`), consommée par le frontend `frontend/` (React + Vite). Voir [frontend-ui.md](frontend-ui.md).
 
 ### Orientée expérimentation
 
