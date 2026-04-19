@@ -186,6 +186,43 @@ class ExperimentRunDetail(ExperimentRunSummary):
     results: list[ExperimentResultCase]
 
 
+class BenchLoaderInfo(BaseModel):
+    name: str
+    language: str
+    licence: str
+    description: str
+    default_corpus_name: str
+    source: str
+
+
+class BenchDatasetOnDisk(BaseModel):
+    loader: str | None = None
+    dataset_dir: str
+    ground_truth_path: str
+    corpus_dir: str
+    metadata_path: str | None = None
+    article_count: int | None = None
+    case_count: int | None = None
+    language: str | None = None
+    source: str | None = None
+
+
+class BenchDownloadRequest(BaseModel):
+    loader: str
+    limit: int | None = None
+    output_dir: str | None = None
+
+
+class BenchDownloadResponse(BaseModel):
+    loader: str
+    corpus_dir: str
+    ground_truth_path: str
+    metadata_path: str
+    corpus_name: str
+    article_count: int
+    case_count: int
+
+
 class RecallRequest(BaseModel):
     corpus: str
     strategy: ChunkingStrategy

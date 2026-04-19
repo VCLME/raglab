@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from raglab.api.routers import (
+    bench,
     corpora,
     experiments,
     health,
@@ -68,6 +69,7 @@ def create_app() -> FastAPI:
     app.include_router(query.router)
     app.include_router(lexml.router)
     app.include_router(experiments.router)
+    app.include_router(bench.router)
 
     return app
 
