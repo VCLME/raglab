@@ -91,12 +91,6 @@
     "composer_no_corpus": "aucun corpus",
     "llm_label": "LLM",
     "llm_title": "Modèle utilisé pour la génération finale",
-    "suggestions": [
-      "Que dit la Portaria AGU 343 de septembre 2013 ?",
-      "Quels textes traitent de l'acquisition de solutions de technologie de l'information ?",
-      "Qui encadre la manutenção de sistemas informatizados à l'AGU ?",
-      "Quels sont les fluxos e procedimentos de contratação mentionnés ?"
-    ],
     "no_answer_generated": "(Pas de réponse générée)"
   },
   "dashboard": {
