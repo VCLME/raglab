@@ -153,6 +153,39 @@ class LexMLLoadRequest(BaseModel):
     embedding_model: str | None = None
 
 
+class ExperimentRunSummary(BaseModel):
+    id: str
+    name: str
+    dataset_path: str
+    strategies: list[str]
+    status: str
+    started_at: str | None = None
+    completed_at: str | None = None
+    kind: str | None = None
+    benchmark: str | None = None
+    corpus_name: str | None = None
+    strategy: str | None = None
+    embedding_model_name: str | None = None
+    embedding_provider: str | None = None
+    embedding_dimension: int | None = None
+    total_cases: int | None = None
+    summary: dict[str, float | None] | None = None
+    duration_ms: float | None = None
+
+
+class ExperimentResultCase(BaseModel):
+    case_id: str
+    question: str
+    index_run_id: str
+    retrieved_chunk_ids: list[str]
+    answer: str | None = None
+    metrics: dict[str, Any]
+
+
+class ExperimentRunDetail(ExperimentRunSummary):
+    results: list[ExperimentResultCase]
+
+
 class RecallRequest(BaseModel):
     corpus: str
     strategy: ChunkingStrategy
