@@ -5,6 +5,7 @@ import { EMBEDDING_MODELS, EMBEDDING_PROVIDERS } from "../api/options";
 import { useApiAction, useApiLoad } from "../hooks/useApi";
 import type { ChunkingStrategy, CorpusSummary, IndexResponse } from "../api/types";
 import { ErrorBanner } from "../components/ErrorBanner";
+import { ExplainBanner } from "../components/ExplainBanner";
 import { FieldRow } from "../components/FieldRow";
 import { JsonViewer } from "../components/JsonViewer";
 import { SelectWithOther } from "../components/SelectWithOther";
@@ -43,6 +44,11 @@ export function IndexPage() {
         <h2>{t("index.title")}</h2>
         <span className="muted">{t("index.subtitle")}</span>
       </div>
+      <ExplainBanner
+        subtitle={t("index.subtitle")}
+        body={t("index.explain_body")}
+        storageKey="raglab.explain.index"
+      />
       <div className="split">
         <div className="card">
           <h3>{t("query.parameters")}</h3>

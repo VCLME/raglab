@@ -4,6 +4,7 @@ import { apiFetch, get, post } from "../api/client";
 import { useApiAction, useApiLoad } from "../hooks/useApi";
 import type { OllamaModelsResponse, OllamaStatus } from "../api/types";
 import { ErrorBanner } from "../components/ErrorBanner";
+import { ExplainBanner } from "../components/ExplainBanner";
 import { FieldRow } from "../components/FieldRow";
 import { Spinner } from "../components/Spinner";
 import { StatusBadge } from "../components/StatusBadge";
@@ -43,6 +44,11 @@ export function OllamaPage() {
           {t("common.refresh")}
         </button>
       </div>
+      <ExplainBanner
+        subtitle={t("ollama.subtitle")}
+        body={t("ollama.explain_body")}
+        storageKey="raglab.explain.ollama"
+      />
 
       <div className="card">
         <h3>{t("ollama.status")}</h3>

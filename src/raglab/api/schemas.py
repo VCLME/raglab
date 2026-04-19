@@ -153,6 +153,76 @@ class LexMLLoadRequest(BaseModel):
     embedding_model: str | None = None
 
 
+class ExperimentRunSummary(BaseModel):
+    id: str
+    name: str
+    dataset_path: str
+    strategies: list[str]
+    status: str
+    started_at: str | None = None
+    completed_at: str | None = None
+    kind: str | None = None
+    benchmark: str | None = None
+    corpus_name: str | None = None
+    strategy: str | None = None
+    embedding_model_name: str | None = None
+    embedding_provider: str | None = None
+    embedding_dimension: int | None = None
+    total_cases: int | None = None
+    summary: dict[str, float | None] | None = None
+    duration_ms: float | None = None
+
+
+class ExperimentResultCase(BaseModel):
+    case_id: str
+    question: str
+    index_run_id: str
+    retrieved_chunk_ids: list[str]
+    answer: str | None = None
+    metrics: dict[str, Any]
+
+
+class ExperimentRunDetail(ExperimentRunSummary):
+    results: list[ExperimentResultCase]
+
+
+class BenchLoaderInfo(BaseModel):
+    name: str
+    language: str
+    licence: str
+    description: str
+    default_corpus_name: str
+    source: str
+
+
+class BenchDatasetOnDisk(BaseModel):
+    loader: str | None = None
+    dataset_dir: str
+    ground_truth_path: str
+    corpus_dir: str
+    metadata_path: str | None = None
+    article_count: int | None = None
+    case_count: int | None = None
+    language: str | None = None
+    source: str | None = None
+
+
+class BenchDownloadRequest(BaseModel):
+    loader: str
+    limit: int | None = None
+    output_dir: str | None = None
+
+
+class BenchDownloadResponse(BaseModel):
+    loader: str
+    corpus_dir: str
+    ground_truth_path: str
+    metadata_path: str
+    corpus_name: str
+    article_count: int
+    case_count: int
+
+
 class RecallRequest(BaseModel):
     corpus: str
     strategy: ChunkingStrategy

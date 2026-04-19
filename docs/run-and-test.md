@@ -181,11 +181,12 @@ raglab index --corpus demo --strategy traditional --embedding-provider transform
 raglab query "Que dit le document sur la maintenance ?" --corpus demo --strategy traditional
 ```
 
-Le prompt de generation est maintenant plus robuste :
+Le prompt de generation :
 
-- il force la reponse a rester strictement ancree dans le contexte
-- il impose un fallback explicite si le contexte est insuffisant
-- il demande une ligne `Sources:` quand des sources ont effectivement ete utilisees
+- force la reponse a rester strictement ancree dans le contexte
+- impose un fallback explicite si le contexte est insuffisant
+- demande au modele de citer chaque fait **inline** avec `[Rank N]` juste apres l'affirmation (N = rank du chunk utilise)
+- interdit explicitement d'ajouter une section `Sources:` en fin de reponse : c'est l'UI qui rend les sources cote front, et la CLI affiche les `retrieved_chunks` separement
 
 Exemples de filtres :
 
@@ -258,6 +259,42 @@ Le benchmark :
 - utilise une verite terrain simple basee sur les noms de fichiers et les URN attendues
 - calcule `Recall@K`, `Precision@K`, `MRR` et `mean_first_relevant_rank`
 - ecrit un rapport JSON dans `data/reports/`
+
+**Attention** : ce jeu auto-genere depuis LexML est utile comme **smoke test** mais pas comme benchmark rigoureux. Les questions sont des templates (`"{titre}. {resume}"`), la verite terrain est heuristique (match de nom de fichier / URN) et il n'y a qu'une seule source pertinente par question. Pour une vraie evaluation, passer par la commande `raglab bench download` ci-dessous.
+
+## 11b. Lancer un benchmark sur FQuAD
+
+Pour evaluer sur un dataset Q/R a verite terrain humaine, raglab expose le module `benchmarks`. Le premier loader disponible telecharge **FQuAD v1.0** (SQuAD francais, articles Wikipedia, CC-BY-SA-3.0).
+
+```powershell
+raglab bench download fquad --limit 50
+raglab ingest data/benchmarks/fquad/corpus --corpus fquad_fr
+raglab index --corpus fquad_fr --strategy traditional
+raglab experiment recall --corpus fquad_fr --strategy traditional --dataset-path data/benchmarks/fquad/ground_truth.jsonl
+```
+
+Ce que produit `bench download` :
+
+```
+data/benchmarks/fquad/
+├── metadata.json           # loader, source, taille, langue, licence
+├── corpus/
+│   ├── article_<hash>.txt  # un fichier par article Wikipedia distinct
+│   └── article_<hash>.json # sidecar metadata (title, url, source)
+└── ground_truth.jsonl      # une ligne par question, format ExperimentCase
+```
+
+Chaque ligne de `ground_truth.jsonl` suit le schema :
+
+```json
+{"id": "fquad-42", "question": "…", "expected_file_names": ["article_abcd1234.txt"], "ground_truth_answer": "…", "expected_substrings": ["…"]}
+```
+
+Le `RecallBenchmarkService` existant consomme ce fichier tel quel via `--dataset-path`.
+
+`--limit N` permet de couper le volume de paires pour un premier run rapide. Sans `--limit`, le loader telecharge la totalite du split `validation` (~3 200 paires sur ~128 articles) — plusieurs minutes sur machine locale.
+
+Les loaders supplementaires (MIRACL, PIAF, SciFact, mMARCO-fr) sont en roadmap Phase 7 — le squelette est en place pour les ajouter un par un.
 
 ## 12. Cas reel sans LLM
 

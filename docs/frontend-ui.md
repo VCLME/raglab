@@ -61,19 +61,43 @@ Ouvrir http://localhost:5173. Le serveur Vite proxy `/api` vers `http://localhos
 L'interface se scinde en deux modes accessibles via un toggle en haut a droite :
 
 - **Mode Chat** (route `/`, icone bulle) : interface conversationnelle epuree pour interroger le RAG. Un seul ecran avec barre de parametres compacte, suggestions de questions, conversation et composer.
-- **Mode Expert** (route `/expert`, icone fiole) : ensemble des ecrans techniques (Dashboard, RAG Query avec filtres fins, Playground Ollama, Ingestion, Indexation, LexML, Ollama, Experiments).
+- **Mode Expert** (route `/expert`, icone fiole) : ensemble des ecrans techniques (Dashboard, RAG Query avec filtres fins, Playground Ollama, Ingestion, Indexation, LexML, Ollama, Experiments, Gestion).
 
-Le top-bar affiche en plus un indicateur de sante (point colore) qui ping `/api/health` toutes les 15 s.
+Le top-bar affiche en plus un indicateur de sante (point colore) qui ping `/api/health` toutes les 15 s, et un **selecteur de langue** (drapeau + code pays) avec menu deroulant a gauche du toggle Chat/Expert.
+
+## Internationalisation (i18n)
+
+L'UI est traduite en trois langues via `react-i18next` :
+
+- 🇫🇷 Francais (defaut, fallback)
+- 🇬🇧 Anglais
+- 🇧🇷 Portugais (Bresil)
+
+La langue est persistee dans `localStorage.raglab.lang`, avec detection auto depuis `navigator.language` au premier chargement. Les chaines de l'UI sont regroupees dans `frontend/src/i18n/locales/{fr,en,pt-BR}.json` par domaine (`common`, `topbar`, `nav`, `chat`, `dashboard`, `query`, `playground`, `ingest`, `index`, `lexml`, `ollama`, `experiments`, `manage`).
+
+Le composant `LanguageSwitcher` affiche le drapeau courant + code, et ouvre un menu avec les trois langues. Les drapeaux sont des SVG inline (`FlagIcon.tsx`) — pas de dependance externe.
+
+Ce qui reste en francais cote serveur :
+- messages d'erreur API (ex : `Corpus introuvable`, `Timeout Ollama`)
+- dates/heures format ISO brut
 
 ## Mode Chat (`/`)
 
 Ecran par defaut. Trois elements verticaux :
 
-1. **Barre de parametres compacte** : dropdown corpus (auto-selectionne sur le premier disponible), dropdown strategie (`auto`, `traditional`, `slide`, `late`), affichage en lecture seule de l'embedding (fixe au moment de l'indexation).
+1. **Barre de parametres compacte** : deux dropdowns seulement.
+   - **Corpus** : liste les corpus indexes, auto-selection du premier.
+   - **Index** : liste les `index_run` disponibles pour ce corpus, chaque option etiquetee `strategie · modele_embedding · date`. Option par defaut `(plus recent) · <label du run le plus recent>`. Message explicite `— aucun index pour ce corpus —` si rien n'a ete indexe.
+
+   La strategie de chunking et le modele d'embedding ne sont **plus** des selecteurs separes : ils sont figes par l'`index_run` choisi (ce sont des proprietes de l'indexation, pas du query). Voir [data-model.md](data-model.md) section 4.
+
 2. **Zone de conversation** :
-   - Etat vide : carte de bienvenue + 4 suggestions de questions cliquables calibrees sur le corpus LexML Brasil (Portaria AGU, acquisitions TI, etc.).
+   - Etat vide : carte de bienvenue + 4 suggestions de questions cliquables, localisees par langue.
    - Etat rempli : bulles user/assistant. Chaque reponse assistant affiche les sources en pills (`1 fichier.txt · 0.84`), filtrables par clic ; un toggle « Afficher les N chunks » deplie les ChunkCard detailles (score, rank, texte, source_path). Bas de bulle : strategie, `index_run_id` tronque, temps d'execution.
-3. **Composer** sticky en bas : textarea (Ctrl/Cmd + Entree pour envoyer), selecteur compact du modele LLM avec la valeur par defaut visible, bouton envoyer, bouton « Nouvelle conversation » dans la barre de parametres pour reset.
+   - **Citations inline cliquables** : le LLM inclut `[Rank N]` dans sa reponse. Chaque `[Rank N]` est rendu comme un petit badge accent monospace. Clic → active la pill de la source correspondante. Les sources reellement citees sont affichees d'office, les autres sont derriere un toggle `+N non cites`.
+   - Le chargement et les erreurs sont affiches **inline** sous la bulle user (trois points pulsants pour le loading, ligne rouge `⚠` pour l'erreur avec un `detail` souligne pour deplier la trace technique).
+
+3. **Composer** sticky en bas : textarea (Ctrl/Cmd + Entree pour envoyer), selecteur compact du modele LLM avec la valeur par defaut visible, bouton envoyer, bouton « Nouvelle conversation » dans la barre de parametres pour reset. Un helper sous le select rappelle l'index resolu : `index : traditional · intfloat/multilingual-e5-small`.
 
 Chaque envoi declenche un appel `/api/query` independant. L'historique conversationnel est conserve cote React (pas de multi-tour cote backend : le Playground couvre ce cas sans RAG).
 
@@ -143,7 +167,7 @@ Note : `load` est tres long. Le spinner indique simplement que l'appel est en co
 ### Ollama (`/expert/ollama`)
 
 - Statut (URL, joignabilite, nombre de modeles, modele par defaut, installation).
-- Tableau des modeles installes avec nom, taille, date, digest tronque. `qwen2.5:7b` est mis en valeur par la ligne surlignee « defaut ».
+- Tableau des modeles installes avec nom, taille, date, digest tronque. `qwen2.5:7b` est mis en valeur par la ligne surlignee « defaut ». Bouton `Supprimer` par ligne (avec confirmation ; avertissement special si c'est le modele de generation par defaut).
 - Formulaire pour `pull` d'un modele arbitraire.
 
 ### Experiments (`/expert/experiments`)
@@ -175,7 +199,7 @@ Tous prefixes par `/api`. Swagger disponible sur http://localhost:8000/docs.
 | POST | `/api/ollama/chat` | Delegation a `OllamaService.chat(...)` — appel direct Ollama `/api/chat` sans RAG |
 | GET | `/api/corpora` | Liste des corpus + compteurs |
 | DELETE | `/api/corpora/{name}` | Supprime un corpus et cascade sur documents, chunks, embeddings et index runs |
-| GET | `/api/index-runs?corpus=…` | Liste des index runs, filtrable par corpus |
+| GET | `/api/index-runs?corpus=…` | Liste des index runs (avec `embedding_space_name`, `embedding_provider`, `embedding_model_name`, `embedding_dimension`) — consommé par l'Index picker du Chat |
 | POST | `/api/ingest` | `IngestionService.ingest_folder(...)` |
 | POST | `/api/index` | `IndexingService.index_corpus(...)` |
 | POST | `/api/query` | `QueryService.query(...)` |

@@ -10,6 +10,7 @@ import type {
 } from "../api/types";
 import { ChunkCard } from "../components/ChunkCard";
 import { ErrorBanner } from "../components/ErrorBanner";
+import { ExplainBanner } from "../components/ExplainBanner";
 import { FieldRow } from "../components/FieldRow";
 import { JsonViewer } from "../components/JsonViewer";
 import { Spinner } from "../components/Spinner";
@@ -112,6 +113,11 @@ export function Query() {
         <h2>{t("query.title")}</h2>
         <span className="muted">{t("query.subtitle")}</span>
       </div>
+      <ExplainBanner
+        subtitle={t("query.subtitle")}
+        body={t("query.explain_body")}
+        storageKey="raglab.explain.query"
+      />
       <div className="split">
         <div>
           <div className="card">

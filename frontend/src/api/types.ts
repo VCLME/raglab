@@ -125,3 +125,36 @@ export interface QueryResponse {
   elapsed_ms: number;
   filters: unknown;
 }
+
+export interface ExperimentRunSummary {
+  id: string;
+  name: string;
+  dataset_path: string;
+  strategies: string[];
+  status: string;
+  started_at: string | null;
+  completed_at: string | null;
+  kind: string | null;
+  benchmark: string | null;
+  corpus_name: string | null;
+  strategy: string | null;
+  embedding_model_name: string | null;
+  embedding_provider: string | null;
+  embedding_dimension: number | null;
+  total_cases: number | null;
+  summary: Record<string, number | null> | null;
+  duration_ms: number | null;
+}
+
+export interface ExperimentResultCase {
+  case_id: string;
+  question: string;
+  index_run_id: string;
+  retrieved_chunk_ids: string[];
+  answer: string | null;
+  metrics: Record<string, unknown>;
+}
+
+export interface ExperimentRunDetail extends ExperimentRunSummary {
+  results: ExperimentResultCase[];
+}

@@ -17,6 +17,7 @@ Le projet fournit :
 
 ## Documents de cadrage
 
+- **[Idee de base](docs/base-idea.md)** — pourquoi raglab existe et ce qu'on cherche a mesurer
 - [Architecture](docs/architecture.md)
 - [Choix techniques](docs/technical-choices.md)
 - [Plan d'experimentation](docs/experimentation-plan.md)

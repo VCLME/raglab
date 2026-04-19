@@ -167,9 +167,28 @@ Choix pragmatique d’implémentation :
 
 Conséquence :
 
-- l’interface métier est compatible multi-modèles et multi-dimensions sans schéma séparé
-- changer d’`embedding_model_name` entre deux `index_run` pour un même corpus est supporté, chaque run pointe vers son propre `embedding_space` avec sa dimension réelle
-- la variable `RAGLAB_EMBEDDING_DIMENSION` ne joue plus que comme défaut logique pour créer un nouvel `embedding_space` quand elle n’est pas déduite du modèle ; elle ne contraint plus la colonne
+- l'interface métier est compatible multi-modèles et multi-dimensions sans schéma séparé
+- changer d'`embedding_model_name` entre deux `index_run` pour un même corpus est supporté, chaque run pointe vers son propre `embedding_space` avec sa dimension réelle
+- la variable `RAGLAB_EMBEDDING_DIMENSION` ne joue plus que comme défaut logique pour créer un nouvel `embedding_space` quand elle n'est pas déduite du modèle ; elle ne contraint plus la colonne
+
+### Probe automatique de la dimension à l'indexation
+
+`IndexingService.index_corpus` ([src/raglab/indexing/service.py](../src/raglab/indexing/service.py)) résout la dimension à utiliser dans cet ordre :
+
+1. Si un `embedding_space` existe déjà pour la paire `(provider, model_name)` → utilise sa `dimension` enregistrée (autorité métadonnée)
+2. Sinon → construit l'embedder et appelle `embed_query("dimension probe")` pour mesurer la dimension réellement produite par le modèle
+3. L'`embedding_space` est créé avec cette dimension probée, l'`index HNSW partiel` correspondant est garanti par `ensure_partial_hnsw_index(session, dim)`
+
+Cela évite la dérive quand l'utilisateur change `embedding_model_name` sans toucher à `RAGLAB_EMBEDDING_DIMENSION`.
+
+### Réconciliation au démarrage
+
+`initialize_database()` ([src/raglab/db/init_db.py](../src/raglab/db/init_db.py)) exécute deux migrations idempotentes au démarrage :
+
+1. `migrate_chunk_embeddings_to_variable_dim` : si la colonne `embedding` est encore `vector(N)` (legacy), l'ALTER vers `vector`, supprime l'ancien index HNSW fixe et crée les index partiels pour toutes les dimensions déjà présentes
+2. `reconcile_embedding_space_dimensions` : pour chaque `embedding_space`, échantillonne une ligne `chunk_embeddings` et met à jour `dimension` si divergence. Crée aussi le partial HNSW manquant. C'est le filet de sécurité contre les bases créées avec un `RAGLAB_EMBEDDING_DIMENSION` faux.
+
+Les deux helpers sont exposés dans [src/raglab/db/indexes.py](../src/raglab/db/indexes.py).
 
 ## 5. Préparation Neo4j
 
@@ -201,8 +220,16 @@ ou projeter ces objets directement dans Neo4j en gardant PostgreSQL comme source
 
 ### Vectoriels
 
-- index HNSW sur `chunk_embeddings.embedding`
-- distance cosine pour le MVP
+- colonne `chunk_embeddings.embedding` de type `vector` (sans dimension fixe)
+- un index HNSW **partiel par dimension** créé à la volée lors de l'indexation, par exemple :
+  ```
+  CREATE INDEX ix_chunk_embeddings_hnsw_384
+  ON chunk_embeddings USING hnsw ((embedding::vector(384)) vector_cosine_ops)
+  WITH (m=16, ef_construction=64)
+  WHERE vector_dims(embedding) = 384;
+  ```
+- la requête de retrieval ajoute `AND vector_dims(embedding) = :dim` et `ORDER BY embedding::vector(:dim) <=> :query_vec` pour que le planner utilise le partial HNSW de la bonne dimension
+- distance cosine par défaut (`vector_cosine_ops`)
 
 ## 7. Règles métier importantes
 
