@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { get, post } from "../api/client";
+import { apiFetch, get, post } from "../api/client";
 import { useApiAction, useApiLoad } from "../hooks/useApi";
 import type {
   ChunkingStrategy,
+  CorpusDocument,
   CorpusSummary,
   ExperimentRunDetail,
   ExperimentRunSummary,
@@ -61,7 +62,7 @@ function shortId(id: string): string {
   return id.slice(0, 8);
 }
 
-type TabKey = "launch" | "history";
+type TabKey = "launch" | "history" | "custom";
 
 // Heuristic: does this dataset look like it matches the corpus name?
 function datasetMatchesCorpus(ds: BenchDatasetOnDisk, corpus: string): boolean {
@@ -205,6 +206,232 @@ function LaunchTab({ onLaunched }: { onLaunched: () => void }) {
   );
 }
 
+// ---------- Custom dataset tab ----------
+
+interface CustomCase {
+  key: number;
+  question: string;
+  file_names: string;   // comma-separated
+  answer: string;
+}
+
+interface CustomResponse {
+  name: string;
+  dataset_dir: string;
+  ground_truth_path: string;
+  case_count: number;
+}
+
+let caseCounter = 0;
+const newCase = (): CustomCase => ({
+  key: ++caseCounter,
+  question: "",
+  file_names: "",
+  answer: "",
+});
+
+function CustomDatasetTab({ onCreated }: { onCreated: () => void }) {
+  const { t } = useTranslation();
+  const corpora = useApiLoad<CorpusSummary[]>(() => get("/api/corpora"));
+  const [name, setName] = useState("");
+  const [corpus, setCorpus] = useState("");
+  const [description, setDescription] = useState("");
+  const [cases, setCases] = useState<CustomCase[]>([newCase(), newCase()]);
+
+  const docs = useApiLoad<CorpusDocument[]>(
+    () => (corpus ? get(`/api/corpora/${encodeURIComponent(corpus)}/documents?limit=500`) : Promise.resolve([])),
+    [corpus]
+  );
+
+  const save = useApiAction((body: unknown) =>
+    post<CustomResponse>("/api/bench/custom", body)
+  );
+
+  const updateCase = (key: number, patch: Partial<CustomCase>) => {
+    setCases((prev) => prev.map((c) => (c.key === key ? { ...c, ...patch } : c)));
+  };
+
+  const removeCase = (key: number) => {
+    setCases((prev) => (prev.length <= 1 ? prev : prev.filter((c) => c.key !== key)));
+  };
+
+  const submit = async () => {
+    const payload = {
+      name: name.trim(),
+      corpus: corpus || null,
+      description: description.trim() || null,
+      cases: cases
+        .filter((c) => c.question.trim())
+        .map((c) => ({
+          question: c.question.trim(),
+          expected_file_names: c.file_names
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean),
+          expected_answer: c.answer.trim() || null,
+        })),
+    };
+    if (!payload.name) return;
+    await save.run(payload);
+    setCases([newCase(), newCase()]);
+    setName("");
+    setDescription("");
+    onCreated();
+  };
+
+  const validCases = cases.filter(
+    (c) => c.question.trim() && (c.file_names.trim() || c.answer.trim())
+  ).length;
+
+  return (
+    <div className="card">
+      <p className="muted" style={{ marginTop: 0 }}>{t("benchmarks.custom_help")}</p>
+      <FieldRow label={t("benchmarks.custom_name_label")} hint={t("benchmarks.custom_name_hint")}>
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="mon_eval_juridique"
+        />
+      </FieldRow>
+      <FieldRow label={t("common.corpus")} hint={t("benchmarks.custom_corpus_hint")}>
+        <select value={corpus} onChange={(e) => setCorpus(e.target.value)}>
+          <option value="">{t("common.none")}</option>
+          {(corpora.data ?? []).map((c) => (
+            <option key={c.id} value={c.name}>
+              {c.name} · {c.documents_count} docs
+            </option>
+          ))}
+        </select>
+      </FieldRow>
+      <FieldRow label={t("benchmarks.custom_description_label")} hint={t("common.optional")}>
+        <input
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder={t("benchmarks.custom_description_placeholder")}
+        />
+      </FieldRow>
+
+      {docs.data && docs.data.length > 0 ? (
+        <details style={{ margin: "8px 0 18px 0" }}>
+          <summary className="muted" style={{ cursor: "pointer", fontSize: 12 }}>
+            {t("benchmarks.custom_files_available", { count: docs.data.length })}
+          </summary>
+          <div className="muted" style={{ fontSize: 11, marginTop: 6, maxHeight: 120, overflowY: "auto" }}>
+            {docs.data.map((d) => (
+              <div key={d.id} style={{ fontFamily: "var(--mono)" }}>
+                {d.file_name}
+              </div>
+            ))}
+          </div>
+        </details>
+      ) : null}
+
+      <h3 style={{ marginTop: 18, marginBottom: 8 }}>
+        {t("benchmarks.custom_cases_title", { count: cases.length })}
+      </h3>
+      {cases.map((c, idx) => (
+        <div key={c.key} className="custom-case">
+          <div className="inline" style={{ justifyContent: "space-between", marginBottom: 6 }}>
+            <span className="muted" style={{ fontSize: 12 }}>
+              {t("benchmarks.custom_case_number", { n: idx + 1 })}
+            </span>
+            <button
+              className="ghost sm"
+              onClick={() => removeCase(c.key)}
+              disabled={cases.length <= 1}
+            >
+              {t("common.delete")}
+            </button>
+          </div>
+          <FieldRow label={t("benchmarks.custom_question_label")}>
+            <textarea
+              rows={2}
+              value={c.question}
+              onChange={(e) => updateCase(c.key, { question: e.target.value })}
+              placeholder={t("benchmarks.custom_question_placeholder")}
+            />
+          </FieldRow>
+          {corpus && docs.data && docs.data.length > 0 ? (
+            <FieldRow
+              label={t("benchmarks.custom_file_label")}
+              hint={t("benchmarks.custom_file_hint")}
+            >
+              <select
+                value=""
+                onChange={(e) => {
+                  const picked = e.target.value;
+                  if (!picked) return;
+                  const current = c.file_names
+                    .split(",")
+                    .map((s) => s.trim())
+                    .filter(Boolean);
+                  if (!current.includes(picked)) {
+                    updateCase(c.key, {
+                      file_names: [...current, picked].join(", "),
+                    });
+                  }
+                }}
+              >
+                <option value="">{t("benchmarks.custom_file_pick")}</option>
+                {docs.data.map((d) => (
+                  <option key={d.id} value={d.file_name}>
+                    {d.file_name}
+                  </option>
+                ))}
+              </select>
+            </FieldRow>
+          ) : null}
+          <FieldRow
+            label={t("benchmarks.custom_file_names_label")}
+            hint={t("benchmarks.custom_file_names_hint")}
+          >
+            <input
+              value={c.file_names}
+              onChange={(e) => updateCase(c.key, { file_names: e.target.value })}
+              placeholder="article_42.txt, article_43.txt"
+            />
+          </FieldRow>
+          <FieldRow
+            label={t("benchmarks.custom_answer_label")}
+            hint={t("benchmarks.custom_answer_hint")}
+          >
+            <textarea
+              rows={2}
+              value={c.answer}
+              onChange={(e) => updateCase(c.key, { answer: e.target.value })}
+            />
+          </FieldRow>
+        </div>
+      ))}
+      <button
+        className="ghost"
+        onClick={() => setCases((prev) => [...prev, newCase()])}
+        style={{ marginBottom: 12 }}
+      >
+        + {t("benchmarks.custom_add_case")}
+      </button>
+
+      <div className="inline" style={{ marginTop: 8 }}>
+        <button onClick={submit} disabled={save.loading || !name.trim() || validCases === 0}>
+          {save.loading
+            ? t("benchmarks.custom_saving")
+            : t("benchmarks.custom_save", { count: validCases })}
+        </button>
+        {save.loading ? <Spinner /> : null}
+      </div>
+      <ErrorBanner error={save.error} />
+      {save.data ? (
+        <div className="badge ok" style={{ marginTop: 14 }}>
+          {t("benchmarks.custom_saved", {
+            count: save.data.case_count,
+            dir: save.data.dataset_dir,
+          })}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 // ---------- History tab ----------
 
 interface BenchBarRowProps {
@@ -318,6 +545,18 @@ function HistoryTab() {
     [corpusFilter]
   );
 
+  const deleteRun = useApiAction((id: string) =>
+    apiFetch<void>(`/api/experiments/${id}`, { method: "DELETE" })
+  );
+
+  const onDelete = async (run: ExperimentRunSummary) => {
+    const label = run.benchmark ?? run.corpus_name ?? run.id.slice(0, 8);
+    if (!confirm(t("benchmarks.confirm_delete", { label }))) return;
+    await deleteRun.run(run.id);
+    setSelectedIds((prev) => prev.filter((x) => x !== run.id));
+    runs.refresh();
+  };
+
   const corpora = useMemo(() => {
     const set = new Set<string>();
     (runs.data ?? []).forEach((r) => r.corpus_name && set.add(r.corpus_name));
@@ -373,6 +612,7 @@ function HistoryTab() {
                 <th className="bench-metric-cell">{t("benchmarks.table_mrr")}</th>
                 <th>{t("benchmarks.table_duration")}</th>
                 <th>{t("common.status")}</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -381,8 +621,10 @@ function HistoryTab() {
                 const state = run.status === "completed" ? "ok" : run.status === "failed" ? "err" : "info";
                 return (
                   <tr key={run.id} className={selected ? "highlight" : undefined} onClick={() => setDetailId(run.id)} style={{ cursor: "pointer" }}>
-                    <td className="bench-select-cell" onClick={(e) => { e.stopPropagation(); toggleSelect(run.id); }}>
-                      <input type="checkbox" checked={selected} onChange={() => toggleSelect(run.id)} />
+                    <td className="bench-select-cell" onClick={(e) => e.stopPropagation()}>
+                      <label className="bench-select-label">
+                        <input type="checkbox" checked={selected} onChange={() => toggleSelect(run.id)} />
+                      </label>
                     </td>
                     <td className="muted">{formatDate(run.started_at)}</td>
                     <td>
@@ -403,12 +645,23 @@ function HistoryTab() {
                     <td>
                       <StatusBadge state={state} label={t(`benchmarks.status_${run.status}` as any, run.status)} />
                     </td>
+                    <td style={{ textAlign: "right" }} onClick={(e) => e.stopPropagation()}>
+                      <button
+                        className="ghost sm"
+                        onClick={() => onDelete(run)}
+                        disabled={deleteRun.loading}
+                        title={t("common.delete")}
+                      >
+                        {t("common.delete")}
+                      </button>
+                    </td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
         ) : null}
+        <ErrorBanner error={deleteRun.error} />
       </div>
 
       <div className="card">
@@ -425,6 +678,7 @@ export function Benchmarks() {
   const { t } = useTranslation();
   const [tab, setTab] = useState<TabKey>("launch");
   const [historyStamp, setHistoryStamp] = useState(0);
+  const [launchStamp, setLaunchStamp] = useState(0);
 
   return (
     <div>
@@ -444,12 +698,20 @@ export function Benchmarks() {
         <button className={tab === "history" ? "active" : ""} onClick={() => setTab("history")}>
           {t("benchmarks.history_tab")}
         </button>
+        <button className={tab === "custom" ? "active" : ""} onClick={() => setTab("custom")}>
+          {t("benchmarks.custom_tab")}
+        </button>
       </div>
       {tab === "launch" ? (
-        <LaunchTab onLaunched={() => { setHistoryStamp((s) => s + 1); setTab("history"); }} />
-      ) : (
-        <HistoryTab key={historyStamp} />
-      )}
+        <LaunchTab
+          key={launchStamp}
+          onLaunched={() => { setHistoryStamp((s) => s + 1); setTab("history"); }}
+        />
+      ) : null}
+      {tab === "history" ? <HistoryTab key={historyStamp} /> : null}
+      {tab === "custom" ? (
+        <CustomDatasetTab onCreated={() => { setLaunchStamp((s) => s + 1); setTab("launch"); }} />
+      ) : null}
     </div>
   );
 }

@@ -5,7 +5,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from raglab.api.deps import get_db
-from raglab.api.schemas import CorpusDeleteResponse, CorpusSummary, IndexRunSummary
+from raglab.api.schemas import CorpusDeleteResponse, CorpusDocument, CorpusSummary, IndexRunSummary
 from raglab.db.models import Chunk, Corpus, Document, EmbeddingSpace, IndexRun
 
 router = APIRouter(tags=["corpora"])
@@ -59,6 +59,32 @@ def delete_corpus(name: str, session: Session = Depends(get_db)) -> CorpusDelete
         index_runs_deleted=runs_count,
         chunks_deleted=chunks_count,
     )
+
+
+@router.get("/api/corpora/{name}/documents", response_model=list[CorpusDocument])
+def list_corpus_documents(
+    name: str,
+    limit: int = 500,
+    session: Session = Depends(get_db),
+) -> list[CorpusDocument]:
+    corpus = session.execute(select(Corpus).where(Corpus.name == name)).scalar_one_or_none()
+    if corpus is None:
+        raise HTTPException(status_code=404, detail=f"Corpus '{name}' introuvable")
+    stmt = (
+        select(Document)
+        .where(Document.corpus_id == corpus.id)
+        .order_by(Document.file_name.asc())
+        .limit(max(1, min(limit, 2000)))
+    )
+    return [
+        CorpusDocument(
+            id=d.id,
+            file_name=d.file_name,
+            source_path=d.source_path,
+            char_count=d.char_count,
+        )
+        for d in session.execute(stmt).scalars().all()
+    ]
 
 
 @router.get("/api/index-runs", response_model=list[IndexRunSummary])

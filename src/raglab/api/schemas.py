@@ -121,6 +121,13 @@ class CorpusDeleteResponse(BaseModel):
     chunks_deleted: int
 
 
+class CorpusDocument(BaseModel):
+    id: str
+    file_name: str
+    source_path: str
+    char_count: int
+
+
 class IndexRunSummary(BaseModel):
     id: str
     corpus_id: str
@@ -220,6 +227,28 @@ class BenchDownloadResponse(BaseModel):
     metadata_path: str
     corpus_name: str
     article_count: int
+    case_count: int
+
+
+class BenchCustomCase(BaseModel):
+    question: str
+    expected_file_names: list[str] = Field(default_factory=list)
+    expected_answer: str | None = None
+
+
+class BenchCustomRequest(BaseModel):
+    name: str
+    corpus: str | None = None
+    language: str | None = None
+    description: str | None = None
+    cases: list[BenchCustomCase]
+
+
+class BenchCustomResponse(BaseModel):
+    name: str
+    dataset_dir: str
+    ground_truth_path: str
+    metadata_path: str
     case_count: int
 
 

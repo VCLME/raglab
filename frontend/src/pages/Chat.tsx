@@ -146,7 +146,14 @@ export function Chat() {
     post<QueryResponse>("/api/query", body)
   );
 
-  const suggestions = (t("chat.suggestions", { returnObjects: true }) as unknown) as string[];
+  const suggestionsLoad = useApiLoad<string[]>(
+    () =>
+      corpus
+        ? get(`/api/bench/suggestions?corpus=${encodeURIComponent(corpus)}&limit=4`)
+        : Promise.resolve([]),
+    [corpus]
+  );
+  const suggestions = suggestionsLoad.data ?? [];
 
   const send = async (overrideQuestion?: string) => {
     const q = (overrideQuestion ?? question).trim();
@@ -289,7 +296,9 @@ export function Chat() {
             <h1>{t("chat.welcome_title")}</h1>
             <p className="muted">{t("chat.welcome_subtitle")}</p>
           </div>
-          <SuggestionChips suggestions={suggestions} onPick={(s) => send(s)} />
+          {suggestions.length > 0 ? (
+            <SuggestionChips suggestions={suggestions} onPick={(s) => send(s)} />
+          ) : null}
         </div>
       ) : (
         <div className="chat-stream" ref={streamRef}>

@@ -107,6 +107,15 @@ def experiments_history(
     return summaries
 
 
+@router.delete("/{run_id}", status_code=204)
+def delete_experiment(run_id: str, session: Session = Depends(get_db)) -> None:
+    run = session.get(ExperimentRun, run_id)
+    if run is None:
+        raise HTTPException(status_code=404, detail=f"Experiment run '{run_id}' introuvable")
+    session.delete(run)
+    session.flush()
+
+
 @router.get("/{run_id}", response_model=ExperimentRunDetail)
 def experiment_detail(run_id: str, session: Session = Depends(get_db)) -> ExperimentRunDetail:
     run = session.get(ExperimentRun, run_id)
