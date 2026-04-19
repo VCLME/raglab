@@ -126,7 +126,7 @@ def dataset_suggestions(corpus: str, limit: int = 4) -> list[str]:
         if not (explicit_match or heuristic_match):
             continue
 
-        questions: list[str] = []
+        all_questions: list[str] = []
         with ground_truth.open(encoding="utf-8") as fh:
             for line in fh:
                 line = line.strip()
@@ -138,11 +138,13 @@ def dataset_suggestions(corpus: str, limit: int = 4) -> list[str]:
                     continue
                 q = row.get("question")
                 if isinstance(q, str) and q.strip():
-                    questions.append(q.strip())
-                    if len(questions) >= limit:
-                        break
-        if questions:
-            return questions
+                    all_questions.append(q.strip())
+
+        selected = [q for q in all_questions if q.endswith("?") and len(q.split()) >= 6]
+        if len(selected) < limit:
+            selected = [q for q in all_questions if len(q.split()) >= 6] or all_questions
+        if selected:
+            return selected[:limit]
 
     return []
 
