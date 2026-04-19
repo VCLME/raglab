@@ -71,6 +71,13 @@ export interface CorpusSummary {
   index_runs_count: number;
 }
 
+export interface CorpusDocument {
+  id: string;
+  file_name: string;
+  source_path: string;
+  char_count: number;
+}
+
 export interface IndexRunSummary {
   id: string;
   corpus_id: string;
