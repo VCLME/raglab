@@ -5,6 +5,7 @@ from pathlib import Path
 
 import typer
 
+from raglab.benchmarks import AVAILABLE_LOADERS, get_loader
 from raglab.config import get_settings
 from raglab.db import initialize_database, session_scope
 from raglab.domain.enums import ChunkingStrategy
@@ -23,11 +24,13 @@ db_app = typer.Typer(no_args_is_help=True, help="Commandes base de donnees.")
 experiment_app = typer.Typer(no_args_is_help=True, help="Commandes d'experimentation.")
 lexml_app = typer.Typer(no_args_is_help=True, help="Collecte LexML Brasil.")
 ollama_app = typer.Typer(no_args_is_help=True, help="Pilotage du service Ollama.")
+bench_app = typer.Typer(no_args_is_help=True, help="Datasets de benchmark.")
 
 app.add_typer(db_app, name="db")
 app.add_typer(experiment_app, name="experiment")
 app.add_typer(lexml_app, name="lexml")
 app.add_typer(ollama_app, name="ollama")
+app.add_typer(bench_app, name="bench")
 
 
 @app.callback()
@@ -74,6 +77,60 @@ def ollama_pull(
 ) -> None:
     service = OllamaService()
     typer.echo(json.dumps(service.pull_model(model), indent=2, ensure_ascii=False))
+
+
+@bench_app.command("list")
+def bench_list() -> None:
+    """Lister les loaders de benchmark disponibles."""
+    rows = [
+        {
+            "name": loader_cls.name,
+            "language": loader_cls.language,
+            "licence": loader_cls.licence,
+            "description": loader_cls.description,
+            "default_corpus_name": loader_cls.default_corpus_name,
+            "source": loader_cls.source,
+        }
+        for loader_cls in AVAILABLE_LOADERS.values()
+    ]
+    typer.echo(json.dumps(rows, indent=2, ensure_ascii=False))
+
+
+@bench_app.command("download")
+def bench_download(
+    loader_name: str = typer.Argument(..., help="Nom du loader (ex: fquad). `raglab bench list` pour la liste."),
+    output_dir: Path | None = typer.Option(
+        None,
+        "--output-dir",
+        help="Dossier de sortie. Defaut: data/benchmarks/<loader>/",
+    ),
+    limit: int | None = typer.Option(
+        None,
+        "--limit",
+        min=1,
+        help="Limiter le nombre de paires Q/R produites (pratique pour un premier run rapide).",
+    ),
+) -> None:
+    """Telecharger un dataset de benchmark et ecrire corpus + ground_truth sur disque."""
+    loader_cls = get_loader(loader_name)
+    resolved_output = (output_dir or get_settings().data_dir / "benchmarks" / loader_cls.name).resolve()
+    loader = loader_cls()
+    dataset = loader.download(resolved_output, limit=limit)
+    typer.echo(
+        json.dumps(
+            {
+                "loader": loader_cls.name,
+                "corpus_dir": str(dataset.corpus_dir),
+                "ground_truth_path": str(dataset.ground_truth_path),
+                "metadata_path": str(dataset.metadata_path),
+                "corpus_name": dataset.corpus_name,
+                "article_count": dataset.article_count,
+                "case_count": dataset.case_count,
+            },
+            indent=2,
+            ensure_ascii=False,
+        )
+    )
 
 
 @app.command()
