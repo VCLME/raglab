@@ -153,7 +153,11 @@ class ExperimentRun(Base):
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
-    results: Mapped[list["ExperimentResult"]] = relationship(back_populates="experiment_run")
+    results: Mapped[list["ExperimentResult"]] = relationship(
+        back_populates="experiment_run",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
 
 
 class ExperimentResult(Base):
