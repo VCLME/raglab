@@ -12,6 +12,7 @@ export function NavBar() {
     { to: "/expert/lexml", labelKey: "nav.lexml" },
     { to: "/expert/ollama", labelKey: "nav.ollama" },
     { to: "/expert/experiments", labelKey: "nav.experiments" },
+    { to: "/expert/benchmarks", labelKey: "nav.benchmarks" },
     { to: "/expert/manage", labelKey: "nav.manage" },
   ];
   return (

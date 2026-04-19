@@ -11,6 +11,7 @@ import { LexML } from "./pages/LexML";
 import { Manage } from "./pages/Manage";
 import { OllamaPage } from "./pages/Ollama";
 import { Experiments } from "./pages/Experiments";
+import { Benchmarks } from "./pages/Benchmarks";
 
 function ExpertLayout() {
   return (
@@ -26,6 +27,7 @@ function ExpertLayout() {
           <Route path="lexml" element={<LexML />} />
           <Route path="ollama" element={<OllamaPage />} />
           <Route path="experiments" element={<Experiments />} />
+          <Route path="benchmarks" element={<Benchmarks />} />
           <Route path="manage" element={<Manage />} />
           <Route path="*" element={<Navigate to="/expert" replace />} />
         </Routes>

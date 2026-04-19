@@ -976,6 +976,111 @@ button.sm {
   text-transform: uppercase;
 }
 
+/* ——— benchmarks chart ——— */
+
+.bench-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.bench-chart-group {
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+.bench-chart-group:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+.bench-chart-group-label {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.bench-bar-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) 3fr 56px;
+  gap: 10px;
+  align-items: center;
+  padding: 3px 0;
+  font-size: 12.5px;
+}
+.bench-bar-row .label {
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--mono);
+  font-size: 11.5px;
+}
+.bench-bar-row .value {
+  text-align: right;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.bench-bar-track {
+  height: 14px;
+  background: var(--surface-2);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+.bench-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.2s ease;
+}
+.bench-bar-row.r1 .bench-bar-fill { background: var(--accent); }
+.bench-bar-row.r5 .bench-bar-fill { background: #8ce99a; }
+.bench-bar-row.r10 .bench-bar-fill { background: #63e6be; }
+.bench-bar-row.mrr .bench-bar-fill { background: #faa2c1; }
+
+.bench-select-cell {
+  width: 20px;
+}
+.bench-metric-cell {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-family: var(--mono);
+  font-size: 12px;
+}
+.bench-metric-cell.good {
+  color: var(--ok);
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 40px 20px;
+  z-index: 100;
+}
+.modal {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  max-width: 900px;
+  width: 100%;
+  max-height: calc(100vh - 80px);
+  overflow: auto;
+  padding: 20px 24px;
+}
+.modal header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.modal header h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
 /* ——— scrollbar ——— */
 
 *::-webkit-scrollbar {
