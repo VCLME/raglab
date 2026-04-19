@@ -976,6 +976,83 @@ button.sm {
   text-transform: uppercase;
 }
 
+/* ——— explain banner ——— */
+
+.explain-banner {
+  background: var(--accent-soft);
+  border: 1px solid rgba(124, 156, 255, 0.3);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  margin: -8px 0 18px;
+  font-size: 13px;
+  color: var(--text);
+}
+.explain-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.explain-sub {
+  color: var(--accent-strong);
+  font-weight: 500;
+}
+.explain-toggle {
+  background: transparent;
+  border: none;
+  color: var(--accent);
+  font-size: 11.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.explain-toggle:hover {
+  color: var(--accent-strong);
+  background: transparent;
+}
+.explain-body {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(124, 156, 255, 0.2);
+  color: var(--text);
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+/* ——— tabs ——— */
+
+.tabs {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--border);
+}
+.tabs button {
+  background: transparent;
+  color: var(--muted);
+  border: none;
+  padding: 10px 16px;
+  border-radius: 0;
+  font-weight: 500;
+  font-size: 13px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+.tabs button:hover {
+  color: var(--text);
+  background: transparent;
+}
+.tabs button.active {
+  color: var(--accent-strong);
+  border-bottom-color: var(--accent);
+  background: transparent;
+}
+
 /* ——— benchmarks chart ——— */
 
 .bench-chart {

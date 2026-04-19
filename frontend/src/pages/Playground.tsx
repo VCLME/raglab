@@ -8,6 +8,7 @@ import type {
   OllamaModelsResponse,
 } from "../api/types";
 import { ErrorBanner } from "../components/ErrorBanner";
+import { ExplainBanner } from "../components/ExplainBanner";
 import { FieldRow } from "../components/FieldRow";
 import { JsonViewer } from "../components/JsonViewer";
 import { Spinner } from "../components/Spinner";
@@ -78,6 +79,11 @@ export function Playground() {
         <h2>{t("playground.title")}</h2>
         <span className="muted">{t("playground.subtitle")}</span>
       </div>
+      <ExplainBanner
+        subtitle={t("playground.subtitle")}
+        body={t("playground.explain_body")}
+        storageKey="raglab.explain.playground"
+      />
       <div className="split">
         <div>
           <div className="card">

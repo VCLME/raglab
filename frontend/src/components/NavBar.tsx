@@ -5,15 +5,12 @@ export function NavBar() {
   const { t } = useTranslation();
   const links = [
     { to: "/expert", labelKey: "nav.dashboard", end: true },
-    { to: "/expert/query", labelKey: "nav.query" },
-    { to: "/expert/playground", labelKey: "nav.playground" },
-    { to: "/expert/ingest", labelKey: "nav.ingest" },
+    { to: "/expert/corpus", labelKey: "nav.corpus" },
     { to: "/expert/index", labelKey: "nav.index" },
-    { to: "/expert/lexml", labelKey: "nav.lexml" },
-    { to: "/expert/ollama", labelKey: "nav.ollama" },
-    { to: "/expert/experiments", labelKey: "nav.experiments" },
+    { to: "/expert/query", labelKey: "nav.retrieval" },
+    { to: "/expert/playground", labelKey: "nav.playground" },
     { to: "/expert/benchmarks", labelKey: "nav.benchmarks" },
-    { to: "/expert/manage", labelKey: "nav.manage" },
+    { to: "/expert/ollama", labelKey: "nav.models" },
   ];
   return (
     <aside className="sidebar">

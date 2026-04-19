@@ -8,6 +8,7 @@ import type {
   IndexRunSummary,
 } from "../api/types";
 import { ErrorBanner } from "../components/ErrorBanner";
+import { ExplainBanner } from "../components/ExplainBanner";
 import { Spinner } from "../components/Spinner";
 import { StatusBadge } from "../components/StatusBadge";
 
@@ -42,6 +43,11 @@ export function Dashboard() {
           {t("common.refresh")}
         </button>
       </div>
+      <ExplainBanner
+        subtitle={t("dashboard.subtitle")}
+        body={t("dashboard.explain_body")}
+        storageKey="raglab.explain.dashboard"
+      />
 
       <div className="card">
         <h3>{t("dashboard.services")}</h3>

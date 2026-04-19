@@ -2,15 +2,12 @@ import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { NavBar } from "./components/NavBar";
 import { TopBar } from "./components/TopBar";
 import { Chat } from "./pages/Chat";
+import { CorpusPage } from "./pages/CorpusPage";
 import { Dashboard } from "./pages/Dashboard";
-import { Ingest } from "./pages/Ingest";
 import { IndexPage } from "./pages/Index";
 import { Query } from "./pages/Query";
 import { Playground } from "./pages/Playground";
-import { LexML } from "./pages/LexML";
-import { Manage } from "./pages/Manage";
 import { OllamaPage } from "./pages/Ollama";
-import { Experiments } from "./pages/Experiments";
 import { Benchmarks } from "./pages/Benchmarks";
 
 function ExpertLayout() {
@@ -20,15 +17,16 @@ function ExpertLayout() {
       <main className="content">
         <Routes>
           <Route index element={<Dashboard />} />
+          <Route path="corpus" element={<CorpusPage />} />
+          <Route path="index" element={<IndexPage />} />
           <Route path="query" element={<Query />} />
           <Route path="playground" element={<Playground />} />
-          <Route path="ingest" element={<Ingest />} />
-          <Route path="index" element={<IndexPage />} />
-          <Route path="lexml" element={<LexML />} />
-          <Route path="ollama" element={<OllamaPage />} />
-          <Route path="experiments" element={<Experiments />} />
           <Route path="benchmarks" element={<Benchmarks />} />
-          <Route path="manage" element={<Manage />} />
+          <Route path="ollama" element={<OllamaPage />} />
+          <Route path="ingest" element={<Navigate to="/expert/corpus" replace />} />
+          <Route path="lexml" element={<Navigate to="/expert/corpus" replace />} />
+          <Route path="manage" element={<Navigate to="/expert/corpus" replace />} />
+          <Route path="experiments" element={<Navigate to="/expert/benchmarks" replace />} />
           <Route path="*" element={<Navigate to="/expert" replace />} />
         </Routes>
       </main>
