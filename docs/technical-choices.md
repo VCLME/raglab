@@ -12,8 +12,13 @@
 ### Données
 
 - PostgreSQL 16
-- pgvector pour la similarité vectorielle
+- pgvector ≥ 0.7 pour la similarité vectorielle, avec colonne `vector` non dimensionnée et index HNSW **partiels par dimension** (voir [data-model.md](data-model.md))
 - SQLAlchemy 2.x pour le modèle relationnel et la persistance
+
+### Web
+
+- API HTTP FastAPI dans `src/raglab/api/` qui réutilise directement les services Python (pas de sous-processus CLI)
+- frontend React + TypeScript + Vite, i18n fr/en/pt-BR, servi par nginx en production, voir [frontend-ui.md](frontend-ui.md)
 
 ### LLM
 
@@ -67,7 +72,7 @@ Alternatives plus tard :
 
 ## 4. Réflexion pragmatique sur les embeddings
 
-### Recommandation MVP : `intfloat/multilingual-e5-small`
+### Recommandation de baseline : `intfloat/multilingual-e5-small`
 
 Raisons pragmatiques :
 
@@ -76,6 +81,8 @@ Raisons pragmatiques :
 - dimension de sortie raisonnable : 384
 - très bon candidat de baseline pour un corpus mixte français / anglais
 - surtout : il se prête bien à une implémentation locale contrôlée via `transformers`, utile pour expérimenter du late chunking contextualisé
+
+`RAGLAB_EMBEDDING_DIMENSION` **n'est plus une contrainte** au niveau de la colonne `chunk_embeddings.embedding` — c'est seulement une valeur par défaut utilisée au moment de créer un nouvel `embedding_space` (et encore, le moteur d'indexation sonde le modèle à chaque run pour écrire la vraie dimension produite, voir `IndexingService.index_corpus`). Plusieurs dimensions (384, 768, 1024, …) coexistent désormais dans la même instance.
 
 ### Pourquoi ne pas choisir Ollama pour le modèle d’embeddings du MVP
 
@@ -143,12 +150,13 @@ Sans cette séparation, les comparaisons deviennent vite floues :
 
 Le projet stocke donc explicitement le contexte expérimental, même pour le MVP.
 
-## 8. Limites assumées du MVP
+## 8. Limites assumées
 
-- pas d’OCR PDF image dans cette version
+- pas d'OCR PDF image dans cette version
 - pas de reranker cross-encoder dans cette version
 - pas de Neo4j branché immédiatement
-- pas de UI web
 - pas de pipeline asynchrone distribué
+- pas d'authentification sur l'API / l'UI (usage local, comme la CLI)
+- les opérations longues (ingestion, indexation, `lexml load`, `bench download`) sont synchrones côté API — pas de file de jobs
 
-Ces limites sont volontaires pour conserver un premier socle simple, testable et extensible.
+Ces limites sont volontaires pour conserver un socle simple, testable et extensible.
