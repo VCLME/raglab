@@ -146,7 +146,20 @@ export function Chat() {
     post<QueryResponse>("/api/query", body)
   );
 
-  const suggestions = (t("chat.suggestions", { returnObjects: true }) as unknown) as string[];
+  const datasetSuggestions = useApiLoad<string[]>(
+    () =>
+      corpus
+        ? get(`/api/bench/suggestions?corpus=${encodeURIComponent(corpus)}&limit=4`)
+        : Promise.resolve([]),
+    [corpus]
+  );
+  const fallbackSuggestions = (t("chat.suggestions", {
+    returnObjects: true,
+  }) as unknown) as string[];
+  const suggestions =
+    datasetSuggestions.data && datasetSuggestions.data.length > 0
+      ? datasetSuggestions.data
+      : fallbackSuggestions;
 
   const send = async (overrideQuestion?: string) => {
     const q = (overrideQuestion ?? question).trim();

@@ -90,6 +90,63 @@ def _safe_dataset_slug(name: str) -> str:
     return slug
 
 
+@router.get("/suggestions", response_model=list[str])
+def dataset_suggestions(corpus: str, limit: int = 4) -> list[str]:
+    """Return up to `limit` questions from datasets matching the given corpus.
+
+    Used by the Chat page to replace generic hardcoded suggestions with
+    real questions drawn from whichever validation dataset is pinned to
+    this corpus (custom datasets store it explicitly; downloaded loaders
+    match by loader-name substring, e.g. `piaf` in `piaf_fr`).
+    """
+    base = get_settings().data_dir / "benchmarks"
+    if not base.exists() or limit <= 0:
+        return []
+    limit = max(1, min(limit, 20))
+    corpus_lc = corpus.lower()
+
+    for entry in sorted(base.iterdir()):
+        if not entry.is_dir():
+            continue
+        ground_truth = entry / "ground_truth.jsonl"
+        if not ground_truth.exists():
+            continue
+
+        pinned_corpus: str | None = None
+        metadata_path = entry / "metadata.json"
+        if metadata_path.exists():
+            try:
+                meta = json.loads(metadata_path.read_text(encoding="utf-8"))
+                pinned_corpus = meta.get("corpus")
+            except Exception:
+                pinned_corpus = None
+
+        explicit_match = pinned_corpus and pinned_corpus.lower() == corpus_lc
+        heuristic_match = entry.name.lower() in corpus_lc or corpus_lc in entry.name.lower()
+        if not (explicit_match or heuristic_match):
+            continue
+
+        questions: list[str] = []
+        with ground_truth.open(encoding="utf-8") as fh:
+            for line in fh:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    row = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                q = row.get("question")
+                if isinstance(q, str) and q.strip():
+                    questions.append(q.strip())
+                    if len(questions) >= limit:
+                        break
+        if questions:
+            return questions
+
+    return []
+
+
 @router.post("/custom", response_model=BenchCustomResponse, status_code=201)
 def create_custom_dataset(body: BenchCustomRequest) -> BenchCustomResponse:
     if not body.cases:
