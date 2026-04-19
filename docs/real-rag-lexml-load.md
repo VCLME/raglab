@@ -13,6 +13,8 @@ Ce document couvre un cas reel de chargement RAG sans phase de prompting LLM :
 
 Le but ici est de remplir la base et preparer le retrieval. Le prompting LLM viendra dans un second temps.
 
+> **Note sur le benchmark.** La commande `raglab experiment recall --corpus lexml_real` genere automatiquement un jeu de tests a partir des metadata LexML locales. Ce jeu est utile comme **smoke test** (valider que le retrieval fonctionne sur un corpus reel), **pas comme benchmark rigoureux** : les questions sont des templates `"{titre}. {resume}"`, la verite terrain est heuristique (match de nom de fichier / URN), et il n'y a qu'une seule source pertinente par question. Pour une vraie evaluation comparative entre strategies, utiliser `raglab bench download <loader>` (ex : FQuAD) — voir [run-and-test.md](run-and-test.md) section 11b.
+
 ## Choix d'architecture
 
 ### Pourquoi ne pas faire une table par strategie ?
