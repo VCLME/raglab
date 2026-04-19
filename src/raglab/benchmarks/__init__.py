@@ -10,8 +10,11 @@ The registry below is the single source of truth used by the CLI
 
 from raglab.benchmarks.base import BenchmarkDataset, BenchmarkLoader
 from raglab.benchmarks.fquad import FQuADLoader
+from raglab.benchmarks.piaf import PIAFLoader
+from raglab.benchmarks.squad_style import SquadStyleLoader
 
 AVAILABLE_LOADERS: dict[str, type[BenchmarkLoader]] = {
+    PIAFLoader.name: PIAFLoader,
     FQuADLoader.name: FQuADLoader,
 }
 
@@ -28,5 +31,7 @@ __all__ = [
     "BenchmarkDataset",
     "BenchmarkLoader",
     "FQuADLoader",
+    "PIAFLoader",
+    "SquadStyleLoader",
     "get_loader",
 ]

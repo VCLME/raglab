@@ -62,7 +62,7 @@ def test_fquad_loader_download_writes_corpus_ground_truth_and_metadata(tmp_path:
     for sidecar in sidecars:
         payload = json.loads(sidecar.read_text(encoding="utf-8"))
         assert payload["source"] == "fquad"
-        assert payload["hf_dataset"] == FQuADLoader.DEFAULT_HF_DATASET
+        assert payload["hf_dataset"] == FQuADLoader.hf_dataset_id
         assert payload["title"]
 
     # Ground truth: 3 cases, each with exactly one expected file name that
@@ -132,4 +132,4 @@ def test_fquad_loader_raises_when_all_rows_are_empty(tmp_path: Path):
     with patch("datasets.load_dataset", return_value=rows):
         with pytest.raises(RuntimeError) as exc:
             loader.download(tmp_path)
-    assert "FQuAD" in str(exc.value)
+    assert loader.name in str(exc.value)
