@@ -25,6 +25,8 @@ const SHOTS = [
   { name: "expert-benchmarks-history", path: "/expert/benchmarks", post: clickBenchTab("history"), wait: 1500 },
   { name: "expert-benchmarks-custom", path: "/expert/benchmarks", post: clickBenchTab("custom"), wait: 1500 },
   { name: "expert-ollama", path: "/expert/ollama", wait: 1500 },
+  { name: "expert-graph-index", path: "/expert/graph/index", wait: 1500 },
+  { name: "expert-graph-query", path: "/expert/graph/query", wait: 1500 },
 ];
 
 function pickCorpus(name) {

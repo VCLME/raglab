@@ -27,7 +27,7 @@ Plus de détails : **[docs/base-idea.md](docs/base-idea.md)**.
 
 ## Aperçu de l'UI
 
-Sept pages dans le mode Expert, chacune avec un pavé « En savoir plus » qui explique à quoi elle sert :
+La nav Expert est groupée en trois familles repliables (Vecteur / Graphe / LLM), avec Dashboard, Corpus et Benchmarks au top-level :
 
 <table>
 <tr>
@@ -54,6 +54,14 @@ Sept pages dans le mode Expert, chacune avec un pavé « En savoir plus » qui e
 <td><b>Playground</b> — chat direct avec Ollama, sans retrieval. Calibrer un modèle, tester un system prompt.</td>
 <td><b>Modèles Ollama</b> — statut, liste, pull, suppression des modèles LLM installés localement.</td>
 </tr>
+<tr>
+<td><a href="docs/images/expert-graph-index.png"><img src="docs/images/expert-graph-index.png" alt="Indexation graphe" /></a></td>
+<td><a href="docs/images/expert-graph-query.png"><img src="docs/images/expert-graph-query.png" alt="Retrieval graphe" /></a></td>
+</tr>
+<tr>
+<td><b>Indexation graphe (Neo4j)</b> — Bientôt. Plomberie en place ; le store vector-in-graph arrive dans le PR suivant.</td>
+<td><b>Retrieval graphe (Neo4j)</b> — Bientôt. KNN sur vector index Neo4j 5 + (plus tard) traversal hybride.</td>
+</tr>
 </table>
 
 ### Benchmarks
@@ -70,7 +78,7 @@ La page Benchmarks a trois onglets pour le cycle complet évaluer → mesurer �
 ## Démarrage rapide (Docker)
 
 ```bash
-docker compose up -d postgres ollama adminer
+docker compose up -d postgres ollama adminer neo4j
 docker compose --profile app up -d api frontend
 docker compose exec ollama ollama pull qwen2.5:7b
 ```
@@ -80,6 +88,7 @@ Puis :
 - **UI** : [http://localhost:8081](http://localhost:8081)
 - **API Swagger** : [http://localhost:8000/docs](http://localhost:8000/docs)
 - **Adminer** (explorateur PostgreSQL) : [http://localhost:8080](http://localhost:8080) — serveur `postgres`, user/pwd `raglab`, base `raglab`
+- **Neo4j Browser** : [http://localhost:7474](http://localhost:7474) — user `neo4j` / pwd `raglab_neo4j` (store graphe en cours, voir [docs/roadmap.md](docs/roadmap.md))
 
 Pour ingérer tes premiers documents : Expert → Corpus → Dossier local, pointe sur un dossier contenant des `.txt`, `.pdf`, `.docx`. Puis Indexation pour créer un index run, puis Chat pour interroger.
 
@@ -161,6 +170,6 @@ Gain observé sur RTX 3070 Ti Laptop avec `qwen2.5:7b` Q4 : **~10.7 tok/s CPU �
 
 - pas d'OCR pour PDF images
 - pas de reranker (cross-encoder en roadmap)
-- pas de Neo4j branché dans cette version
+- Neo4j est branché (docker + driver + endpoints `/api/graph/*`) mais l'indexation/retrieval graph n'est pas encore implémentée — voir [docs/roadmap.md](docs/roadmap.md)
 - l'API exécute ingest/index/lexml load en synchrone, sans file de jobs
 - la collecte LexML V1 sauvegarde des fiches structurées, sans suivre encore les liens de texte intégral
