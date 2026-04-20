@@ -54,10 +54,15 @@
     "expert_section": "Expert mode",
     "dashboard": "Dashboard",
     "corpus": "Corpus",
-    "index": "Indexing",
-    "retrieval": "Retrieval",
-    "playground": "Playground",
     "benchmarks": "Benchmarks",
+    "vector_group": "Vector",
+    "vector_index": "Indexing",
+    "vector_retrieval": "Retrieval",
+    "graph_group": "Graph",
+    "graph_index": "Graph indexing",
+    "graph_query": "Graph retrieval",
+    "llm_group": "LLM",
+    "playground": "Playground",
     "models": "Ollama models"
   },
   "chat": {
@@ -101,6 +106,7 @@
     "api": "API",
     "postgres": "PostgreSQL",
     "ollama": "Ollama",
+    "neo4j": "Neo4j",
     "adminer": "Adminer",
     "generation_model": "Generation model",
     "pull_default": "Pull {{model}}",
@@ -224,6 +230,22 @@
     "embedding_provider_hint_no_value": "Optional (empty = settings)",
     "embedding_model_hint": "Optional — default: {{value}}",
     "embedding_model_hint_no_value": "Optional (empty = settings)"
+  },
+  "graph_index": {
+    "title": "Graph indexing (Neo4j)",
+    "subtitle": "Coming soon — vector-in-graph.",
+    "explain_body": "Graph counterpart to vector indexing. Each chunk will become a Neo4j node carrying an `embedding_d{N}` property plus a `BELONGS_TO` relation to its document.\n\nGoal: run the same query against pgvector vs Neo4j (Neo4j 5 vector index) with identical chunks and embeddings — and compare retrieval quality.\n\nIn a later phase, entity extraction (LLM or spaCy) will add typed nodes enabling hybrid retrieval: KNN seeds + graph traversal.",
+    "coming_soon_title": "Coming soon",
+    "coming_soon_body": "This page will accept the same parameters as vector indexing (corpus, strategy, embedding model) and write to Neo4j in parallel. `POST /api/graph/index` is wired but still returns 501.",
+    "neo4j_status_label": "Neo4j",
+    "neo4j_status_unreachable": "Neo4j unreachable — run `docker compose up -d neo4j` and reload."
+  },
+  "graph_query": {
+    "title": "Graph retrieval (Neo4j)",
+    "subtitle": "Coming soon — KNN over Neo4j vector index.",
+    "explain_body": "Graph counterpart to the Retrieval page. You'll fire a question against a Neo4j index and see the chunks ranked by the vector index, with the same filters (corpus, file_name, tags).\n\nLater on, a hybrid mode will do KNN seed → `k`-hop expansion through the entity graph → re-rank.",
+    "coming_soon_title": "Coming soon",
+    "coming_soon_body": "`POST /api/graph/query` is wired but still returns 501. This page will switch on once the Neo4j store is implemented."
   },
   "lexml": {
     "title": "LexML Brasil",
