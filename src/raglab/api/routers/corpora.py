@@ -90,6 +90,7 @@ def list_corpus_documents(
 @router.get("/api/index-runs", response_model=list[IndexRunSummary])
 def list_index_runs(
     corpus: str | None = None,
+    backend: str | None = None,
     session: Session = Depends(get_db),
 ) -> list[IndexRunSummary]:
     stmt = (
@@ -105,6 +106,9 @@ def list_index_runs(
         stmt = stmt.where(IndexRun.corpus_id == corpus_row.id)
     results: list[IndexRunSummary] = []
     for run, corpus_name, embedding_space in session.execute(stmt).all():
+        run_backend = (run.config_json or {}).get("backend", "pgvector")
+        if backend and run_backend != backend:
+            continue
         chunks_count = session.execute(
             select(func.count()).select_from(Chunk).where(Chunk.index_run_id == run.id)
         ).scalar_one()
@@ -123,6 +127,7 @@ def list_index_runs(
                 embedding_provider=embedding_space.provider if embedding_space else None,
                 embedding_model_name=embedding_space.model_name if embedding_space else None,
                 embedding_dimension=embedding_space.dimension if embedding_space else None,
+                backend=run_backend,
             )
         )
     return results

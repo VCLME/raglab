@@ -1,32 +1,122 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException
+import logging
+from typing import Any
+
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import func as sa_func
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from raglab.api.deps import get_db
+from raglab.api.schemas import IndexRequest, IndexRunSummary, QueryRequest
+from raglab.db.crud import get_corpus_by_name
+from raglab.db.models import Chunk, Corpus, EmbeddingSpace, IndexRun
+from raglab.domain.schemas import QueryResponse
+from raglab.graph import BACKEND_KEY, GRAPH_BACKEND, GraphIndexingService, GraphQueryService
+from raglab.logging_utils import log_event
+from raglab.retrieval.filters import build_retrieval_filters
+
+LOGGER = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/graph", tags=["graph"])
 
-_NOT_IMPLEMENTED_MESSAGE = (
-    "Endpoint scaffolded for the Neo4j vector-in-graph store. "
-    "Implementation arrives in the next PR."
-)
+
+@router.post("/index")
+def graph_index(body: IndexRequest, session: Session = Depends(get_db)) -> dict[str, Any]:
+    corpus = get_corpus_by_name(session, body.corpus)
+    if corpus is None:
+        raise HTTPException(status_code=404, detail=f"Corpus '{body.corpus}' introuvable")
+
+    service = GraphIndexingService(session)
+    try:
+        result = service.index_corpus(
+            corpus_name=body.corpus,
+            strategy=body.strategy,
+            run_name=body.run_name,
+            embedding_provider=body.embedding_provider,
+            embedding_model_name=body.embedding_model,
+        )
+    finally:
+        if hasattr(service.store, "close"):
+            service.store.close()
+
+    log_event(LOGGER, logging.INFO, "api.graph.index.completed", **result)
+    return result
 
 
-def _not_implemented():
-    raise HTTPException(status_code=501, detail=_NOT_IMPLEMENTED_MESSAGE)
+@router.post("/query", response_model=QueryResponse)
+def graph_query(body: QueryRequest, session: Session = Depends(get_db)) -> QueryResponse:
+    filters_payload = body.filters
+    metadata_equals_cli: list[str] | None = None
+    if filters_payload and filters_payload.metadata_equals:
+        metadata_equals_cli = [f"{k}={v}" for k, v in filters_payload.metadata_equals.items()]
+    filters = build_retrieval_filters(
+        document_ids=filters_payload.document_ids if filters_payload else None,
+        file_names=filters_payload.file_names if filters_payload else None,
+        source_path_contains=filters_payload.source_path_contains if filters_payload else None,
+        tags=filters_payload.tags if filters_payload else None,
+        metadata_equals=metadata_equals_cli,
+    )
+
+    service = GraphQueryService(session)
+    try:
+        return service.query(
+            question=body.question,
+            corpus_name=body.corpus,
+            strategy=body.strategy,
+            index_run_id=body.index_run_id,
+            top_k=body.top_k,
+            generate_answer=body.generate,
+            filters=filters,
+        )
+    finally:
+        if hasattr(service.store, "close"):
+            service.store.close()
 
 
-@router.post("/index", status_code=501)
-def graph_index(body: dict | None = None) -> None:
-    """Index a corpus into the Neo4j graph store. Not yet implemented."""
-    _not_implemented()
+@router.get("/runs", response_model=list[IndexRunSummary])
+def graph_runs(
+    corpus: str | None = None,
+    session: Session = Depends(get_db),
+) -> list[IndexRunSummary]:
+    """List graph-backed index runs only (backend == neo4j)."""
+    stmt = (
+        select(IndexRun, Corpus.name, EmbeddingSpace)
+        .join(Corpus, Corpus.id == IndexRun.corpus_id)
+        .join(EmbeddingSpace, EmbeddingSpace.id == IndexRun.embedding_space_id)
+        .order_by(IndexRun.started_at.desc())
+    )
+    if corpus:
+        corpus_row = session.execute(select(Corpus).where(Corpus.name == corpus)).scalar_one_or_none()
+        if corpus_row is None:
+            raise HTTPException(status_code=404, detail=f"Corpus '{corpus}' introuvable")
+        stmt = stmt.where(IndexRun.corpus_id == corpus_row.id)
 
-
-@router.post("/query", status_code=501)
-def graph_query(body: dict | None = None) -> None:
-    """KNN search against the Neo4j graph store. Not yet implemented."""
-    _not_implemented()
-
-
-@router.get("/runs", status_code=501)
-def graph_runs() -> None:
-    """List graph index runs. Not yet implemented."""
-    _not_implemented()
+    results: list[IndexRunSummary] = []
+    for run, corpus_name, embedding_space in session.execute(stmt).all():
+        run_backend = (run.config_json or {}).get(BACKEND_KEY)
+        if run_backend != GRAPH_BACKEND:
+            continue
+        chunks_count = session.execute(
+            select(sa_func.count()).select_from(Chunk).where(Chunk.index_run_id == run.id)
+        ).scalar_one()
+        results.append(
+            IndexRunSummary(
+                id=run.id,
+                corpus_id=run.corpus_id,
+                corpus_name=corpus_name,
+                name=run.name,
+                strategy=run.strategy,
+                status=run.status,
+                started_at=run.started_at.isoformat() if run.started_at else None,
+                completed_at=run.completed_at.isoformat() if run.completed_at else None,
+                chunks_count=chunks_count or 0,
+                embedding_space_name=embedding_space.name if embedding_space else None,
+                embedding_provider=embedding_space.provider if embedding_space else None,
+                embedding_model_name=embedding_space.model_name if embedding_space else None,
+                embedding_dimension=embedding_space.dimension if embedding_space else None,
+                backend=run_backend,
+            )
+        )
+    return results

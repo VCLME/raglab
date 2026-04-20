@@ -2,19 +2,20 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from raglab.db.models import Chunk, IndexRun
-from raglab.domain.schemas import RetrievedChunk
+from raglab.db.models import Chunk, Document, IndexRun
+from raglab.domain.schemas import RetrievalFilters, RetrievedChunk
 
 
 class GraphStore(Protocol):
     """Protocol parallel to VectorStore but backed by a graph database.
 
-    Two intended modes (both unimplemented in this scaffolding PR):
+    Two intended modes:
       * vector-in-graph — chunks are nodes carrying an embedding vector
-        property; `search` does KNN via a per-dimension vector index.
+        property; `search` does KNN via a per-dimension vector index
+        (implemented).
       * knowledge-graph — entities/relations extracted from chunks form
         a typed graph; `expand_neighbors` traverses outward from seed
-        chunks returned by an initial vector search.
+        chunks (not yet implemented).
     """
 
     def ping(self) -> bool:
@@ -25,9 +26,14 @@ class GraphStore(Protocol):
         *,
         index_run: IndexRun,
         chunks: list[Chunk],
+        documents: dict[str, Document],
         embeddings: list[list[float]],
     ) -> None:
-        """Persist chunks and their embeddings as graph nodes."""
+        """Persist chunks and their embeddings as graph nodes.
+
+        `documents` maps `document_id -> Document` so the store can
+        attach file_name / source_path / metadata to each chunk node.
+        """
 
     def search(
         self,
@@ -35,6 +41,7 @@ class GraphStore(Protocol):
         index_run: IndexRun,
         query_embedding: list[float],
         top_k: int,
+        filters: RetrievalFilters | None = None,
     ) -> list[RetrievedChunk]:
         """KNN search returning chunks ranked by similarity."""
 
@@ -47,4 +54,4 @@ class GraphStore(Protocol):
         """Traverse `hops` relations from each seed chunk."""
 
     def delete_index_run(self, index_run_id: str) -> None:
-        """Remove every node/relation tied to a given index run."""
+        """Remove every chunk node + relation tied to a given index run."""

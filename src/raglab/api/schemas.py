@@ -143,6 +143,7 @@ class IndexRunSummary(BaseModel):
     embedding_provider: str | None = None
     embedding_model_name: str | None = None
     embedding_dimension: int | None = None
+    backend: str = "pgvector"
 
 
 class LexMLGetDataRequest(BaseModel):
