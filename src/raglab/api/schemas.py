@@ -12,6 +12,7 @@ class HealthResponse(BaseModel):
     api: str
     postgres: str
     ollama: str
+    neo4j: str = "unknown"
     default_generation_model: str
     default_generation_model_installed: bool | None = None
     adminer_url: str
