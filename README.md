@@ -3,6 +3,7 @@
 <img width="1261" height="805" alt="image" src="https://github.com/user-attachments/assets/70e68f33-3f0f-427f-8816-df46fef87aea" />
 <img width="1756" height="1205" alt="image" src="https://github.com/user-attachments/assets/80b0896b-904b-45e1-bfc5-2bb1aeb42d49" />
 <img width="1759" height="1169" alt="image" src="https://github.com/user-attachments/assets/e4209d86-fa89-4513-88fb-3e2f49dc44eb" />
+<img width="1158" height="483" alt="image" src="https://github.com/user-attachments/assets/c2b4576e-2f02-43f0-86a3-7c13c6a09a78" />
 
 Projet RAG local oriente experimentation sur des dossiers de documents `.txt`, `.pdf`, `.docx`.
 
