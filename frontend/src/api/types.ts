@@ -93,6 +93,7 @@ export interface IndexRunSummary {
   embedding_provider: string | null;
   embedding_model_name: string | null;
   embedding_dimension: number | null;
+  backend: string;
 }
 
 export interface IngestResponse {
