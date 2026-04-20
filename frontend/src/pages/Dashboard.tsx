@@ -68,6 +68,10 @@ export function Dashboard() {
               <StatusBadge state={health.data.ollama} label={health.data.ollama} />
             </div>
             <div>
+              <div className="muted">{t("dashboard.neo4j")}</div>
+              <StatusBadge state={health.data.neo4j} label={health.data.neo4j} />
+            </div>
+            <div>
               <div className="muted">{t("dashboard.adminer")}</div>
               <a href={health.data.adminer_url} target="_blank" rel="noreferrer">
                 {health.data.adminer_url}

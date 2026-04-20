@@ -5,6 +5,7 @@ export interface HealthResponse {
   api: string;
   postgres: string;
   ollama: string;
+  neo4j: string;
   default_generation_model: string;
   default_generation_model_installed: boolean | null;
   adminer_url: string;
