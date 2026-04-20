@@ -82,13 +82,15 @@ La roadmap ci-dessous reflète l'ordre réel de livraison. Les phases 0 à 5 son
 - nav Expert réorganisée en 3 familles repliables : Vecteur / Graphe / LLM (Corpus, Dashboard, Benchmarks restent au top-level)
 - pages placeholder « Indexation graphe » et « Retrieval graphe »
 
-**Sous-phase 8.1 — Vector-in-graph (à venir)**
+**Sous-phase 8.1 — Vector-in-graph ✅ (livré)**
 
-- chaque chunk = nœud `Chunk` avec propriété `embedding_d{N}` + relation `BELONGS_TO` vers son document
-- helper `ensure_vector_index(driver, dim)` analogue à la HNSW partielle pgvector — un vector index Neo4j 5 par dimension
-- `GraphIndexingService` qui écrit en parallèle pgvector + Neo4j (à choix utilisateur)
-- `GraphQueryService` faisant du KNN via le vector index Neo4j
-- bench recall sur le store graph, pour comparaison directe avec pgvector
+- chaque chunk = nœud `(:Chunk)` avec propriété `embedding_d{N}` + relation `[:BELONGS_TO]` vers son document et `[:FROM_RUN]` vers l'index run
+- helper `ensure_vector_index(driver, dim)` — un vector index Neo4j 5 par dimension (`cosine` par défaut)
+- `GraphIndexingService` : chunks dans pg (métadonnées/audit), embeddings dans Neo4j
+- `GraphQueryService` : KNN via `db.index.vector.queryNodes` avec filtres corpus / file_name / source_path / tags
+- `IndexRun.config_json.backend` tagge chaque run (`pgvector` | `neo4j`) ; `/api/index-runs?backend=...` filtre côté API
+- endpoints `/api/graph/{index,query,runs}` implémentés ; pages UI Indexation graphe + Retrieval graphe avec les mêmes formulaires que pgvector
+- restera à faire en phase 8.2 : bench recall croisé et filtres `metadata_equals` côté graphe (modéliser les metadata en nœuds)
 
 **Sous-phase 8.2 — Knowledge graph**
 
