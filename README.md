@@ -1,301 +1,175 @@
 # raglab
 
-<img width="1261" height="805" alt="image" src="https://github.com/user-attachments/assets/70e68f33-3f0f-427f-8816-df46fef87aea" />
-<img width="1756" height="1205" alt="image" src="https://github.com/user-attachments/assets/80b0896b-904b-45e1-bfc5-2bb1aeb42d49" />
-<img width="1759" height="1169" alt="image" src="https://github.com/user-attachments/assets/e4209d86-fa89-4513-88fb-3e2f49dc44eb" />
-<img width="1158" height="483" alt="image" src="https://github.com/user-attachments/assets/c2b4576e-2f02-43f0-86a3-7c13c6a09a78" />
+**Un banc d'essai RAG local pour comparer stratégies de chunking, modèles d'embedding et stratégies de retrieval sur tes propres documents.**
 
-Projet RAG local oriente experimentation sur des dossiers de documents `.txt`, `.pdf`, `.docx`.
+PostgreSQL + pgvector pour le stockage. Ollama pour la génération locale. React + FastAPI pour l'UI. Tout tourne sur ta machine, sans appel externe.
 
-Le projet fournit :
+![Chat raglab](docs/images/chat-welcome.png)
 
-- PostgreSQL + pgvector pour le stockage vectoriel
-- Ollama pour la generation locale
-- une CLI pour ingerer, indexer, requeter et lancer des experiences
-- trois strategies de chunking comparables :
-  - `traditional`
-  - `slide`
-  - `late`
-- une architecture prete pour une future coexistence PostgreSQL vectoriel + Neo4j
-- une collecte dediee LexML Brasil pour constituer un corpus juridique local
-- un benchmark de recall pour evaluer la qualite du retrieval
+*Mode Chat : choix du corpus, de l'index, du LLM. Les suggestions viennent directement du dataset de validation associé au corpus — ici PIAF pour `piaf_fr`.*
 
-## Documents de cadrage
+---
 
-- **[Idee de base](docs/base-idea.md)** — pourquoi raglab existe et ce qu'on cherche a mesurer
-- [Architecture](docs/architecture.md)
-- [Choix techniques](docs/technical-choices.md)
-- [Plan d'experimentation](docs/experimentation-plan.md)
-- [Roadmap](docs/roadmap.md)
-- [Modele de donnees](docs/data-model.md)
-- [Lancer et tester le projet](docs/run-and-test.md)
-- [Cas réel RAG sans LLM](docs/real-rag-lexml-load.md)
-- [Interface web raglab](docs/frontend-ui.md)
+## Pourquoi raglab
 
-## Structure
+Quand tu montes un pipeline RAG, les décisions qui comptent sont :
 
-```text
-.
-├── docs/
-├── data/
-│   ├── documents/
-│   ├── experiments/
-│   ├── lexml/
-│   │   ├── benchmark/
-│   │   └── documents/
-│   └── reports/
-├── src/raglab/
-│   ├── chunking/
-│   ├── db/
-│   ├── embeddings/
-│   ├── experiments/
-│   ├── generation/
-│   ├── graph/
-│   ├── indexing/
-│   ├── ingestion/
-│   ├── lexml/
-│   ├── retrieval/
-│   └── stores/
-├── tests/
-├── docker-compose.yml
-├── Dockerfile
-└── pyproject.toml
-```
+- Quelle **stratégie de chunking** ? (`traditional` fenêtre fixe, `slide` glissant, `late` avec contexte)
+- Quel **modèle d'embedding** et quelle dimension ?
+- Quel **top-K** et quels filtres de retrieval ?
+- Quel **LLM** pour la génération, avec quel prompt ?
 
-## Demarrage rapide
+raglab te laisse lancer chaque combinaison, la mesurer contre un jeu de vérité terrain (PIAF, datasets custom, LexML), visualiser les Recall@K / MRR côte à côte et comparer.
 
-### 1. Lancer les services
+Plus de détails : **[docs/base-idea.md](docs/base-idea.md)**.
 
-```bash
-docker compose up -d postgres ollama
-```
+---
 
-Pour ouvrir la base dans un navigateur avec Adminer :
+## Aperçu de l'UI
 
-```bash
-docker compose up -d postgres adminer
-```
+La nav Expert est groupée en trois familles repliables (Vecteur / Graphe / LLM), avec Dashboard, Corpus et Benchmarks au top-level :
 
-Puis ouvrir `http://localhost:8080` avec :
+<table>
+<tr>
+<td><a href="docs/images/expert-dashboard.png"><img src="docs/images/expert-dashboard.png" alt="Dashboard" /></a></td>
+<td><a href="docs/images/expert-corpus.png"><img src="docs/images/expert-corpus.png" alt="Corpus" /></a></td>
+</tr>
+<tr>
+<td><b>Dashboard</b> — santé des services, modèle par défaut, corpus et derniers index runs.</td>
+<td><b>Corpus</b> — ingère un dossier local, télécharge un benchmark (PIAF), charge LexML Brasil, supprime un corpus.</td>
+</tr>
+<tr>
+<td><a href="docs/images/expert-index.png"><img src="docs/images/expert-index.png" alt="Indexation" /></a></td>
+<td><a href="docs/images/expert-retrieval.png"><img src="docs/images/expert-retrieval.png" alt="Retrieval" /></a></td>
+</tr>
+<tr>
+<td><b>Indexation</b> — chunk + embed + stocke dans pgvector. Une stratégie × un embedding = un index run.</td>
+<td><b>Retrieval</b> — version détaillée du Chat avec filtres fins (tags, file_name, metadata) et payload JSON brut.</td>
+</tr>
+<tr>
+<td><a href="docs/images/expert-playground.png"><img src="docs/images/expert-playground.png" alt="Playground" /></a></td>
+<td><a href="docs/images/expert-ollama.png"><img src="docs/images/expert-ollama.png" alt="Modèles Ollama" /></a></td>
+</tr>
+<tr>
+<td><b>Playground</b> — chat direct avec Ollama, sans retrieval. Calibrer un modèle, tester un system prompt.</td>
+<td><b>Modèles Ollama</b> — statut, liste, pull, suppression des modèles LLM installés localement.</td>
+</tr>
+<tr>
+<td><a href="docs/images/expert-graph-index.png"><img src="docs/images/expert-graph-index.png" alt="Indexation graphe" /></a></td>
+<td><a href="docs/images/expert-graph-query.png"><img src="docs/images/expert-graph-query.png" alt="Retrieval graphe" /></a></td>
+</tr>
+<tr>
+<td><b>Indexation graphe (Neo4j)</b> — Bientôt. Plomberie en place ; le store vector-in-graph arrive dans le PR suivant.</td>
+<td><b>Retrieval graphe (Neo4j)</b> — Bientôt. KNN sur vector index Neo4j 5 + (plus tard) traversal hybride.</td>
+</tr>
+</table>
 
-- systeme : `PostgreSQL`
-- serveur : `postgres`
-- utilisateur : `raglab`
-- mot de passe : `raglab`
-- base : `raglab`
+### Benchmarks
 
-Pour obtenir des logs structures JSON dans la CLI :
+La page Benchmarks a trois onglets pour le cycle complet évaluer → mesurer → itérer :
+
+| Lancer | Historique | Créer un dataset |
+|---|---|---|
+| [![Launch](docs/images/expert-benchmarks-launch.png)](docs/images/expert-benchmarks-launch.png) | [![History](docs/images/expert-benchmarks-history.png)](docs/images/expert-benchmarks-history.png) | [![Custom](docs/images/expert-benchmarks-custom.png)](docs/images/expert-benchmarks-custom.png) |
+| Choisis un corpus, une stratégie et un dataset de vérité terrain. Le dropdown auto-détecte les datasets présents sur disque et prévient quand corpus et dataset ne matchent pas. | Coche jusqu'à 5 runs pour comparer R@1 / R@5 / R@10 / MRR sur un graphe partagé. Clique une ligne pour voir le détail cas par cas. Delete pour purger un run foiré. | Écris tes propres questions + fichiers attendus (+ réponse optionnelle). Sauvegardé en `data/benchmarks/custom_<nom>/ground_truth.jsonl`. Apparaît immédiatement dans l'onglet Lancer. |
+
+---
+
+## Démarrage rapide (Docker)
 
 ```bash
-raglab --log-json query "Que dit le document ?" --corpus demo --strategy traditional
-```
-
-### 2. Telecharger le modele de generation Ollama
-
-```bash
+docker compose up -d postgres ollama adminer neo4j
+docker compose --profile app up -d api frontend
 docker compose exec ollama ollama pull qwen2.5:7b
 ```
 
-Ou via la CLI du projet :
+Puis :
 
-```bash
-raglab ollama pull --model qwen2.5:7b
-raglab ollama list
-raglab ollama status
-```
+- **UI** : [http://localhost:8081](http://localhost:8081)
+- **API Swagger** : [http://localhost:8000/docs](http://localhost:8000/docs)
+- **Adminer** (explorateur PostgreSQL) : [http://localhost:8080](http://localhost:8080) — serveur `postgres`, user/pwd `raglab`, base `raglab`
+- **Neo4j Browser** : [http://localhost:7474](http://localhost:7474) — user `neo4j` / pwd `raglab_neo4j` (store graphe en cours, voir [docs/roadmap.md](docs/roadmap.md))
 
-En mode 100 % Docker :
+Pour ingérer tes premiers documents : Expert → Corpus → Dossier local, pointe sur un dossier contenant des `.txt`, `.pdf`, `.docx`. Puis Indexation pour créer un index run, puis Chat pour interroger.
 
-```bash
-docker compose --profile app up -d app
-docker compose exec app python -m raglab.cli ollama pull --model qwen2.5:7b
-docker compose exec app python -m raglab.cli ollama list
-```
-
-### 3. Installer le projet cote Python
-
-```bash
-python -m venv .venv
-.venv\Scripts\activate
-pip install -e .[dev]
-```
-
-### 4. Preparer la configuration
-
-```bash
-copy .env.example .env
-```
-
-### 5. Initialiser la base
+### Version CLI
 
 ```bash
 raglab db init
-```
-
-### 6. Ingestion locale classique
-
-```bash
 raglab ingest data/documents --corpus demo
-```
-
-Les fichiers `.txt`, `.pdf` et `.docx` peuvent embarquer des metadonnees via un sidecar JSON portant le meme nom logique, par exemple `contrat.txt` + `contrat.json`.
-Des tags peuvent aussi etre ajoutes a l'ingestion :
-
-```bash
-raglab ingest data/documents --corpus demo --tag legal --tag contrat
-```
-
-### 7. Indexation
-
-```bash
 raglab index --corpus demo --strategy traditional
-raglab index --corpus demo --strategy slide
-raglab index --corpus demo --strategy late
+raglab query "Que dit le document sur la maintenance ?" --corpus demo
+raglab experiment recall --corpus demo --strategy traditional \
+  --dataset-path data/benchmarks/piaf/ground_truth.jsonl
 ```
 
-Pour ne reindexer que les documents nouveaux ou modifies, tout en reutilisant les chunks/embeddings du dernier run compatible :
+Installation Python : `pip install -e .[dev]` après `copy .env.example .env`.
+
+---
+
+## Ce que tu peux mesurer
+
+| Axe | Options disponibles |
+|---|---|
+| **Chunking** | `traditional` (900/150), `slide` (900/300), `late` (700 focal + 500 ctx) |
+| **Embedding** | n'importe quel modèle transformers ou `nomic-embed-text` via Ollama. Dimensions variables supportées (pgvector ≥ 0.7, un index HNSW partiel par dim) |
+| **Retrieval** | top-K configurable, filtres par tag, file_name, source_path, metadata JSON |
+| **Generation** | tout modèle Ollama (qwen2.5:7b par défaut). Température, top_p, num_ctx, seed, options avancées |
+| **Ground truth** | PIAF (≈30k Q/R français), FQuAD (si disponible), LexML auto-gen (smoke test), ou ton propre dataset via l'onglet « Créer un dataset » |
+| **Metrics** | Recall@1/5/10, MRR, Precision@K, mean_first_relevant_rank, durée |
+
+---
+
+## Corpus LexML Brasil
+
+Pipeline tout-en-un qui collecte des fiches juridiques publiques, ingère, indexe :
 
 ```bash
-raglab index --corpus demo --strategy traditional --incremental
-```
-
-Exemple pour preparer un run avec un autre provider ou modele plus tard :
-
-```bash
-raglab index --corpus demo --strategy traditional --embedding-provider transformers --embedding-model intfloat/multilingual-e5-small
-```
-
-### 8. Requete
-
-```bash
-raglab query "Que dit le document sur la maintenance ?" --corpus demo --strategy traditional
-```
-
-Exemples de filtres de retrieval :
-
-```bash
-raglab query "Que dit la loi ?" --corpus lexml --strategy traditional --tag legal
-raglab query "Que dit la loi ?" --corpus lexml --strategy traditional --file-name lexml_abc.txt
-raglab query "Que dit la loi ?" --corpus lexml --strategy traditional --metadata-eq authority="Senado Federal"
-raglab query "Que dit la loi ?" --corpus lexml --strategy traditional --metadata-eq locality=Brasil --source-path-contains lexml
-```
-
-### 9. Experimentation classique
-
-```bash
-raglab experiment run data/experiments/sample_queries.jsonl --corpus demo --strategy traditional --strategy slide --strategy late
-```
-
-Le rapport compare maintenant aussi des metriques de ranking utiles pour le retrieval :
-
-- `retrieval_hit_rate`
-- `retrieval_precision`
-- `retrieval_mrr`
-- `mean_first_relevant_rank`
-
-## LexML Brasil
-
-La fonctionnalite LexML collecte des fiches documentaires juridiques depuis le portail public LexML Brasil, les stocke localement en `.txt` et `.json`, puis les reinjecte dans le pipeline RAG existant.
-
-Commandes principales :
-
-```bash
-raglab lexml get-data --output-dir data/lexml/documents --page-limit 3
-raglab lexml ingest --corpus lexml
-raglab index --corpus lexml --strategy traditional
-raglab experiment recall --corpus lexml --strategy traditional
-```
-
-Pour un vrai chargement sans LLM, tu peux aussi tout enchainer en une commande :
-
-```bash
-docker compose up -d postgres
 raglab lexml load --corpus lexml_real --strategy traditional --page-limit 1
 ```
 
-Points importants :
+Détails (limites de taille, sidecars metadata, reprise de collecte) : **[docs/real-rag-lexml-load.md](docs/real-rag-lexml-load.md)**.
 
-- les donnees LexML sont stockees dans `data/lexml/documents`
-- si des donnees LexML locales existent deja, la collecte est skippee integralement
-- la limite dure est codee en dur dans `MAX_LEXML_DOWNLOAD_BYTES = 2 * 1024 * 1024 * 1024`
-- le benchmark Recall genere un jeu de requetes simple depuis les metadata LexML locales puis calcule `Recall@K`, `Precision@K`, `MRR` et `mean_first_relevant_rank`
-- les sidecars `.json` produits par LexML sont automatiquement reintegres comme metadata lors de `raglab lexml ingest`
-- la persistance PostgreSQL est assuree par le volume Docker `raglab_postgres_data`
-- Adminer est disponible sur `http://localhost:8080` pour explorer la base visuellement
+---
 
-## Parametres MVP retenus
+## GPU Nvidia (optionnel)
 
-- generation : `qwen2.5:7b` via Ollama
-- embeddings : `intfloat/multilingual-e5-small`
-- top-k par defaut : `5`
-- `traditional` : `900 / 150`
-- `slide` : `900 / 300`
-- `late` : chunk focal `700`, contexte `500`
-- generation : fallback explicite si le contexte est insuffisant, avec consigne de citation des sources
-
-## Ollama
-
-Le projet expose maintenant une CLI dediee a Ollama :
-
-```bash
-raglab ollama status
-raglab ollama list
-raglab ollama pull --model qwen2.5:7b
-```
-
-Le modele de generation par defaut est `qwen2.5:7b`.
-
-Notes pratiques :
-
-- le conteneur `ollama` persiste ses modeles dans le volume `raglab_ollama_data`
-- `qwen2.5:7b` est plus exigeant que `llama3.2:3b` en RAM/VRAM
-- si le modele n'est pas present localement, la generation indique maintenant explicitement la commande de pull a lancer
-
-### Accelerer avec un GPU Nvidia (optionnel)
-
-Par defaut le conteneur `ollama` tourne sur CPU. Si tu disposes d'un GPU Nvidia et du `nvidia-container-toolkit` (ou Docker Desktop + WSL2 sur Windows), utilise l'override `docker-compose.gpu.yml` :
+Override Compose prêt pour `nvidia-container-toolkit` :
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d ollama
 ```
 
-Verification :
+Gain observé sur RTX 3070 Ti Laptop avec `qwen2.5:7b` Q4 : **~10.7 tok/s CPU → ~38 tok/s GPU (3.6×)**. VRAM ≈ 4.7 GiB.
 
-```bash
-docker logs raglab-ollama 2>&1 | grep "inference compute"
-# attendu : library=CUDA name=CUDA0 description="NVIDIA GeForce ..."
-```
+---
 
-Gain observe sur RTX 3070 Ti Laptop avec `qwen2.5:7b` Q4 : **CPU ~10.7 tok/s vs GPU ~38 tok/s** (3.6x). VRAM consommee par le modele : ~4.7 GiB.
+## Paramètres par défaut
 
-## Interface web
+- génération : `qwen2.5:7b` (fallback explicite si contexte insuffisant, citations `[Rank N]` inline)
+- embeddings : `intfloat/multilingual-e5-small` (384d)
+- top-K : 5
+- chunking : voir tableau ci-dessus
 
-Une UI web React est disponible pour piloter ingestion, indexation, retrieval, generation et Ollama sans quitter le navigateur, ainsi qu'un Prompt Playground pour dialoguer directement avec Ollama. Voir [docs/frontend-ui.md](docs/frontend-ui.md).
+---
 
-Lancement Docker complet :
+## Documentation
 
-```bash
-docker compose up -d postgres ollama adminer
-docker compose --profile app up -d api frontend
-```
+- [docs/base-idea.md](docs/base-idea.md) — mission et axes de comparaison
+- [docs/architecture.md](docs/architecture.md) — architecture logicielle
+- [docs/technical-choices.md](docs/technical-choices.md) — choix techniques (pgvector, Ollama, etc.)
+- [docs/data-model.md](docs/data-model.md) — modèle de données PostgreSQL
+- [docs/experimentation-plan.md](docs/experimentation-plan.md) — plan d'expé rigoureux
+- [docs/roadmap.md](docs/roadmap.md) — ce qui est livré, ce qui vient
+- [docs/frontend-ui.md](docs/frontend-ui.md) — détail des pages React
+- [docs/run-and-test.md](docs/run-and-test.md) — commandes pour lancer / tester / rejouer
 
-- Frontend : http://localhost:8081
-- API Swagger : http://localhost:8000/docs
-
-Lancement dev local :
-
-```bash
-raglab serve --dev
-cd frontend && npm install && npm run dev
-```
-
-L'UI est en http://localhost:5173 et parle a l'API http://localhost:8000 via proxy Vite.
+---
 
 ## Limites actuelles
 
-- pas d'OCR pour PDF image
-- pas de reranker
-- pas de Neo4j branche dans cette premiere version
-- plusieurs dimensions d'embeddings coexistent maintenant dans la meme BDD : la colonne `chunk_embeddings.embedding` est stockee en `vector` variable (pgvector >= 0.7), et un index HNSW partiel par dimension est cree a la volee par `raglab.db.indexes.ensure_partial_hnsw_index` au moment de l'indexation
-- la collecte LexML V1 sauvegarde des fiches documentaires structurees issues du portail LexML, sans suivre encore les liens de texte integral des fournisseurs
-- l'API web execute les operations longues (ingest, index, lexml load) en synchrone, sans file de jobs
+- pas d'OCR pour PDF images
+- pas de reranker (cross-encoder en roadmap)
+- Neo4j est branché (docker + driver + endpoints `/api/graph/*`) mais l'indexation/retrieval graph n'est pas encore implémentée — voir [docs/roadmap.md](docs/roadmap.md)
+- l'API exécute ingest/index/lexml load en synchrone, sans file de jobs
+- la collecte LexML V1 sauvegarde des fiches structurées, sans suivre encore les liens de texte intégral

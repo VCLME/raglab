@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from raglab.api.deps import get_current_settings, get_db
 from raglab.api.schemas import ConfigResponse, HealthResponse
 from raglab.config import Settings
+from raglab.graph import Neo4jGraphStore
 from raglab.ollama.service import OllamaService
 
 LOGGER = logging.getLogger(__name__)
@@ -39,12 +40,28 @@ def health(
         LOGGER.warning("health.ollama_unreachable", extra={"error": str(exc)})
         ollama_state = "unreachable"
 
-    overall = "ok" if postgres_state == "ok" and ollama_state == "ok" else "degraded"
+    neo4j_state = "ok"
+    store = Neo4jGraphStore()
+    try:
+        if not store.ping():
+            neo4j_state = "unreachable"
+    except Exception as exc:
+        LOGGER.warning("health.neo4j_unreachable", extra={"error": str(exc)})
+        neo4j_state = "unreachable"
+    finally:
+        store.close()
+
+    overall = (
+        "ok"
+        if postgres_state == "ok" and ollama_state == "ok" and neo4j_state == "ok"
+        else "degraded"
+    )
     return HealthResponse(
         status=overall,
         api="ok",
         postgres=postgres_state,
         ollama=ollama_state,
+        neo4j=neo4j_state,
         default_generation_model=default_model,
         default_generation_model_installed=default_installed,
         adminer_url=settings.adminer_url,

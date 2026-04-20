@@ -221,7 +221,11 @@ Lecture de datasets, exécution comparative, calcul de métriques simples, sauve
 
 ### `src/raglab/graph`
 
-Préparation des abstractions pour Neo4j sans coupler le MVP à un moteur graphe.
+Plomberie Neo4j en place. Le service `neo4j` (image `neo4j:5.20-community`) est défini dans `docker-compose.yml`. Le driver Python `neo4j>=5.20` est listé en dépendance.
+
+Le Protocol `GraphStore` est aligné sur `VectorStore` (méthodes `upsert_chunks`, `search`, `expand_neighbors`, `delete_index_run`, plus `ping` pour le healthcheck). `Neo4jGraphStore` implémente `ping()` ; les autres méthodes lèvent `NotImplementedError` tant que le PR vector-in-graph n'a pas atterri.
+
+Les endpoints `/api/graph/index`, `/api/graph/query`, `/api/graph/runs` répondent `501` pour matérialiser la surface dans Swagger.
 
 ## 8. Décisions structurantes
 

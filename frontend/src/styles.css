@@ -255,6 +255,45 @@ a:hover {
   color: var(--dim);
   font-weight: 600;
 }
+.sidebar-group {
+  margin-top: 6px;
+}
+.sidebar-group-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: 8px 14px;
+  font-size: 11px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--dim);
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+}
+.sidebar-group-title:hover {
+  color: var(--text);
+}
+.sidebar-group-chevron {
+  display: inline-block;
+  width: 10px;
+  font-size: 10px;
+  color: var(--dim);
+}
+.sidebar-group-children {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-left: 8px;
+  border-left: 1px solid var(--border);
+  margin-left: 16px;
+}
+.sidebar-group-children a {
+  font-size: 13px;
+}
 
 .content {
   flex: 1;

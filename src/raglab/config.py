@@ -20,6 +20,11 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+psycopg://raglab:raglab@localhost:5432/raglab"
     ollama_base_url: str = "http://localhost:11434"
 
+    neo4j_uri: str = "bolt://localhost:7687"
+    neo4j_user: str = "neo4j"
+    neo4j_password: str = "raglab_neo4j"
+    neo4j_database: str = "neo4j"
+
     default_corpus_name: str = "default"
     default_top_k: int = 5
     data_dir: Path = Field(default_factory=lambda: Path("data"))

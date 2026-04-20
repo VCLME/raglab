@@ -69,12 +69,32 @@ La roadmap ci-dessous reflète l'ordre réel de livraison. Les phases 0 à 5 son
 - sous-phase suivante : métriques RAGAS (faithfulness, context relevance, answer correctness) + LLM-as-judge
 - loaders additionnels envisagés : MIRACL (multilingue), PIAF, mMARCO-fr, SciFact
 
-## Phase 8 — Extension graphe
+## Phase 8 — Extension graphe 🚧 (en cours)
 
-- interface `GraphStore`
-- extraction entités / relations
-- branchement Neo4j
-- requêtes hybrides vectorielles + graphe
+**Sous-phase 8.0 — Plomberie Neo4j (livré)**
+
+- service `neo4j` dans `docker-compose.yml` (image `neo4j:5.20-community`)
+- driver Python `neo4j>=5.20` ajouté
+- protocol `GraphStore` étendu pour matcher la forme de `VectorStore` (ingest + search + expand)
+- placeholder `Neo4jGraphStore` avec `ping()` réel et stubs `NotImplementedError`
+- endpoints API `/api/graph/{index,query,runs}` répondent 501 jusqu'au PR suivant
+- statut Neo4j exposé dans `/api/health` et le Dashboard
+- nav Expert réorganisée en 3 familles repliables : Vecteur / Graphe / LLM (Corpus, Dashboard, Benchmarks restent au top-level)
+- pages placeholder « Indexation graphe » et « Retrieval graphe »
+
+**Sous-phase 8.1 — Vector-in-graph (à venir)**
+
+- chaque chunk = nœud `Chunk` avec propriété `embedding_d{N}` + relation `BELONGS_TO` vers son document
+- helper `ensure_vector_index(driver, dim)` analogue à la HNSW partielle pgvector — un vector index Neo4j 5 par dimension
+- `GraphIndexingService` qui écrit en parallèle pgvector + Neo4j (à choix utilisateur)
+- `GraphQueryService` faisant du KNN via le vector index Neo4j
+- bench recall sur le store graph, pour comparaison directe avec pgvector
+
+**Sous-phase 8.2 — Knowledge graph**
+
+- extraction d'entités / relations (LLM ou spaCy) lors de l'ingestion
+- nœuds typés (`Personne`, `Loi`, `Événement`…) + relations
+- mode retrieval hybride : seed KNN → expansion `k`-hops → re-rank
 
 ## Phase 9 — Industrialisation
 

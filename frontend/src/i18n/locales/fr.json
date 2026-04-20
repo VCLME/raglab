@@ -54,10 +54,15 @@
     "expert_section": "Mode expert",
     "dashboard": "Dashboard",
     "corpus": "Corpus",
-    "index": "Indexation",
-    "retrieval": "Retrieval",
-    "playground": "Playground",
     "benchmarks": "Benchmarks",
+    "vector_group": "Vecteur",
+    "vector_index": "Indexation",
+    "vector_retrieval": "Retrieval",
+    "graph_group": "Graphe",
+    "graph_index": "Indexation graphe",
+    "graph_query": "Retrieval graphe",
+    "llm_group": "LLM",
+    "playground": "Playground",
     "models": "Modèles Ollama"
   },
   "chat": {
@@ -101,6 +106,7 @@
     "api": "API",
     "postgres": "PostgreSQL",
     "ollama": "Ollama",
+    "neo4j": "Neo4j",
     "adminer": "Adminer",
     "generation_model": "Modèle génération",
     "pull_default": "Télécharger {{model}}",
@@ -224,6 +230,22 @@
     "embedding_provider_hint_no_value": "Optionnel (vide = settings)",
     "embedding_model_hint": "Optionnel — défaut : {{value}}",
     "embedding_model_hint_no_value": "Optionnel (vide = settings)"
+  },
+  "graph_index": {
+    "title": "Indexation graphe (Neo4j)",
+    "subtitle": "Bientôt — vector-in-graph.",
+    "explain_body": "Pendant graphe de l'indexation vectorielle. Chaque chunk deviendra un nœud Neo4j portant une propriété `embedding_d{N}`, plus une relation `BELONGS_TO` vers son document.\n\nObjectif : pouvoir comparer côte à côte la même requête routée vers pgvector vs vers Neo4j (vector index Neo4j 5), avec exactement les mêmes chunks et embeddings.\n\nDans une phase suivante, l'extraction d'entités (LLM ou spaCy) ajoutera des nœuds typés et permettra du retrieval hybride : KNN seed + traversal du graphe.",
+    "coming_soon_title": "Bientôt",
+    "coming_soon_body": "Cette page acceptera les mêmes paramètres que l'indexation vecteur (corpus, stratégie, modèle d'embedding) et écrira en parallèle dans Neo4j. L'API `POST /api/graph/index` est déjà cabled mais retourne encore 501.",
+    "neo4j_status_label": "Neo4j",
+    "neo4j_status_unreachable": "Neo4j inaccessible — démarre `docker compose up -d neo4j` puis recharge la page."
+  },
+  "graph_query": {
+    "title": "Retrieval graphe (Neo4j)",
+    "subtitle": "Bientôt — KNN sur vector index Neo4j.",
+    "explain_body": "Équivalent graphe de la page Retrieval. Tu pourras lancer une question contre un index Neo4j et voir les chunks remontés via le vector index, avec les mêmes filtres (corpus, file_name, tags).\n\nDans une phase ultérieure, un mode « hybride » fera : seed KNN → expansion `k`-hops dans le graphe d'entités → re-rank.",
+    "coming_soon_title": "Bientôt",
+    "coming_soon_body": "L'API `POST /api/graph/query` est déjà cabled mais retourne encore 501. Cette page basculera quand le store Neo4j sera implémenté."
   },
   "lexml": {
     "title": "LexML Brasil",

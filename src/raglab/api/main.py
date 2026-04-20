@@ -9,6 +9,7 @@ from raglab.api.routers import (
     bench,
     corpora,
     experiments,
+    graph,
     health,
     index,
     ingest,
@@ -70,6 +71,7 @@ def create_app() -> FastAPI:
     app.include_router(lexml.router)
     app.include_router(experiments.router)
     app.include_router(bench.router)
+    app.include_router(graph.router)
 
     return app
 
