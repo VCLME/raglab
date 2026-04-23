@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 from raglab.api.routers import (
     bench,
     corpora,
+    databases,
     experiments,
     graph,
     health,
@@ -72,6 +73,7 @@ def create_app() -> FastAPI:
     app.include_router(experiments.router)
     app.include_router(bench.router)
     app.include_router(graph.router)
+    app.include_router(databases.router)
 
     return app
 

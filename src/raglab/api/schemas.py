@@ -295,6 +295,24 @@ class SubgraphResponse(BaseModel):
     mentions: list[SubgraphEdge]
 
 
+class DatabaseConnection(BaseModel):
+    kind: str  # "postgres" | "neo4j"
+    label: str
+    status: str  # "ok" | "unreachable" | "unknown"
+    host: str
+    port: int
+    user: str
+    password: str
+    database: str | None = None
+    url: str | None = None
+    web_url: str | None = None
+    deep_link: str | None = None
+
+
+class DatabasesResponse(BaseModel):
+    databases: list[DatabaseConnection]
+
+
 class RecallRequest(BaseModel):
     corpus: str
     strategy: ChunkingStrategy
