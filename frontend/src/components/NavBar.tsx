@@ -18,6 +18,7 @@ const TOP_LINKS: Link[] = [
   { to: "/expert", labelKey: "nav.dashboard", end: true },
   { to: "/expert/corpus", labelKey: "nav.corpus" },
   { to: "/expert/benchmarks", labelKey: "nav.benchmarks" },
+  { to: "/expert/databases", labelKey: "nav.databases" },
 ];
 
 const GROUPS: Group[] = [

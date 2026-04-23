@@ -79,6 +79,24 @@ export interface CorpusDocument {
   char_count: number;
 }
 
+export interface DatabaseConnection {
+  kind: "postgres" | "neo4j";
+  label: string;
+  status: "ok" | "unreachable" | "unknown";
+  host: string;
+  port: number;
+  user: string;
+  password: string;
+  database: string | null;
+  url: string | null;
+  web_url: string | null;
+  deep_link: string | null;
+}
+
+export interface DatabasesResponse {
+  databases: DatabaseConnection[];
+}
+
 export interface IndexRunSummary {
   id: string;
   corpus_id: string;

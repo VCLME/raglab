@@ -55,6 +55,7 @@
     "dashboard": "Painel",
     "corpus": "Corpus",
     "benchmarks": "Benchmarks",
+    "databases": "Bancos de dados",
     "vector_group": "Vetor",
     "vector_index": "Indexação",
     "vector_retrieval": "Retrieval",
@@ -447,5 +448,23 @@
     "download": "Baixar",
     "downloading": "Baixando…",
     "pull_status": "status: {{status}}"
+  },
+  "databases": {
+    "title": "Bancos de dados",
+    "subtitle": "Acesso direto ao PostgreSQL (Adminer) e ao Neo4j Browser.",
+    "explain_body": "Agrupa as credenciais e os links diretos para os dois bancos usados pelo raglab.\n\n• PostgreSQL + pgvector: abre Adminer com driver, servidor, usuário e base preenchidos — só falta colar a senha.\n• Neo4j: abre Neo4j Browser com o DBMS pré-selecionado. Por segurança o Neo4j não lê a senha pela URL, então você cola também.\n\nEssas são as credenciais do dev local (docker-compose.yml). Não reuse em produção.",
+    "postgres_hint": "Armazenamento vetorial (pgvector) + metadados de todos os runs. Adminer é a ferramenta de administração web.",
+    "neo4j_hint": "Graph store dos runs com backend=neo4j: chunks, entidades extraídas e relações [:MENTIONS].",
+    "host": "Host",
+    "port": "Porta",
+    "user": "Usuário",
+    "password": "Senha",
+    "database": "Base",
+    "connection_string": "String de conexão",
+    "url": "URL",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "open_adminer": "Abrir Adminer",
+    "open_neo4j": "Abrir Neo4j Browser"
   }
 }
