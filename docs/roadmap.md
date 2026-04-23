@@ -120,7 +120,14 @@ La roadmap ci-dessous reflète l'ordre réel de livraison. Les phases 0 à 5 son
 - `QueryRequest` accepte `mode` + `seed_top_n` + `entity_weight`. L'endpoint `/api/query` (pgvector) ignore ces champs.
 - UI Retrieval graphe : dropdown mode, slider `entity_weight` (0-1), input `seed_top_n`. Paramètres hybrides apparaissent seulement quand mode = hybride.
 - Le vector index Neo4j est global aux runs de même dimension : on sur-fetch (×5 sans filtre, ×15 avec filtre) avant de filtrer par `index_run_id` pour ne pas perdre trop de candidats côté client.
-- Restera : filtre par type d'entité (ex. uniquement mentions PERSON), visualisation du sous-graphe retourné.
+- Restera : filtre par type d'entité (ex. uniquement mentions PERSON).
+
+**8.2.2b — Visualisation du sous-graphe ✅ (livré)**
+
+- `Neo4jGraphStore.subgraph_for_chunks(chunk_ids)` retourne en une requête Cypher un payload plat `{chunks, documents, entities, mentions}`, dédupliqué par clé `name|type` côté Python.
+- Endpoint `GET /api/graph/subgraph?chunk_ids=c1,c2,...` côté API, réponse typée (`SubgraphResponse`).
+- Composant React `SubgraphView` basé sur Cytoscape.js — layout force-directed `cose`, nœuds Chunk (bleu arrondi) vs Entity (colorés par type : PERSON rouge, LOCATION jaune, ORGANIZATION violet, etc.), clic pour voir le preview du chunk / le type de l'entité.
+- Section repliable « Sous-graphe » sur la page Retrieval graphe, lazy-load après la requête. Légende en couleurs sous le canvas.
 
 **8.2.3 — Filtres metadata (à venir)**
 
