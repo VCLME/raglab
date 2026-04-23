@@ -54,7 +54,10 @@ class GraphQueryService:
                     "corpus_name est obligatoire quand index_run_id n'est pas fourni"
                 )
             index_run = resolve_latest_index_run(
-                self.session, corpus_name=corpus_name, strategy=strategy
+                self.session,
+                corpus_name=corpus_name,
+                strategy=strategy,
+                backend=GRAPH_BACKEND,
             )
         if index_run is None:
             raise ValueError("Aucun index_run compatible n'a ete trouve")
