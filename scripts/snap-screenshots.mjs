@@ -26,8 +26,35 @@ const SHOTS = [
   { name: "expert-benchmarks-custom", path: "/expert/benchmarks", post: clickBenchTab("custom"), wait: 1500 },
   { name: "expert-ollama", path: "/expert/ollama", wait: 1500 },
   { name: "expert-graph-index", path: "/expert/graph/index", wait: 1500 },
-  { name: "expert-graph-query", path: "/expert/graph/query", wait: 1500 },
+  {
+    name: "expert-graph-query",
+    path: "/expert/graph/query",
+    post: pickHybridMode("piaf_fr"),
+    wait: 1500,
+  },
 ];
+
+function pickHybridMode(corpusName) {
+  return async (page) => {
+    await page.evaluate((n) => {
+      const selects = Array.from(document.querySelectorAll("select"));
+      const corpusSelect = selects.find((s) =>
+        Array.from(s.options).some((o) => o.value === n)
+      );
+      if (corpusSelect) {
+        corpusSelect.value = n;
+        corpusSelect.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+      const modeSelect = selects.find((s) =>
+        Array.from(s.options).some((o) => o.value === "hybrid")
+      );
+      if (modeSelect) {
+        modeSelect.value = "hybrid";
+        modeSelect.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+    }, corpusName);
+  };
+}
 
 function pickCorpus(name) {
   return async (page) => {
