@@ -141,6 +141,7 @@
     "index_run": "Run de indexação",
     "index_run_hint": "Opcional, prioritário",
     "index_run_auto": "(auto)",
+    "top_k": "Top-K",
     "top_k_hint": "Vazio = padrão do backend",
     "top_k_hint_value": "Vazio = padrão do backend ({{value}})",
     "generate_label": "Geração",
@@ -233,19 +234,16 @@
   },
   "graph_index": {
     "title": "Indexação grafo (Neo4j)",
-    "subtitle": "Em breve — vector-in-graph.",
-    "explain_body": "Equivalente em grafo da indexação vetorial. Cada chunk vai virar um nó Neo4j com a propriedade `embedding_d{N}` e uma relação `BELONGS_TO` ao seu documento.\n\nObjetivo: rodar a mesma consulta contra pgvector vs Neo4j (vector index do Neo4j 5) com chunks e embeddings idênticos — e comparar a qualidade.\n\nEm uma fase posterior, extração de entidades (LLM ou spaCy) adicionará nós tipados, permitindo retrieval híbrido: KNN seeds + travessia do grafo.",
-    "coming_soon_title": "Em breve",
-    "coming_soon_body": "Esta página aceitará os mesmos parâmetros que a indexação vetor (corpus, estratégia, modelo de embedding) e escreverá em paralelo no Neo4j. `POST /api/graph/index` já está conectado, mas ainda retorna 501.",
+    "subtitle": "Vector-in-graph sobre Neo4j 5.",
+    "explain_body": "Equivalente em grafo da indexação vetorial. Cada chunk vira um nó `(:Chunk)` Neo4j com a propriedade `embedding_d{N}`, mais uma relação `[:BELONGS_TO]` ao documento e `[:FROM_RUN]` ao index run.\n\nObjetivo: rodar a mesma consulta contra pgvector vs Neo4j (vector index do Neo4j 5) com chunks e embeddings idênticos e comparar a qualidade.\n\nNa fase seguinte (8.2), extração de entidades (LLM ou spaCy) adicionará nós tipados, permitindo retrieval híbrido: KNN seeds + travessia do grafo.",
     "neo4j_status_label": "Neo4j",
     "neo4j_status_unreachable": "Neo4j inacessível — execute `docker compose up -d neo4j` e recarregue a página."
   },
   "graph_query": {
     "title": "Retrieval grafo (Neo4j)",
-    "subtitle": "Em breve — KNN sobre vector index Neo4j.",
-    "explain_body": "Equivalente em grafo da página Retrieval. Você poderá disparar uma pergunta contra um índice Neo4j e ver os chunks rankeados pelo vector index, com os mesmos filtros (corpus, file_name, tags).\n\nDepois, um modo híbrido fará: KNN seed → expansão de `k` saltos no grafo de entidades → re-rank.",
-    "coming_soon_title": "Em breve",
-    "coming_soon_body": "`POST /api/graph/query` já está conectado mas ainda retorna 501. Esta página entrará em ação quando o store Neo4j for implementado."
+    "subtitle": "KNN sobre o vector index Neo4j.",
+    "explain_body": "Equivalente em grafo da página Retrieval. Dispare uma pergunta contra um índice Neo4j e veja os chunks rankeados pelo vector index, com os mesmos filtros do lado pgvector (corpus, file_name, source_path, tags).\n\nObservação: filtros `metadata_equals` ainda não são suportados no grafo (metadata serializada em JSON). Voltarão quando metadata virar nós de primeira classe na fase 8.2, junto com um modo híbrido: KNN seed → expansão de `k` saltos → re-rank.",
+    "no_runs": "Nenhum run de indexação grafo para este corpus. Vá em Indexação grafo para criar um."
   },
   "lexml": {
     "title": "LexML Brasil",

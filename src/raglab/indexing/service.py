@@ -336,6 +336,7 @@ class IndexingService:
                 **chunk_config.model_dump(),
                 "embedding_provider": effective_settings.embedding_provider,
                 "embedding_model_name": effective_settings.embedding_model_name,
+                "backend": "pgvector",
             },
             name=run_name,
         )

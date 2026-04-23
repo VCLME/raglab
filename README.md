@@ -59,8 +59,8 @@ La nav Expert est groupée en trois familles repliables (Vecteur / Graphe / LLM)
 <td><a href="docs/images/expert-graph-query.png"><img src="docs/images/expert-graph-query.png" alt="Retrieval graphe" /></a></td>
 </tr>
 <tr>
-<td><b>Indexation graphe (Neo4j)</b> — Bientôt. Plomberie en place ; le store vector-in-graph arrive dans le PR suivant.</td>
-<td><b>Retrieval graphe (Neo4j)</b> — Bientôt. KNN sur vector index Neo4j 5 + (plus tard) traversal hybride.</td>
+<td><b>Indexation graphe (Neo4j)</b> — chunks écrits comme <code>(:Chunk)</code> avec <code>embedding_d{N}</code>, un vector index Neo4j 5 par dimension. Comparable direct avec pgvector.</td>
+<td><b>Retrieval graphe (Neo4j)</b> — KNN via <code>db.index.vector.queryNodes</code>. Les filtres corpus / file_name / source_path / tags sont supportés ; metadata_equals arrive en phase 8.2.</td>
 </tr>
 </table>
 
@@ -170,6 +170,6 @@ Gain observé sur RTX 3070 Ti Laptop avec `qwen2.5:7b` Q4 : **~10.7 tok/s CPU �
 
 - pas d'OCR pour PDF images
 - pas de reranker (cross-encoder en roadmap)
-- Neo4j est branché (docker + driver + endpoints `/api/graph/*`) mais l'indexation/retrieval graph n'est pas encore implémentée — voir [docs/roadmap.md](docs/roadmap.md)
+- Neo4j est branché, l'indexation et le retrieval graphe sont fonctionnels (vector-in-graph, un vector index Neo4j 5 par dimension). Les filtres `metadata_equals` sur le store graphe et l'extraction d'entités arrivent en phase 8.2 — voir [docs/roadmap.md](docs/roadmap.md)
 - l'API exécute ingest/index/lexml load en synchrone, sans file de jobs
 - la collecte LexML V1 sauvegarde des fiches structurées, sans suivre encore les liens de texte intégral

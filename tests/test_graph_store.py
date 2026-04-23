@@ -7,45 +7,140 @@ import pytest
 from raglab.graph import Neo4jGraphStore
 
 
-def test_ping_returns_false_when_connectivity_fails():
+@patch("raglab.graph.neo4j.GraphDatabase.driver")
+def test_ping_returns_false_when_connectivity_fails(driver_factory):
     fake_driver = MagicMock(name="Driver")
     fake_driver.verify_connectivity.side_effect = RuntimeError("boom")
-    with patch("raglab.graph.neo4j.GraphDatabase.driver", return_value=fake_driver):
-        store = Neo4jGraphStore(uri="bolt://nope:7687", user="x", password="y")
-        try:
-            assert store.ping() is False
-        finally:
-            store.close()
+    driver_factory.return_value = fake_driver
+    store = Neo4jGraphStore(uri="bolt://nope:7687", user="x", password="y")
+    try:
+        assert store.ping() is False
+    finally:
+        store.close()
 
 
-def test_ping_returns_true_when_connectivity_succeeds():
+@patch("raglab.graph.neo4j.GraphDatabase.driver")
+def test_ping_returns_true_when_connectivity_succeeds(driver_factory):
     fake_driver = MagicMock(name="Driver")
     fake_driver.verify_connectivity.return_value = None
-    with patch("raglab.graph.neo4j.GraphDatabase.driver", return_value=fake_driver):
-        store = Neo4jGraphStore(uri="bolt://ok:7687", user="x", password="y")
-        try:
-            assert store.ping() is True
-        finally:
-            store.close()
+    driver_factory.return_value = fake_driver
+    store = Neo4jGraphStore(uri="bolt://ok:7687", user="x", password="y")
+    try:
+        assert store.ping() is True
+    finally:
+        store.close()
 
 
-@pytest.mark.parametrize(
-    "method, kwargs",
-    [
-        ("upsert_chunks", {"index_run": None, "chunks": [], "embeddings": []}),
-        ("search", {"index_run": None, "query_embedding": [], "top_k": 5}),
-        ("expand_neighbors", {"seed_chunk_ids": [], "hops": 1}),
-    ],
-)
-def test_unimplemented_methods_raise(method, kwargs):
-    with patch("raglab.graph.neo4j.GraphDatabase.driver", return_value=MagicMock()):
-        store = Neo4jGraphStore()
-        with pytest.raises(NotImplementedError, match="vector-in-graph"):
-            getattr(store, method)(**kwargs)
+@patch("raglab.graph.neo4j.GraphDatabase.driver")
+def test_expand_neighbors_not_implemented(driver_factory):
+    driver_factory.return_value = MagicMock()
+    store = Neo4jGraphStore()
+    with pytest.raises(NotImplementedError, match="knowledge-graph"):
+        store.expand_neighbors(seed_chunk_ids=["x"], hops=1)
 
 
-def test_delete_index_run_raises():
-    with patch("raglab.graph.neo4j.GraphDatabase.driver", return_value=MagicMock()):
-        store = Neo4jGraphStore()
-        with pytest.raises(NotImplementedError, match="vector-in-graph"):
-            store.delete_index_run("some-id")
+@patch("raglab.graph.neo4j.GraphDatabase.driver")
+def test_upsert_chunks_rejects_mismatched_lengths(driver_factory):
+    driver_factory.return_value = MagicMock()
+    store = Neo4jGraphStore()
+    index_run = MagicMock()
+    index_run.embedding_space.dimension = 3
+    with pytest.raises(ValueError, match="align"):
+        store.upsert_chunks(
+            index_run=index_run,
+            chunks=[MagicMock(document_id="d1")],
+            documents={"d1": MagicMock(metadata_json={})},
+            embeddings=[],
+        )
+
+
+@patch("raglab.graph.neo4j.ensure_vector_index")
+@patch("raglab.graph.neo4j.GraphDatabase.driver")
+def test_upsert_chunks_runs_merge_cypher(driver_factory, ensure_idx):
+    fake_driver = MagicMock(name="Driver")
+    fake_session = MagicMock(name="Session")
+    fake_driver.session.return_value.__enter__.return_value = fake_session
+    driver_factory.return_value = fake_driver
+
+    chunk = MagicMock()
+    chunk.id = "chunk-1"
+    chunk.document_id = "doc-1"
+    chunk.chunk_order = 0
+    chunk.text = "Hello world"
+
+    document = MagicMock()
+    document.id = "doc-1"
+    document.file_name = "hello.txt"
+    document.source_path = "data/hello.txt"
+    document.metadata_json = {"tags": ["a", "b"], "authority": "X"}
+
+    index_run = MagicMock()
+    index_run.id = "run-1"
+    index_run.corpus_id = "corpus-1"
+    index_run.strategy = "traditional"
+    index_run.embedding_space.dimension = 3
+
+    store = Neo4jGraphStore()
+    store.upsert_chunks(
+        index_run=index_run,
+        chunks=[chunk],
+        documents={"doc-1": document},
+        embeddings=[[0.1, 0.2, 0.3]],
+    )
+
+    assert fake_session.run.call_count == 1
+    cypher, params = fake_session.run.call_args[0]
+    assert "MERGE (c:Chunk" in cypher
+    assert "embedding_d3" in cypher
+    assert params["run_id"] == "run-1"
+    row = params["rows"][0]
+    assert row["chunk_id"] == "chunk-1"
+    assert row["tags"] == ["a", "b"]
+    # Neo4j can't store nested maps; metadata is serialised as JSON.
+    import json
+    assert json.loads(row["metadata_json"]) == {"authority": "X"}
+
+
+@patch("raglab.graph.neo4j.GraphDatabase.driver")
+def test_search_builds_cypher_with_filters(driver_factory):
+    fake_driver = MagicMock(name="Driver")
+    fake_session = MagicMock(name="Session")
+    fake_driver.session.return_value.__enter__.return_value = fake_session
+    fake_session.run.return_value = iter(
+        [
+            {
+                "chunk_id": "c1",
+                "document_id": "d1",
+                "file_name": "f.txt",
+                "source_path": "data/f.txt",
+                "chunk_text": "hello",
+                "score": 0.92,
+            }
+        ]
+    )
+    driver_factory.return_value = fake_driver
+
+    index_run = MagicMock()
+    index_run.id = "run-1"
+    index_run.embedding_space.dimension = 384
+
+    from raglab.domain.schemas import RetrievalFilters
+
+    filters = RetrievalFilters(file_names=["f.txt"])
+
+    store = Neo4jGraphStore()
+    results = store.search(
+        index_run=index_run,
+        query_embedding=[0.0] * 384,
+        top_k=5,
+        filters=filters,
+    )
+
+    assert len(results) == 1
+    assert results[0].chunk_id == "c1"
+    assert results[0].rank == 1
+    cypher, params = fake_session.run.call_args[0]
+    assert "db.index.vector.queryNodes" in cypher
+    assert "d.file_name IN $file_names" in cypher
+    assert params["fetch_k"] == 25  # top_k * 5 because filters active
+    assert params["top_k"] == 5

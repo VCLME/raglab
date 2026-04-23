@@ -141,6 +141,7 @@
     "index_run": "Index run",
     "index_run_hint": "Optional, takes priority",
     "index_run_auto": "(auto)",
+    "top_k": "Top-K",
     "top_k_hint": "Empty = backend default",
     "top_k_hint_value": "Empty = backend default ({{value}})",
     "generate_label": "Generation",
@@ -233,19 +234,16 @@
   },
   "graph_index": {
     "title": "Graph indexing (Neo4j)",
-    "subtitle": "Coming soon — vector-in-graph.",
-    "explain_body": "Graph counterpart to vector indexing. Each chunk will become a Neo4j node carrying an `embedding_d{N}` property plus a `BELONGS_TO` relation to its document.\n\nGoal: run the same query against pgvector vs Neo4j (Neo4j 5 vector index) with identical chunks and embeddings — and compare retrieval quality.\n\nIn a later phase, entity extraction (LLM or spaCy) will add typed nodes enabling hybrid retrieval: KNN seeds + graph traversal.",
-    "coming_soon_title": "Coming soon",
-    "coming_soon_body": "This page will accept the same parameters as vector indexing (corpus, strategy, embedding model) and write to Neo4j in parallel. `POST /api/graph/index` is wired but still returns 501.",
+    "subtitle": "Vector-in-graph on Neo4j 5.",
+    "explain_body": "Graph counterpart to vector indexing. Each chunk becomes a `(:Chunk)` Neo4j node carrying an `embedding_d{N}` property plus a `[:BELONGS_TO]` relation to its document and `[:FROM_RUN]` to the index run.\n\nGoal: run the same query against pgvector vs Neo4j (Neo4j 5 vector index) with identical chunks and embeddings and compare retrieval quality.\n\nNext phase (8.2): entity extraction (LLM or spaCy) will add typed nodes enabling hybrid retrieval: KNN seeds + graph traversal.",
     "neo4j_status_label": "Neo4j",
     "neo4j_status_unreachable": "Neo4j unreachable — run `docker compose up -d neo4j` and reload."
   },
   "graph_query": {
     "title": "Graph retrieval (Neo4j)",
-    "subtitle": "Coming soon — KNN over Neo4j vector index.",
-    "explain_body": "Graph counterpart to the Retrieval page. You'll fire a question against a Neo4j index and see the chunks ranked by the vector index, with the same filters (corpus, file_name, tags).\n\nLater on, a hybrid mode will do KNN seed → `k`-hop expansion through the entity graph → re-rank.",
-    "coming_soon_title": "Coming soon",
-    "coming_soon_body": "`POST /api/graph/query` is wired but still returns 501. This page will switch on once the Neo4j store is implemented."
+    "subtitle": "KNN over the Neo4j vector index.",
+    "explain_body": "Graph counterpart to the Retrieval page. Fire a question against a Neo4j index and see the chunks ranked by the vector index, with the same filters as the pgvector side (corpus, file_name, source_path, tags).\n\nNote: `metadata_equals` filters are not yet supported on the graph side (metadata is serialised as JSON). They'll come back when metadata becomes first-class nodes in phase 8.2, alongside a hybrid mode: KNN seed → `k`-hop expansion → re-rank.",
+    "no_runs": "No graph index run for this corpus. Go to Graph indexing to create one."
   },
   "lexml": {
     "title": "LexML Brasil",
