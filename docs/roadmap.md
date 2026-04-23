@@ -66,7 +66,7 @@ La roadmap ci-dessous reflète l'ordre réel de livraison. Les phases 0 à 5 son
 - premier loader : **FQuAD** (SQuAD français, Wikipedia, ~500 articles, ~25 000 paires Q/R)
 - commande `raglab bench download <loader>` pour alimenter le banc
 - prochaine sous-phase : page UI « Benchmarks » avec graphes recall@K, MRR, latence, comparaison inter-stratégie
-- sous-phase suivante : métriques RAGAS (faithfulness, context relevance, answer correctness) + LLM-as-judge
+- **Phase 7.2 — RAGAS LLM-as-judge ✅ (livré)** : faithfulness (réponse ancrée dans les chunks ?) et answer_correctness (matche le ground truth ?) via Ollama avec prompts JSON-stricts. `compute_ragas: bool` sur `/api/experiments/recall`. Par-cas scores dans `ExperimentResult.metrics_json`, aggregates sur `experiment_run.config_json.summary.{faithfulness,answer_correctness}_mean`. Checkbox UI et colonnes/barres de chart.
 - loaders additionnels envisagés : MIRACL (multilingue), PIAF, mMARCO-fr, SciFact
 
 ## Phase 8 — Extension graphe 🚧 (en cours)
