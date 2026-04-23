@@ -79,12 +79,27 @@ class GraphQueryService:
         top_k: int | None = None,
         generate_answer: bool = True,
         filters: RetrievalFilters | None = None,
+        mode: str = "vector",
+        seed_top_n: int = 3,
+        entity_weight: float = 0.3,
     ) -> QueryResponse:
+        if mode not in ("vector", "hybrid"):
+            raise ValueError(f"mode must be 'vector' or 'hybrid', got {mode!r}")
+
         index_run = self._resolve_index_run(
             corpus_name=corpus_name,
             strategy=strategy,
             index_run_id=index_run_id,
         )
+
+        if mode == "hybrid":
+            extracted = (index_run.config_json or {}).get("entity_extraction", False)
+            if not extracted:
+                raise ValueError(
+                    "Le mode hybride nécessite un index_run indexé avec "
+                    "`extract_entities=True`. Réindexe avec l'extraction "
+                    "d'entités activée ou repasse en mode 'vector'."
+                )
 
         effective_settings = self.settings.model_copy(
             update={
@@ -100,12 +115,23 @@ class GraphQueryService:
 
         started = perf_counter()
         query_embedding = embedder.embed_query(question)
-        retrieved = self.store.search(
-            index_run=index_run,
-            query_embedding=query_embedding,
-            top_k=top_k or self.settings.default_top_k,
-            filters=filters,
-        )
+        resolved_top_k = top_k or self.settings.default_top_k
+        if mode == "hybrid":
+            retrieved = self.store.hybrid_search(
+                index_run=index_run,
+                query_embedding=query_embedding,
+                top_k=resolved_top_k,
+                filters=filters,
+                seed_top_n=seed_top_n,
+                entity_weight=entity_weight,
+            )
+        else:
+            retrieved = self.store.search(
+                index_run=index_run,
+                query_embedding=query_embedding,
+                top_k=resolved_top_k,
+                filters=filters,
+            )
         answer = self.generator.generate_answer(question, retrieved) if generate_answer else None
         elapsed_ms = (perf_counter() - started) * 1000
         log_event(

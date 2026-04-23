@@ -113,11 +113,14 @@ La roadmap ci-dessous reflète l'ordre réel de livraison. Les phases 0 à 5 son
 - UI Indexation graphe : checkbox « Extraire les entités » + dropdown moteur (LLM / spaCy)
 - smoke test sur piaf_fr : 56 entités typées extraites sur 6 chunks avec le LLM (19 LOCATION, 9 ORGANIZATION, 8 PRODUCT, 8 PERSON, 5 EVENT, 4 MISC, 1 DATE)
 
-**8.2.2 — Retrieval hybride (à venir)**
+**8.2.2 — Retrieval hybride ✅ (livré)**
 
-- mode retrieval hybride : seed KNN → expansion `k`-hops via `[:MENTIONS]` → re-rank
-- option de filtre par type d'entité (ex. toutes les mentions de Personne uniquement)
-- page dédiée ou extension de Retrieval graphe
+- `Neo4jGraphStore.hybrid_search` : KNN sur-fetch (top_k × 3 candidats), collecte les entités mentionnées par chaque candidat, re-rank avec `final_score = (1 - entity_weight) * vector_score + entity_weight * bridge_score` où `bridge_score` = proportion d'entités partagées avec les top-N seeds.
+- `GraphQueryService.query(mode="vector"|"hybrid", seed_top_n, entity_weight)` dispatche. Le mode hybride refuse un run non-indexé avec entités (erreur claire).
+- `QueryRequest` accepte `mode` + `seed_top_n` + `entity_weight`. L'endpoint `/api/query` (pgvector) ignore ces champs.
+- UI Retrieval graphe : dropdown mode, slider `entity_weight` (0-1), input `seed_top_n`. Paramètres hybrides apparaissent seulement quand mode = hybride.
+- Le vector index Neo4j est global aux runs de même dimension : on sur-fetch (×5 sans filtre, ×15 avec filtre) avant de filtrer par `index_run_id` pour ne pas perdre trop de candidats côté client.
+- Restera : filtre par type d'entité (ex. uniquement mentions PERSON), visualisation du sous-graphe retourné.
 
 **8.2.3 — Filtres metadata (à venir)**
 
