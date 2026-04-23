@@ -258,7 +258,15 @@
     "seed_top_n_label": "Seed top-N",
     "seed_top_n_hint": "Combien de résultats vectoriels servent de seed pour collecter les entités de référence.",
     "entity_weight_label": "Poids entités ({{value}})",
-    "entity_weight_hint": "0 = pur KNN, 1 = classement uniquement par entités partagées. Typique : 0.2 à 0.4."
+    "entity_weight_hint": "0 = pur KNN, 1 = classement uniquement par entités partagées. Typique : 0.2 à 0.4.",
+    "subgraph_title": "Sous-graphe",
+    "subgraph_hint": "Affiche le réseau des chunks retournés et des entités qu'ils mentionnent, pour voir les liens sémantiques.",
+    "subgraph_show": "Afficher le sous-graphe",
+    "subgraph_hide": "Masquer",
+    "subgraph_loading": "Chargement du sous-graphe…",
+    "subgraph_empty": "Aucun lien dans les chunks retournés — lance une requête avec des chunks indexés avec entités.",
+    "subgraph_selected_chunk": "Chunk sélectionné",
+    "subgraph_selected_entity": "Entité sélectionnée"
   },
   "lexml": {
     "title": "LexML Brasil",

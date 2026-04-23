@@ -14,6 +14,7 @@ import { ExplainBanner } from "../components/ExplainBanner";
 import { FieldRow } from "../components/FieldRow";
 import { JsonViewer } from "../components/JsonViewer";
 import { Spinner } from "../components/Spinner";
+import { SubgraphView, type SubgraphPayload } from "../components/SubgraphView";
 import { useConfig } from "../hooks/useConfig";
 
 const STRATEGIES: ("" | ChunkingStrategy)[] = ["", "traditional", "slide", "late"];
@@ -31,6 +32,10 @@ export function GraphQuery() {
   const [mode, setMode] = useState<"vector" | "hybrid">("vector");
   const [seedTopN, setSeedTopN] = useState<string>("3");
   const [entityWeight, setEntityWeight] = useState<string>("0.3");
+  const [subgraphOpen, setSubgraphOpen] = useState(false);
+  const [subgraphData, setSubgraphData] = useState<SubgraphPayload | null>(null);
+  const [subgraphLoading, setSubgraphLoading] = useState(false);
+  const [subgraphError, setSubgraphError] = useState<string | null>(null);
 
   const [documentIdsRaw, setDocumentIdsRaw] = useState("");
   const [fileNamesRaw, setFileNamesRaw] = useState("");
@@ -68,6 +73,35 @@ export function GraphQuery() {
       });
     return out;
   }, [metadataEqualsRaw]);
+
+  const retrievedChunkIds = useMemo(
+    () => action.data?.retrieved_chunks.map((c) => c.chunk_id) ?? [],
+    [action.data]
+  );
+
+  // Reset the subgraph whenever the query result changes.
+  useEffect(() => {
+    setSubgraphOpen(false);
+    setSubgraphData(null);
+    setSubgraphError(null);
+  }, [action.data]);
+
+  const loadSubgraph = async () => {
+    if (retrievedChunkIds.length === 0) return;
+    setSubgraphLoading(true);
+    setSubgraphError(null);
+    try {
+      const payload = await get<SubgraphPayload>(
+        `/api/graph/subgraph?chunk_ids=${encodeURIComponent(retrievedChunkIds.join(","))}`
+      );
+      setSubgraphData(payload);
+      setSubgraphOpen(true);
+    } catch (e) {
+      setSubgraphError(e instanceof Error ? e.message : "Erreur inconnue");
+    } finally {
+      setSubgraphLoading(false);
+    }
+  };
 
   const submit = async () => {
     await action.run({
@@ -289,6 +323,45 @@ export function GraphQuery() {
                 {action.data.retrieved_chunks.map((c) => (
                   <ChunkCard key={c.chunk_id} chunk={c} />
                 ))}
+              </div>
+              <div className="card">
+                <div className="inline" style={{ justifyContent: "space-between" }}>
+                  <h3 style={{ margin: 0 }}>{t("graph_query.subgraph_title")}</h3>
+                  {!subgraphOpen ? (
+                    <button
+                      className="ghost sm"
+                      onClick={loadSubgraph}
+                      disabled={subgraphLoading || retrievedChunkIds.length === 0}
+                    >
+                      {subgraphLoading
+                        ? t("graph_query.subgraph_loading")
+                        : t("graph_query.subgraph_show")}
+                    </button>
+                  ) : (
+                    <button
+                      className="ghost sm"
+                      onClick={() => {
+                        setSubgraphOpen(false);
+                        setSubgraphData(null);
+                      }}
+                    >
+                      {t("graph_query.subgraph_hide")}
+                    </button>
+                  )}
+                </div>
+                {!subgraphOpen ? (
+                  <p className="muted" style={{ fontSize: 12, marginTop: 10 }}>
+                    {t("graph_query.subgraph_hint")}
+                  </p>
+                ) : (
+                  <div style={{ marginTop: 10 }}>
+                    <SubgraphView
+                      data={subgraphData}
+                      loading={subgraphLoading}
+                      errorMessage={subgraphError}
+                    />
+                  </div>
+                )}
               </div>
               <div className="card">
                 <h3>{t("query.raw_payload")}</h3>
