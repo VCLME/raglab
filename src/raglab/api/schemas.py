@@ -180,6 +180,7 @@ class ExperimentRunSummary(BaseModel):
     total_cases: int | None = None
     summary: dict[str, float | None] | None = None
     duration_ms: float | None = None
+    backend: str | None = None
 
 
 class ExperimentResultCase(BaseModel):
@@ -260,3 +261,4 @@ class RecallRequest(BaseModel):
     dataset_path: str | None = None
     lexml_documents_dir: str | None = None
     case_limit: int = 10
+    backend: str = "pgvector"

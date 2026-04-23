@@ -72,6 +72,8 @@ function datasetMatchesCorpus(ds: BenchDatasetOnDisk, corpus: string): boolean {
 
 // ---------- Launch tab ----------
 
+type BackendChoice = "pgvector" | "neo4j" | "both";
+
 function LaunchTab({ onLaunched }: { onLaunched: () => void }) {
   const { t } = useTranslation();
   const corpora = useApiLoad<CorpusSummary[]>(() => get("/api/corpora"));
@@ -81,6 +83,7 @@ function LaunchTab({ onLaunched }: { onLaunched: () => void }) {
   const [datasetChoice, setDatasetChoice] = useState<string>("");  // value = "auto-lexml" | dataset_dir | "custom:<path>"
   const [customPath, setCustomPath] = useState("");
   const [caseLimit, setCaseLimit] = useState<string>("20");
+  const [backendChoice, setBackendChoice] = useState<BackendChoice>("pgvector");
 
   const action = useApiAction((body: unknown) =>
     post<{
@@ -119,13 +122,18 @@ function LaunchTab({ onLaunched }: { onLaunched: () => void }) {
     chosenDataset !== null && corpus !== "" && !datasetMatchesCorpus(chosenDataset, corpus);
 
   const launch = async () => {
-    const body: Record<string, unknown> = {
-      corpus,
-      strategy,
-      case_limit: Number(caseLimit) || 10,
-    };
-    if (resolvedPath) body.dataset_path = resolvedPath;
-    await action.run(body);
+    const backends: ("pgvector" | "neo4j")[] =
+      backendChoice === "both" ? ["pgvector", "neo4j"] : [backendChoice];
+    for (const backend of backends) {
+      const body: Record<string, unknown> = {
+        corpus,
+        strategy,
+        case_limit: Number(caseLimit) || 10,
+        backend,
+      };
+      if (resolvedPath) body.dataset_path = resolvedPath;
+      await action.run(body);
+    }
     onLaunched();
   };
 
@@ -146,6 +154,16 @@ function LaunchTab({ onLaunched }: { onLaunched: () => void }) {
           {STRATEGIES.map((s) => (
             <option key={s} value={s}>{s}</option>
           ))}
+        </select>
+      </FieldRow>
+      <FieldRow label={t("benchmarks.backend_label")} hint={t("benchmarks.backend_hint")}>
+        <select
+          value={backendChoice}
+          onChange={(e) => setBackendChoice(e.target.value as BackendChoice)}
+        >
+          <option value="pgvector">{t("benchmarks.backend_pgvector")}</option>
+          <option value="neo4j">{t("benchmarks.backend_neo4j")}</option>
+          <option value="both">{t("benchmarks.backend_both")}</option>
         </select>
       </FieldRow>
       <FieldRow
@@ -468,7 +486,7 @@ function ComparisonChart({ runs }: { runs: ExperimentRunSummary[] }) {
         <div key={g.key} className="bench-chart-group">
           <div className="bench-chart-group-label">{t(g.labelKey)}</div>
           {runs.map((run) => {
-            const label = `${run.benchmark ?? run.corpus_name ?? "?"} · ${run.strategy ?? "?"} · ${run.embedding_dimension ?? "?"}d`;
+            const label = `${run.benchmark ?? run.corpus_name ?? "?"} · ${run.strategy ?? "?"} · ${run.backend ?? "pgvector"} · ${run.embedding_dimension ?? "?"}d`;
             return (
               <BenchBarRow key={`${run.id}-${g.key}`} className={g.rowClass} label={label} value={metric(run, g.key)} />
             );
@@ -604,6 +622,7 @@ function HistoryTab() {
                 <th>{t("benchmarks.table_benchmark")}</th>
                 <th>{t("benchmarks.table_corpus")}</th>
                 <th>{t("benchmarks.table_strategy")}</th>
+                <th>{t("benchmarks.table_backend")}</th>
                 <th>{t("benchmarks.table_embedding")}</th>
                 <th>{t("benchmarks.table_cases")}</th>
                 <th className="bench-metric-cell">{t("benchmarks.table_recall1")}</th>
@@ -633,6 +652,11 @@ function HistoryTab() {
                     </td>
                     <td>{run.corpus_name ?? "—"}</td>
                     <td><span className="tag">{run.strategy ?? "—"}</span></td>
+                    <td>
+                      <span className={`tag backend-${run.backend ?? "pgvector"}`}>
+                        {run.backend ?? "pgvector"}
+                      </span>
+                    </td>
                     <td className="muted" style={{ fontSize: 11 }}>
                       {run.embedding_model_name ?? "—"}{run.embedding_dimension ? ` · ${run.embedding_dimension}d` : ""}
                     </td>

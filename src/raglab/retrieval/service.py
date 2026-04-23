@@ -40,9 +40,17 @@ class QueryService:
                 self.session,
                 corpus_name=corpus_name,
                 strategy=strategy,
+                backend="pgvector",
             )
         if index_run is None:
             raise ValueError("Aucun index_run compatible n'a ete trouve")
+        config = index_run.config_json or {}
+        run_backend = config.get("backend", "pgvector")
+        if run_backend != "pgvector":
+            raise ValueError(
+                f"L'index_run {index_run.id} est un run graphe (backend={run_backend}) — "
+                "utilise /api/graph/query pour l'interroger."
+            )
         return index_run
 
     def query(

@@ -153,7 +153,14 @@ def resolve_latest_index_run(
     *,
     corpus_name: str,
     strategy: ChunkingStrategy | None = None,
+    backend: str | None = None,
 ) -> IndexRun | None:
+    """Return the most recent completed index run matching the filters.
+
+    `backend` filters on `IndexRun.config_json.backend` — pass "pgvector"
+    or "neo4j" to restrict resolution to the store that produced the
+    run. Legacy runs without that key are treated as pgvector.
+    """
     stmt = (
         select(IndexRun)
         .join(Corpus, Corpus.id == IndexRun.corpus_id)
@@ -162,7 +169,14 @@ def resolve_latest_index_run(
     )
     if strategy is not None:
         stmt = stmt.where(IndexRun.strategy == strategy.value)
-    return session.scalar(stmt)
+    if backend is None:
+        return session.scalar(stmt)
+
+    for run in session.scalars(stmt):
+        run_backend = (run.config_json or {}).get("backend", "pgvector")
+        if run_backend == backend:
+            return run
+    return None
 
 
 def _nullable_equals(column, value):
