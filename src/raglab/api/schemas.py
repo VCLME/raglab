@@ -264,6 +264,37 @@ class BenchCustomResponse(BaseModel):
     case_count: int
 
 
+class SubgraphChunk(BaseModel):
+    id: str
+    chunk_order: int | None = None
+    preview: str
+    document_id: str | None = None
+    file_name: str | None = None
+
+
+class SubgraphDocument(BaseModel):
+    id: str
+    file_name: str | None = None
+
+
+class SubgraphEntity(BaseModel):
+    id: str
+    name: str
+    type: str
+
+
+class SubgraphEdge(BaseModel):
+    chunk_id: str
+    entity_id: str
+
+
+class SubgraphResponse(BaseModel):
+    chunks: list[SubgraphChunk]
+    documents: list[SubgraphDocument]
+    entities: list[SubgraphEntity]
+    mentions: list[SubgraphEdge]
+
+
 class RecallRequest(BaseModel):
     corpus: str
     strategy: ChunkingStrategy

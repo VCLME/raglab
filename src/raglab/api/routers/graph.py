@@ -9,11 +9,17 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from raglab.api.deps import get_db
-from raglab.api.schemas import IndexRequest, IndexRunSummary, QueryRequest
+from raglab.api.schemas import (
+    IndexRequest,
+    IndexRunSummary,
+    QueryRequest,
+    SubgraphResponse,
+)
 from raglab.db.crud import get_corpus_by_name
 from raglab.db.models import Chunk, Corpus, EmbeddingSpace, IndexRun
 from raglab.domain.schemas import QueryResponse
 from raglab.graph import BACKEND_KEY, GRAPH_BACKEND, GraphIndexingService, GraphQueryService
+from raglab.graph.neo4j import Neo4jGraphStore
 from raglab.logging_utils import log_event
 from raglab.retrieval.filters import build_retrieval_filters
 
@@ -78,6 +84,27 @@ def graph_query(body: QueryRequest, session: Session = Depends(get_db)) -> Query
     finally:
         if hasattr(service.store, "close"):
             service.store.close()
+
+
+@router.get("/subgraph", response_model=SubgraphResponse)
+def graph_subgraph(chunk_ids: str) -> SubgraphResponse:
+    """Return the chunks-entities subgraph induced by the given chunk IDs.
+
+    `chunk_ids` is a comma-separated list (from the typical retrieval
+    response shape). The response is flat enough to hand directly to
+    Cytoscape on the frontend: nodes come in three buckets (chunks,
+    documents, entities) and edges are chunk→entity mentions.
+    """
+    ids = [cid.strip() for cid in chunk_ids.split(",") if cid.strip()]
+    if not ids:
+        return SubgraphResponse(chunks=[], documents=[], entities=[], mentions=[])
+
+    store = Neo4jGraphStore()
+    try:
+        payload = store.subgraph_for_chunks(chunk_ids=ids)
+    finally:
+        store.close()
+    return SubgraphResponse(**payload)
 
 
 @router.get("/runs", response_model=list[IndexRunSummary])

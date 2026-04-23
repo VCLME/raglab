@@ -387,6 +387,82 @@ class Neo4jGraphStore:
     ) -> list[RetrievedChunk]:
         raise NotImplementedError(_KG_NOT_IMPLEMENTED)
 
+    def subgraph_for_chunks(
+        self,
+        *,
+        chunk_ids: list[str],
+        text_preview_chars: int = 160,
+    ) -> dict[str, list[dict[str, Any]]]:
+        """Return the local subgraph induced by a set of Chunk nodes.
+
+        Fetches each chunk, its document, and every `(:Entity)` it
+        `[:MENTIONS]`. The Python side deduplicates and reshapes into
+        three flat lists so the frontend can hand them straight to
+        Cytoscape. Only nodes and edges that touch the supplied
+        chunk_ids are returned; entities shared across multiple chunks
+        appear once.
+        """
+        if not chunk_ids:
+            return {"chunks": [], "entities": [], "documents": [], "mentions": []}
+
+        cypher = """
+        MATCH (c:Chunk) WHERE c.id IN $chunk_ids
+        OPTIONAL MATCH (c)-[:BELONGS_TO]->(d:Document)
+        OPTIONAL MATCH (c)-[:MENTIONS]->(e:Entity)
+        RETURN c.id AS chunk_id,
+               c.chunk_order AS chunk_order,
+               left(c.text, $preview) AS chunk_preview,
+               d.id AS document_id,
+               d.file_name AS file_name,
+               e.name AS entity_name,
+               e.type AS entity_type
+        """
+        params = {"chunk_ids": list(chunk_ids), "preview": text_preview_chars}
+        with self._get_driver().session(database=self.database) as session:
+            rows = [dict(r) for r in session.run(cypher, params)]
+
+        chunks: dict[str, dict[str, Any]] = {}
+        documents: dict[str, dict[str, Any]] = {}
+        entities: dict[str, dict[str, Any]] = {}
+        mentions: set[tuple[str, str]] = set()
+
+        for row in rows:
+            chunk_id = row["chunk_id"]
+            if chunk_id and chunk_id not in chunks:
+                chunks[chunk_id] = {
+                    "id": chunk_id,
+                    "chunk_order": row.get("chunk_order"),
+                    "preview": row.get("chunk_preview") or "",
+                    "document_id": row.get("document_id"),
+                    "file_name": row.get("file_name"),
+                }
+            doc_id = row.get("document_id")
+            if doc_id and doc_id not in documents:
+                documents[doc_id] = {
+                    "id": doc_id,
+                    "file_name": row.get("file_name"),
+                }
+            ent_name = row.get("entity_name")
+            ent_type = row.get("entity_type")
+            if ent_name and ent_type:
+                key = f"{ent_name}|{ent_type}"
+                if key not in entities:
+                    entities[key] = {
+                        "id": key,
+                        "name": ent_name,
+                        "type": ent_type,
+                    }
+                mentions.add((chunk_id, key))
+
+        return {
+            "chunks": list(chunks.values()),
+            "documents": list(documents.values()),
+            "entities": list(entities.values()),
+            "mentions": [
+                {"chunk_id": c, "entity_id": e} for c, e in sorted(mentions)
+            ],
+        }
+
     def delete_index_run(self, index_run_id: str) -> None:
         cypher = """
         MATCH (c:Chunk { index_run_id: $run_id })
