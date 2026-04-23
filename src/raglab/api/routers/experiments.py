@@ -36,6 +36,7 @@ def recall(body: RecallRequest, session: Session = Depends(get_db)) -> dict[str,
             dataset_path=dataset_path,
             lexml_documents_dir=lexml_dir,
             case_limit=body.case_limit,
+            compute_ragas=body.compute_ragas,
         )
     finally:
         service.close()

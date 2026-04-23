@@ -84,6 +84,7 @@ function LaunchTab({ onLaunched }: { onLaunched: () => void }) {
   const [customPath, setCustomPath] = useState("");
   const [caseLimit, setCaseLimit] = useState<string>("20");
   const [backendChoice, setBackendChoice] = useState<BackendChoice>("pgvector");
+  const [computeRagas, setComputeRagas] = useState(false);
 
   const action = useApiAction((body: unknown) =>
     post<{
@@ -130,6 +131,7 @@ function LaunchTab({ onLaunched }: { onLaunched: () => void }) {
         strategy,
         case_limit: Number(caseLimit) || 10,
         backend,
+        compute_ragas: computeRagas,
       };
       if (resolvedPath) body.dataset_path = resolvedPath;
       await action.run(body);
@@ -205,6 +207,19 @@ function LaunchTab({ onLaunched }: { onLaunched: () => void }) {
       ) : null}
       <FieldRow label={t("experiments.case_limit")} hint={t("experiments.case_limit_hint")}>
         <input type="number" value={caseLimit} onChange={(e) => setCaseLimit(e.target.value)} min={1} />
+      </FieldRow>
+      <FieldRow
+        label={t("benchmarks.ragas_label")}
+        hint={computeRagas ? t("benchmarks.ragas_hint_slow") : t("benchmarks.ragas_hint")}
+      >
+        <label className="inline" style={{ gap: 4 }}>
+          <input
+            type="checkbox"
+            checked={computeRagas}
+            onChange={(e) => setComputeRagas(e.target.checked)}
+          />
+          {t("benchmarks.ragas_checkbox")}
+        </label>
       </FieldRow>
       <button onClick={launch} disabled={action.loading || !corpus}>
         {action.loading ? t("benchmarks.running_status") : t("benchmarks.launch_button")}
@@ -479,6 +494,8 @@ function ComparisonChart({ runs }: { runs: ExperimentRunSummary[] }) {
     { key: "recall@5", rowClass: "r5", labelKey: "benchmarks.table_recall5" },
     { key: "recall@10", rowClass: "r10", labelKey: "benchmarks.table_recall10" },
     { key: "mrr", rowClass: "mrr", labelKey: "benchmarks.table_mrr" },
+    { key: "faithfulness_mean", rowClass: "faith", labelKey: "benchmarks.table_faith" },
+    { key: "answer_correctness_mean", rowClass: "corr", labelKey: "benchmarks.table_corr" },
   ];
   return (
     <div className="bench-chart">
@@ -629,6 +646,8 @@ function HistoryTab() {
                 <th className="bench-metric-cell">{t("benchmarks.table_recall5")}</th>
                 <th className="bench-metric-cell">{t("benchmarks.table_recall10")}</th>
                 <th className="bench-metric-cell">{t("benchmarks.table_mrr")}</th>
+                <th className="bench-metric-cell">{t("benchmarks.table_faith")}</th>
+                <th className="bench-metric-cell">{t("benchmarks.table_corr")}</th>
                 <th>{t("benchmarks.table_duration")}</th>
                 <th>{t("common.status")}</th>
                 <th></th>
@@ -665,6 +684,8 @@ function HistoryTab() {
                     <td className="bench-metric-cell">{formatMetric(metric(run, "recall@5"))}</td>
                     <td className="bench-metric-cell">{formatMetric(metric(run, "recall@10"))}</td>
                     <td className="bench-metric-cell">{formatMetric(metric(run, "mrr"))}</td>
+                    <td className="bench-metric-cell">{formatMetric(metric(run, "faithfulness_mean"))}</td>
+                    <td className="bench-metric-cell">{formatMetric(metric(run, "answer_correctness_mean"))}</td>
                     <td className="muted" style={{ fontSize: 11 }}>{formatDuration(run.duration_ms)}</td>
                     <td>
                       <StatusBadge state={state} label={t(`benchmarks.status_${run.status}` as any, run.status)} />

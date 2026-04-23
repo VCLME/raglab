@@ -22,7 +22,9 @@ class StubQueryService:
 
 
 def _response(chunks):
-    return SimpleNamespace(retrieved_chunks=chunks, index_run_id="stub-index-run-id")
+    return SimpleNamespace(
+        retrieved_chunks=chunks, index_run_id="stub-index-run-id", answer=None
+    )
 
 
 def _write_lexml_sidecar(base_dir: Path, stem: str, *, title: str, urn: str, summary: str) -> None:
@@ -154,3 +156,101 @@ def test_recall_benchmark_rejects_unknown_backend():
     session = MagicMock()
     with pytest.raises(ValueError, match="Backend inconnu"):
         RecallBenchmarkService(session=session, backend="weaviate")
+
+
+@patch("raglab.experiments.recall.AnswerCorrectnessJudge")
+@patch("raglab.experiments.recall.FaithfulnessJudge")
+def test_recall_benchmark_runs_ragas_judges_when_requested(
+    faith_cls, corr_cls, tmp_path: Path
+):
+    # Minimal dataset with two cases, one case has a ground_truth_answer
+    # and one does not — answer_correctness should skip the latter
+    # without erroring.
+    ds = tmp_path / "gt.jsonl"
+    ds.write_text(
+        json.dumps({
+            "id": "c1",
+            "question": "Where was Böhme born?",
+            "expected_file_names": ["böhme.txt"],
+            "ground_truth_answer": "Görlitz",
+        })
+        + "\n"
+        + json.dumps({
+            "id": "c2",
+            "question": "When did he die?",
+            "expected_file_names": ["böhme.txt"],
+        })
+        + "\n",
+        encoding="utf-8",
+    )
+
+    faith = MagicMock()
+    faith.score.return_value = SimpleNamespace(score=0.9, reason="grounded")
+    faith_cls.return_value = faith
+    corr = MagicMock()
+    corr.score.return_value = SimpleNamespace(score=0.8, reason="match")
+    corr_cls.return_value = corr
+
+    session = MagicMock()
+    service = RecallBenchmarkService(session=session)
+    service.query_service = StubQueryService(
+        [
+            SimpleNamespace(
+                retrieved_chunks=[
+                    RetrievedChunk(
+                        chunk_id="k1",
+                        document_id="d1",
+                        file_name="böhme.txt",
+                        source_path="böhme.txt",
+                        chunk_text="Jakob Böhme was born in Görlitz.",
+                        score=0.9,
+                        rank=1,
+                    ),
+                ],
+                index_run_id="run-1",
+                answer="Görlitz.",
+            ),
+            SimpleNamespace(
+                retrieved_chunks=[
+                    RetrievedChunk(
+                        chunk_id="k2",
+                        document_id="d1",
+                        file_name="böhme.txt",
+                        source_path="böhme.txt",
+                        chunk_text="He died on 7 November 1624.",
+                        score=0.8,
+                        rank=1,
+                    ),
+                ],
+                index_run_id="run-1",
+                answer="1624.",
+            ),
+        ]
+    )
+
+    experiment_run = SimpleNamespace(id="run-1", config_json={})
+    with patch(
+        "raglab.experiments.recall.create_experiment_run", return_value=experiment_run
+    ), patch("raglab.experiments.recall.store_experiment_result"), patch(
+        "raglab.experiments.recall.complete_experiment_run"
+    ):
+        result = service.run(
+            corpus_name="demo",
+            strategy=ChunkingStrategy.TRADITIONAL,
+            dataset_path=ds,
+            case_limit=2,
+            k_values=(1,),
+            compute_ragas=True,
+        )
+
+    # Faithfulness runs on both cases, correctness only on the one with ground truth.
+    assert faith.score.call_count == 2
+    assert corr.score.call_count == 1
+    assert result["summary"]["faithfulness_mean"] == 0.9
+    assert result["summary"]["faithfulness_judged"] == 2
+    assert result["summary"]["answer_correctness_mean"] == 0.8
+    assert result["summary"]["answer_correctness_judged"] == 1
+    # And the per-case metrics carry the score
+    assert result["details"][0]["metrics"]["faithfulness"] == 0.9
+    assert result["details"][0]["metrics"]["answer_correctness"] == 0.8
+    assert "answer_correctness" not in result["details"][1]["metrics"]

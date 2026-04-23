@@ -17,6 +17,7 @@ from raglab.db.crud import (
 )
 from raglab.domain.enums import ChunkingStrategy, ExperimentStatus
 from raglab.experiments.metrics import first_relevant_rank, hit_at_k, precision_at_k, reciprocal_rank, relevance_flags
+from raglab.experiments.ragas import AnswerCorrectnessJudge, FaithfulnessJudge
 from raglab.graph.query import GraphQueryService
 from raglab.logging_utils import log_event
 from raglab.retrieval.service import QueryService
@@ -32,6 +33,7 @@ class RecallBenchmarkCase:
     question: str
     expected_file_names: list[str]
     expected_urns: list[str]
+    ground_truth_answer: str | None = None
 
 
 class RecallBenchmarkService:
@@ -77,6 +79,7 @@ class RecallBenchmarkService:
                         question=payload["question"],
                         expected_file_names=payload.get("expected_file_names", []),
                         expected_urns=payload.get("expected_urns", []),
+                        ground_truth_answer=payload.get("ground_truth_answer"),
                     )
                 )
         if not cases:
@@ -169,6 +172,7 @@ class RecallBenchmarkService:
         case_limit: int = 10,
         k_values: tuple[int, ...] = (1, 5, 10),
         benchmark_name: str | None = None,
+        compute_ragas: bool = False,
     ) -> dict[str, Any]:
         if dataset_path is None:
             dataset_path, cases = self.build_dataset_from_lexml(
@@ -195,9 +199,13 @@ class RecallBenchmarkService:
                 "strategy": strategy.value,
                 "k_values": list(k_values),
                 "backend": self.backend,
+                "compute_ragas": compute_ragas,
             },
         )
         self.session.commit()
+
+        faithfulness_judge = FaithfulnessJudge(settings=self.settings) if compute_ragas else None
+        correctness_judge = AnswerCorrectnessJudge(settings=self.settings) if compute_ragas else None
 
         log_event(
             LOGGER,
@@ -218,6 +226,8 @@ class RecallBenchmarkService:
         reciprocal_rank_sum = 0.0
         first_rank_sum = 0
         first_rank_count = 0
+        faithfulness_scores: list[float] = []
+        correctness_scores: list[float] = []
 
         try:
             for case in cases:
@@ -226,7 +236,7 @@ class RecallBenchmarkService:
                     corpus_name=corpus_name,
                     strategy=strategy,
                     top_k=max_k,
-                    generate_answer=False,
+                    generate_answer=compute_ragas,
                 )
                 retrieved = [chunk.model_dump() for chunk in response.retrieved_chunks]
                 flags = relevance_flags(retrieved, is_relevant=lambda chunk: self._is_relevant(case, chunk))
@@ -244,12 +254,36 @@ class RecallBenchmarkService:
                     metrics_for_case[f"recall@{k}"] = hit
                     metrics_for_case[f"precision@{k}"] = precision
 
+                answer_text = response.answer
+                if compute_ragas and faithfulness_judge is not None:
+                    f_score = faithfulness_judge.score(
+                        question=case.question,
+                        answer=answer_text or "",
+                        retrieved_texts=[chunk["chunk_text"] for chunk in retrieved],
+                    )
+                    metrics_for_case["faithfulness"] = f_score.score
+                    metrics_for_case["faithfulness_reason"] = f_score.reason
+                    if f_score.score is not None:
+                        faithfulness_scores.append(f_score.score)
+
+                if compute_ragas and correctness_judge is not None and case.ground_truth_answer:
+                    c_score = correctness_judge.score(
+                        question=case.question,
+                        answer=answer_text or "",
+                        ground_truth=case.ground_truth_answer,
+                    )
+                    metrics_for_case["answer_correctness"] = c_score.score
+                    metrics_for_case["answer_correctness_reason"] = c_score.reason
+                    if c_score.score is not None:
+                        correctness_scores.append(c_score.score)
+
                 case_result = {
                     "id": case.case_id,
                     "question": case.question,
                     "expected_file_names": case.expected_file_names,
                     "expected_urns": case.expected_urns,
                     "retrieved_chunks": retrieved,
+                    "answer": answer_text,
                     "metrics": metrics_for_case,
                 }
                 reciprocal_rank_sum += case_reciprocal_rank
@@ -265,7 +299,7 @@ class RecallBenchmarkService:
                     case_id=case.case_id,
                     question=case.question,
                     retrieved_chunk_ids=[chunk["chunk_id"] for chunk in retrieved],
-                    answer=None,
+                    answer=answer_text,
                     metrics_json={
                         **metrics_for_case,
                         "expected_file_names": case.expected_file_names,
@@ -283,6 +317,19 @@ class RecallBenchmarkService:
             summary["mean_first_relevant_rank"] = (
                 first_rank_sum / first_rank_count if first_rank_count else None
             )
+            if compute_ragas:
+                summary["faithfulness_mean"] = (
+                    sum(faithfulness_scores) / len(faithfulness_scores)
+                    if faithfulness_scores
+                    else None
+                )
+                summary["faithfulness_judged"] = len(faithfulness_scores)
+                summary["answer_correctness_mean"] = (
+                    sum(correctness_scores) / len(correctness_scores)
+                    if correctness_scores
+                    else None
+                )
+                summary["answer_correctness_judged"] = len(correctness_scores)
 
             experiment_run.config_json = {
                 **experiment_run.config_json,
