@@ -164,6 +164,46 @@ class Neo4jGraphStore:
 
     # --- read path --------------------------------------------------
 
+    @staticmethod
+    def _build_filter_clauses(
+        filters: RetrievalFilters | None,
+        *,
+        run_id: str,
+    ) -> tuple[list[str], dict[str, Any]]:
+        """Shared WHERE builder for `search` and `hybrid_search`.
+
+        Returns the list of Cypher predicates plus the matching bind
+        params. The caller stitches the run_id binding in.
+        """
+        where_clauses = ["c.index_run_id = $run_id"]
+        params: dict[str, Any] = {"run_id": run_id}
+
+        if filters is None or filters.is_empty():
+            return where_clauses, params
+
+        if filters.document_ids:
+            where_clauses.append("d.id IN $document_ids")
+            params["document_ids"] = filters.document_ids
+        if filters.file_names:
+            where_clauses.append("d.file_name IN $file_names")
+            params["file_names"] = filters.file_names
+        if filters.source_path_contains:
+            where_clauses.append("d.source_path CONTAINS $source_path_contains")
+            params["source_path_contains"] = filters.source_path_contains
+        if filters.tags:
+            where_clauses.append("ANY(tag IN $tags WHERE tag IN coalesce(d.tags, []))")
+            params["tags"] = filters.tags
+        # metadata_equals filters are not yet supported on the graph
+        # backend — doc metadata is stored as a JSON string property.
+        # They'll come back when we model metadata as first-class nodes
+        # in Phase 8.2.
+        if filters.metadata_equals:
+            logger.warning(
+                "neo4j.search.metadata_filter_ignored",
+                extra={"keys": list(filters.metadata_equals.keys())},
+            )
+        return where_clauses, params
+
     def search(
         self,
         *,
@@ -175,42 +215,24 @@ class Neo4jGraphStore:
         dim = index_run.embedding_space.dimension
         index_name = vector_index_name(dim)
 
-        # Over-fetch when filters are active so post-filtering still
-        # leaves us close to top_k. Neo4j's vector index can't take
-        # predicates inside the call itself.
-        fetch_k = top_k if filters is None or filters.is_empty() else top_k * 5
+        # Always over-fetch. The Neo4j vector index is global across
+        # all index runs of the same dimension, and we filter down to
+        # `c.index_run_id = $run_id` after the call — so top_k matches
+        # before the filter can leave the caller with fewer results.
+        # Multiplying further when filters are active gives us more
+        # room after the additional post-filter steps.
+        fetch_multiplier = 5 if filters is None or filters.is_empty() else 15
+        fetch_k = top_k * fetch_multiplier
 
-        where_clauses = ["c.index_run_id = $run_id"]
-        params: dict[str, Any] = {
-            "run_id": index_run.id,
-            "query": list(query_embedding),
-            "fetch_k": fetch_k,
-            "top_k": top_k,
-            "index_name": index_name,
-        }
-
-        if filters is not None and not filters.is_empty():
-            if filters.document_ids:
-                where_clauses.append("d.id IN $document_ids")
-                params["document_ids"] = filters.document_ids
-            if filters.file_names:
-                where_clauses.append("d.file_name IN $file_names")
-                params["file_names"] = filters.file_names
-            if filters.source_path_contains:
-                where_clauses.append("d.source_path CONTAINS $source_path_contains")
-                params["source_path_contains"] = filters.source_path_contains
-            if filters.tags:
-                where_clauses.append("ANY(tag IN $tags WHERE tag IN coalesce(d.tags, []))")
-                params["tags"] = filters.tags
-            # metadata_equals filters are not yet supported on the graph
-            # backend — doc metadata is stored as a JSON string property.
-            # They'll come back when we model metadata as first-class nodes
-            # in Phase 8.2.
-            if filters.metadata_equals:
-                logger.warning(
-                    "neo4j.search.metadata_filter_ignored",
-                    extra={"keys": list(filters.metadata_equals.keys())},
-                )
+        where_clauses, params = self._build_filter_clauses(filters, run_id=index_run.id)
+        params.update(
+            {
+                "query": list(query_embedding),
+                "fetch_k": fetch_k,
+                "top_k": top_k,
+                "index_name": index_name,
+            }
+        )
 
         where_sql = " AND ".join(where_clauses)
         cypher = f"""
@@ -242,6 +264,116 @@ class Neo4jGraphStore:
                     chunk_text=record["chunk_text"],
                     # Neo4j cosine score already in [0, 1]; no inversion.
                     score=max(0.0, min(1.0, float(record["score"]))),
+                    rank=rank,
+                )
+            )
+        return results
+
+    def hybrid_search(
+        self,
+        *,
+        index_run: IndexRun,
+        query_embedding: list[float],
+        top_k: int,
+        filters: RetrievalFilters | None = None,
+        seed_top_n: int = 3,
+        entity_weight: float = 0.3,
+        candidate_multiplier: int = 3,
+    ) -> list[RetrievedChunk]:
+        """KNN + entity re-rank.
+
+        Over-fetches `top_k * candidate_multiplier` vector candidates,
+        collects each chunk's `(:Entity)` mentions, then boosts
+        candidates that share entities with the top `seed_top_n`
+        vector hits. Final score is
+        `alpha * vector_score + (1 - alpha) * bridge_score`
+        where `alpha = 1 - entity_weight` and `bridge_score` is the
+        share of seed-entities the candidate mentions (in [0, 1]).
+        """
+        if not (0.0 <= entity_weight <= 1.0):
+            raise ValueError(f"entity_weight must be in [0,1], got {entity_weight}")
+        if seed_top_n < 1:
+            raise ValueError(f"seed_top_n must be >= 1, got {seed_top_n}")
+
+        dim = index_run.embedding_space.dimension
+        index_name = vector_index_name(dim)
+        # Same reasoning as `search`: the vector index is global across
+        # runs of the same dim, so we over-fetch before run filtering.
+        run_multiplier = 5 if filters and not filters.is_empty() else 3
+        base_fetch = max(top_k, seed_top_n) * max(1, candidate_multiplier)
+        filter_fetch = base_fetch * run_multiplier
+
+        where_clauses, params = self._build_filter_clauses(filters, run_id=index_run.id)
+        params.update(
+            {
+                "query": list(query_embedding),
+                "fetch_k": filter_fetch,
+                "index_name": index_name,
+            }
+        )
+        where_sql = " AND ".join(where_clauses)
+
+        cypher = f"""
+        CALL db.index.vector.queryNodes($index_name, $fetch_k, $query)
+        YIELD node AS c, score
+        MATCH (c)-[:BELONGS_TO]->(d:Document)
+        WHERE {where_sql}
+        OPTIONAL MATCH (c)-[:MENTIONS]->(e:Entity)
+        WITH c, d, score, collect(DISTINCT e.name + '|' + e.type) AS entity_keys
+        ORDER BY score DESC
+        RETURN c.id AS chunk_id,
+               d.id AS document_id,
+               d.file_name AS file_name,
+               d.source_path AS source_path,
+               c.text AS chunk_text,
+               score,
+               entity_keys
+        """
+
+        with self._get_driver().session(database=self.database) as session:
+            rows = [dict(record) for record in session.run(cypher, params)]
+
+        if not rows:
+            return []
+
+        # Seed = top N vector hits, by score order (cypher ORDER BY
+        # score DESC guarantees that rows[:seed_top_n] holds them).
+        seed_entities: set[str] = set()
+        for row in rows[:seed_top_n]:
+            for key in row.get("entity_keys") or []:
+                if key and key != "|":
+                    seed_entities.add(key)
+
+        alpha = 1.0 - entity_weight
+
+        def _bridge(row: dict[str, Any]) -> float:
+            if not seed_entities:
+                return 0.0
+            keys = {k for k in (row.get("entity_keys") or []) if k and k != "|"}
+            if not keys:
+                return 0.0
+            return len(keys & seed_entities) / len(seed_entities)
+
+        scored: list[tuple[float, float, dict[str, Any]]] = []
+        for row in rows:
+            vec = max(0.0, min(1.0, float(row["score"])))
+            bridge = _bridge(row)
+            final = alpha * vec + entity_weight * bridge
+            scored.append((final, bridge, row))
+
+        scored.sort(key=lambda triple: triple[0], reverse=True)
+        top = scored[:top_k]
+
+        results: list[RetrievedChunk] = []
+        for rank, (final_score, _bridge_score, row) in enumerate(top, start=1):
+            results.append(
+                RetrievedChunk(
+                    chunk_id=row["chunk_id"],
+                    document_id=row["document_id"],
+                    file_name=row["file_name"],
+                    source_path=row["source_path"],
+                    chunk_text=row["chunk_text"],
+                    score=max(0.0, min(1.0, final_score)),
                     rank=rank,
                 )
             )
