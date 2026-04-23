@@ -49,10 +49,29 @@ function CredRow({ label, value }: { label: string; value: string }) {
 
 function DatabaseCard({ db }: { db: DatabaseConnection }) {
   const { t } = useTranslation();
+  const [pwdCopied, setPwdCopied] = useState(false);
   const connectionString =
     db.kind === "postgres"
       ? `postgresql://${db.user}:${db.password}@${db.host}:${db.port}/${db.database ?? ""}`
       : `bolt://${db.user}:${db.password}@${db.host}:${db.port}`;
+
+  const openAdmin = async () => {
+    if (!db.deep_link) return;
+    // Adminer refuses the password in its URL for security, so we drop
+    // it on the clipboard right before we open the tab. The user lands
+    // on the login form with everything prefilled except the password
+    // and just hits Ctrl+V + Enter.
+    if (db.kind === "postgres") {
+      try {
+        await navigator.clipboard.writeText(db.password);
+        setPwdCopied(true);
+        setTimeout(() => setPwdCopied(false), 6000);
+      } catch {
+        /* clipboard unavailable — fall through */
+      }
+    }
+    window.open(db.deep_link, "_blank", "noopener,noreferrer");
+  };
 
   return (
     <div className="card">
@@ -80,13 +99,11 @@ function DatabaseCard({ db }: { db: DatabaseConnection }) {
       </table>
       <div className="inline" style={{ marginTop: 14, flexWrap: "wrap", gap: 10 }}>
         {db.deep_link ? (
-          <a href={db.deep_link} target="_blank" rel="noreferrer">
-            <button>
-              {db.kind === "postgres"
-                ? t("databases.open_adminer")
-                : t("databases.open_neo4j")}
-            </button>
-          </a>
+          <button onClick={openAdmin}>
+            {db.kind === "postgres"
+              ? t("databases.open_adminer")
+              : t("databases.open_neo4j")}
+          </button>
         ) : null}
         {db.web_url ? (
           <a
@@ -100,6 +117,24 @@ function DatabaseCard({ db }: { db: DatabaseConnection }) {
           </a>
         ) : null}
       </div>
+      {db.kind === "postgres" ? (
+        pwdCopied ? (
+          <div
+            className="muted"
+            style={{ fontSize: 12, marginTop: 10, color: "var(--accent-strong)" }}
+          >
+            {t("databases.password_copied_toast")}
+          </div>
+        ) : (
+          <p className="muted" style={{ fontSize: 11, marginTop: 10 }}>
+            {t("databases.open_adminer_hint")}
+          </p>
+        )
+      ) : (
+        <p className="muted" style={{ fontSize: 11, marginTop: 10 }}>
+          {t("databases.open_neo4j_hint")}
+        </p>
+      )}
     </div>
   );
 }

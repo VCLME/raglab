@@ -465,6 +465,9 @@
     "copy": "Copy",
     "copied": "Copied",
     "open_adminer": "Open Adminer",
-    "open_neo4j": "Open Neo4j Browser"
+    "open_neo4j": "Open Neo4j Browser",
+    "open_adminer_hint": "On click the password is copied to your clipboard — just paste it in Adminer's Password field (Ctrl+V).",
+    "open_neo4j_hint": "Neo4j Browser opens the connection dialog pre-filled (server, user and password). Just click Connect.",
+    "password_copied_toast": "Password copied. Paste it in Adminer's Password field (Ctrl+V) and click Login."
   }
 }

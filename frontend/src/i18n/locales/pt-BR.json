@@ -465,6 +465,9 @@
     "copy": "Copiar",
     "copied": "Copiado",
     "open_adminer": "Abrir Adminer",
-    "open_neo4j": "Abrir Neo4j Browser"
+    "open_neo4j": "Abrir Neo4j Browser",
+    "open_adminer_hint": "Ao clicar, a senha é copiada para a área de transferência — basta colar no campo Password do Adminer (Ctrl+V).",
+    "open_neo4j_hint": "Neo4j Browser abre o diálogo de conexão já preenchido (servidor, usuário e senha). Basta clicar em Connect.",
+    "password_copied_toast": "Senha copiada. Cole no campo Password do Adminer (Ctrl+V) e clique em Login."
   }
 }
