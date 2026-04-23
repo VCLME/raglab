@@ -109,6 +109,11 @@ class QueryRequest(BaseModel):
     top_k: int | None = None
     generate: bool = True
     filters: QueryFilters | None = None
+    # Graph-only: "vector" = KNN, "hybrid" = KNN seed + entity re-rank.
+    # Ignored by the pgvector /api/query endpoint.
+    mode: str = "vector"
+    seed_top_n: int = 3
+    entity_weight: float = 0.3
 
 
 class CorpusSummary(BaseModel):

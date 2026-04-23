@@ -71,6 +71,9 @@ def graph_query(body: QueryRequest, session: Session = Depends(get_db)) -> Query
             top_k=body.top_k,
             generate_answer=body.generate,
             filters=filters,
+            mode=body.mode,
+            seed_top_n=body.seed_top_n,
+            entity_weight=body.entity_weight,
         )
     finally:
         if hasattr(service.store, "close"):
