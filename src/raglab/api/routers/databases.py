@@ -68,19 +68,25 @@ def _neo4j_http_url(bolt_uri: str) -> str:
     return f"http://{host}:7474"
 
 
-def _neo4j_deep_link(http_url: str, bolt_uri: str, user: str) -> str:
-    """Return a Neo4j Browser URL that pre-selects the server.
+def _neo4j_deep_link(http_url: str, bolt_uri: str, user: str, password: str) -> str:
+    """Return a Neo4j Browser URL that pre-fills the full login card.
 
-    The `dbms` query parameter tells Neo4j Browser which DBMS to
-    auto-fill in the login card. Password still has to be typed — Neo4j
-    does not read it from the URL.
+    The `connectURL` query parameter accepts `neo4j://user:password@host:port`
+    and Neo4j Browser pre-fills every field of the connection dialog,
+    including the password. The user then just clicks Connect.
+
+    This embeds the password in the URL, so it ends up in browser
+    history — acceptable for the local dev credentials raglab ships
+    with, not for anything remote.
     """
     parsed = urlparse(bolt_uri)
     host = parsed.hostname or "localhost"
     if host == "neo4j":
         host = "localhost"
     port = parsed.port or 7687
-    return f"{http_url}/browser/?dbms=bolt%3A%2F%2F{quote(user)}%40{host}%3A{port}"
+    auth = f"{quote(user, safe='')}:{quote(password, safe='')}"
+    connect = f"neo4j://{auth}@{host}:{port}"
+    return f"{http_url}/browser/?connectURL={quote(connect, safe='')}"
 
 
 @router.get("/api/databases", response_model=DatabasesResponse)
@@ -139,7 +145,12 @@ def list_databases(
         database=settings.neo4j_database,
         url=settings.neo4j_uri,
         web_url=neo4j_http,
-        deep_link=_neo4j_deep_link(neo4j_http, settings.neo4j_uri, settings.neo4j_user),
+        deep_link=_neo4j_deep_link(
+            neo4j_http,
+            settings.neo4j_uri,
+            settings.neo4j_user,
+            settings.neo4j_password,
+        ),
     )
 
     return DatabasesResponse(databases=[postgres, neo4j])

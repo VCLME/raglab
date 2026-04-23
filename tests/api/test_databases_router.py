@@ -33,7 +33,11 @@ def test_databases_returns_both_connections(neo4j_cls, client: TestClient, mock_
     assert neo["status"] == "ok"
     assert neo["host"] == "localhost"
     assert neo["deep_link"] is not None
-    assert "bolt" in neo["deep_link"]
+    # connectURL carries the full auth (user:password@host:port) so the
+    # Neo4j Browser login card is pre-filled end-to-end.
+    assert "connectURL" in neo["deep_link"]
+    assert "neo4j" in neo["deep_link"]  # user
+    assert "raglab_neo4j" in neo["deep_link"]  # password
 
 
 @patch("raglab.api.routers.databases.Neo4jGraphStore")
