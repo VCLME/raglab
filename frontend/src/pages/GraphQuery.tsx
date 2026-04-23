@@ -28,6 +28,9 @@ export function GraphQuery() {
   const [topK, setTopK] = useState<string>("");
   const [generate, setGenerate] = useState(true);
   const [question, setQuestion] = useState("");
+  const [mode, setMode] = useState<"vector" | "hybrid">("vector");
+  const [seedTopN, setSeedTopN] = useState<string>("3");
+  const [entityWeight, setEntityWeight] = useState<string>("0.3");
 
   const [documentIdsRaw, setDocumentIdsRaw] = useState("");
   const [fileNamesRaw, setFileNamesRaw] = useState("");
@@ -81,6 +84,9 @@ export function GraphQuery() {
         tags: tagsRaw.split(",").map((s) => s.trim()).filter(Boolean),
         metadata_equals: Object.keys(metadataEquals).length ? metadataEquals : null,
       },
+      mode,
+      seed_top_n: Number(seedTopN) || 3,
+      entity_weight: Number(entityWeight),
     });
   };
 
@@ -168,6 +174,49 @@ export function GraphQuery() {
                 {t("query.generate_checkbox")}
               </label>
             </FieldRow>
+            <FieldRow
+              label={t("graph_query.mode_label")}
+              hint={t("graph_query.mode_hint")}
+            >
+              <select
+                value={mode}
+                onChange={(e) => setMode(e.target.value as "vector" | "hybrid")}
+              >
+                <option value="vector">{t("graph_query.mode_vector")}</option>
+                <option value="hybrid">{t("graph_query.mode_hybrid")}</option>
+              </select>
+            </FieldRow>
+            {mode === "hybrid" ? (
+              <>
+                <FieldRow
+                  label={t("graph_query.seed_top_n_label")}
+                  hint={t("graph_query.seed_top_n_hint")}
+                >
+                  <input
+                    type="number"
+                    min={1}
+                    max={50}
+                    value={seedTopN}
+                    onChange={(e) => setSeedTopN(e.target.value)}
+                  />
+                </FieldRow>
+                <FieldRow
+                  label={t("graph_query.entity_weight_label", {
+                    value: Number(entityWeight).toFixed(2),
+                  })}
+                  hint={t("graph_query.entity_weight_hint")}
+                >
+                  <input
+                    type="range"
+                    min={0}
+                    max={1}
+                    step={0.05}
+                    value={entityWeight}
+                    onChange={(e) => setEntityWeight(e.target.value)}
+                  />
+                </FieldRow>
+              </>
+            ) : null}
           </div>
 
           <div className="card">

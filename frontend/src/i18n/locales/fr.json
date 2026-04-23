@@ -250,7 +250,15 @@
     "title": "Retrieval graphe (Neo4j)",
     "subtitle": "KNN sur vector index Neo4j.",
     "explain_body": "Équivalent graphe de la page Retrieval. Lance une question contre un index Neo4j et vois les chunks remontés via le vector index, avec les mêmes filtres que le côté pgvector (corpus, file_name, source_path, tags).\n\nNote : les filtres `metadata_equals` ne sont pas encore supportés côté graphe (metadata sérialisée en JSON). Ils reviendront quand les metadata seront modélisés comme nœuds de premier rang en phase 8.2, avec le mode « hybride » : seed KNN → expansion `k`-hops → re-rank.",
-    "no_runs": "Aucun index run graphe pour ce corpus. Va sur « Indexation graphe » pour en créer un."
+    "no_runs": "Aucun index run graphe pour ce corpus. Va sur « Indexation graphe » pour en créer un.",
+    "mode_label": "Mode de retrieval",
+    "mode_hint": "Vector : KNN pur (comme pgvector). Hybride : KNN seed + re-rank par entités partagées. Nécessite un run indexé avec extraction d'entités.",
+    "mode_vector": "Vector (KNN)",
+    "mode_hybrid": "Hybride (KNN + entités)",
+    "seed_top_n_label": "Seed top-N",
+    "seed_top_n_hint": "Combien de résultats vectoriels servent de seed pour collecter les entités de référence.",
+    "entity_weight_label": "Poids entités ({{value}})",
+    "entity_weight_hint": "0 = pur KNN, 1 = classement uniquement par entités partagées. Typique : 0.2 à 0.4."
   },
   "lexml": {
     "title": "LexML Brasil",
