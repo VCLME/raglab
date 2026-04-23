@@ -100,11 +100,28 @@ La roadmap ci-dessous reflète l'ordre réel de livraison. Les phases 0 à 5 son
 - UI History : colonne Backend avec tag coloré (vert pgvector, bleu neo4j) ; le chart comparatif inclut le backend dans le label.
 - Smoke test piaf_fr : pgvector 0.87 R@1 / 0.93 MRR ≈ neo4j 0.87 R@1 / 0.93 MRR (identique, mêmes chunks et embeddings).
 
-**Sous-phase 8.2 — Knowledge graph**
+**Sous-phase 8.2 — Knowledge graph 🚧 (en cours)**
 
-- extraction d'entités / relations (LLM ou spaCy) lors de l'ingestion
-- nœuds typés (`Personne`, `Loi`, `Événement`…) + relations
-- mode retrieval hybride : seed KNN → expansion `k`-hops → re-rank
+**8.2.1 — Extraction d'entités ✅ (livré)**
+
+- module `src/raglab/graph/entities/` : `EntityExtractor` Protocol + deux implémentations
+  - `LLMEntityExtractor` : Ollama (qwen2.5:7b) avec prompt JSON-schema et 7 types canoniques (PERSON, ORGANIZATION, LOCATION, DATE, LAW, EVENT, PRODUCT, + MISC)
+  - `SpacyEntityExtractor` : spaCy (optionnel, `pip install raglab[graph]`), remappe OntoNotes vers les 7 types canoniques
+- `Neo4jGraphStore.upsert_chunks` accepte `entities_per_chunk` et MERGE `(:Entity {name, type})` + `[:MENTIONS]` depuis chaque Chunk
+- `GraphIndexingService.index_corpus` accepte `extract_entities` + `extraction_engine` ; tags `config_json.entity_extraction{,_engine}` + retourne `entities_extracted`
+- `/api/graph/index` accepte `extract_entities` + `extraction_engine` dans le body
+- UI Indexation graphe : checkbox « Extraire les entités » + dropdown moteur (LLM / spaCy)
+- smoke test sur piaf_fr : 56 entités typées extraites sur 6 chunks avec le LLM (19 LOCATION, 9 ORGANIZATION, 8 PRODUCT, 8 PERSON, 5 EVENT, 4 MISC, 1 DATE)
+
+**8.2.2 — Retrieval hybride (à venir)**
+
+- mode retrieval hybride : seed KNN → expansion `k`-hops via `[:MENTIONS]` → re-rank
+- option de filtre par type d'entité (ex. toutes les mentions de Personne uniquement)
+- page dédiée ou extension de Retrieval graphe
+
+**8.2.3 — Filtres metadata (à venir)**
+
+- modéliser les metadata comme nœuds de premier rang pour que `metadata_equals` fonctionne côté graphe
 
 ## Phase 9 — Industrialisation
 

@@ -80,10 +80,16 @@ class Neo4jGraphStore:
         chunks: list[Chunk],
         documents: dict[str, Document],
         embeddings: list[list[float]],
+        entities_per_chunk: list[list[dict[str, Any]]] | None = None,
     ) -> None:
         if len(chunks) != len(embeddings):
             raise ValueError(
                 f"chunks and embeddings must align, got {len(chunks)} and {len(embeddings)}"
+            )
+        if entities_per_chunk is not None and len(entities_per_chunk) != len(chunks):
+            raise ValueError(
+                "entities_per_chunk must align with chunks "
+                f"({len(entities_per_chunk)} vs {len(chunks)})"
             )
         if not chunks:
             return
@@ -94,7 +100,7 @@ class Neo4jGraphStore:
         ensure_vector_index(driver, dim)
 
         payload: list[dict[str, Any]] = []
-        for chunk, embedding in zip(chunks, embeddings):
+        for i, (chunk, embedding) in enumerate(zip(chunks, embeddings)):
             document = documents.get(chunk.document_id)
             if document is None:
                 raise ValueError(
@@ -103,6 +109,9 @@ class Neo4jGraphStore:
             metadata = dict(document.metadata_json or {})
             raw_tags = metadata.pop("tags", None)
             tags = list(raw_tags) if isinstance(raw_tags, list) else []
+            chunk_entities = (
+                entities_per_chunk[i] if entities_per_chunk is not None else []
+            )
             payload.append(
                 {
                     "chunk_id": chunk.id,
@@ -117,6 +126,7 @@ class Neo4jGraphStore:
                     # persist metadata as a JSON string. Retrieval-time
                     # metadata filters deserialize on the Python side.
                     "metadata_json": json.dumps(metadata, ensure_ascii=False),
+                    "entities": chunk_entities,
                 }
             )
 
@@ -136,6 +146,11 @@ class Neo4jGraphStore:
               c.`{prop}` = row.embedding
         MERGE (c)-[:BELONGS_TO]->(d)
         MERGE (c)-[:FROM_RUN]->(ir)
+        WITH c, row
+        UNWIND (CASE WHEN row.entities IS NULL THEN [] ELSE row.entities END) AS ent
+        MERGE (e:Entity {{ name: ent.name, type: ent.type }})
+          ON CREATE SET e.first_seen_corpus_id = $corpus_id
+        MERGE (c)-[:MENTIONS]->(e)
         """
 
         params = {

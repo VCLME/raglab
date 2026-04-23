@@ -237,7 +237,14 @@
     "subtitle": "Vector-in-graph sobre Neo4j 5.",
     "explain_body": "Equivalente em grafo da indexação vetorial. Cada chunk vira um nó `(:Chunk)` Neo4j com a propriedade `embedding_d{N}`, mais uma relação `[:BELONGS_TO]` ao documento e `[:FROM_RUN]` ao index run.\n\nObjetivo: rodar a mesma consulta contra pgvector vs Neo4j (vector index do Neo4j 5) com chunks e embeddings idênticos e comparar a qualidade.\n\nNa fase seguinte (8.2), extração de entidades (LLM ou spaCy) adicionará nós tipados, permitindo retrieval híbrido: KNN seeds + travessia do grafo.",
     "neo4j_status_label": "Neo4j",
-    "neo4j_status_unreachable": "Neo4j inacessível — execute `docker compose up -d neo4j` e recarregue a página."
+    "neo4j_status_unreachable": "Neo4j inacessível — execute `docker compose up -d neo4j` e recarregue a página.",
+    "extract_entities_label": "Extração de entidades",
+    "extract_entities_hint": "Cria nós `(:Entity)` tipados (Pessoa, Local, Organização…) ligados aos chunks via `[:MENTIONS]`. Habilita retrieval híbrido (KNN seed + travessia do grafo).",
+    "extract_entities_checkbox": "Extrair entidades durante a indexação",
+    "extraction_engine_label": "Motor de extração",
+    "extraction_engine_hint": "LLM: qwen2.5:7b via Ollama, multilingue, lento (~2-5s/chunk). spaCy: rápido (~50ms/chunk), precisa do modelo pré-baixado.",
+    "engine_llm": "LLM (Ollama)",
+    "engine_spacy": "spaCy (rápido)"
   },
   "graph_query": {
     "title": "Retrieval grafo (Neo4j)",
