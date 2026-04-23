@@ -153,6 +153,7 @@ export interface ExperimentRunSummary {
   total_cases: number | null;
   summary: Record<string, number | null> | null;
   duration_ms: number | null;
+  backend: string | null;
 }
 
 export interface ExperimentResultCase {
