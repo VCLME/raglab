@@ -237,7 +237,14 @@
     "subtitle": "Vector-in-graph on Neo4j 5.",
     "explain_body": "Graph counterpart to vector indexing. Each chunk becomes a `(:Chunk)` Neo4j node carrying an `embedding_d{N}` property plus a `[:BELONGS_TO]` relation to its document and `[:FROM_RUN]` to the index run.\n\nGoal: run the same query against pgvector vs Neo4j (Neo4j 5 vector index) with identical chunks and embeddings and compare retrieval quality.\n\nNext phase (8.2): entity extraction (LLM or spaCy) will add typed nodes enabling hybrid retrieval: KNN seeds + graph traversal.",
     "neo4j_status_label": "Neo4j",
-    "neo4j_status_unreachable": "Neo4j unreachable — run `docker compose up -d neo4j` and reload."
+    "neo4j_status_unreachable": "Neo4j unreachable — run `docker compose up -d neo4j` and reload.",
+    "extract_entities_label": "Entity extraction",
+    "extract_entities_hint": "Creates typed `(:Entity)` nodes (Person, Location, Organization…) linked to chunks via `[:MENTIONS]`. Unlocks hybrid retrieval (KNN seed + graph traversal).",
+    "extract_entities_checkbox": "Extract entities during indexing",
+    "extraction_engine_label": "Extraction engine",
+    "extraction_engine_hint": "LLM: qwen2.5:7b via Ollama, multilingual, slow (~2-5s/chunk). spaCy: fast (~50ms/chunk), needs the model pre-downloaded.",
+    "engine_llm": "LLM (Ollama)",
+    "engine_spacy": "spaCy (fast)"
   },
   "graph_query": {
     "title": "Graph retrieval (Neo4j)",

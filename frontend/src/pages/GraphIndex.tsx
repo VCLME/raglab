@@ -30,6 +30,8 @@ export function GraphIndex() {
   const [runName, setRunName] = useState("");
   const [embProvider, setEmbProvider] = useState("");
   const [embModel, setEmbModel] = useState("");
+  const [extractEntities, setExtractEntities] = useState(false);
+  const [extractionEngine, setExtractionEngine] = useState<"llm" | "spacy">("llm");
 
   const action = useApiAction((body: unknown) => post<IndexResponse>("/api/graph/index", body));
 
@@ -41,6 +43,8 @@ export function GraphIndex() {
       embedding_provider: embProvider || null,
       embedding_model: embModel || null,
       incremental: false,
+      extract_entities: extractEntities,
+      extraction_engine: extractEntities ? extractionEngine : null,
     });
   };
 
@@ -138,6 +142,33 @@ export function GraphIndex() {
               }
             />
           </FieldRow>
+          <FieldRow
+            label={t("graph_index.extract_entities_label")}
+            hint={t("graph_index.extract_entities_hint")}
+          >
+            <label className="inline" style={{ gap: 4 }}>
+              <input
+                type="checkbox"
+                checked={extractEntities}
+                onChange={(e) => setExtractEntities(e.target.checked)}
+              />
+              {t("graph_index.extract_entities_checkbox")}
+            </label>
+          </FieldRow>
+          {extractEntities ? (
+            <FieldRow
+              label={t("graph_index.extraction_engine_label")}
+              hint={t("graph_index.extraction_engine_hint")}
+            >
+              <select
+                value={extractionEngine}
+                onChange={(e) => setExtractionEngine(e.target.value as "llm" | "spacy")}
+              >
+                <option value="llm">{t("graph_index.engine_llm")}</option>
+                <option value="spacy">{t("graph_index.engine_spacy")}</option>
+              </select>
+            </FieldRow>
+          ) : null}
           <button onClick={submit} disabled={action.loading || !corpus || !neo4jReachable}>
             {action.loading ? t("index.indexing") : t("index.launch")}
           </button>
