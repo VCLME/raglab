@@ -25,6 +25,9 @@ class Settings(BaseSettings):
     neo4j_password: str = "raglab_neo4j"
     neo4j_database: str = "neo4j"
 
+    entity_extraction_engine: str = "llm"
+    entity_spacy_model: str = "xx_ent_wiki_sm"
+
     default_corpus_name: str = "default"
     default_top_k: int = 5
     data_dir: Path = Field(default_factory=lambda: Path("data"))
