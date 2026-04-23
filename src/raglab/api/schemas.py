@@ -302,3 +302,4 @@ class RecallRequest(BaseModel):
     lexml_documents_dir: str | None = None
     case_limit: int = 10
     backend: str = "pgvector"
+    compute_ragas: bool = False
