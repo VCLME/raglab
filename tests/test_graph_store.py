@@ -195,6 +195,80 @@ def test_hybrid_search_rejects_invalid_weights():
 
 
 @patch("raglab.graph.neo4j.GraphDatabase.driver")
+def test_subgraph_for_chunks_aggregates_deduplicates(driver_factory):
+    fake_driver = MagicMock(name="Driver")
+    fake_session = MagicMock(name="Session")
+    fake_driver.session.return_value.__enter__.return_value = fake_session
+    # Chunk A mentions Paris + Macron; chunk B mentions Paris only.
+    # The response must dedup Paris into a single node and list both
+    # mentions. The `file_name` row duplication is also common (one row
+    # per entity) — the response should only keep one document entry.
+    fake_session.run.return_value = iter(
+        [
+            {
+                "chunk_id": "a",
+                "chunk_order": 0,
+                "chunk_preview": "hello paris",
+                "document_id": "d1",
+                "file_name": "f1.txt",
+                "entity_name": "paris",
+                "entity_type": "LOCATION",
+            },
+            {
+                "chunk_id": "a",
+                "chunk_order": 0,
+                "chunk_preview": "hello paris",
+                "document_id": "d1",
+                "file_name": "f1.txt",
+                "entity_name": "macron",
+                "entity_type": "PERSON",
+            },
+            {
+                "chunk_id": "b",
+                "chunk_order": 1,
+                "chunk_preview": "also paris",
+                "document_id": "d2",
+                "file_name": "f2.txt",
+                "entity_name": "paris",
+                "entity_type": "LOCATION",
+            },
+        ]
+    )
+    driver_factory.return_value = fake_driver
+
+    from raglab.graph import Neo4jGraphStore
+
+    store = Neo4jGraphStore()
+    payload = store.subgraph_for_chunks(chunk_ids=["a", "b"])
+
+    assert sorted(c["id"] for c in payload["chunks"]) == ["a", "b"]
+    assert sorted(d["id"] for d in payload["documents"]) == ["d1", "d2"]
+    entity_ids = sorted(e["id"] for e in payload["entities"])
+    assert entity_ids == ["macron|PERSON", "paris|LOCATION"]
+    mention_pairs = sorted(
+        (m["chunk_id"], m["entity_id"]) for m in payload["mentions"]
+    )
+    assert mention_pairs == [
+        ("a", "macron|PERSON"),
+        ("a", "paris|LOCATION"),
+        ("b", "paris|LOCATION"),
+    ]
+
+
+def test_subgraph_for_chunks_returns_empty_on_empty_input():
+    from raglab.graph import Neo4jGraphStore
+
+    store = Neo4jGraphStore()
+    payload = store.subgraph_for_chunks(chunk_ids=[])
+    assert payload == {
+        "chunks": [],
+        "entities": [],
+        "documents": [],
+        "mentions": [],
+    }
+
+
+@patch("raglab.graph.neo4j.GraphDatabase.driver")
 def test_search_builds_cypher_with_filters(driver_factory):
     fake_driver = MagicMock(name="Driver")
     fake_session = MagicMock(name="Session")
@@ -235,5 +309,8 @@ def test_search_builds_cypher_with_filters(driver_factory):
     cypher, params = fake_session.run.call_args[0]
     assert "db.index.vector.queryNodes" in cypher
     assert "d.file_name IN $file_names" in cypher
-    assert params["fetch_k"] == 25  # top_k * 5 because filters active
+    # When filters are active we over-fetch 15× to survive the run
+    # post-filter (the Neo4j vector index is global across runs of the
+    # same dim).
+    assert params["fetch_k"] == 75
     assert params["top_k"] == 5

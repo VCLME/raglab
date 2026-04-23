@@ -258,7 +258,15 @@
     "seed_top_n_label": "Seed top-N",
     "seed_top_n_hint": "Quantos hits vetoriais servem como seed para coletar as entidades de referência.",
     "entity_weight_label": "Peso entidades ({{value}})",
-    "entity_weight_hint": "0 = KNN puro, 1 = ranking apenas por entidades compartilhadas. Típico: 0.2 a 0.4."
+    "entity_weight_hint": "0 = KNN puro, 1 = ranking apenas por entidades compartilhadas. Típico: 0.2 a 0.4.",
+    "subgraph_title": "Subgrafo",
+    "subgraph_hint": "Mostra a rede dos chunks retornados e das entidades que eles mencionam, para visualizar os links semânticos.",
+    "subgraph_show": "Mostrar subgrafo",
+    "subgraph_hide": "Ocultar",
+    "subgraph_loading": "Carregando subgrafo…",
+    "subgraph_empty": "Nenhum link nos chunks retornados — execute uma consulta em chunks indexados com entidades.",
+    "subgraph_selected_chunk": "Chunk selecionado",
+    "subgraph_selected_entity": "Entidade selecionada"
   },
   "lexml": {
     "title": "LexML Brasil",

@@ -1023,6 +1023,39 @@ button.sm {
   color: #a5b6ff;
 }
 
+.subgraph-canvas {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin-bottom: 10px;
+}
+.subgraph-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+.subgraph-legend .legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.subgraph-legend .legend-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.subgraph-selection {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  max-width: 520px;
+}
+
 /* ——— explain banner ——— */
 
 .explain-banner {

@@ -86,6 +86,43 @@ def test_graph_query_returns_response_shape(service_cls, client: TestClient):
     assert body["index_run_id"] == "run-1"
 
 
+@patch("raglab.api.routers.graph.Neo4jGraphStore")
+def test_graph_subgraph_forwards_chunk_ids(store_cls, client: TestClient):
+    store = MagicMock()
+    store.subgraph_for_chunks.return_value = {
+        "chunks": [
+            {
+                "id": "c1",
+                "chunk_order": 0,
+                "preview": "hello",
+                "document_id": "d1",
+                "file_name": "f1.txt",
+            }
+        ],
+        "documents": [{"id": "d1", "file_name": "f1.txt"}],
+        "entities": [{"id": "paris|LOCATION", "name": "paris", "type": "LOCATION"}],
+        "mentions": [{"chunk_id": "c1", "entity_id": "paris|LOCATION"}],
+    }
+    store_cls.return_value = store
+
+    response = client.get("/api/graph/subgraph?chunk_ids=c1,c2")
+    assert response.status_code == 200
+    body = response.json()
+    assert len(body["chunks"]) == 1
+    assert body["entities"][0]["name"] == "paris"
+    assert body["mentions"] == [{"chunk_id": "c1", "entity_id": "paris|LOCATION"}]
+    store.subgraph_for_chunks.assert_called_once()
+    kwargs = store.subgraph_for_chunks.call_args.kwargs
+    assert kwargs["chunk_ids"] == ["c1", "c2"]
+
+
+def test_graph_subgraph_empty_chunks_returns_empty_response(client: TestClient):
+    response = client.get("/api/graph/subgraph?chunk_ids=")
+    assert response.status_code == 200
+    body = response.json()
+    assert body == {"chunks": [], "documents": [], "entities": [], "mentions": []}
+
+
 def test_graph_runs_returns_empty_list_when_no_graph_runs(
     client: TestClient, mock_session
 ):
