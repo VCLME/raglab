@@ -3,6 +3,8 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from raglab.domain.enums import ChunkingStrategy
 from raglab.domain.schemas import RetrievedChunk
 from raglab.experiments.recall import RecallBenchmarkService
@@ -131,3 +133,24 @@ def test_recall_benchmark_generates_cases_and_metrics(tmp_path: Path):
     create_run.assert_called_once()
     assert store_result.call_count == 2
     complete_run.assert_called_once()
+
+    # The run config must tag the backend so the history can filter
+    # and colour it.
+    config_json_kw = create_run.call_args.kwargs["config_json"]
+    assert config_json_kw["backend"] == "pgvector"
+
+
+@patch("raglab.experiments.recall.GraphQueryService")
+@patch("raglab.experiments.recall.QueryService")
+def test_recall_benchmark_dispatches_to_graph_query_service(query_cls, graph_query_cls):
+    session = MagicMock()
+    service = RecallBenchmarkService(session=session, backend="neo4j")
+    assert service.backend == "neo4j"
+    graph_query_cls.assert_called_once()
+    query_cls.assert_not_called()
+
+
+def test_recall_benchmark_rejects_unknown_backend():
+    session = MagicMock()
+    with pytest.raises(ValueError, match="Backend inconnu"):
+        RecallBenchmarkService(session=session, backend="weaviate")

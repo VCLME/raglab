@@ -28,14 +28,17 @@ def recall(body: RecallRequest, session: Session = Depends(get_db)) -> dict[str,
     lexml_dir = (
         Path(body.lexml_documents_dir) if body.lexml_documents_dir else settings.lexml_documents_dir
     )
-    service = RecallBenchmarkService(session)
-    return service.run(
-        corpus_name=body.corpus,
-        strategy=body.strategy,
-        dataset_path=dataset_path,
-        lexml_documents_dir=lexml_dir,
-        case_limit=body.case_limit,
-    )
+    service = RecallBenchmarkService(session, backend=body.backend)
+    try:
+        return service.run(
+            corpus_name=body.corpus,
+            strategy=body.strategy,
+            dataset_path=dataset_path,
+            lexml_documents_dir=lexml_dir,
+            case_limit=body.case_limit,
+        )
+    finally:
+        service.close()
 
 
 def _duration_ms(run: ExperimentRun) -> float | None:
@@ -86,6 +89,7 @@ def _build_summary(
         total_cases=cfg.get("total_cases"),
         summary=cfg.get("summary"),
         duration_ms=_duration_ms(run),
+        backend=cfg.get("backend"),
     )
 
 

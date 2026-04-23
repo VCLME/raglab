@@ -17,8 +17,11 @@ from raglab.db.crud import (
 )
 from raglab.domain.enums import ChunkingStrategy, ExperimentStatus
 from raglab.experiments.metrics import first_relevant_rank, hit_at_k, precision_at_k, reciprocal_rank, relevance_flags
+from raglab.graph.query import GraphQueryService
 from raglab.logging_utils import log_event
 from raglab.retrieval.service import QueryService
+
+SUPPORTED_BACKENDS = ("pgvector", "neo4j")
 
 LOGGER = logging.getLogger(__name__)
 
@@ -32,10 +35,30 @@ class RecallBenchmarkCase:
 
 
 class RecallBenchmarkService:
-    def __init__(self, session: Session, settings: Settings | None = None):
+    def __init__(
+        self,
+        session: Session,
+        settings: Settings | None = None,
+        *,
+        backend: str = "pgvector",
+    ):
+        if backend not in SUPPORTED_BACKENDS:
+            raise ValueError(
+                f"Backend inconnu: {backend}. Valeurs supportées: {SUPPORTED_BACKENDS}"
+            )
         self.session = session
         self.settings = settings or get_settings()
-        self.query_service = QueryService(session, self.settings)
+        self.backend = backend
+        if backend == "neo4j":
+            self.query_service = GraphQueryService(session, settings=self.settings)
+        else:
+            self.query_service = QueryService(session, self.settings)
+
+    def close(self) -> None:
+        """Release graph driver if we opened one."""
+        store = getattr(self.query_service, "store", None)
+        if store is not None and hasattr(store, "close"):
+            store.close()
 
     def _load_cases(self, dataset_path: Path) -> list[RecallBenchmarkCase]:
         cases: list[RecallBenchmarkCase] = []
@@ -171,6 +194,7 @@ class RecallBenchmarkService:
                 "corpus_name": corpus_name,
                 "strategy": strategy.value,
                 "k_values": list(k_values),
+                "backend": self.backend,
             },
         )
         self.session.commit()
