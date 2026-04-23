@@ -90,7 +90,15 @@ La roadmap ci-dessous reflète l'ordre réel de livraison. Les phases 0 à 5 son
 - `GraphQueryService` : KNN via `db.index.vector.queryNodes` avec filtres corpus / file_name / source_path / tags
 - `IndexRun.config_json.backend` tagge chaque run (`pgvector` | `neo4j`) ; `/api/index-runs?backend=...` filtre côté API
 - endpoints `/api/graph/{index,query,runs}` implémentés ; pages UI Indexation graphe + Retrieval graphe avec les mêmes formulaires que pgvector
-- restera à faire en phase 8.2 : bench recall croisé et filtres `metadata_equals` côté graphe (modéliser les metadata en nœuds)
+- restera à faire en phase 8.2 : filtres `metadata_equals` côté graphe (modéliser les metadata en nœuds)
+
+**Sous-phase 8.1.1 — Bench recall cross-backend ✅ (livré)**
+
+- `/api/experiments/recall` accepte `backend: "pgvector" | "neo4j"`. `RecallBenchmarkService` dispatch vers `QueryService` ou `GraphQueryService` selon le choix.
+- `IndexRun.config_json.backend` filtre la résolution d'index : un run pgvector ne peut plus être interrogé par `GraphQueryService` et vice-versa.
+- UI Benchmarks Launch : dropdown Backend (`pgvector` | `neo4j` | les deux). Le choix « les deux » lance la même recall séquentiellement sur les deux stores.
+- UI History : colonne Backend avec tag coloré (vert pgvector, bleu neo4j) ; le chart comparatif inclut le backend dans le label.
+- Smoke test piaf_fr : pgvector 0.87 R@1 / 0.93 MRR ≈ neo4j 0.87 R@1 / 0.93 MRR (identique, mêmes chunks et embeddings).
 
 **Sous-phase 8.2 — Knowledge graph**
 
