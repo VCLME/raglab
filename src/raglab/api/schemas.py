@@ -87,6 +87,10 @@ class IndexRequest(BaseModel):
     embedding_provider: str | None = None
     embedding_model: str | None = None
     incremental: bool = False
+    # Graph-only: run entity extraction during indexing.
+    # Ignored by the pgvector /api/index endpoint.
+    extract_entities: bool = False
+    extraction_engine: str | None = None
 
 
 class QueryFilters(BaseModel):

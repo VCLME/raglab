@@ -18,6 +18,7 @@ from raglab.db.models import Chunk, EmbeddingSpace, IndexRun
 from raglab.domain.enums import ChunkingStrategy, IndexStatus
 from raglab.embeddings.factory import build_embedding_provider
 from raglab.graph.base import GraphStore
+from raglab.graph.entities import build_entity_extractor
 from raglab.graph.neo4j import Neo4jGraphStore
 from raglab.indexing.service import IndexingService
 from raglab.logging_utils import log_event
@@ -92,6 +93,8 @@ class GraphIndexingService:
         run_name: str | None = None,
         embedding_provider: str | None = None,
         embedding_model_name: str | None = None,
+        extract_entities: bool = False,
+        extraction_engine: str | None = None,
     ) -> dict[str, str | int | None]:
         corpus = get_corpus_by_name(self.session, corpus_name)
         if corpus is None:
@@ -112,6 +115,17 @@ class GraphIndexingService:
         )
         chunk_config = self._helper._build_chunk_config(strategy)
 
+        resolved_engine = (
+            extraction_engine or self.settings.entity_extraction_engine
+            if extract_entities
+            else None
+        )
+        entity_extractor = (
+            build_entity_extractor(resolved_engine, settings=self.settings)
+            if extract_entities
+            else None
+        )
+
         index_run = create_index_run(
             self.session,
             corpus=corpus,
@@ -126,12 +140,15 @@ class GraphIndexingService:
                 "embedding_provider": effective.embedding_provider,
                 "embedding_model_name": effective.embedding_model_name,
                 BACKEND_KEY: GRAPH_BACKEND,
+                "entity_extraction": bool(extract_entities),
+                "entity_extraction_engine": resolved_engine,
             },
             name=run_name,
         )
         self.session.commit()
 
         total_chunks = 0
+        total_mentions = 0
         try:
             chunker = build_chunker(chunk_config)
             embedder = build_embedding_provider(effective)
@@ -161,11 +178,22 @@ class GraphIndexingService:
                     created_chunks.append(chunk)
                 self.session.flush()
 
+                entities_per_chunk: list[list[dict]] | None = None
+                if entity_extractor is not None:
+                    entities_per_chunk = []
+                    for chunk in created_chunks:
+                        entities = entity_extractor.extract(chunk.text)
+                        entities_per_chunk.append(
+                            [{"name": e.name, "type": e.type} for e in entities]
+                        )
+                        total_mentions += len(entities)
+
                 self.store.upsert_chunks(
                     index_run=index_run,
                     chunks=created_chunks,
                     documents={document.id: document},
                     embeddings=[list(v) for v in vectors],
+                    entities_per_chunk=entities_per_chunk,
                 )
                 total_chunks += len(created_chunks)
 
@@ -173,6 +201,7 @@ class GraphIndexingService:
                 **index_run.config_json,
                 "new_chunks": total_chunks,
                 "reused_chunks": 0,
+                "total_mentions": total_mentions,
             }
             self.session.add(index_run)
             complete_index_run(self.session, index_run, IndexStatus.COMPLETED)
@@ -198,6 +227,8 @@ class GraphIndexingService:
             "documents": len(documents),
             "chunks": total_chunks,
             "backend": GRAPH_BACKEND,
+            "entities_extracted": total_mentions,
+            "entity_extraction_engine": resolved_engine,
         }
         log_event(
             LOGGER,

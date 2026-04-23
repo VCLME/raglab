@@ -36,6 +36,8 @@ def graph_index(body: IndexRequest, session: Session = Depends(get_db)) -> dict[
             run_name=body.run_name,
             embedding_provider=body.embedding_provider,
             embedding_model_name=body.embedding_model,
+            extract_entities=body.extract_entities,
+            extraction_engine=body.extraction_engine,
         )
     finally:
         if hasattr(service.store, "close"):
