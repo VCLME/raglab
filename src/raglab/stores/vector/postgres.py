@@ -75,6 +75,8 @@ class PostgresVectorStore:
                     chunk_text=chunk.text,
                     score=max(0.0, 1.0 - distance_value),
                     rank=rank,
+                    char_start=chunk.char_start,
+                    char_end=chunk.char_end,
                 )
             )
         return results

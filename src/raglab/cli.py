@@ -108,14 +108,20 @@ def bench_download(
         None,
         "--limit",
         min=1,
-        help="Limiter le nombre de paires Q/R produites (pratique pour un premier run rapide).",
+        help="Nombre de paires Q/R tirees au hasard (graine --seed). Le corpus reste complet.",
+    ),
+    seed: int = typer.Option(42, "--seed", help="Graine du tirage des questions quand --limit est fourni."),
+    full_corpus: bool = typer.Option(
+        True,
+        "--full-corpus/--sample-corpus",
+        help="Ecrire tous les passages du dataset (defaut) ou seulement ceux des questions tirees.",
     ),
 ) -> None:
     """Telecharger un dataset de benchmark et ecrire corpus + ground_truth sur disque."""
     loader_cls = get_loader(loader_name)
     resolved_output = (output_dir or get_settings().data_dir / "benchmarks" / loader_cls.name).resolve()
     loader = loader_cls()
-    dataset = loader.download(resolved_output, limit=limit)
+    dataset = loader.download(resolved_output, limit=limit, sample_seed=seed, full_corpus=full_corpus)
     typer.echo(
         json.dumps(
             {

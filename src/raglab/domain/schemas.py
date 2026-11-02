@@ -39,6 +39,10 @@ class RetrievedChunk(BaseModel):
     chunk_text: str
     score: float
     rank: int
+    # Offsets of the chunk in its document's normalised text. Optional
+    # because the graph store does not return them.
+    char_start: int | None = None
+    char_end: int | None = None
 
 
 class RetrievalFilters(BaseModel):

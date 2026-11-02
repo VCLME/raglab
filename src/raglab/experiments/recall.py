@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -34,6 +34,7 @@ class RecallBenchmarkCase:
     expected_file_names: list[str]
     expected_urns: list[str]
     ground_truth_answer: str | None = None
+    expected_spans: list[dict[str, Any]] = field(default_factory=list)
 
 
 class RecallBenchmarkService:
@@ -80,6 +81,7 @@ class RecallBenchmarkService:
                         expected_file_names=payload.get("expected_file_names", []),
                         expected_urns=payload.get("expected_urns", []),
                         ground_truth_answer=payload.get("ground_truth_answer"),
+                        expected_spans=payload.get("expected_spans", []),
                     )
                 )
         if not cases:
@@ -150,6 +152,11 @@ class RecallBenchmarkService:
 
     @staticmethod
     def _is_relevant(case: RecallBenchmarkCase, chunk: dict[str, Any]) -> bool:
+        # Passage-level ground truth wins when present: a chunk only counts if
+        # it covers the gold passage, not merely because it comes from the
+        # right (possibly very long) document.
+        if case.expected_spans:
+            return any(_chunk_covers_span(chunk, span) for span in case.expected_spans)
         if chunk["file_name"] in case.expected_file_names:
             return True
         chunk_text = chunk["chunk_text"]
@@ -304,6 +311,7 @@ class RecallBenchmarkService:
                         **metrics_for_case,
                         "expected_file_names": case.expected_file_names,
                         "expected_urns": case.expected_urns,
+                        "expected_spans": case.expected_spans,
                     },
                 )
 
@@ -372,6 +380,21 @@ class RecallBenchmarkService:
             experiment_run_id=experiment_run.id,
         )
         return payload
+
+
+def _chunk_covers_span(chunk: dict[str, Any], span: dict[str, Any]) -> bool:
+    """True when the chunk overlaps the gold span of the same file.
+
+    Without offsets (graph store), fall back to finding the gold text inside
+    the chunk.
+    """
+    if chunk["file_name"] != span.get("file_name"):
+        return False
+    start, end = chunk.get("char_start"), chunk.get("char_end")
+    if start is not None and end is not None:
+        return start < span["end"] and span["start"] < end
+    gold_text = span.get("text")
+    return bool(gold_text) and gold_text in chunk["chunk_text"]
 
 
 def _infer_benchmark_name(dataset_path: Path) -> str:

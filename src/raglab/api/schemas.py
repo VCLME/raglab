@@ -229,6 +229,8 @@ class BenchDatasetOnDisk(BaseModel):
 class BenchDownloadRequest(BaseModel):
     loader: str
     limit: int | None = None
+    sample_seed: int = 42
+    full_corpus: bool = True
     output_dir: str | None = None
 
 

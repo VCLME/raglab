@@ -222,7 +222,12 @@ def download_dataset(body: BenchDownloadRequest) -> BenchDownloadResponse:
         else (settings.data_dir / "benchmarks" / loader_cls.name).resolve()
     )
     loader = loader_cls()
-    dataset = loader.download(output_dir, limit=body.limit)
+    dataset = loader.download(
+        output_dir,
+        limit=body.limit,
+        sample_seed=body.sample_seed,
+        full_corpus=body.full_corpus,
+    )
     return BenchDownloadResponse(
         loader=loader_cls.name,
         corpus_dir=str(dataset.corpus_dir),
