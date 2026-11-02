@@ -28,8 +28,8 @@ Un benchmark sur lequel tout le monde a 100 % ne peut montrer ni un gain ni une 
 raglab bench download piaf --limit 500 --seed 42
 ```
 
-- Corpus : tous les paragraphes du split `train` d'`etalab-ia/piaf` (un fichier par paragraphe, texte déjà normalisé).
-- Questions : 500 tirées avec la graine. La réponse annotée (`answer_start`) est relocalisée dans le texte normalisé : le passage attendu est la réponse elle-même.
+- Corpus : tous les paragraphes du split `train` d'`etalab-ia/piaf`, soit 761 paragraphes (≈ 540 Ko de texte), un fichier par paragraphe, texte déjà normalisé.
+- Questions : 500 tirées avec la graine ; les 500 réponses ont été relocalisées dans le texte normalisé. La réponse annotée (`answer_start`) est relocalisée dans le texte normalisé : le passage attendu est la réponse elle-même.
 - `--sample-corpus` restaure l'ancien comportement (corpus réduit aux paragraphes des questions tirées), utile seulement pour un test rapide.
 - Licence : CC-BY-SA (Wikipédia). Le jeu dérivé n'est pas versionné dans le dépôt ; la commande le régénère.
 
