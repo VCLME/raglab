@@ -40,6 +40,8 @@ from raglab.ollama.service import OllamaService
 LOGGER = logging.getLogger(__name__)
 
 QUESTION_TYPES = ("paraphrase", "reference", "entity")
+MAX_ANSWER_WORDS = 40
+_BUDGET_EMENTA_RE = re.compile(r"^\s*(?:abre|reabre)\b", re.IGNORECASE)
 
 _JSON_BLOCK_RE = re.compile(r"\{[\s\S]*\}")
 _WORD_RE = re.compile(r"\w+", re.UNICODE)
@@ -47,7 +49,8 @@ _ARTICLE_RE = re.compile(r"^Art\.\s*(\d+[A-Z\-]*)", re.IGNORECASE)
 _ENTITY_RE = re.compile(r"\b(?:[A-Z]{2,}[A-Za-z]*|[A-ZÀ-Ý][a-zà-ÿ]+(?:\s+(?:d[aeo]s?\s+)?[A-ZÀ-Ý][a-zà-ÿ]+)+)\b")
 
 _SYSTEM_PROMPT = """Você cria perguntas para avaliar um sistema de busca em \
-textos legais brasileiros. Você recebe um TRECHO de uma lei e um TIPO de \
+textos legais brasileiros. A busca é feita em centenas de leis federais. \
+Você recebe o ASSUNTO DA LEI (sua ementa), um TRECHO dessa lei e um TIPO de \
 pergunta. Escreva UMA pergunta em português que só pode ser respondida com \
 esse trecho, e a RESPOSTA curta copiada literalmente do trecho.
 
@@ -57,11 +60,14 @@ trecho (use sinônimos), não cite número de lei nem de artigo.
 * reference — a pergunta cita o número do artigo e o número da lei \
 indicados em REFERÊNCIA (ex.: "O que dispõe o art. 49 da Lei nº 8.078?").
 * entity — a pergunta se apoia em uma sigla ou nome próprio presente no \
-trecho (órgão, programa, fundo, tributo...).
+trecho (órgão, programa, fundo, tributo...), sem citar número de lei.
 
 Regras:
+* A pergunta deve fazer sentido sozinha para quem não leu o trecho: \
+mencione o tema da lei (ex.: "na lei que trata da erva-mate", "no regime do \
+FGTS") para que só exista uma resposta entre todas as leis. Nunca escreva \
+"neste trecho", "segundo o texto", "o programa" sem dizer qual.
 * A resposta deve ser uma cópia exata de um pedaço do trecho (3 a 25 palavras).
-* A pergunta deve fazer sentido sozinha, sem "neste trecho" ou "segundo o texto".
 
 Responda apenas com JSON: {"question": "...", "answer": "..."}"""
 
@@ -71,6 +77,7 @@ class Passage:
     file_name: str
     urn: str
     law_title: str
+    ementa: str
     start: int
     end: int
     text: str
@@ -109,6 +116,10 @@ def sample_passages(
         for line in text.split("\n"):
             lines.append((offset, offset + len(line)))
             offset += len(line) + 1
+        if _BUDGET_EMENTA_RE.match(str(sidecar.get("ementa", ""))):
+            # Credit-opening laws are tables of budget lines: they stay in the
+            # corpus as distractors but yield no meaningful question.
+            continue
         documents.append((text_path, sidecar, text, lines))
     rng.shuffle(documents)
 
@@ -129,7 +140,8 @@ def sample_passages(
             while last + 1 < len(lines) and lines[last][1] - lines[first][0] < target_chars:
                 last += 1
             start, end = lines[first][0], lines[last][1]
-            if end - start < target_chars // 2:
+            if end - start < target_chars // 2 or _letter_ratio(text[start:end]) < 0.6:
+                # Too short, or a budget table: nothing to ask in words.
                 continue
             used.update((text_path.name, index) for index in range(first, last + 1))
             article = None
@@ -144,6 +156,7 @@ def sample_passages(
                     file_name=text_path.name,
                     urn=str(sidecar.get("urn", "")),
                     law_title=str(sidecar.get("title", "")),
+                    ementa=str(sidecar.get("ementa", "")),
                     start=start,
                     end=end,
                     text=text[start:end],
@@ -153,13 +166,27 @@ def sample_passages(
     return passages
 
 
-def pick_question_type(passage: Passage, rng: random.Random) -> str:
-    candidates = ["paraphrase"]
+def _letter_ratio(text: str) -> float:
+    visible = [char for char in text if not char.isspace()]
+    if not visible:
+        return 0.0
+    return sum(char.isalpha() for char in visible) / len(visible)
+
+
+def eligible_types(passage: Passage) -> list[str]:
+    types = ["paraphrase"]
     if passage.article:
-        candidates.append("reference")
+        types.append("reference")
     if _ENTITY_RE.search(passage.text):
-        candidates.append("entity")
-    return rng.choice(candidates)
+        types.append("entity")
+    return types
+
+
+def pick_question_type(passage: Passage, wanted: str) -> str:
+    """Use `wanted` when the passage supports it, otherwise fall back to
+    paraphrase (always possible). Callers rotate `wanted` through
+    QUESTION_TYPES so the set ends up roughly balanced."""
+    return wanted if wanted in eligible_types(passage) else "paraphrase"
 
 
 def _parse(answer: str) -> dict[str, str] | None:
@@ -179,6 +206,15 @@ def _parse(answer: str) -> dict[str, str] | None:
     return {"question": question.strip(), "answer": quote.strip().strip('"“”')}
 
 
+def _cites_reference(question: str, passage: Passage) -> bool:
+    """A reference question must cite both the article and the law number."""
+    digits = re.sub(r"\D", "", question)
+    law_number = passage.file_name.split("_")[1] if passage.file_name.count("_") >= 2 else ""
+    article_number = re.sub(r"\D", "", passage.article or "")
+    has_article = bool(re.search(rf"\bart(?:\.|igo)\s*{article_number}\b", question, re.IGNORECASE))
+    return has_article and bool(law_number) and law_number in digits
+
+
 class LexMLQuestionGenerator:
     def __init__(
         self,
@@ -195,7 +231,10 @@ class LexMLQuestionGenerator:
         reference = ""
         if question_type == "reference":
             reference = f"REFERÊNCIA: art. {passage.article} da {passage.law_title}\n"
-        user = f"TIPO: {question_type}\n{reference}TRECHO:\n{passage.text}\n\nResponda apenas com JSON."
+        user = (
+            f"ASSUNTO DA LEI: {passage.ementa or passage.law_title}\n"
+            f"TIPO: {question_type}\n{reference}TRECHO:\n{passage.text}\n\nResponda apenas com JSON."
+        )
         try:
             result = self.ollama.chat(
                 messages=[{"role": "user", "content": user}],
@@ -218,16 +257,25 @@ class LexMLQuestionGenerator:
     ) -> dict[str, Any]:
         corpus_dir = (corpus_dir or self.settings.lexml_fulltext_dir / "corpus").resolve()
         output_dir = output_dir.resolve()
-        rng = random.Random(seed)
         # Over-sample: some questions are rejected by the quote check.
         passages = sample_passages(corpus_dir, count=int(count * 1.5) + 10, seed=seed)
 
         cases: list[GroundTruthCase] = []
-        rejected = {"invalid_json": 0, "quote_not_found": 0, "leaks_reference": 0}
+        rejected = {
+            "invalid_json": 0,
+            "quote_not_found": 0,
+            "answer_too_long": 0,
+            "leaks_reference": 0,
+            "reference_missing": 0,
+        }
+        kept_by_type = dict.fromkeys(QUESTION_TYPES, 0)
         for passage in passages:
             if len(cases) >= count:
                 break
-            question_type = pick_question_type(passage, rng)
+            # Ask for the type we have the fewest of, so the set stays balanced
+            # even when one type gets rejected more often.
+            wanted = min(QUESTION_TYPES, key=lambda kind: kept_by_type[kind])
+            question_type = pick_question_type(passage, wanted)
             generated = self._ask(passage, question_type)
             if generated is None:
                 rejected["invalid_json"] += 1
@@ -236,9 +284,16 @@ class LexMLQuestionGenerator:
             if span is None:
                 rejected["quote_not_found"] += 1
                 continue
-            if question_type == "paraphrase" and re.search(r"\b(?:art\.|artigo|lei n)", generated["question"], re.I):
+            if len(span["text"].split()) > MAX_ANSWER_WORDS:
+                rejected["answer_too_long"] += 1
+                continue
+            if question_type != "reference" and re.search(r"\b(?:art\.|artigo|lei n)", generated["question"], re.I):
                 rejected["leaks_reference"] += 1
                 continue
+            if question_type == "reference" and not _cites_reference(generated["question"], passage):
+                rejected["reference_missing"] += 1
+                continue
+            kept_by_type[question_type] += 1
             case_id = f"lexml-{len(cases) + 1:04d}"
             cases.append(
                 GroundTruthCase(

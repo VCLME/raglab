@@ -31,7 +31,13 @@ def _corpus(tmp_path: Path, laws: int = 3) -> Path:
         stem = f"lei_{8000 + index}_1990"
         (corpus / f"{stem}.txt").write_text(LAW, encoding="utf-8")
         (corpus / f"{stem}.json").write_text(
-            json.dumps({"urn": f"urn:lex:br:federal:lei:1990-01-01;{8000 + index}", "title": f"Lei nº {8000 + index}"}),
+            json.dumps(
+                {
+                    "urn": f"urn:lex:br:federal:lei:1990-01-01;{8000 + index}",
+                    "title": f"Lei nº {8000 + index}",
+                    "ementa": "Dispõe sobre a proteção do consumidor.",
+                }
+            ),
             encoding="utf-8",
         )
     return corpus
@@ -99,10 +105,61 @@ def test_paraphrase_questions_citing_articles_are_rejected(tmp_path: Path):
     import raglab.benchmarks.lexml_questions as module
 
     original = module.pick_question_type
-    module.pick_question_type = lambda passage, rng: "paraphrase"
+    module.pick_question_type = lambda passage, wanted: "paraphrase"
     try:
         result = generator.generate(corpus_dir=corpus, output_dir=tmp_path / "out", count=2, seed=0)
     finally:
         module.pick_question_type = original
     assert result["case_count"] == 0
     assert result["rejected"]["leaks_reference"] > 0
+
+
+def test_numeric_tables_are_not_sampled(tmp_path: Path):
+    corpus = tmp_path / "corpus"
+    corpus.mkdir()
+    table = "\n".join(["LEI Nº 1", "Abre crédito", "ANEXO"] + ["10.000 20.000 30.000 40.000 50.000 60.000"] * 40)
+    (corpus / "lei_1_2000.txt").write_text(table, encoding="utf-8")
+    (corpus / "lei_1_2000.json").write_text("{}", encoding="utf-8")
+    assert sample_passages(corpus, count=3, seed=0) == []
+
+
+def test_types_are_balanced_and_prompt_carries_the_law_subject(tmp_path: Path):
+    corpus = _corpus(tmp_path, laws=6)
+    ollama = MagicMock()
+    ollama.chat.return_value = {
+        "answer": json.dumps({"question": "Na lei do consumidor, qual o prazo para desistir?", "answer": "7 dias"})
+    }
+
+    def reply(**kwargs):
+        content = kwargs["messages"][0]["content"]
+        if "TIPO: reference" in content:
+            reference = content.split("REFERÊNCIA: ")[1].split("\n")[0]  # "art. 49 da Lei nº 8003"
+            article, law = reference.split(" da ")
+            question = f"O que diz o {article} da {law.replace('.', '')}?"
+            return {"answer": json.dumps({"question": question, "answer": "7 dias"})}
+        return ollama.chat.return_value
+
+    ollama.chat.side_effect = reply
+    generator = LexMLQuestionGenerator(settings=MagicMock(generation_model="m"), ollama=ollama)
+    result = generator.generate(corpus_dir=corpus, output_dir=tmp_path / "out", count=6, seed=0)
+
+    assert result["by_type"] == {"paraphrase": 2, "reference": 2, "entity": 2}
+    prompt = ollama.chat.call_args_list[0].kwargs["messages"][0]["content"]
+    assert prompt.startswith("ASSUNTO DA LEI: Dispõe sobre a proteção do consumidor.")
+
+
+def test_reference_questions_must_cite_article_and_law(tmp_path: Path):
+    from raglab.benchmarks.lexml_questions import Passage, _cites_reference
+
+    passage = Passage("lei_8078_1990.txt", "", "Lei nº 8.078", "", 0, 10, "...", "49")
+    assert _cites_reference("O que dispõe o art. 49 da Lei nº 8.078?", passage)
+    assert _cites_reference("Segundo o artigo 49 da Lei 8078/1990, qual o prazo?", passage)
+    assert not _cites_reference("O que dispõe a Lei nº 8.078 sobre o prazo?", passage)
+    assert not _cites_reference("O que dispõe o art. 49 sobre o prazo?", passage)
+
+
+def test_budget_laws_are_not_sampled(tmp_path: Path):
+    corpus = _corpus(tmp_path, laws=1)
+    sidecar = next(corpus.glob("*.json"))
+    sidecar.write_text(json.dumps({"ementa": "Abre ao Orçamento Fiscal da União crédito suplementar"}), encoding="utf-8")
+    assert sample_passages(corpus, count=2, seed=0) == []
