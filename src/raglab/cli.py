@@ -6,6 +6,7 @@ from pathlib import Path
 import typer
 
 from raglab.benchmarks import AVAILABLE_LOADERS, get_loader
+from raglab.benchmarks.lexml_questions import LexMLQuestionGenerator
 from raglab.config import get_settings
 from raglab.db import initialize_database, session_scope
 from raglab.domain.enums import ChunkingStrategy
@@ -14,6 +15,7 @@ from raglab.experiments.service import ExperimentService
 from raglab.indexing.service import IndexingService
 from raglab.ingestion.service import IngestionService
 from raglab.lexml import LexMLLoadService, getDataFromLexML
+from raglab.lexml.fulltext import FullTextCollector
 from raglab.logging_utils import configure_logging
 from raglab.ollama import OllamaService
 from raglab.retrieval.filters import build_retrieval_filters
@@ -184,6 +186,58 @@ def lexml_get_data(
     ),
 ) -> None:
     result = getDataFromLexML(output_dir=output_dir, page_limit=page_limit)
+    typer.echo(json.dumps(result, indent=2, ensure_ascii=False))
+
+
+@lexml_app.command("fulltext")
+def lexml_fulltext(
+    output_dir: Path = typer.Option(
+        get_settings().lexml_fulltext_dir,
+        "--output-dir",
+        help="Dossier de sortie (corpus/ + manifest.json).",
+    ),
+    year_from: int = typer.Option(1988, "--from", help="Premiere annee de signature."),
+    year_to: int = typer.Option(2024, "--to", help="Derniere annee de signature (incluse)."),
+    per_year: int = typer.Option(7, "--per-year", min=1, help="Nombre de lois gardees par annee."),
+    seed: int = typer.Option(42, "--seed", help="Graine du tirage des lois."),
+    min_chars: int = typer.Option(3000, "--min-chars", help="Ignorer les lois plus courtes."),
+    max_chars: int = typer.Option(150_000, "--max-chars", help="Ignorer les lois plus longues (codes)."),
+) -> None:
+    """Collecter le texte integral de lois federales (Senado + Planalto)."""
+    result = FullTextCollector().collect(
+        output_dir=output_dir,
+        years=range(year_from, year_to + 1),
+        per_year=per_year,
+        seed=seed,
+        min_chars=min_chars,
+        max_chars=max_chars,
+    )
+    typer.echo(json.dumps(result, indent=2, ensure_ascii=False))
+
+
+@lexml_app.command("questions")
+def lexml_questions(
+    corpus_dir: Path = typer.Option(
+        get_settings().lexml_fulltext_dir / "corpus",
+        "--corpus-dir",
+        help="Corpus texte integral produit par `raglab lexml fulltext`.",
+    ),
+    output_dir: Path = typer.Option(
+        get_settings().data_dir / "benchmarks" / "lexml_fulltext",
+        "--output-dir",
+        help="Dossier du dataset (ground_truth.jsonl + metadata.json).",
+    ),
+    count: int = typer.Option(300, "--count", min=1, help="Nombre de questions a garder."),
+    seed: int = typer.Option(42, "--seed", help="Graine du tirage des passages et des types."),
+    model: str | None = typer.Option(None, "--model", help="Modele Ollama (defaut: modele de generation)."),
+) -> None:
+    """Generer un jeu de questions typees (paraphrase / reference / entity) sur le corpus LexML."""
+    result = LexMLQuestionGenerator(model=model).generate(
+        corpus_dir=corpus_dir,
+        output_dir=output_dir,
+        count=count,
+        seed=seed,
+    )
     typer.echo(json.dumps(result, indent=2, ensure_ascii=False))
 
 

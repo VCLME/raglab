@@ -28,6 +28,14 @@ export function LexML() {
   const [embModel, setEmbModel] = useState("");
   const load = useApiAction((body: unknown) => post<unknown>("/api/lexml/load", body));
 
+  const [yearFrom, setYearFrom] = useState("1988");
+  const [yearTo, setYearTo] = useState("2024");
+  const [perYear, setPerYear] = useState("7");
+  const [questionCount, setQuestionCount] = useState("300");
+  const [seed, setSeed] = useState("42");
+  const fulltext = useApiAction((body: unknown) => post<unknown>("/api/lexml/fulltext", body));
+  const questions = useApiAction((body: unknown) => post<unknown>("/api/lexml/questions", body));
+
   return (
     <div>
       <div className="page-header">
@@ -153,6 +161,57 @@ export function LexML() {
           {load.loading ? <Spinner label={t("lexml.load_in_progress")} /> : null}
           <ErrorBanner error={load.error} />
           {load.data ? <JsonViewer value={load.data} maxHeight={300} /> : null}
+        </div>
+      </div>
+
+      <div className="card">
+        <h3>{t("lexml.fulltext_title")}</h3>
+        <p className="muted" style={{ marginTop: -10 }}>{t("lexml.fulltext_help")}</p>
+        <div className="split">
+          <div>
+            <FieldRow label={t("lexml.year_from")}>
+              <input type="number" value={yearFrom} onChange={(e) => setYearFrom(e.target.value)} />
+            </FieldRow>
+            <FieldRow label={t("lexml.year_to")}>
+              <input type="number" value={yearTo} onChange={(e) => setYearTo(e.target.value)} />
+            </FieldRow>
+            <FieldRow label={t("lexml.per_year")} hint={t("lexml.per_year_hint")}>
+              <input type="number" value={perYear} onChange={(e) => setPerYear(e.target.value)} min={1} />
+            </FieldRow>
+            <button
+              onClick={() =>
+                fulltext.run({
+                  year_from: Number(yearFrom),
+                  year_to: Number(yearTo),
+                  per_year: Number(perYear),
+                  seed: Number(seed),
+                })
+              }
+              disabled={fulltext.loading}
+            >
+              {fulltext.loading ? t("lexml.collecting") : t("lexml.launch_fulltext")}
+            </button>
+            {fulltext.loading ? <Spinner label={t("lexml.long_note")} /> : null}
+            <ErrorBanner error={fulltext.error} />
+            {fulltext.data ? <JsonViewer value={fulltext.data} maxHeight={240} /> : null}
+          </div>
+          <div>
+            <FieldRow label={t("lexml.question_count")} hint={t("lexml.question_count_hint")}>
+              <input type="number" value={questionCount} onChange={(e) => setQuestionCount(e.target.value)} min={1} />
+            </FieldRow>
+            <FieldRow label={t("corpus_page.bench_seed_label")} hint={t("corpus_page.bench_seed_hint")}>
+              <input type="number" value={seed} onChange={(e) => setSeed(e.target.value)} />
+            </FieldRow>
+            <button
+              onClick={() => questions.run({ count: Number(questionCount), seed: Number(seed) })}
+              disabled={questions.loading}
+            >
+              {questions.loading ? t("lexml.generating") : t("lexml.launch_questions")}
+            </button>
+            {questions.loading ? <Spinner label={t("lexml.long_note")} /> : null}
+            <ErrorBanner error={questions.error} />
+            {questions.data ? <JsonViewer value={questions.data} maxHeight={240} /> : null}
+          </div>
         </div>
       </div>
     </div>

@@ -285,7 +285,18 @@
     "incremental_checkbox": "Reuse a compatible run when possible",
     "launch_load": "Run load",
     "loading": "Loading…",
-    "load_in_progress": "collect + ingest + index…"
+    "load_in_progress": "collect + ingest + index…",
+    "fulltext_title": "Full-text benchmark",
+    "fulltext_help": "Collects the full text of federal laws (list: Senado open data API, text: planalto.gov.br), then has the local LLM write typed questions (paraphrase, article reference, acronym or proper noun). Each answer is a quote located in the document, so relevance is judged at passage level.",
+    "year_from": "First year",
+    "year_to": "Last year",
+    "per_year": "Laws per year",
+    "per_year_hint": "Drawn at random (seed), between 3,000 and 150,000 characters.",
+    "launch_fulltext": "Collect texts",
+    "question_count": "Number of questions",
+    "question_count_hint": "Questions whose quote cannot be found in the text are rejected.",
+    "launch_questions": "Generate questions",
+    "generating": "Generating…"
   },
   "ollama": {
     "title": "Ollama models",

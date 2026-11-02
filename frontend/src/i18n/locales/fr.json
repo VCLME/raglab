@@ -285,7 +285,18 @@
     "incremental_checkbox": "Réutiliser un run compatible si possible",
     "launch_load": "Lancer load",
     "loading": "Chargement…",
-    "load_in_progress": "collecte + ingest + index…"
+    "load_in_progress": "collecte + ingest + index…",
+    "fulltext_title": "Benchmark texte intégral",
+    "fulltext_help": "Collecte le texte intégral de lois fédérales (liste : API Dados Abertos du Sénat, texte : planalto.gov.br), puis génère des questions typées (paraphrase, référence à un article, sigle ou nom propre) avec le LLM local. Chaque réponse est une citation du texte, retrouvée dans le document pour juger la pertinence au niveau du passage.",
+    "year_from": "Première année",
+    "year_to": "Dernière année",
+    "per_year": "Lois par année",
+    "per_year_hint": "Tirées au hasard (graine), entre 3 000 et 150 000 caractères.",
+    "launch_fulltext": "Collecter les textes",
+    "question_count": "Nombre de questions",
+    "question_count_hint": "Les questions dont la citation est introuvable dans le texte sont rejetées.",
+    "launch_questions": "Générer les questions",
+    "generating": "Génération…"
   },
   "ollama": {
     "title": "Modèles Ollama",

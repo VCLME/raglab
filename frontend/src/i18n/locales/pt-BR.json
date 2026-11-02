@@ -285,7 +285,18 @@
     "incremental_checkbox": "Reutilizar um run compatível quando possível",
     "launch_load": "Executar load",
     "loading": "Carregando…",
-    "load_in_progress": "coleta + ingest + index…"
+    "load_in_progress": "coleta + ingest + index…",
+    "fulltext_title": "Benchmark de texto integral",
+    "fulltext_help": "Coleta o texto integral de leis federais (lista: API de Dados Abertos do Senado, texto: planalto.gov.br) e gera perguntas tipadas (paráfrase, referência a artigo, sigla ou nome próprio) com o LLM local. Cada resposta é uma citação localizada no documento, para julgar a relevância por trecho.",
+    "year_from": "Primeiro ano",
+    "year_to": "Último ano",
+    "per_year": "Leis por ano",
+    "per_year_hint": "Sorteadas (semente), entre 3.000 e 150.000 caracteres.",
+    "launch_fulltext": "Coletar textos",
+    "question_count": "Número de perguntas",
+    "question_count_hint": "Perguntas cuja citação não é encontrada no texto são rejeitadas.",
+    "launch_questions": "Gerar perguntas",
+    "generating": "Gerando…"
   },
   "ollama": {
     "title": "Modelos Ollama",

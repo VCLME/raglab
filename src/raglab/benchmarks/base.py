@@ -40,9 +40,16 @@ class GroundTruthCase:
     #: index into the normalised document text, so relevance can be judged at
     #: passage level independently of the chunking strategy.
     expected_spans: list[dict] = field(default_factory=list)
+    #: Optional tag used to break metrics down (e.g. paraphrase / reference).
+    question_type: str | None = None
+    #: Share of the question's content words found in the gold passage.
+    lexical_overlap: float | None = None
+    #: "generated", "reviewed" or "rejected" for LLM-written questions.
+    review_status: str | None = None
 
     def to_jsonl_line(self) -> str:
-        return json.dumps(asdict(self), ensure_ascii=False)
+        payload = {key: value for key, value in asdict(self).items() if value is not None}
+        return json.dumps(payload, ensure_ascii=False)
 
 
 class BenchmarkLoader(ABC):

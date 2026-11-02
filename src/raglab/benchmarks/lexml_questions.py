@@ -1,0 +1,295 @@
+"""Build a typed question set over the LexML full-text corpus.
+
+The legacy LexML ground truth used each document's title + ementa as the
+question, i.e. a copy of the document: retrieval was trivially perfect and
+said nothing about real queries. Here questions are written by the local
+LLM from passages drawn at random inside the laws, in three types that
+stress different retrieval behaviours:
+
+* ``paraphrase`` — the question avoids the passage's wording (semantic
+  matching; dense retrieval should be at home);
+* ``reference`` — the question cites the law number and/or the article
+  ("art. 49 da Lei 8.078"): exact tokens that dense embeddings blur;
+* ``entity`` — the question hinges on an acronym or a proper noun found in
+  the passage (FGTS, INSS, Ministério da Saúde...).
+
+Each question comes with a short answer *quoted* from the passage. The quote
+is located in the document to produce a gold span, so relevance is judged at
+passage level like PIAF. Questions whose quote cannot be found are dropped:
+that check is what keeps hallucinated questions out of the benchmark. Every
+case also records its lexical overlap with the passage, so the report can
+show how much a result owes to shared words.
+"""
+
+from __future__ import annotations
+
+import json
+import logging
+import random
+import re
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
+
+from raglab.benchmarks.base import GroundTruthCase, write_ground_truth, write_metadata
+from raglab.benchmarks.squad_style import locate_span
+from raglab.config import Settings, get_settings
+from raglab.logging_utils import log_event
+from raglab.ollama.service import OllamaService
+
+LOGGER = logging.getLogger(__name__)
+
+QUESTION_TYPES = ("paraphrase", "reference", "entity")
+
+_JSON_BLOCK_RE = re.compile(r"\{[\s\S]*\}")
+_WORD_RE = re.compile(r"\w+", re.UNICODE)
+_ARTICLE_RE = re.compile(r"^Art\.\s*(\d+[A-Z\-]*)", re.IGNORECASE)
+_ENTITY_RE = re.compile(r"\b(?:[A-Z]{2,}[A-Za-z]*|[A-ZÀ-Ý][a-zà-ÿ]+(?:\s+(?:d[aeo]s?\s+)?[A-ZÀ-Ý][a-zà-ÿ]+)+)\b")
+
+_SYSTEM_PROMPT = """Você cria perguntas para avaliar um sistema de busca em \
+textos legais brasileiros. Você recebe um TRECHO de uma lei e um TIPO de \
+pergunta. Escreva UMA pergunta em português que só pode ser respondida com \
+esse trecho, e a RESPOSTA curta copiada literalmente do trecho.
+
+Tipos:
+* paraphrase — reformule com outras palavras: não reutilize as expressões do \
+trecho (use sinônimos), não cite número de lei nem de artigo.
+* reference — a pergunta cita o número do artigo e o número da lei \
+indicados em REFERÊNCIA (ex.: "O que dispõe o art. 49 da Lei nº 8.078?").
+* entity — a pergunta se apoia em uma sigla ou nome próprio presente no \
+trecho (órgão, programa, fundo, tributo...).
+
+Regras:
+* A resposta deve ser uma cópia exata de um pedaço do trecho (3 a 25 palavras).
+* A pergunta deve fazer sentido sozinha, sem "neste trecho" ou "segundo o texto".
+
+Responda apenas com JSON: {"question": "...", "answer": "..."}"""
+
+
+@dataclass(slots=True)
+class Passage:
+    file_name: str
+    urn: str
+    law_title: str
+    start: int
+    end: int
+    text: str
+    article: str | None
+
+
+def lexical_overlap(question: str, passage: str) -> float:
+    """Share of the question's content words (len > 3) found in the passage."""
+    question_words = {word.lower() for word in _WORD_RE.findall(question) if len(word) > 3}
+    if not question_words:
+        return 0.0
+    passage_words = {word.lower() for word in _WORD_RE.findall(passage)}
+    return len(question_words & passage_words) / len(question_words)
+
+
+def sample_passages(
+    corpus_dir: Path,
+    *,
+    count: int,
+    seed: int,
+    target_chars: int = 700,
+) -> list[Passage]:
+    """Draw `count` passages of about `target_chars`, at most one per law
+    first, then round-robin, so long laws do not dominate the question set.
+
+    A passage starts at a line (paragraph) boundary and extends over whole
+    lines; the nearest preceding ``Art. N`` line gives its article number.
+    """
+    rng = random.Random(seed)
+    documents: list[tuple[Path, dict[str, Any], str, list[tuple[int, int]]]] = []
+    for text_path in sorted(corpus_dir.glob("*.txt")):
+        sidecar = json.loads(text_path.with_suffix(".json").read_text(encoding="utf-8"))
+        text = text_path.read_text(encoding="utf-8")
+        lines: list[tuple[int, int]] = []
+        offset = 0
+        for line in text.split("\n"):
+            lines.append((offset, offset + len(line)))
+            offset += len(line) + 1
+        documents.append((text_path, sidecar, text, lines))
+    rng.shuffle(documents)
+
+    passages: list[Passage] = []
+    used: set[tuple[str, int]] = set()
+    rounds = 0
+    while len(passages) < count and rounds < 20:
+        rounds += 1
+        for text_path, sidecar, text, lines in documents:
+            if len(passages) >= count:
+                break
+            # Skip the heading/ementa lines: the passage must come from the body.
+            body = [index for index in range(3, len(lines)) if (text_path.name, index) not in used]
+            if not body:
+                continue
+            first = rng.choice(body)
+            last = first
+            while last + 1 < len(lines) and lines[last][1] - lines[first][0] < target_chars:
+                last += 1
+            start, end = lines[first][0], lines[last][1]
+            if end - start < target_chars // 2:
+                continue
+            used.update((text_path.name, index) for index in range(first, last + 1))
+            article = None
+            for index in range(first, -1, -1):
+                line_text = text[lines[index][0] : lines[index][1]]
+                match = _ARTICLE_RE.match(line_text)
+                if match:
+                    article = match.group(1)
+                    break
+            passages.append(
+                Passage(
+                    file_name=text_path.name,
+                    urn=str(sidecar.get("urn", "")),
+                    law_title=str(sidecar.get("title", "")),
+                    start=start,
+                    end=end,
+                    text=text[start:end],
+                    article=article,
+                )
+            )
+    return passages
+
+
+def pick_question_type(passage: Passage, rng: random.Random) -> str:
+    candidates = ["paraphrase"]
+    if passage.article:
+        candidates.append("reference")
+    if _ENTITY_RE.search(passage.text):
+        candidates.append("entity")
+    return rng.choice(candidates)
+
+
+def _parse(answer: str) -> dict[str, str] | None:
+    match = _JSON_BLOCK_RE.search(answer or "")
+    if match is None:
+        return None
+    try:
+        payload = json.loads(match.group(0))
+    except json.JSONDecodeError:
+        return None
+    question = payload.get("question") if isinstance(payload, dict) else None
+    quote = payload.get("answer") if isinstance(payload, dict) else None
+    if not isinstance(question, str) or not isinstance(quote, str):
+        return None
+    if not question.strip() or not quote.strip():
+        return None
+    return {"question": question.strip(), "answer": quote.strip().strip('"“”')}
+
+
+class LexMLQuestionGenerator:
+    def __init__(
+        self,
+        settings: Settings | None = None,
+        ollama: OllamaService | None = None,
+        *,
+        model: str | None = None,
+    ) -> None:
+        self.settings = settings or get_settings()
+        self.ollama = ollama or OllamaService(self.settings)
+        self.model = model or self.settings.generation_model
+
+    def _ask(self, passage: Passage, question_type: str) -> dict[str, str] | None:
+        reference = ""
+        if question_type == "reference":
+            reference = f"REFERÊNCIA: art. {passage.article} da {passage.law_title}\n"
+        user = f"TIPO: {question_type}\n{reference}TRECHO:\n{passage.text}\n\nResponda apenas com JSON."
+        try:
+            result = self.ollama.chat(
+                messages=[{"role": "user", "content": user}],
+                model=self.model,
+                system=_SYSTEM_PROMPT,
+                options={"temperature": 0.0, "num_predict": 200, "seed": 42},
+            )
+        except Exception as exc:  # network or model errors drop the passage
+            log_event(LOGGER, logging.WARNING, "lexml.questions.chat_failed", error=str(exc))
+            return None
+        return _parse(result.get("answer", ""))
+
+    def generate(
+        self,
+        *,
+        corpus_dir: Path | None = None,
+        output_dir: Path,
+        count: int = 300,
+        seed: int = 42,
+    ) -> dict[str, Any]:
+        corpus_dir = (corpus_dir or self.settings.lexml_fulltext_dir / "corpus").resolve()
+        output_dir = output_dir.resolve()
+        rng = random.Random(seed)
+        # Over-sample: some questions are rejected by the quote check.
+        passages = sample_passages(corpus_dir, count=int(count * 1.5) + 10, seed=seed)
+
+        cases: list[GroundTruthCase] = []
+        rejected = {"invalid_json": 0, "quote_not_found": 0, "leaks_reference": 0}
+        for passage in passages:
+            if len(cases) >= count:
+                break
+            question_type = pick_question_type(passage, rng)
+            generated = self._ask(passage, question_type)
+            if generated is None:
+                rejected["invalid_json"] += 1
+                continue
+            span = locate_span(passage.text, generated["answer"])
+            if span is None:
+                rejected["quote_not_found"] += 1
+                continue
+            if question_type == "paraphrase" and re.search(r"\b(?:art\.|artigo|lei n)", generated["question"], re.I):
+                rejected["leaks_reference"] += 1
+                continue
+            case_id = f"lexml-{len(cases) + 1:04d}"
+            cases.append(
+                GroundTruthCase(
+                    id=case_id,
+                    question=generated["question"],
+                    expected_file_names=[passage.file_name],
+                    ground_truth_answer=span["text"],
+                    expected_substrings=[span["text"]],
+                    expected_urns=[passage.urn] if passage.urn else [],
+                    expected_spans=[
+                        {
+                            "file_name": passage.file_name,
+                            "start": passage.start + span["start"],
+                            "end": passage.start + span["end"],
+                            "text": span["text"],
+                        }
+                    ],
+                    question_type=question_type,
+                    lexical_overlap=round(lexical_overlap(generated["question"], passage.text), 3),
+                    review_status="generated",
+                )
+            )
+
+        ground_truth_path = output_dir / "ground_truth.jsonl"
+        write_ground_truth(ground_truth_path, cases)
+        by_type = {kind: sum(1 for case in cases if case.question_type == kind) for kind in QUESTION_TYPES}
+        write_metadata(
+            output_dir / "metadata.json",
+            {
+                "loader": "lexml_fulltext",
+                "language": "pt",
+                "licence": "Public domain (Lei 9.610/1998, art. 8º, IV)",
+                "generator_model": self.model,
+                "seed": seed,
+                "case_count": len(cases),
+                "by_type": by_type,
+                "rejected": rejected,
+                "corpus_dir": str(corpus_dir),
+            },
+        )
+        log_event(
+            LOGGER,
+            logging.INFO,
+            "lexml.questions.completed",
+            cases=len(cases),
+            by_type=by_type,
+            rejected=rejected,
+        )
+        return {
+            "ground_truth_path": str(ground_truth_path),
+            "case_count": len(cases),
+            "by_type": by_type,
+            "rejected": rejected,
+        }
