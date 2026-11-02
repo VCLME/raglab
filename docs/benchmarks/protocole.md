@@ -42,6 +42,8 @@ raglab lexml questions --count 300 --seed 42
 
 **Corpus.** Pour chaque année, la liste des lois fédérales vient de l'API Dados Abertos du Sénat (`legis.senado.leg.br/dadosabertos/legislacao/lista`). Les lois sont visitées dans un ordre aléatoire (graine) et on en garde 7 par année dont le texte fait entre 3 000 et 150 000 caractères : les lois d'une ligne (« dénomme tel viaduc ») n'ont rien à chercher, et quelques codes de 2 Mo écraseraient le reste. Le texte consolidé vient de planalto.gov.br ; les passages révoqués (texte barré) sont retirés, l'en-tête de page aussi, et chaque paragraphe tient sur une ligne. `manifest.json` liste chaque fichier avec son SHA-256 : deux runs comparent le même corpus si les manifestes sont identiques.
 
+Run de référence (graine 42, 1988-2024) : **252 lois, 4,6 millions de caractères** (médiane 8 600 caractères par loi). En chemin, 383 lois ont été écartées car trop courtes, 6 car trop longues, et 532 n'ont pas de page Planalto au format attendu (anciennes conventions de nommage) ; ces dernières sont simplement remplacées par la loi suivante du tirage.
+
 Le moteur de recherche LexML est derrière une vérification anti-robot : il n'est pas utilisé. La législation brésilienne est dans le domaine public (Lei 9.610/1998, art. 8º, IV).
 
 **Questions.** Des passages d'environ 700 caractères sont tirés dans le corps des lois (un par loi d'abord, puis à tour de rôle). Pour chacun, qwen2.5:7b (température 0) écrit une question d'un des trois types :
