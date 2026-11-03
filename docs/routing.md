@@ -38,11 +38,11 @@ Pourquoi un seuil par corpus : les scores denses n'ont pas la même échelle d'u
 | Variable | Défaut | Rôle |
 |---|---|---|
 | `RAGLAB_ROUTING_INTENT_MARGIN` | `0.02` | avance qu'une intention non documentaire doit avoir sur `documentary` |
-| `RAGLAB_ROUTING_ABSTENTION_THRESHOLDS` | `{}` | seuils par corpus, en JSON : `{"bench_piaf_fr": 0.7341, "bench_lexml_pt": 0.8666}` |
+| `RAGLAB_ROUTING_ABSTENTION_THRESHOLDS` | `{"bench_piaf_fr": 0.7341, "bench_lexml_pt": 0.8666}` | seuils par corpus, en JSON (défaut : point A, voir plus bas) |
 | `RAGLAB_ROUTING_ABSTENTION_THRESHOLD` | `0.0` | seuil des corpus sans seuil propre (0 = pas d'abstention par score) |
 | `RAGLAB_ROUTING_SCORE_SOURCE` | `dense` | `dense` ou `rerank` |
 
-Les valeurs par défaut sont provisoires : le point de fonctionnement (marge et seuils) reste à choisir parmi ceux présentés plus bas.
+**Point de fonctionnement retenu : A (prudent)**, choisi par le propriétaire le 3 novembre 2026 parmi les trois points mesurés plus bas : marge d'intention 0,02, seuils au quantile 2 % de la calibration (PIAF 0,7341, LexML 0,8666). Mesuré : précision 0,984, rappel 0,75, 1,2 % de fausses abstentions. Ces seuils valent pour le score dense de multilingual-e5-small sur les index `traditional` : ils seront recalibrés quand les scores du reranker 9.3 auront été mesurés. Un corpus absent de la liste retombe sur `RAGLAB_ROUTING_ABSTENTION_THRESHOLD` (0 = pas d'abstention par score).
 
 ## Évaluation
 
@@ -77,7 +77,7 @@ L'embedding de la question coûte 25 ms (p50) sur ce CPU, partagé pendant la me
 
 | Point | Seuils (PIAF / LexML) | Précision | Rappel | F1 | Fausses abstentions | Hors périmètre | Quasi-pièges | Conversation |
 |---|---|---|---|---|---|---|---|---|
-| A, prudent (q 2 %) | 0,7341 / 0,8666 | **0,984** | 0,750 | 0,851 | **1,2 %** (1/80) | 66,7 % | 52,2 % | 100 % |
+| **A, prudent (q 2 %), retenu** | 0,7341 / 0,8666 | **0,984** | 0,750 | 0,851 | **1,2 %** (1/80) | 66,7 % | 52,2 % | 100 % |
 | B, équilibré (q 10 %) | 0,7485 / 0,8707 | 0,913 | 0,788 | 0,846 | 7,5 % (6/80) | 66,7 % | 65,2 % | 100 % |
 | C, couvrant (q 15 %) | 0,7574 / 0,8712 | 0,844 | **0,812** | 0,828 | 15 % (12/80) | 74,1 % | 65,2 % | 100 % |
 
@@ -100,5 +100,6 @@ Ce qui reste difficile : par langue, le rappel est de 0,90 en portugais mais de 
 
 ## Suite
 
+- Recalibrer le point A avec le score du reranker : même commande, mêmes graines, puis nouveau choix du point de fonctionnement.
 - Remplacer le score dense par le score du cross-encoder (phase 9.3, `RAGLAB_ROUTING_SCORE_SOURCE=rerank`) : un cross-encoder juge la paire question-passage et devrait mieux séparer les quasi-pièges, qui sont la principale faiblesse. À mesurer avec la même commande.
 - Un classifieur LLM ne serait envisagé que si la mesure avec le reranker reste sous les cibles, et seulement après accord.
