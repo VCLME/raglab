@@ -13,6 +13,12 @@ nav: results
   <p class="note">Recall@5: share of questions whose answer passage is in the first five retrieved chunks. Search latency: embedding plus vector search for one question, generation excluded. Faithfulness: share of answer claims supported by the retrieved context, scored on 100 answers per corpus.</p>
 </section>
 
+<section class="wrap" aria-labelledby="charts">
+  <h2 id="charts">Stage by stage</h2>
+  {{chart_results}}
+  {{chart_tradeoff}}
+</section>
+
 <section class="wrap" aria-labelledby="runs">
   <h2 id="runs">Every run</h2>
   {{run_details}}

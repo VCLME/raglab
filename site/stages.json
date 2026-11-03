@@ -21,31 +21,31 @@
     "label": "hybrid-v1",
     "name": "Hybrid search",
     "change": "+ BM25 keyword search in PostgreSQL, fused with dense results (RRF)",
-    "status": "phase 9.2"
+    "status": "9.2"
   },
   {
     "label": "lexical-v1",
     "name": "BM25 only",
     "change": "BM25 keyword search alone, no embedding (comparison point for 9.2, not kept)",
-    "status": "phase 9.2, comparison"
+    "status": "9.2 · comparison"
   },
   {
     "label": "rerank-v1",
     "name": "Re-ranking",
     "change": "+ cross-encoder bge-reranker-v2-m3 on the fused candidates",
-    "status": "phase 9.3"
+    "status": "9.3"
   },
   {
     "label": "rerank-dense-v1",
     "name": "Dense + re-ranking",
     "change": "cross-encoder on dense candidates only, no BM25 (comparison point for 9.3, retrieval only)",
-    "status": "phase 9.3, comparison"
+    "status": "9.3 · comparison"
   },
   {
     "label": "citations-v1",
     "name": "Citation resolver",
     "change": "dense search + legal citations: \"art. N da Lei X\" is parsed, search is restricted to that law and the cited article is pinned first (comparison point, no BM25 or re-ranking)",
-    "status": "phase 9.3b, comparison"
+    "status": "9.3b · comparison"
   },
   {
     "label": "full-v1",
