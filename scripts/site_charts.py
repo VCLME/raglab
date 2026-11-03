@@ -490,8 +490,11 @@ def cost_panel(runs: dict[str, dict[str, Any]], corpus: str, cname: str) -> tupl
             bx, by = x0 + (x1 - x0) * k / n, y0 + (y1 - y0) * k / n
             taken.append((bx - 2, by - 2, bx + 2, by + 2))
 
-    for _, name, (lat, r5) in others:
-        plot.dots.append(Dot(lx(lat), r5, "muted", f"{name}: Recall@5 {r5:.3f}, {ms(lat)} p50"))
+    # data-run lets site.js move each run from one question set's position to the other's.
+    for label, name, (lat, r5) in others:
+        plot.dots.append(
+            Dot(lx(lat), r5, "muted", f"{name}: Recall@5 {r5:.3f}, {ms(lat)} p50", attrs=f' data-run="{label}"')
+        )
     # What each brick changed. An arrow too short to carry its label hands it to the end point's label.
     moves = []
     for (_, _, _, (lat0, r0)), (_, _, brick, (lat1, r1)) in itertools.pairwise(path):
@@ -501,7 +504,7 @@ def cost_panel(runs: dict[str, dict[str, Any]], corpus: str, cname: str) -> tupl
             (brick, detail, (x0 + x1) / 2, (y0 + y1) / 2, abs(x1 - x0) >= abs(y1 - y0), math.hypot(x1 - x0, y1 - y0))
         )
     folded = moves[-1] if moves and moves[-1][5] < 48 else None
-    for i, (_, name, brick, (lat, r5)) in enumerate(path):
+    for i, (label, name, brick, (lat, r5)) in enumerate(path):
         first = i == 0
         tip = f"{name if first or i == len(path) - 1 else brick}: Recall@5 {r5:.3f}, {ms(lat)} p50"
         pos = (
@@ -509,7 +512,7 @@ def cost_panel(runs: dict[str, dict[str, Any]], corpus: str, cname: str) -> tupl
             if first
             else "above"
         )
-        plot.dots.append(Dot(lx(lat), r5, "main", tip, name if first else "", pos))
+        plot.dots.append(Dot(lx(lat), r5, "main", tip, name if first else "", pos, f' data-run="{label}"'))
 
     steps, items, rows = [], [], []
 

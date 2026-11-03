@@ -273,9 +273,32 @@
     if (sw) sw.addEventListener("click", function (e) {
       var btn = e.target.closest("button[data-value]");
       if (!btn) return;
+      var from = fig.querySelector(".chart-panel:not([hidden])");
+      var to = fig.querySelector('.chart-panel[data-panel="' + btn.dataset.value + '"]');
+      if (!to || to === from) return;
       sw.querySelectorAll("button").forEach(function (b) { b.setAttribute("aria-pressed", String(b === btn)); });
-      fig.querySelectorAll(".chart-panel").forEach(function (p) { p.hidden = p.dataset.panel !== btn.dataset.value; });
+      // FLIP: note where each run sits now, swap the panels, then glide every point from its old
+      // place to its new one; arrows and labels, which belong to the new layout, fade in after.
+      var before = {};
+      from.querySelectorAll(".dot[data-run]").forEach(function (d) { before[d.dataset.run] = d.getBoundingClientRect(); });
+      from.hidden = true;
+      to.hidden = false;
       arrows();
+      if (reduce.matches) return;
+      to.classList.remove("is-settling");
+      to.querySelectorAll(".dot[data-run]").forEach(function (d) {
+        var b = before[d.dataset.run];
+        if (!b) return;
+        var a = d.getBoundingClientRect();
+        d.style.transition = "none";
+        d.style.transform = "translate(" + (b.left - a.left) + "px," + (b.top - a.top) + "px)";
+      });
+      void to.offsetWidth; // commit the starting positions before the transition
+      to.classList.add("is-settling");
+      to.querySelectorAll(".dot[data-run]").forEach(function (d) {
+        d.style.transition = "";
+        d.style.transform = "";
+      });
     });
     arrows();
     window.addEventListener("resize", arrows);
