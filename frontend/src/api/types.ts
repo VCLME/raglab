@@ -133,6 +133,38 @@ export interface QueryResponse {
   answer: string | null;
   elapsed_ms: number;
   filters: unknown;
+  // Present when the request enabled the query router (phase 9.4).
+  routing?: RoutingDecision | null;
+}
+
+export type RoutingIntent = "documentary" | "conversational" | "out_of_scope";
+
+export interface RoutingDecision {
+  language: { language: string; scores: Record<string, number>; method: string };
+  intent: {
+    intent: RoutingIntent;
+    scores: Record<string, number>;
+    margin: number;
+    nearest_example: string | null;
+  };
+  corpus: {
+    corpus_name: string | null;
+    index_run_id: string | null;
+    suggested_corpus: string | null;
+    candidates: { corpus_name: string; index_run_id: string; score: number }[];
+    margin: number;
+    source: "routed" | "requested" | "none";
+  };
+  abstention: {
+    abstain: boolean;
+    reason: string | null;
+    score_source: string;
+    best_score: number | null;
+    threshold: number;
+  } | null;
+  answer_from_documents: boolean;
+  fallback_answer: string | null;
+  timings_ms: Record<string, number>;
 }
 
 export interface ExperimentRunSummary {

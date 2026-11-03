@@ -13,6 +13,7 @@ import { ErrorBanner } from "../components/ErrorBanner";
 import { ExplainBanner } from "../components/ExplainBanner";
 import { FieldRow } from "../components/FieldRow";
 import { JsonViewer } from "../components/JsonViewer";
+import { RoutingPanel } from "../components/RoutingPanel";
 import { Spinner } from "../components/Spinner";
 import { useConfig } from "../hooks/useConfig";
 import { useLocalHistory } from "../hooks/useLocalHistory";
@@ -25,6 +26,7 @@ interface HistoryEntry {
   strategy: string;
   top_k: number | null;
   generate: boolean;
+  routing?: boolean;
   timestamp: number;
 }
 
@@ -37,6 +39,7 @@ export function Query() {
   const [indexRunId, setIndexRunId] = useState("");
   const [topK, setTopK] = useState<string>("");
   const [generate, setGenerate] = useState(true);
+  const [routing, setRouting] = useState(false);
   const [question, setQuestion] = useState("");
 
   const [documentIdsRaw, setDocumentIdsRaw] = useState("");
@@ -51,10 +54,11 @@ export function Query() {
   );
 
   useEffect(() => {
-    if (!corpus && corpora.data && corpora.data.length > 0) {
+    // With routing on, an empty corpus means "let the router choose".
+    if (!routing && !corpus && corpora.data && corpora.data.length > 0) {
       setCorpus(corpora.data[0].name);
     }
-  }, [corpus, corpora.data]);
+  }, [corpus, corpora.data, routing]);
 
   const history = useLocalHistory<HistoryEntry>("raglab.query.history", 20);
   const action = useApiAction((body: unknown) => post<QueryResponse>("/api/query", body));
@@ -80,6 +84,7 @@ export function Query() {
       index_run_id: indexRunId || null,
       top_k: topK ? Number(topK) : null,
       generate,
+      routing,
       filters: {
         document_ids: documentIdsRaw.split(",").map((s) => s.trim()).filter(Boolean),
         file_names: fileNamesRaw.split(",").map((s) => s.trim()).filter(Boolean),
@@ -95,6 +100,7 @@ export function Query() {
       strategy: strategy || "",
       top_k: topK ? Number(topK) : null,
       generate,
+      routing,
       timestamp: Date.now(),
     });
   };
@@ -105,6 +111,7 @@ export function Query() {
     setStrategy(entry.strategy as "" | ChunkingStrategy);
     setTopK(entry.top_k != null ? String(entry.top_k) : "");
     setGenerate(entry.generate);
+    setRouting(entry.routing ?? false);
   };
 
   return (
@@ -127,7 +134,9 @@ export function Query() {
             </FieldRow>
             <FieldRow label={t("common.corpus")} hint={t("query.corpus_hint")}>
               <select value={corpus} onChange={(e) => setCorpus(e.target.value)}>
-                <option value="">{t("common.selected_placeholder")}</option>
+                <option value="">
+                  {routing ? t("query.corpus_auto") : t("common.selected_placeholder")}
+                </option>
                 {(corpora.data ?? []).map((c) => (
                   <option key={c.id} value={c.name}>
                     {c.name}
@@ -171,6 +180,16 @@ export function Query() {
                 placeholder={config ? String(config.default_top_k) : ""}
               />
             </FieldRow>
+            <FieldRow label={t("query.routing_label")} hint={t("query.routing_hint")}>
+              <label className="inline" style={{ gap: 4 }}>
+                <input
+                  type="checkbox"
+                  checked={routing}
+                  onChange={(e) => setRouting(e.target.checked)}
+                />
+                {t("query.routing_checkbox")}
+              </label>
+            </FieldRow>
             <FieldRow label={t("query.generate_label")}>
               <label className="inline" style={{ gap: 4 }}>
                 <input
@@ -207,7 +226,7 @@ export function Query() {
             </FieldRow>
             <button
               onClick={submit}
-              disabled={action.loading || !question.trim() || (!corpus && !indexRunId)}
+              disabled={action.loading || !question.trim() || (!corpus && !indexRunId && !routing)}
             >
               {action.loading ? t("query.searching") : t("query.execute")}
             </button>
@@ -263,6 +282,12 @@ export function Query() {
           <ErrorBanner error={action.error} />
           {action.data ? (
             <>
+              {action.data.routing ? (
+                <div className="card">
+                  <h3>{t("query.routing_header")}</h3>
+                  <RoutingPanel routing={action.data.routing} detailed />
+                </div>
+              ) : null}
               <div className="card">
                 <h3>{t("query.answer_header")}</h3>
                 <div className="muted" style={{ marginBottom: 8 }}>

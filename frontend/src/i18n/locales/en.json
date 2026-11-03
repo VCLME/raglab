@@ -108,7 +108,11 @@
     "llm_title": "Model used for the final generation",
     "no_answer_generated": "(No generated answer)",
     "meta_first_token": "1st token {{ms}} ms",
-    "meta_first_token_title": "Time from the start of generation to the first answer fragment received"
+    "meta_first_token_title": "Time from the start of generation to the first answer fragment received",
+    "routing_label": "Routing",
+    "routing_title": "Detect language and intent, pick the corpus and abstain when the documents do not answer",
+    "corpus_auto": "Automatic (router)",
+    "routing_on": "on"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -178,7 +182,12 @@
     "no_generation": "No generation requested.",
     "chunks_header": "Retrieved chunks ({{count}})",
     "raw_payload": "Raw payload",
-    "loading": "querying the RAG…"
+    "loading": "querying the RAG…",
+    "routing_label": "Routing",
+    "routing_checkbox": "Route the question (language, intent, corpus, abstention)",
+    "routing_hint": "With no corpus or index selected, the router picks the corpus.",
+    "corpus_auto": "Automatic (router)",
+    "routing_header": "Routing"
   },
   "playground": {
     "title": "Prompt Playground",
@@ -481,5 +490,41 @@
     "download": "Download",
     "downloading": "Downloading…",
     "pull_status": "status: {{status}}"
+  },
+  "routing": {
+    "title": "Routing",
+    "language": "Language",
+    "intent": "Intent",
+    "corpus": "Corpus",
+    "abstention": "Abstention",
+    "timings": "Timings",
+    "margin": "margin",
+    "answered": "Answered from the documents",
+    "declined": "No document answer ({{reason}})",
+    "suggested": "(the router would pick {{corpus}})",
+    "no_candidate": "no compatible index",
+    "intent_rule": "documentary unless another intent beats it by more than {{margin}}",
+    "nearest_example": "nearest example: “{{text}}”",
+    "abstention_rule": "best {{source}} score {{score}} (threshold {{threshold}})",
+    "intents": {
+      "documentary": "documentary",
+      "conversational": "conversational",
+      "out_of_scope": "out of scope"
+    },
+    "reasons": {
+      "intent": "intent",
+      "low_score": "score too low",
+      "no_passage": "no passage",
+      "none": "—"
+    },
+    "methods": {
+      "lexical": "function words",
+      "embedding": "nearest example"
+    },
+    "corpus_sources": {
+      "routed": "picked by the router",
+      "requested": "picked by the user",
+      "none": "no corpus"
+    }
   }
 }

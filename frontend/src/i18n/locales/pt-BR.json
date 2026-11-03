@@ -108,7 +108,11 @@
     "llm_title": "Modelo usado para a geração final",
     "no_answer_generated": "(Nenhuma resposta gerada)",
     "meta_first_token": "1º token {{ms}} ms",
-    "meta_first_token_title": "Tempo entre o início da geração e o primeiro fragmento de resposta recebido"
+    "meta_first_token_title": "Tempo entre o início da geração e o primeiro fragmento de resposta recebido",
+    "routing_label": "Roteamento",
+    "routing_title": "Detectar idioma e intenção, escolher o corpus e abster-se quando os documentos não respondem",
+    "corpus_auto": "Automático (roteador)",
+    "routing_on": "ativado"
   },
   "dashboard": {
     "title": "Painel",
@@ -178,7 +182,12 @@
     "no_generation": "Nenhuma geração solicitada.",
     "chunks_header": "Chunks recuperados ({{count}})",
     "raw_payload": "Payload bruto",
-    "loading": "consultando o RAG…"
+    "loading": "consultando o RAG…",
+    "routing_label": "Roteamento",
+    "routing_checkbox": "Rotear a pergunta (idioma, intenção, corpus, abstenção)",
+    "routing_hint": "Sem corpus nem índice escolhido, o roteador escolhe o corpus.",
+    "corpus_auto": "Automático (roteador)",
+    "routing_header": "Roteamento"
   },
   "playground": {
     "title": "Prompt Playground",
@@ -481,5 +490,41 @@
     "download": "Baixar",
     "downloading": "Baixando…",
     "pull_status": "status: {{status}}"
+  },
+  "routing": {
+    "title": "Roteamento",
+    "language": "Idioma",
+    "intent": "Intenção",
+    "corpus": "Corpus",
+    "abstention": "Abstenção",
+    "timings": "Tempos",
+    "margin": "margem",
+    "answered": "Resposta a partir dos documentos",
+    "declined": "Sem resposta documental ({{reason}})",
+    "suggested": "(o roteador escolheria {{corpus}})",
+    "no_candidate": "nenhum índice compatível",
+    "intent_rule": "documental, salvo se outra intenção a superar por mais de {{margin}}",
+    "nearest_example": "exemplo mais próximo: “{{text}}”",
+    "abstention_rule": "melhor score {{source}} {{score}} (limiar {{threshold}})",
+    "intents": {
+      "documentary": "documental",
+      "conversational": "conversa",
+      "out_of_scope": "fora do escopo"
+    },
+    "reasons": {
+      "intent": "intenção",
+      "low_score": "score baixo demais",
+      "no_passage": "nenhum trecho",
+      "none": "—"
+    },
+    "methods": {
+      "lexical": "palavras funcionais",
+      "embedding": "exemplo mais próximo"
+    },
+    "corpus_sources": {
+      "routed": "escolhido pelo roteador",
+      "requested": "escolhido pelo usuário",
+      "none": "nenhum corpus"
+    }
   }
 }

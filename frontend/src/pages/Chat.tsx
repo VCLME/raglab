@@ -6,9 +6,11 @@ import type {
   IndexRunSummary,
   OllamaModelsResponse,
   RetrievedChunk,
+  RoutingDecision,
 } from "../api/types";
 import { ChunkCard } from "../components/ChunkCard";
 import { Citation } from "../components/Citation";
+import { RoutingPanel } from "../components/RoutingPanel";
 import { SendIcon } from "../components/Icon";
 import { SourceList } from "../components/SourcePill";
 import { SuggestionChips } from "../components/SuggestionChips";
@@ -27,6 +29,8 @@ interface ChatTurn {
   first_token_ms?: number | null;
   streaming?: boolean;
   error?: { message: string; detail: string | null };
+  // Router decisions when routing was on for this turn.
+  routing?: RoutingDecision | null;
 }
 
 function newTurnId(): string {
@@ -114,6 +118,7 @@ export function Chat() {
   const [corpus, setCorpus] = useState("");
   const [indexRunId, setIndexRunId] = useState("");
   const [llmModel, setLlmModel] = useState("");
+  const [routing, setRouting] = useState(false);
   const [question, setQuestion] = useState("");
   const [turns, setTurns] = useState<ChatTurn[]>([]);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -122,10 +127,11 @@ export function Chat() {
   const streamRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    if (!corpus && corpora.data && corpora.data.length > 0) {
+    // With routing on, an empty corpus means "let the router choose".
+    if (!routing && !corpus && corpora.data && corpora.data.length > 0) {
       setCorpus(corpora.data[0].name);
     }
-  }, [corpus, corpora.data]);
+  }, [corpus, corpora.data, routing]);
 
   const indexRuns = useApiLoad<IndexRunSummary[]>(
     () =>
@@ -157,7 +163,7 @@ export function Chat() {
 
   const send = async (overrideQuestion?: string) => {
     const q = (overrideQuestion ?? question).trim();
-    if (!q || !corpus) return;
+    if (!q || (!corpus && !routing)) return;
     const id = newTurnId();
     setTurns((prev) => [
       ...prev,
@@ -175,10 +181,11 @@ export function Chat() {
 
     const body: Record<string, unknown> = {
       question: q,
-      corpus,
+      corpus: corpus || null,
       index_run_id: indexRunId || null,
       top_k: 5,
       generate: true,
+      routing,
     };
     if (llmModel) body.llm_model = llmModel;
     const patchTurn = (update: (tn: ChatTurn) => Partial<ChatTurn>) =>
@@ -192,6 +199,7 @@ export function Chat() {
             chunks: partial.retrieved_chunks,
             index_run_id: partial.index_run_id,
             strategy: partial.strategy,
+            routing: partial.routing ?? null,
           })),
         onToken: (text) =>
           patchTurn((tn) => ({ answer: (tn.answer ?? "") + text, streaming: true })),
@@ -203,6 +211,7 @@ export function Chat() {
         strategy: result.strategy,
         elapsed_ms: result.elapsed_ms,
         first_token_ms: result.first_token_ms ?? null,
+        routing: result.routing ?? null,
         streaming: false,
       }));
     } catch (e) {
@@ -243,7 +252,7 @@ export function Chat() {
     config?.generation_model ?? models.data?.default_generation_model ?? "qwen2.5:7b";
 
   const empty = turns.length === 0;
-  const noRuns = !indexRuns.loading && runsForCorpus.length === 0;
+  const noRuns = !!corpus && !indexRuns.loading && runsForCorpus.length === 0;
 
   return (
     <div className="chat-page">
@@ -253,6 +262,8 @@ export function Chat() {
           <select value={corpus} onChange={(e) => setCorpus(e.target.value)}>
             {(corpora.data ?? []).length === 0 ? (
               <option value="">{t("chat.no_corpus_indexed")}</option>
+            ) : routing ? (
+              <option value="">{t("chat.corpus_auto")}</option>
             ) : null}
             {(corpora.data ?? []).map((c) => (
               <option key={c.id} value={c.name}>
@@ -286,6 +297,18 @@ export function Chat() {
               </option>
             ))}
           </select>
+        </div>
+
+        <div className="compact-field" title={t("chat.routing_title")}>
+          <label>{t("chat.routing_label")}</label>
+          <label className="inline" style={{ gap: 4 }}>
+            <input
+              type="checkbox"
+              checked={routing}
+              onChange={(e) => setRouting(e.target.checked)}
+            />
+            {t("chat.routing_on")}
+          </label>
         </div>
 
         <div className="settings-actions">
@@ -334,7 +357,7 @@ export function Chat() {
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
           onKeyDown={onKeyDown}
-          placeholder={corpus ? t("chat.placeholder") : t("chat.placeholder_empty")}
+          placeholder={corpus || routing ? t("chat.placeholder") : t("chat.placeholder_empty")}
           rows={2}
         />
         <div className="composer-row">
@@ -365,7 +388,7 @@ export function Chat() {
           </div>
           <button
             onClick={() => send()}
-            disabled={action.loading || !question.trim() || !corpus || noRuns}
+            disabled={action.loading || !question.trim() || (!corpus && !routing) || noRuns}
           >
             <SendIcon size={14} /> {t("common.submit")}
           </button>
@@ -392,9 +415,12 @@ function ChatTurnView({
 }: TurnProps) {
   const { t } = useTranslation();
   const [showDetail, setShowDetail] = useState(false);
+  // When the router declines, the retrieved passages are not sources.
+  const declined = turn.routing ? !turn.routing.answer_from_documents : false;
+  const sourceChunks = declined ? [] : turn.chunks;
   const visibleChunks = highlight
-    ? turn.chunks.filter((c) => c.file_name === highlight)
-    : turn.chunks;
+    ? sourceChunks.filter((c) => c.file_name === highlight)
+    : sourceChunks;
 
   return (
     <>
@@ -441,15 +467,15 @@ function ChatTurnView({
             {renderAnswer(turn.answer, turn.chunks, highlight, onSelectSource)}
             {turn.streaming ? <span className="stream-caret" aria-hidden="true" /> : null}
           </div>
-          {turn.chunks.length > 0 ? (
+          {sourceChunks.length > 0 ? (
             <div className="sources">
               <div className="sources-label">
                 {t("chat.sources_header", {
-                  count: new Set(turn.chunks.map((c) => c.file_name)).size,
+                  count: new Set(sourceChunks.map((c) => c.file_name)).size,
                 })}
               </div>
               <SourceList
-                chunks={turn.chunks}
+                chunks={sourceChunks}
                 onSelect={onSelectSource}
                 activeFile={highlight}
                 citedRanks={turn.answer ? extractCitedRanks(turn.answer) : undefined}
@@ -474,6 +500,7 @@ function ChatTurnView({
               ) : null}
             </div>
           ) : null}
+          {turn.routing ? <RoutingPanel routing={turn.routing} /> : null}
           <div className="answer-meta">
             {turn.strategy ? (
               <span>

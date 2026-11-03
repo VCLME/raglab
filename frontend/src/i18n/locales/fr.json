@@ -108,7 +108,11 @@
     "llm_title": "Modèle utilisé pour la génération finale",
     "no_answer_generated": "(Pas de réponse générée)",
     "meta_first_token": "1er token {{ms}} ms",
-    "meta_first_token_title": "Temps entre le début de la génération et le premier fragment de réponse reçu"
+    "meta_first_token_title": "Temps entre le début de la génération et le premier fragment de réponse reçu",
+    "routing_label": "Routage",
+    "routing_title": "Détecter la langue et l'intention, choisir le corpus et s'abstenir quand les documents ne répondent pas",
+    "corpus_auto": "Automatique (routeur)",
+    "routing_on": "activé"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -178,7 +182,12 @@
     "no_generation": "Aucune génération demandée.",
     "chunks_header": "Chunks récupérés ({{count}})",
     "raw_payload": "Payload brut",
-    "loading": "interrogation du RAG…"
+    "loading": "interrogation du RAG…",
+    "routing_label": "Routage",
+    "routing_checkbox": "Router la question (langue, intention, corpus, abstention)",
+    "routing_hint": "Sans corpus ni index choisi, le routeur choisit le corpus.",
+    "corpus_auto": "Automatique (routeur)",
+    "routing_header": "Routage"
   },
   "playground": {
     "title": "Prompt Playground",
@@ -481,5 +490,41 @@
     "download": "Télécharger",
     "downloading": "Téléchargement…",
     "pull_status": "statut : {{status}}"
+  },
+  "routing": {
+    "title": "Routage",
+    "language": "Langue",
+    "intent": "Intention",
+    "corpus": "Corpus",
+    "abstention": "Abstention",
+    "timings": "Temps",
+    "margin": "marge",
+    "answered": "Réponse depuis les documents",
+    "declined": "Pas de réponse documentaire ({{reason}})",
+    "suggested": "(le routeur aurait choisi {{corpus}})",
+    "no_candidate": "aucun index compatible",
+    "intent_rule": "documentaire sauf si une autre intention le dépasse de plus de {{margin}}",
+    "nearest_example": "exemple le plus proche : « {{text}} »",
+    "abstention_rule": "meilleur score {{source}} {{score}} (seuil {{threshold}})",
+    "intents": {
+      "documentary": "documentaire",
+      "conversational": "conversation",
+      "out_of_scope": "hors périmètre"
+    },
+    "reasons": {
+      "intent": "intention",
+      "low_score": "score trop faible",
+      "no_passage": "aucun passage",
+      "none": "—"
+    },
+    "methods": {
+      "lexical": "mots-outils",
+      "embedding": "exemple le plus proche"
+    },
+    "corpus_sources": {
+      "routed": "choisi par le routeur",
+      "requested": "choisi par l'utilisateur",
+      "none": "aucun corpus"
+    }
   }
 }
