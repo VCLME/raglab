@@ -139,11 +139,12 @@ Objectif : passer du laboratoire à un pipeline RAG prêt pour la production, ch
 
 **9.1 — Baseline reproductible 🚧**
 
-- **9.1a — Protocole (en cours)** : voir [benchmarks/protocole.md](benchmarks/protocole.md)
-  - PIAF : corpus complet et questions tirées avec une graine (`raglab bench download piaf --limit 500 --seed 42`), au lieu d'un corpus réduit aux paragraphes des questions
-  - pertinence au niveau du passage (`expected_spans`), indépendante de la stratégie de chunking
-  - LexML texte intégral : lois fédérales collectées via l'API du Sénat et planalto.gov.br (`raglab lexml fulltext`)
-  - questions LexML typées (`paraphrase`, `reference`, `entity`) générées par le LLM local, réponse citée et retrouvée dans le texte (`raglab lexml questions`) ; métriques par type
-- **9.1b — Mesure (à venir)** : timing par étape, cache de l'embedder, `raglab bench all`, `docs/benchmarks/baseline.md`, juge answer_relevancy, CI GitHub Actions
+- **9.1a — Protocole ✅** : voir [benchmarks/protocole.md](benchmarks/protocole.md) et les jeux figés dans [`benchmarks/`](../benchmarks/)
+  - PIAF : corpus complet (761 paragraphes) et 500 questions tirées avec une graine, au lieu d'un corpus réduit aux paragraphes des questions
+  - pertinence au niveau du passage (`expected_spans`), indépendante de la stratégie de chunking ; métriques par type de question
+  - LexML texte intégral : 252 lois fédérales (API du Sénat + planalto.gov.br, `raglab lexml fulltext`), manifeste SHA-256
+  - 277 questions LexML typées (`paraphrase`, `reference`, `entity`) écrites par Qwen3.6-35B-A3B via llama.cpp, réponse citée et retrouvée dans le texte, filtrées puis relues sur échantillon
+  - client compatible OpenAI et `LocalLLMServer` : raglab décharge Ollama, démarre et arrête llama-server tout seul
+- **9.1b — Mesure (à venir)** : timing par étape, cache de l'embedder, `raglab bench all`, `docs/benchmarks/baseline.md`, juge answer_relevancy, juge RAGAS Gemma 4 via llama.cpp (calibré contre qwen2.5), CI GitHub Actions
 
 **À venir** : 9.2 retrieval hybride BM25 + RRF · 9.3 re-ranking cross-encoder · 9.4 compréhension de la requête et abstention · 9.5 durcissement API (SSE, timeouts, clé d'API, /ready, migrations Alembic) · 9.6 observabilité (Prometheus, Grafana, dérive) · 9.7 portes de qualité · 9.8 vitrine
