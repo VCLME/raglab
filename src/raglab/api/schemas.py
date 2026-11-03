@@ -58,6 +58,9 @@ class ConfigResponse(BaseModel):
     rerank_candidates: int = 0
     # Phase-8 entity store pages (Expert flag).
     entity_graph_enabled: bool = False
+    # Graph retrieval branch default and its RRF weight (phase 9.9b).
+    graph_retrieval: bool = False
+    graph_weight: float = 0.5
     citation_resolver: bool = True
     # Enabled generation providers (RAGLAB_LLM_PROVIDERS) and the default one.
     llm_providers: list[str] = Field(default_factory=lambda: ["ollama"])

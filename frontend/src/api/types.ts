@@ -40,6 +40,9 @@ export interface ConfigResponse {
   rerank_candidates?: number;
   /** Phase-8 entity store pages (Expert flag RAGLAB_ENTITY_GRAPH_ENABLED). */
   entity_graph_enabled?: boolean;
+  /** Graph retrieval branch on by default, and its RRF weight. */
+  graph_retrieval?: boolean;
+  graph_weight?: number;
   citation_resolver?: boolean;
   llm_providers?: string[];
   default_llm_provider?: string;

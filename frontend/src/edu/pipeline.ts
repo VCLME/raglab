@@ -10,6 +10,7 @@ export const DIAGRAM_NODES = [
   "embed",
   "retrieval",
   "lexical",
+  "graph",
   "fusion",
   "rerank",
   "prompt",
@@ -129,7 +130,7 @@ function fromTimings(state: PipelineState, result: QueryResponse): PipelineState
   if (timings.dense !== undefined) durations.retrieval = timings.dense;
   else if (timings.retrieval !== undefined && timings.lexical === undefined)
     durations.retrieval = timings.retrieval;
-  (["routing", "lexical", "fusion", "rerank", "generation"] as const).forEach((key) => {
+  (["routing", "lexical", "graph", "fusion", "rerank", "generation"] as const).forEach((key) => {
     if (timings[key] !== undefined) durations[key] = timings[key];
   });
   const planned = Object.keys(durations);

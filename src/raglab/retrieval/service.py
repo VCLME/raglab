@@ -35,6 +35,7 @@ from raglab.retrieval.citations import (
 from raglab.retrieval.fusion import reciprocal_rank_fusion
 from raglab.retrieval.graph_branch import (
     GraphBranchResult,
+    graph_links,
     group_references,
     new_candidates,
     run_graph_branch,
@@ -84,6 +85,11 @@ class RetrievalOutcome:
     graph: bool = False
     graph_notice: str | None = None
     graph_stats: dict[str, int] = field(default_factory=dict)
+    # For the learning mode's `graph` stage: the references followed
+    # (citing -> cited article, the sentence, passages added) and the
+    # branch's own ranked list.
+    graph_links: list[dict[str, Any]] = field(default_factory=list)
+    graph_chunks: list[RetrievedChunk] = field(default_factory=list)
 
     def response(self, **extra: Any) -> QueryResponse:
         return QueryResponse(
@@ -365,6 +371,8 @@ class QueryService:
             # The graph adds the cited passages the retrievers missed; it does
             # not re-score what they found (that cost Recall@1 on LexML).
             graph_list = new_candidates(branch.chunks, dense, lexical, pinned)
+            if branch.stats:
+                branch.stats["added"] = len(graph_list)
             if graph_list:
                 # Three sources: the single-retriever modes keep their own
                 # list at full weight (w = 0 or 1).
@@ -474,6 +482,8 @@ class QueryService:
             graph=use_graph,
             graph_notice=branch.notice,
             graph_stats=dict(branch.stats),
+            graph_links=graph_links(branch, graph_list),
+            graph_chunks=list(branch.chunks),
         )
 
     def query(

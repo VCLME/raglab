@@ -50,9 +50,11 @@
   --score-bm25: oklch(0.62 0.14 60);
   --score-fused: oklch(0.52 0.1 185);
   --score-rerank: oklch(0.52 0.18 330);
-  /* The citation graph (Graph page): laws and their articles take the
-     accent's green, references a violet, amendments amber, revocations red. */
-  --graph-cites: oklch(0.52 0.13 295);
+  /* The citation graph (phase 9.9): one violet for "graph" everywhere, the
+     graph branch of the pipeline and CITES on the Graph page; laws and their
+     articles take the accent's green, amendments amber, revocations red. */
+  --score-graph: oklch(0.52 0.13 295);
+  --graph-cites: var(--score-graph);
   --graph-law: var(--accent);
   --graph-article: oklch(0.7 0.1 158);
   --graph-article-other: oklch(0.62 0.08 200);
@@ -2624,6 +2626,14 @@ button.switch.on .switch-knob {
 .edu-lane.off {
   opacity: 0.4;
 }
+/* The graph branch reads in its own colour once it has run. */
+.edu-lane.graph .edu-node.done:not(.active) {
+  background: color-mix(in oklab, var(--score-graph) 10%, var(--surface));
+  border-color: color-mix(in oklab, var(--score-graph) 45%, var(--surface));
+}
+.edu-lane.graph .edu-node.done:not(.active) .edu-node-meta {
+  color: var(--score-graph);
+}
 /* Decision node (legal citation): a node with a diamond marker. */
 .edu-node.decision::before {
   content: "";
@@ -2738,7 +2748,7 @@ button.switch.on .switch-knob {
 /* Row of decisions under the track: every option, the one taken in accent, and why. */
 .edu-route {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 6px 18px;
   margin-top: 12px;
   padding-top: 10px;
@@ -2938,6 +2948,9 @@ button.icon-only {
 .edu-score.rerank_score {
   color: var(--score-rerank);
 }
+.edu-score.graph_score {
+  color: var(--score-graph);
+}
 .edu-excerpt {
   margin: 4px 0 0;
   font-size: 12.5px;
@@ -3112,6 +3125,92 @@ button.icon-only {
   font-weight: 600;
   fill: var(--accent-strong);
 }
+.edu-fig-label.strong.graph {
+  fill: var(--score-graph);
+}
+/* Graph branch: article A (found) cites article B, B's passages join the fusion. */
+.edu-cites {
+  max-height: 190px;
+}
+.edu-cites-card {
+  fill: var(--surface);
+  stroke-width: 1.5;
+}
+.edu-cites-card.found {
+  fill: var(--accent-soft);
+  stroke: var(--accent-border);
+}
+.edu-cites-card.cited {
+  fill: color-mix(in oklab, var(--score-graph) 8%, var(--surface));
+  stroke: color-mix(in oklab, var(--score-graph) 55%, var(--surface));
+}
+.edu-cites-edge {
+  fill: none;
+  stroke: var(--score-graph);
+  stroke-width: 2;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+}
+.edu-cites-head {
+  fill: var(--score-graph);
+}
+.edu-cites-type {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  fill: var(--score-graph);
+}
+.edu-cites-part {
+  stroke: var(--border-strong);
+  stroke-dasharray: 3 3;
+}
+.edu-cites-chunk {
+  fill: var(--surface);
+  stroke: color-mix(in oklab, var(--score-graph) 45%, var(--surface));
+}
+.edu-cites-chunk.added {
+  fill: color-mix(in oklab, var(--score-graph) 70%, var(--surface));
+  stroke: var(--score-graph);
+}
+.edu-cites-chunk.seed {
+  fill: var(--accent-tint);
+  stroke: var(--accent-border);
+}
+.edu-cites-snippet {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--muted);
+  font-style: italic;
+}
+.edu-cites-list {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+}
+.edu-cites-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+}
+.edu-cites-arrow,
+.edu-cites-to {
+  color: var(--score-graph);
+}
+.edu-cites-badge {
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 0 6px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in oklab, var(--score-graph) 12%, var(--surface));
+  color: var(--score-graph);
+}
 .edu-fig-head {
   font-size: 10.5px;
   font-weight: 600;
@@ -3201,6 +3300,15 @@ button.icon-only {
   font-family: var(--mono);
   font-size: 11.5px;
 }
+.edu-rrf td.edu-graph {
+  color: var(--score-graph);
+}
+.edu-grouped {
+  font-family: var(--ui);
+  font-weight: 500;
+  font-size: 11px;
+  color: var(--score-graph);
+}
 .edu-rrf td.edu-file {
   font-family: var(--ui);
   white-space: nowrap;
@@ -3267,14 +3375,18 @@ button.icon-only {
   .edu-lesson-grid {
     grid-template-columns: minmax(0, 1fr);
   }
-  .edu-route,
-  .edu-route.two {
-    grid-template-columns: minmax(0, 1fr);
+  /* Four decisions on two rows; two decisions stay side by side. */
+  .edu-route {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 @media (max-width: 700px) {
   .edu-strip {
     position: static;
+  }
+  .edu-route,
+  .edu-route.two {
+    grid-template-columns: minmax(0, 1fr);
   }
   .edu-track {
     justify-content: flex-start;

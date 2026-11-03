@@ -89,11 +89,31 @@ norm = k1 * (1.0 - b + b * doc_length / avgdl)
 # @@sum@@
 score = func.sum(query_terms.c.idf * tf * (k1 + 1.0) / (tf + norm))`,
   },
+  graph: {
+    source: "src/raglab/graph/structured.py",
+    language: "cypher",
+    code: `// @@seeds@@
+UNWIND $chunks AS s
+MATCH (c:Chunk {uid: s.id})-[:PART_OF]->(a:Article)
+WITH a, min(s.rank) AS rank
+ORDER BY rank LIMIT $max_seeds
+// @@hop@@
+MATCH (a)-[r:CITES]->(b:Article) WHERE b <> a
+WITH a, rank, b, r ORDER BY rank, r.mentions DESC
+// @@cap@@
+WITH a, rank, collect(b)[..$per_seed] AS cited
+UNWIND cited AS b
+// @@chunks@@
+MATCH (ch:Chunk)-[:PART_OF]->(b)
+RETURN a.number, b.number, collect(ch.id)[..2] AS chunk_ids
+// @@fusion@@`,
+  },
   fusion: {
     source: "src/raglab/retrieval/fusion.py",
     language: "python",
     code: `# @@what@@
 #   fused(d) = (1 - w) / (k + rank_dense(d)) + w / (k + rank_lexical(d))
+#              + g / (k + rank_graph(d))
 def fused_score(chunk: RetrievedChunk) -> float:
     score = 0.0
     # @@dense@@
@@ -102,6 +122,9 @@ def fused_score(chunk: RetrievedChunk) -> float:
     # @@lexical@@
     if chunk.lexical_rank is not None:
         score += lexical_weight / (k + chunk.lexical_rank)
+    # @@graph@@
+    if chunk.graph_rank is not None:
+        score += graph_weight / (k + chunk.graph_rank)
     # @@absent@@
     return score`,
   },

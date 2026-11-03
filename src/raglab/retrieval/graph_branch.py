@@ -55,6 +55,8 @@ class GraphHit:
     # right after them (`group_references`).
     citing_chunk_ids: list[str] = field(default_factory=list)
     snippet: str | None = None
+    # The cited article, for the learning mode ("Art. 12 — Lei nº 8.078/1990").
+    target: str = ""
 
 
 @dataclass(slots=True)
@@ -148,6 +150,8 @@ def run_graph_branch(
                     reason=reason,
                     citing_chunk_ids=list(row["via"] or []),
                     snippet=row.get("snippet"),
+                    target=f"{article_label(row['target_number'])} — "
+                    f"{law_label(row['target_law_key'], row['target_law_year'])}",
                 ),
             )
     chunks = _load_chunks(session, index_run, list(hits), filters)
@@ -213,6 +217,23 @@ def _load_chunks(
         )
         for row in session.execute(stmt).all()
     }
+
+
+def graph_links(result: GraphBranchResult, added: list[RetrievedChunk]) -> list[dict[str, Any]]:
+    """The references the branch followed, one per cited article, in rank
+    order: citing and cited article, the sentence carrying the reference,
+    passages fetched and passages new to the fusion (learning mode)."""
+    new = {chunk.chunk_id for chunk in added}
+    links: dict[str, dict[str, Any]] = {}
+    for chunk in result.chunks:
+        hit = result.hits[chunk.chunk_id]
+        link = links.setdefault(
+            hit.article_uid,
+            {"from": hit.via, "to": hit.target, "snippet": hit.snippet, "chunks": 0, "added": 0},
+        )
+        link["chunks"] += 1
+        link["added"] += int(chunk.chunk_id in new)
+    return list(links.values())
 
 
 def group_references(
