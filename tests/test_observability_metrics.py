@@ -30,7 +30,7 @@ def test_observe_query_records_every_stage_including_future_ones():
 
 
 def test_observe_query_records_top1_score_and_throughput():
-    top1_before = sample("raglab_retrieval_top1_score_sum", strategy="late")
+    top1_before = sample("raglab_retrieval_top1_score_sum", strategy="late", score_type="rrf")
     tps_before = sample("raglab_generation_tokens_per_second_count")
     observe_query(
         timings_ms={"generation": 900.0},
@@ -38,8 +38,11 @@ def test_observe_query_records_top1_score_and_throughput():
         strategy="late",
         generated=True,
         generation_stats={"tokens_per_second": 41.5},
+        score_type="rrf",
     )
-    assert sample("raglab_retrieval_top1_score_sum", strategy="late") == pytest.approx(top1_before + 0.62)
+    assert sample("raglab_retrieval_top1_score_sum", strategy="late", score_type="rrf") == pytest.approx(
+        top1_before + 0.62
+    )
     assert sample("raglab_generation_tokens_per_second_count") == tps_before + 1
 
 

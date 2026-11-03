@@ -61,8 +61,8 @@ QUERIES = Counter(
 )
 TOP1_SCORE = Histogram(
     "raglab_retrieval_top1_score",
-    "Score of the first retrieved chunk (cosine similarity for dense retrieval).",
-    ["strategy"],
+    "Score of the first retrieved chunk, by strategy and score type (cosine, bm25, rrf, rerank).",
+    ["strategy", "score_type"],
     buckets=_SCORE_BUCKETS,
 )
 GENERATION_TOKENS_PER_SECOND = Histogram(
@@ -96,16 +96,21 @@ def observe_query(
     generation_stats: Mapping[str, float] | None = None,
     rerank_stats: Mapping[str, float] | None = None,
     rerank_notice: str | None = None,
+    score_type: str = "cosine",
 ) -> None:
     """Record one completed query: stage timings, top-1 score, throughput,
-    re-ranker cache lookups and the no-GPU notice."""
+    re-ranker cache lookups and the no-GPU notice.
+
+    `score_type` says which scorer produced the final ranking (`cosine` for
+    dense, `bm25`, `rrf` for hybrid, `rerank`): their scales differ, so the
+    top-1 histogram keeps them apart."""
     for stage, value in timings_ms.items():
         if _STAGE_NAME.match(stage):
             STAGE_DURATION.labels(stage=stage).observe(value / 1000.0)
     QUERIES.labels(strategy=strategy, generated="true" if generated else "false").inc()
     top1 = next(iter(scores), None)
     if isinstance(top1, int | float):
-        TOP1_SCORE.labels(strategy=strategy).observe(top1)
+        TOP1_SCORE.labels(strategy=strategy, score_type=score_type).observe(top1)
     tokens_per_second = generation_stats.get("tokens_per_second") if isinstance(generation_stats, Mapping) else None
     if isinstance(tokens_per_second, int | float) and tokens_per_second > 0:
         GENERATION_TOKENS_PER_SECOND.observe(tokens_per_second)

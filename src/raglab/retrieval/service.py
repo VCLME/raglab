@@ -31,6 +31,9 @@ from raglab.stores.vector.postgres import PostgresVectorStore
 
 LOGGER = logging.getLogger(__name__)
 
+# Scorer behind `RetrievedChunk.score` when re-ranking is off.
+_SCORE_TYPES = {RetrievalMode.DENSE: "cosine", RetrievalMode.LEXICAL: "bm25", RetrievalMode.HYBRID: "rrf"}
+
 # SQLSTATE raised by Postgres when statement_timeout cancels a query.
 _QUERY_CANCELED = "57014"
 
@@ -502,6 +505,7 @@ class QueryService:
             generation_stats=self.generator.last_stats if generate_answer else None,
             rerank_stats=outcome.rerank_stats,
             rerank_notice=outcome.rerank_notice,
+            score_type="rerank" if outcome.rerank else _SCORE_TYPES[outcome.retrieval_mode],
         )
 
     @contextmanager

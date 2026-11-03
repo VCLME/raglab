@@ -244,7 +244,9 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "percentunit"
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1
         },
         "overrides": []
       },
@@ -287,7 +289,7 @@
     {
       "id": 9,
       "type": "heatmap",
-      "title": "Distribution du score top-1",
+      "title": "Distribution du score top-1 (dense, cosinus)",
       "description": "Une baisse durable signale une dérive du corpus ou de l'index (voir raglab experiment drift).",
       "datasource": {
         "type": "prometheus",
@@ -306,7 +308,7 @@
             "uid": "prometheus"
           },
           "refId": "A",
-          "expr": "sum by (le) (increase(raglab_retrieval_top1_score_bucket[$__rate_interval]))",
+          "expr": "sum by (le) (increase(raglab_retrieval_top1_score_bucket{score_type=\"cosine\"}[$__rate_interval]))",
           "legendFormat": "{{le}}",
           "format": "heatmap"
         }
@@ -330,7 +332,7 @@
     {
       "id": 10,
       "type": "timeseries",
-      "title": "Score top-1 médian par stratégie",
+      "title": "Score top-1 médian par stratégie et type de score",
       "description": "",
       "datasource": {
         "type": "prometheus",
@@ -349,8 +351,8 @@
             "uid": "prometheus"
           },
           "refId": "A",
-          "expr": "histogram_quantile(0.5, sum by (le, strategy) (rate(raglab_retrieval_top1_score_bucket[$__rate_interval])))",
-          "legendFormat": "{{strategy}}"
+          "expr": "histogram_quantile(0.5, sum by (le, strategy, score_type) (rate(raglab_retrieval_top1_score_bucket[$__rate_interval])))",
+          "legendFormat": "{{strategy}} · {{score_type}}"
         }
       ],
       "fieldConfig": {

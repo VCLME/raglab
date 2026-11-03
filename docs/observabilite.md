@@ -22,7 +22,7 @@ et le middleware de comptage.
 | `raglab_http_request_duration_seconds` | histogramme | `route`, `method` | durée jusqu'au dernier octet, flux SSE compris |
 | `raglab_stage_duration_seconds` | histogramme | `stage` | une observation par clé de `timings_ms` : `embed`, `retrieval` (recherche complète, citation comprise), `citation`, puis en mode lexical ou hybride `dense`, `lexical`, `fusion`, enfin `rerank` et `generation` |
 | `raglab_queries_total` | compteur | `strategy`, `generated` | requêtes terminées (dénominateur du taux d'abstention) |
-| `raglab_retrieval_top1_score` | histogramme | `strategy` | score du premier chunk (seaux de 0,05 entre 0 et 1) |
+| `raglab_retrieval_top1_score` | histogramme | `strategy`, `score_type` (`cosine`, `bm25`, `rrf`, `rerank`) | score du premier chunk (seaux de 0,05 entre 0 et 1) ; les échelles diffèrent selon le classement final : cosinus en mode dense, RRF (~0,01 à 0,03) en hybride, score du cross-encoder avec re-ranking, BM25 non borné (souvent dans `+Inf`) en lexical |
 | `raglab_generation_tokens_per_second` | histogramme | — | débit rapporté par Ollama (`eval_count / eval_duration`) |
 | `raglab_cache_lookups_total` | compteur | `cache` (`embedder`, `reranker`), `result` (`hit`, `miss`) | consultations de cache |
 | `raglab_rerank_notices_total` | compteur | `notice` (`skipped_no_gpu`, `cpu`) | requêtes dont le re-ranking n'a pas trouvé de GPU : sauté (re-ranking par défaut) ou exécuté sur CPU (demande explicite), comme `rerank_notice` dans la réponse |
@@ -90,8 +90,16 @@ docker compose --profile obs up -d
 
 Panneaux : requêtes/s par route, taux de 5xx, taux d'abstention, latence p50 et
 p95 par étape, débit de génération, taux de hit des caches, latence HTTP p95
-par route, carte de chaleur du score top-1, score top-1 médian par stratégie et
+par route, carte de chaleur du score top-1 cosinus (mode dense), score top-1 médian par stratégie et type de score, et
 re-ranking sans GPU (sauté ou sur CPU).
+
+![Tableau de bord Grafana raglab sur trafic réel](images/grafana-overview.png)
+
+*Capture prise sur une API lancée sur l'hôte, avec quelques centaines de
+requêtes de recherche sans génération ni re-ranking (`bench_piaf_fr` et
+`bench_lexml_pt`, modes dense, lexical et hybride, résolveur de citations
+actif). La latence `embed` élevée au début de la fenêtre est le chargement du
+modèle d'embedding à la première requête.*
 
 Vérifié en local (sans GPU) : `promtool check config` valide, cible
 `host.docker.internal:8000` *up*, tableau de bord provisionné et lisible sans
