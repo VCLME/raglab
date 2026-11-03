@@ -65,7 +65,7 @@ Une date passée ne peut pas être respectée sur ces textes (il n'y a pas d'anc
 
 ### 4. Ce que voit le modèle
 
-Chaque passage du prompt porte une ligne de statut, et la consigne système demande de s'appuyer sur la version en vigueur et de dater toute version ancienne citée :
+Sous `in_force` ou `as_of`, chaque passage du contexte porte une ligne de statut ; les consignes du prompt (citer d'abord, puis répondre, mesurées en [prompt.md](benchmarks/prompt.md)) ne changent pas :
 
 ```text
 [Source rank=1]
@@ -77,7 +77,7 @@ Extrait: …
 Statut : ancienne version de l'article L121-21 (du 8 août 2015 au 1er juillet 2016), remplacée par Ordonnance n° 2016-301 du 14 mars 2016 — plus en vigueur.
 ```
 
-La consigne n'est ajoutée que si un passage porte un statut : le prompt des autres corpus ne change pas. Sous `all` (la référence naïve), l'état est affiché dans l'interface mais pas donné au modèle.
+Sous `all` (le défaut livré, la référence naïve), l'état est affiché dans l'interface mais pas donné au modèle : le prompt est identique, octet pour octet, à celui d'un corpus sans versions.
 
 ### 5. Ce que montre la réponse
 
