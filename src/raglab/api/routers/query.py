@@ -14,6 +14,7 @@ from raglab.api.errors import describe_error
 from raglab.api.schemas import QueryRequest
 from raglab.config import Settings
 from raglab.domain.schemas import QueryResponse, RetrievalFilters
+from raglab.llm.providers import resolve_llm_provider
 from raglab.logging_utils import log_event
 from raglab.retrieval.filters import build_retrieval_filters
 from raglab.retrieval.service import QueryService
@@ -54,6 +55,7 @@ def run_query(
         generate_answer=body.generate,
         filters=_filters(body),
         llm_model=body.llm_model,
+        llm_provider=body.llm_provider,
         retrieval_mode=body.retrieval_mode,
         lexical_weight=body.lexical_weight,
         rrf_k=body.rrf_k,
@@ -94,6 +96,8 @@ def stream_query(
     since the 200 status is already sent by then.
     """
     service = QueryService(session, settings)
+    # Checked before the stream opens: an unknown provider is a plain 400.
+    llm_provider = resolve_llm_provider(settings, body.llm_provider) if body.generate else None
     outcome = service.retrieve(
         question=body.question,
         corpus_name=body.corpus,
@@ -117,7 +121,7 @@ def stream_query(
             yield sse_event("done", {**retrieval, "first_token_ms": None})
             return
         try:
-            for event, data in service.stream_answer(outcome, llm_model=body.llm_model):
+            for event, data in service.stream_answer(outcome, llm_model=body.llm_model, llm_provider=llm_provider):
                 yield sse_event(event, data)
         except Exception as exc:
             info = describe_error(exc, settings)

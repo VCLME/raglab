@@ -252,6 +252,7 @@ def test_stream_emits_pipeline_then_stage_events_around_each_stage(client, strea
     assert generation["counts"]["fragments"] == 2
     assert generation["counts"]["first_token_ms"] is not None
     assert generation["data"]["model"]
+    assert generation["data"]["provider"] == "ollama"
 
 
 def test_stream_without_generation_has_no_generation_stages(client, stream_service):

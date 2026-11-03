@@ -19,7 +19,8 @@ from raglab.domain.errors import StageTimeoutError, run_with_timeout
 from raglab.domain.schemas import QueryResponse, RetrievalFilters, RetrievedChunk
 from raglab.embeddings.factory import build_embedding_provider
 from raglab.generation.prompts import build_prompt_bundle
-from raglab.generation.service import OllamaGenerator
+from raglab.generation.service import AnswerGenerator, OllamaGenerator, OpenAICompatGenerator
+from raglab.llm.providers import resolve_llm_provider
 from raglab.logging_utils import log_event
 from raglab.observability.metrics import observe_query
 from raglab.retrieval.citations import article_chunks, find_law_document, merge_with_citation, parse_citation
@@ -92,8 +93,30 @@ class QueryService:
             iterative_scan=self.settings.hnsw_iterative_scan,
         )
         self.lexical_store = PostgresLexicalStore(k1=self.settings.bm25_k1, b=self.settings.bm25_b)
-        self.generator = OllamaGenerator(self.settings)
+        # One generator per provider, built on first use.
+        self._generators: dict[str, AnswerGenerator] = {}
         self._reranker: Reranker | None = None
+
+    @property
+    def generator(self) -> AnswerGenerator:
+        """Generator of the default provider (RAGLAB_DEFAULT_LLM_PROVIDER)."""
+        return self.generator_for(None)
+
+    @generator.setter
+    def generator(self, value: AnswerGenerator) -> None:
+        self._generators[self.settings.default_llm_provider] = value
+
+    def generator_for(self, llm_provider: str | None) -> AnswerGenerator:
+        """Generator for `llm_provider` (None = default); raises
+        UnknownLLMProviderError (HTTP 400) for a disabled or unknown name."""
+        name = resolve_llm_provider(self.settings, llm_provider)
+        if name not in self._generators:
+            self._generators[name] = (
+                OllamaGenerator(self.settings)
+                if name == "ollama"
+                else OpenAICompatGenerator(self.settings, provider=name)
+            )
+        return self._generators[name]
 
     @property
     def reranker(self) -> Reranker:
@@ -357,10 +380,15 @@ class QueryService:
         rrf_k: int | None = None,
         rerank: bool | None = None,
         citations: bool | None = None,
+        llm_provider: str | None = None,
     ) -> QueryResponse:
         """`generation_top_k` sends only the first N retrieved chunks to the
         LLM; the benchmark retrieves 10 (for Recall@10) but must generate from
-        the same top-k as production."""
+        the same top-k as production. `llm_provider` picks the generation
+        provider (None = RAGLAB_DEFAULT_LLM_PROVIDER)."""
+        # Resolved before retrieval: an unknown provider fails fast with a 400.
+        provider = resolve_llm_provider(self.settings, llm_provider) if generate_answer else None
+        generator = self.generator_for(provider) if provider else None
         outcome = self.retrieve(
             question=question,
             corpus_name=corpus_name,
@@ -375,28 +403,34 @@ class QueryService:
             citations=citations,
         )
         answer = None
-        if generate_answer:
+        stats: dict[str, float] = {}
+        if generator is not None:
             generation_started = perf_counter()
             context = outcome.retrieved[:generation_top_k] if generation_top_k else outcome.retrieved
-            answer = self.generator.generate_answer(question, context, model=llm_model)
+            answer = generator.generate_answer(question, context, model=llm_model)
             outcome.timings_ms["generation"] = round((perf_counter() - generation_started) * 1000, 3)
+            stats = dict(generator.last_stats)
         elapsed_ms = (perf_counter() - outcome.started) * 1000
-        self._log_completed(outcome, generate_answer=generate_answer, elapsed_ms=elapsed_ms)
-        return outcome.response(
-            answer=answer,
+        self._log_completed(
+            outcome,
+            generate_answer=generate_answer,
             elapsed_ms=elapsed_ms,
-            generation_stats=dict(self.generator.last_stats) if generate_answer else {},
+            generation_stats=stats,
+            llm_provider=provider,
         )
+        return outcome.response(answer=answer, elapsed_ms=elapsed_ms, generation_stats=stats)
 
     def stream_answer(
         self,
         outcome: RetrievalOutcome,
         *,
         llm_model: str | None = None,
+        llm_provider: str | None = None,
     ) -> Iterator[tuple[str, dict[str, Any]]]:
         """Generate the answer for a finished retrieval as (event, data) pairs.
 
-        `llm_model` overrides the configured generation model for this answer.
+        `llm_model` overrides the configured generation model for this answer;
+        `llm_provider` picks the provider (None = RAGLAB_DEFAULT_LLM_PROVIDER).
 
         Yields `stage` events around the prompt and generation stages (see
         `raglab.retrieval.stages`), one `token` event per fragment produced by
@@ -404,6 +438,8 @@ class QueryService:
         `first_token_ms` (time from the start of generation to the first
         fragment).
         """
+        provider = resolve_llm_provider(self.settings, llm_provider)
+        generator = self.generator_for(provider)
         prompt_started = perf_counter()
         yield "stage", stage_start("prompt", self._since_start(outcome, prompt_started))
         bundle = build_prompt_bundle(
@@ -428,14 +464,14 @@ class QueryService:
         yield "stage", stage_start("generation", self._since_start(outcome, generation_started))
         first_token_ms: float | None = None
         parts: list[str] = []
-        for piece in self.generator.stream_answer(outcome.question, outcome.retrieved, model=llm_model):
+        for piece in generator.stream_answer(outcome.question, outcome.retrieved, model=llm_model):
             if first_token_ms is None:
                 first_token_ms = round((perf_counter() - generation_started) * 1000, 3)
             parts.append(piece)
             yield "token", {"text": piece}
         generation_done = perf_counter()
         outcome.timings_ms["generation"] = round((generation_done - generation_started) * 1000, 3)
-        stats = dict(self.generator.last_stats)
+        stats = dict(generator.last_stats)
         yield (
             "stage",
             stage_end(
@@ -443,11 +479,18 @@ class QueryService:
                 self._since_start(outcome, generation_done),
                 outcome.timings_ms["generation"],
                 counts={**stats, "fragments": len(parts), "first_token_ms": first_token_ms},
-                data={"model": llm_model or self.settings.generation_model},
+                data={"provider": provider, "model": _model_label(provider, llm_model, self.settings)},
             ),
         )
         elapsed_ms = (generation_done - outcome.started) * 1000
-        self._log_completed(outcome, generate_answer=True, elapsed_ms=elapsed_ms, streamed=True)
+        self._log_completed(
+            outcome,
+            generate_answer=True,
+            elapsed_ms=elapsed_ms,
+            streamed=True,
+            generation_stats=stats,
+            llm_provider=provider,
+        )
         response = outcome.response(
             answer="".join(parts).strip(),
             elapsed_ms=elapsed_ms,
@@ -475,6 +518,8 @@ class QueryService:
         generate_answer: bool,
         elapsed_ms: float,
         streamed: bool = False,
+        generation_stats: dict[str, float] | None = None,
+        llm_provider: str | None = None,
     ) -> None:
         log_event(
             LOGGER,
@@ -490,6 +535,7 @@ class QueryService:
             rerank=outcome.rerank,
             rerank_stats=outcome.rerank_stats,
             generate_answer=generate_answer,
+            llm_provider=llm_provider,
             streamed=streamed,
             retrieved_chunks=len(outcome.retrieved),
             filters=outcome.filters.model_dump() if outcome.filters else {},
@@ -502,7 +548,7 @@ class QueryService:
             scores=(chunk.score for chunk in outcome.retrieved),
             strategy=str(outcome.index_run.strategy),
             generated=generate_answer,
-            generation_stats=self.generator.last_stats if generate_answer else None,
+            generation_stats=generation_stats if generate_answer else None,
             rerank_stats=outcome.rerank_stats,
             rerank_notice=outcome.rerank_notice,
             score_type="rerank" if outcome.rerank else _SCORE_TYPES[outcome.retrieval_mode],
@@ -534,3 +580,11 @@ class QueryService:
             text("SELECT set_config('statement_timeout', :value, true)"),
             {"value": str(previous)},
         )
+
+
+def _model_label(provider: str, llm_model: str | None, settings: Settings) -> str | None:
+    """Model named in the generation stage: the requested one, else the
+    configured Ollama model; None lets an OpenAI-compatible server pick."""
+    if llm_model:
+        return llm_model
+    return settings.generation_model if provider == "ollama" else None

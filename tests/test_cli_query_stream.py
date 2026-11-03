@@ -54,3 +54,29 @@ def test_query_llm_model_option_is_forwarded():
     assert streamed.exit_code == 0, streamed.output
     assert service.query.call_args.kwargs["llm_model"] == "mistral:7b"
     assert service.stream_answer.call_args.kwargs["llm_model"] == "mistral:7b"
+
+
+def test_query_provider_and_model_alias_are_forwarded():
+    with patch("raglab.cli.session_scope", _fake_session_scope), patch("raglab.cli.QueryService") as cls:
+        service = cls.return_value
+        service.query.return_value.model_dump_json.return_value = '{"answer": "ok"}'
+        service.stream_answer.return_value = iter([("done", {"answer": "ok"})])
+        plain = CliRunner().invoke(app, ["query", "?", "--corpus", "c", "--provider", "llamacpp", "--model", "gguf"])
+        streamed = CliRunner().invoke(
+            app, ["query", "?", "--corpus", "c", "--provider", "vllm", "--model", "qwen", "--stream"]
+        )
+
+    assert plain.exit_code == 0, plain.output
+    assert streamed.exit_code == 0, streamed.output
+    assert service.query.call_args.kwargs["llm_provider"] == "llamacpp"
+    assert service.query.call_args.kwargs["llm_model"] == "gguf"
+    assert service.stream_answer.call_args.kwargs["llm_provider"] == "vllm"
+    assert service.stream_answer.call_args.kwargs["llm_model"] == "qwen"
+
+
+def test_query_without_provider_passes_none():
+    with patch("raglab.cli.session_scope", _fake_session_scope), patch("raglab.cli.QueryService") as cls:
+        cls.return_value.query.return_value.model_dump_json.return_value = '{"answer": "ok"}'
+        result = CliRunner().invoke(app, ["query", "?", "--corpus", "c"])
+    assert result.exit_code == 0, result.output
+    assert cls.return_value.query.call_args.kwargs["llm_provider"] is None
