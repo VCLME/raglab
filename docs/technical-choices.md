@@ -154,9 +154,8 @@ Le projet stocke donc explicitement le contexte expérimental, même pour le MVP
 
 - pas d'OCR PDF image dans cette version
 - pas de reranker cross-encoder dans cette version
-- pas de Neo4j branché immédiatement
 - pas de pipeline asynchrone distribué
-- pas d'authentification sur l'API / l'UI (usage local, comme la CLI)
+- authentification minimale : une clé d'API partagée optionnelle (`RAGLAB_API_KEY`), pas de comptes utilisateurs
 - les opérations longues (ingestion, indexation, `lexml load`, `bench download`) sont synchrones côté API — pas de file de jobs
 
 Ces limites sont volontaires pour conserver un socle simple, testable et extensible.

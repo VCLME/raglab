@@ -81,3 +81,24 @@ export function SendIcon({ size = 16, className }: IconProps) {
     </svg>
   );
 }
+
+export function GraduationIcon({ size = 16, className }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M2 9.5 12 5l10 4.5-10 4.5L2 9.5Z" />
+      <path d="M6 11.3V16c0 1.4 2.7 3 6 3s6-1.6 6-3v-4.7" />
+      <path d="M22 9.5V15" />
+    </svg>
+  );
+}

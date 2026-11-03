@@ -18,10 +18,12 @@ from raglab.domain.enums import ChunkingStrategy, RetrievalMode
 from raglab.domain.errors import StageTimeoutError, run_with_timeout
 from raglab.domain.schemas import QueryResponse, RetrievalFilters, RetrievedChunk
 from raglab.embeddings.factory import build_embedding_provider
+from raglab.generation.prompts import build_prompt_bundle
 from raglab.generation.service import OllamaGenerator
 from raglab.logging_utils import log_event
 from raglab.retrieval.fusion import reciprocal_rank_fusion
 from raglab.retrieval.rerank import Reranker, get_reranker
+from raglab.retrieval.stages import planned_stages, prompt_details, retrieval_stage_events, stage_end, stage_start
 from raglab.stores.lexical.postgres import PostgresLexicalStore
 from raglab.stores.vector.postgres import PostgresVectorStore
 
@@ -43,12 +45,16 @@ class RetrievalOutcome:
     retrieved: list[RetrievedChunk]
     started: float
     timings_ms: dict[str, float] = field(default_factory=dict)
+    # Question vector, kept for the educational mode's `stage` events.
+    query_embedding: list[float] | None = None
     retrieval_mode: RetrievalMode = RetrievalMode.DENSE
     query_lexemes: list[str] = field(default_factory=list)
     lexical_weight: float | None = None
     rrf_k: int | None = None
     rerank: bool = False
     rerank_stats: dict[str, float] = field(default_factory=dict)
+    # First-stage chunks the cross-encoder read (0 without re-ranking).
+    rerank_candidates: int = 0
 
     def response(self, **extra: Any) -> QueryResponse:
         return QueryResponse(
@@ -226,15 +232,16 @@ class QueryService:
             searched = perf_counter()
 
         # `embed` + `retrieval` (+ `rerank` when on) are the stages the recall
-        # benchmark sums into its query latency (embed is 0 in lexical mode). Lexical and
-        # hybrid add dense / lexical / fusion as a breakdown of retrieval;
-        # dense keeps exactly the 9.1 baseline keys. The statement_timeout
-        # round trips stay out of the stage timing so it remains comparable
-        # with the baseline.
-        timings_ms = {
-            "embed": round((embedded - started) * 1000, 3) if query_embedding is not None else 0.0,
-            "retrieval": round((searched - search_started) * 1000, 3),
-        }
+        # benchmark sums into its query latency; lexical mode embeds nothing and has no
+        # `embed` stage. Lexical and hybrid add dense / lexical / fusion as a
+        # breakdown of retrieval (the Chat's `stage` events are derived from
+        # these keys); dense keeps exactly the 9.1 baseline keys. The
+        # statement_timeout round trips stay out of the stage timing so it
+        # remains comparable with the baseline.
+        timings_ms: dict[str, float] = {}
+        if query_embedding is not None:
+            timings_ms["embed"] = round((embedded - started) * 1000, 3)
+        timings_ms["retrieval"] = round((searched - search_started) * 1000, 3)
         if mode != RetrievalMode.DENSE:
             timings_ms.update({stage: round(seconds * 1000, 3) for stage, seconds in stage_ms.items()})
 
@@ -257,6 +264,7 @@ class QueryService:
             index_run=index_run,
             retrieved=retrieved,
             started=started,
+            query_embedding=list(query_embedding) if query_embedding is not None else None,
             timings_ms=timings_ms,
             retrieval_mode=mode,
             query_lexemes=query_lexemes,
@@ -264,6 +272,7 @@ class QueryService:
             rrf_k=fusion_k if hybrid else None,
             rerank=do_rerank,
             rerank_stats=rerank_stats,
+            rerank_candidates=int(rerank_stats.get("candidates", 0)),
         )
 
     def query(
@@ -277,11 +286,15 @@ class QueryService:
         generate_answer: bool = True,
         filters: RetrievalFilters | None = None,
         llm_model: str | None = None,
+        generation_top_k: int | None = None,
         retrieval_mode: RetrievalMode | str | None = None,
         lexical_weight: float | None = None,
         rrf_k: int | None = None,
         rerank: bool | None = None,
     ) -> QueryResponse:
+        """`generation_top_k` sends only the first N retrieved chunks to the
+        LLM; the benchmark retrieves 10 (for Recall@10) but must generate from
+        the same top-k as production."""
         outcome = self.retrieve(
             question=question,
             corpus_name=corpus_name,
@@ -297,7 +310,8 @@ class QueryService:
         answer = None
         if generate_answer:
             generation_started = perf_counter()
-            answer = self.generator.generate_answer(question, outcome.retrieved, model=llm_model)
+            context = outcome.retrieved[:generation_top_k] if generation_top_k else outcome.retrieved
+            answer = self.generator.generate_answer(question, context, model=llm_model)
             outcome.timings_ms["generation"] = round((perf_counter() - generation_started) * 1000, 3)
         elapsed_ms = (perf_counter() - outcome.started) * 1000
         self._log_completed(outcome, generate_answer=generate_answer, elapsed_ms=elapsed_ms)
@@ -317,11 +331,34 @@ class QueryService:
 
         `llm_model` overrides the configured generation model for this answer.
 
-        Yields one `token` event per fragment produced by Ollama, then a `done`
-        event carrying the full `QueryResponse` plus `first_token_ms` (time
-        from the start of generation to the first fragment).
+        Yields `stage` events around the prompt and generation stages (see
+        `raglab.retrieval.stages`), one `token` event per fragment produced by
+        Ollama, then a `done` event carrying the full `QueryResponse` plus
+        `first_token_ms` (time from the start of generation to the first
+        fragment).
         """
+        prompt_started = perf_counter()
+        yield "stage", stage_start("prompt", self._since_start(outcome, prompt_started))
+        bundle = build_prompt_bundle(
+            outcome.question,
+            outcome.retrieved,
+            no_context_answer=self.settings.generation_no_context_answer,
+        )
+        counts, data = prompt_details(bundle, len(outcome.retrieved))
+        prompt_done = perf_counter()
+        yield (
+            "stage",
+            stage_end(
+                "prompt",
+                self._since_start(outcome, prompt_done),
+                (prompt_done - prompt_started) * 1000,
+                counts=counts,
+                data=data,
+            ),
+        )
+
         generation_started = perf_counter()
+        yield "stage", stage_start("generation", self._since_start(outcome, generation_started))
         first_token_ms: float | None = None
         parts: list[str] = []
         for piece in self.generator.stream_answer(outcome.question, outcome.retrieved, model=llm_model):
@@ -329,15 +366,40 @@ class QueryService:
                 first_token_ms = round((perf_counter() - generation_started) * 1000, 3)
             parts.append(piece)
             yield "token", {"text": piece}
-        outcome.timings_ms["generation"] = round((perf_counter() - generation_started) * 1000, 3)
-        elapsed_ms = (perf_counter() - outcome.started) * 1000
+        generation_done = perf_counter()
+        outcome.timings_ms["generation"] = round((generation_done - generation_started) * 1000, 3)
+        stats = dict(self.generator.last_stats)
+        yield (
+            "stage",
+            stage_end(
+                "generation",
+                self._since_start(outcome, generation_done),
+                outcome.timings_ms["generation"],
+                counts={**stats, "fragments": len(parts), "first_token_ms": first_token_ms},
+                data={"model": llm_model or self.settings.generation_model},
+            ),
+        )
+        elapsed_ms = (generation_done - outcome.started) * 1000
         self._log_completed(outcome, generate_answer=True, elapsed_ms=elapsed_ms, streamed=True)
         response = outcome.response(
             answer="".join(parts).strip(),
             elapsed_ms=elapsed_ms,
-            generation_stats=dict(self.generator.last_stats),
+            generation_stats=stats,
         )
         yield "done", {**response.model_dump(mode="json"), "first_token_ms": first_token_ms}
+
+    @staticmethod
+    def pipeline_events(outcome: RetrievalOutcome, *, generate: bool) -> list[tuple[str, dict[str, Any]]]:
+        """`pipeline` (stages this request runs) then the replayed retrieval stages."""
+        events: list[tuple[str, dict[str, Any]]] = [
+            ("pipeline", {"stages": planned_stages(outcome, generate=generate)})
+        ]
+        events.extend(("stage", event) for event in retrieval_stage_events(outcome))
+        return events
+
+    @staticmethod
+    def _since_start(outcome: RetrievalOutcome, now: float) -> float:
+        return (now - outcome.started) * 1000
 
     def _log_completed(
         self,

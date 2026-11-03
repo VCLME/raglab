@@ -14,7 +14,7 @@ La roadmap ci-dessous reflète l'ordre réel de livraison. Les phases 0 à 6 son
 
 - Docker Compose pour PostgreSQL + pgvector + Ollama (+ Adminer)
 - configuration centralisée (Pydantic Settings, préfixe `RAGLAB_`)
-- initialisation de la base (`raglab db init`) + migration automatique au démarrage
+- initialisation de la base (`raglab db init`), qui applique aussi les ajustements de schéma connus
 - CLI Typer opérationnelle
 - ingestion `.txt`, `.pdf`, `.docx` avec sidecars JSON pour les metadata
 
@@ -145,7 +145,7 @@ Objectif : passer du laboratoire à un pipeline RAG prêt pour la production, ch
   - LexML texte intégral : 252 lois fédérales (API du Sénat + planalto.gov.br, `raglab lexml fulltext`), manifeste SHA-256
   - 277 questions LexML typées (`paraphrase`, `reference`, `entity`) écrites par Qwen3.6-35B-A3B via llama.cpp, réponse citée et retrouvée dans le texte, filtrées puis relues sur échantillon
   - client compatible OpenAI et `LocalLLMServer` : raglab décharge Ollama, démarre et arrête llama-server tout seul
-- **9.1b — Mesure (à venir)** : timing par étape, cache de l'embedder, `raglab bench all`, `docs/benchmarks/baseline.md`, juge answer_relevancy, juge RAGAS Gemma 4 via llama.cpp (calibré contre qwen2.5), CI GitHub Actions
+- **9.1b — Mesure 🚧 (code livré, mesures en cours)** : timing par étape, cache de l'embedder, `raglab bench all`, `docs/benchmarks/baseline.md`, juge answer_relevancy, juge RAGAS Gemma 4 via llama.cpp (calibré contre qwen2.5), CI GitHub Actions
   - CI GitHub Actions : ruff (lint + format), mypy (mode par défaut, `src/`), pytest, `tsc` + `vite build`, build des deux images Docker
 
 **9.2 — Retrieval hybride BM25 + RRF 🚧 (code prêt, mesure après la baseline 9.1b)** : voir [retrieval-hybrid.md](retrieval-hybrid.md)
@@ -153,7 +153,7 @@ Objectif : passer du laboratoire à un pipeline RAG prêt pour la production, ch
 - Alembic : révision de base identique au schéma `create_all` d'avant, puis `0002_hybrid_lexical` ; `raglab db init` exécute les migrations et adopte les bases existantes (estampille + mise à niveau)
 - `tsvector` par chunk + index GIN, configuration choisie selon la langue du document ou du corpus (`raglab_french`, `raglab_portuguese`, avec `unaccent`)
 - vrai BM25 calculé dans PostgreSQL (`ts_rank` n'a pas d'IDF), statistiques N / avgdl / df stockées par `index_run`, recalculées pour les runs existants par la migration ; première passe sur les termes rares qui garde le top-k exact
-- fusion RRF (k = 60) avec un poids lexical réglable ; `retrieval_mode = dense | lexical | hybrid` sur l'API (y compris `/api/query/stream`), la CLI, le benchmark de recall et l'UI, avec les scores dense / BM25 / RRF de chaque chunk
+- fusion RRF (k = 60) avec un poids lexical réglable ; `retrieval_mode = dense | lexical | hybrid` sur l'API (y compris `/api/query/stream` et ses événements `stage` lexical / fusion), la CLI, le benchmark de recall (`raglab experiment recall`, `raglab bench all --retrieval-mode`) et l'UI, avec les scores dense / BM25 / RRF de chaque chunk
 - à mesurer : Recall@5/10, MRR, latence par type de question (`reference`, `entity`, `paraphrase`) contre la baseline
 
 **9.3 — Re-ranking cross-encoder 🚧 (code prêt, mesure après la baseline 9.1b)** : voir [reranking.md](reranking.md)
@@ -165,7 +165,7 @@ Objectif : passer du laboratoire à un pipeline RAG prêt pour la production, ch
 - VRAM du cross-encoder libérée (`release()`) avant la passe du juge llama.cpp
 - à mesurer : Recall@5/10, MRR, latence ajoutée p50/p95, pic de VRAM à côté de qwen2.5
 
-**9.5 — Durcissement API 🚧 (PR ouverte, empilée sur 9.1b)** : voir [api-production.md](api-production.md)
+**9.5 — Durcissement API ✅ (fusionnée dans la branche 9.1b, PR #28 et #29)** : voir [api-production.md](api-production.md)
 
 - `POST /api/query/stream` en SSE : événement `retrieval` (chunks, scores, timings) avant la génération, puis `token` au fil d'Ollama (`stream: true`), puis `done` (QueryResponse complète + `first_token_ms`) ou `error` ; `/api/query` inchangé ; page Chat en streaming avec repli automatique sur `/api/query` ; `raglab query --stream`
 - budgets par étape (`RAGLAB_EMBED_TIMEOUT_SECONDS`, `RAGLAB_RETRIEVAL_TIMEOUT_SECONDS` via `statement_timeout` Postgres, `RAGLAB_GENERATION_TIMEOUT_SECONDS` total en streaming), 504 qui nomme l'étape
@@ -175,5 +175,9 @@ Objectif : passer du laboratoire à un pipeline RAG prêt pour la production, ch
 - erreurs Ollama typées : modèle absent 424 (message actionnable), mémoire saturée 503 + `Retry-After`, injoignable 502, timeout 504
 - mesuré sans GPU (`scripts/bench_api_hardening.py`) : sources affichées après ~65 ms au lieu de ~3,4 s, premier token à 366 ms (préremplissage simulé 300 ms) ; middlewares +0,16 ms par requête ; TTFT réel sur GPU à mesurer
 - migrations Alembic : introduites avec 9.2 (`feature/hybrid-retrieval`), aucune migration dans cette PR
+
+- **Mode pédagogique (vitrine, en revue)** : bouton « Mode pédagogique » dans la barre du haut ; schéma SVG du pipeline à côté du Chat qui s'allume étape par étape via les événements SSE `pipeline` / `stage` (durée, compteurs, vecteur de la question, meilleurs passages et scores, aperçu du prompt, tokens/s) avec explication de chaque brique ; les étapes 9.2 / 9.3 / 9.4 apparaissent d'elles-mêmes une fois fusionnées. Voir [frontend-ui.md](frontend-ui.md#mode-pédagogique-schéma-du-pipeline-en-direct)
+
+- **9.7 — Portes de qualité (outillage en place)** : `raglab gate` et seuils versionnés dans `benchmarks/thresholds.json` (à fixer depuis `baseline-v1`), workflow hebdomadaire de retrieval sur CPU, voir [portes-qualite.md](portes-qualite.md)
 
 **À venir** : 9.4 compréhension de la requête et abstention · 9.6 observabilité (Prometheus, Grafana, dérive) · 9.7 portes de qualité · 9.8 vitrine

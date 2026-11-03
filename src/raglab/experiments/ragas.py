@@ -28,6 +28,8 @@ from raglab.ollama.service import OllamaService
 
 logger = logging.getLogger(__name__)
 
+MAX_JUDGE_CONTEXT_CHARS = 12_000
+
 _JSON_BLOCK_RE = re.compile(r"\{[\s\S]*\}")
 
 
@@ -146,10 +148,10 @@ class FaithfulnessJudge(_BaseJudge):
             return RagasScore(score=None, reason="empty answer")
         if not retrieved_texts:
             return RagasScore(score=None, reason="no context")
-        # Trim context so the whole prompt fits in most context windows.
-        # Each chunk capped at ~600 chars preserves enough signal for
-        # grounding checks without blowing past num_ctx on small models.
-        joined = "\n---\n".join(t.strip()[:600] for t in retrieved_texts if t.strip())
+        # The judge must read every chunk in full: truncating chunks made it
+        # call unsupported claims that sit in the part it did not see. Only
+        # the total is capped, far above top-5 x 900-char chunks.
+        joined = "\n---\n".join(t.strip() for t in retrieved_texts if t.strip())[:MAX_JUDGE_CONTEXT_CHARS]
         user = f"QUESTION:\n{question}\n\nCONTEXT:\n{joined}\n\nANSWER:\n{answer}\n\nReturn JSON only."
         return self._chat(system=_FAITHFULNESS_PROMPT, user=user)
 

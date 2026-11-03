@@ -58,3 +58,27 @@ def test_render_markdown_puts_runs_side_by_side():
     assert "| reference | 0.400 / 0.300 (97) | 0.400 / 0.300 (97) |" in text
     assert "Juges RAGAS calculés sur les 100 premières questions." in text
     assert "Answer relevancy" not in text  # rows without values are dropped
+
+
+def test_report_names_the_retrieval_mode_of_each_run():
+    dense = _run("baseline-v1", 0.61, 14.2, False)
+    hybrid = _run("hybrid-v1", 0.66, 14.2, False)
+    hybrid["retrieval_mode"] = "hybrid"
+    hybrid["suites"][0].update({"retrieval_mode": "hybrid", "lexical_weight": 0.5, "rrf_k": 60})
+    hybrid["suites"][0]["summary"]["latency_lexical_p50_ms"] = 19.3
+    text = render_markdown([dense, hybrid])
+    # Results written before 9.2 have no mode: they were dense.
+    assert "| Retrieval | dense | hybrid (w=0.5, k=60) |" in text
+    assert "| dont BM25 p50 | — | 19.3 ms |" in text
+
+
+def test_report_shows_confidence_intervals():
+    run = _run("v1", 0.61, 14.2, False)
+    run["suites"][0]["summary"].update({"recall@5_ci_low": 0.55, "recall@5_ci_high": 0.67})
+    assert "| Recall@5 | 0.610 [0.55–0.67] |" in render_markdown([run])
+
+
+def test_total_ram_is_reported():
+    from raglab.benchmarks.suite import _total_ram
+
+    assert _total_ram().endswith("GiB")

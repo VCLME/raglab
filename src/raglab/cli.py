@@ -137,8 +137,12 @@ def bench_all(
     retrieval_mode: RetrievalMode | None = typer.Option(
         None,
         "--retrieval-mode",
-        help="dense, lexical ou hybrid. Defaut: RAGLAB_DEFAULT_RETRIEVAL_MODE.",
+        help="dense (KNN cosinus), lexical (BM25) ou hybrid (fusion RRF). Defaut: RAGLAB_DEFAULT_RETRIEVAL_MODE.",
     ),
+    lexical_weight: float | None = typer.Option(
+        None, "--lexical-weight", min=0.0, max=1.0, help="Poids du BM25 dans la fusion RRF (mode hybrid)."
+    ),
+    rrf_k: int | None = typer.Option(None, "--rrf-k", min=0, help="Constante k de la fusion RRF (defaut 60)."),
     rerank: bool | None = typer.Option(
         None,
         "--rerank/--no-rerank",
@@ -155,6 +159,8 @@ def bench_all(
         judge=JudgeConfig(backend=judge_backend),
         suites=suite or None,
         retrieval_mode=retrieval_mode,
+        lexical_weight=lexical_weight,
+        rrf_k=rrf_k,
         rerank=rerank,
     )
     output = Path("benchmarks/results") / f"{label}.json"
@@ -162,6 +168,61 @@ def bench_all(
     output.write_text(json.dumps(result, indent=2, ensure_ascii=False), encoding="utf-8")
     typer.echo(render_markdown([result]))
     typer.echo(f"\nResultat: {output}")
+
+
+@app.command("gate")
+def gate(
+    results: Path | None = typer.Option(None, "--results", help="Resultat de `raglab bench all` a verifier."),
+    run: bool = typer.Option(False, "--run", help="Lancer `raglab bench all` puis verifier son resultat."),
+    ragas_limit: int = typer.Option(
+        100, "--ragas-limit", min=0, help="Avec --run : questions notees (0 = retrieval seul)."
+    ),
+    judge_backend: str = typer.Option("llamacpp", "--judge-backend", help="Avec --run : juge RAGAS."),
+    thresholds: Path = typer.Option(Path("benchmarks/thresholds.json"), "--thresholds"),
+    require_all: bool = typer.Option(False, "--require-all", help="Echouer aussi si une metrique n'a pas ete mesuree."),
+    summary_file: Path | None = typer.Option(
+        None, "--summary-file", help="Ecrire le tableau Markdown ici (ex. $GITHUB_STEP_SUMMARY)."
+    ),
+) -> None:
+    """Echouer (code 1) si Recall@5, MRR ou faithfulness passent sous les seuils versionnes."""
+    from datetime import UTC, datetime
+
+    from raglab.benchmarks.gate import evaluate, failed, load_thresholds, render
+
+    if run == (results is not None):
+        raise typer.BadParameter("Donner soit --results, soit --run.")
+    if run:
+        from raglab.benchmarks.suite import run_all
+
+        label = f"gate-{datetime.now(UTC).strftime('%Y%m%d-%H%M%S')}"
+        result = run_all(label=label, ragas_limit=ragas_limit or None, judge=JudgeConfig(backend=judge_backend))
+        results = Path("benchmarks/results") / f"{label}.json"
+        results.parent.mkdir(parents=True, exist_ok=True)
+        results.write_text(json.dumps(result, indent=2, ensure_ascii=False), encoding="utf-8")
+    else:
+        assert results is not None
+        result = json.loads(results.read_text(encoding="utf-8"))
+    checks = evaluate(result, load_thresholds(thresholds))
+    table = render(checks, label=result.get("label", str(results)))
+    typer.echo(table)
+    if summary_file:
+        with summary_file.open("a", encoding="utf-8") as handle:
+            handle.write(table + "\n")
+    if failed(checks, require_all=require_all):
+        raise typer.Exit(code=1)
+
+
+@bench_app.command("compare")
+def bench_compare(
+    before: str = typer.Argument(..., help="Run de reference (ex. baseline-v1)."),
+    after: str = typer.Argument(..., help="Run compare (ex. hybrid-v1)."),
+    k: int = typer.Option(5, "--k", help="Recall@k compare."),
+) -> None:
+    """Comparer deux runs question par question (McNemar sur le recall, bootstrap apparie sur le MRR)."""
+    from raglab.benchmarks.compare import compare_runs, render
+
+    load = lambda name: json.loads((Path("benchmarks/results") / f"{name}.json").read_text(encoding="utf-8"))  # noqa: E731
+    typer.echo(render(compare_runs(load(before), load(after), k=k), k=k))
 
 
 @bench_app.command("report")
@@ -532,7 +593,7 @@ def query(
             for event, data in service.stream_answer(outcome, llm_model=llm_model):
                 if event == "token":
                     typer.echo(data["text"], nl=False, err=True)
-                else:
+                elif event == "done":
                     final = data
             typer.echo("", err=True)
             typer.echo(json.dumps(final, indent=2, ensure_ascii=False))
