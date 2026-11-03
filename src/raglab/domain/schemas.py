@@ -5,7 +5,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from raglab.domain.enums import ChunkingStrategy
+from raglab.domain.enums import ChunkingStrategy, RetrievalMode
 
 
 class DocumentPayload(BaseModel):
@@ -43,6 +43,15 @@ class RetrievedChunk(BaseModel):
     # because the graph store does not return them.
     char_start: int | None = None
     char_end: int | None = None
+    # Intermediate scores of hybrid retrieval. `score` / `rank` above are
+    # those of the requested mode (cosine similarity, BM25 or fused RRF);
+    # these keep each retriever's own view of the chunk. None when the
+    # retriever did not run or did not return the chunk in its candidates.
+    dense_score: float | None = None
+    dense_rank: int | None = None
+    lexical_score: float | None = None
+    lexical_rank: int | None = None
+    fused_score: float | None = None
 
 
 class RetrievalFilters(BaseModel):
@@ -67,6 +76,9 @@ class QueryResponse(BaseModel):
     index_run_id: str
     strategy: ChunkingStrategy
     retrieved_chunks: list[RetrievedChunk]
+    retrieval_mode: RetrievalMode = RetrievalMode.DENSE
+    # Lexemes the question was reduced to for BM25 (lexical / hybrid modes).
+    query_lexemes: list[str] = Field(default_factory=list)
     filters: RetrievalFilters | None = None
     answer: str | None = None
     elapsed_ms: float = 0.0

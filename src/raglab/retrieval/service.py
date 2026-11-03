@@ -7,11 +7,13 @@ from sqlalchemy.orm import Session
 
 from raglab.config import Settings, get_settings
 from raglab.db.crud import get_index_run, resolve_latest_index_run
-from raglab.domain.enums import ChunkingStrategy
-from raglab.domain.schemas import QueryResponse, RetrievalFilters
+from raglab.domain.enums import ChunkingStrategy, RetrievalMode
+from raglab.domain.schemas import QueryResponse, RetrievalFilters, RetrievedChunk
 from raglab.embeddings.factory import build_embedding_provider
 from raglab.generation.service import OllamaGenerator
 from raglab.logging_utils import log_event
+from raglab.retrieval.fusion import reciprocal_rank_fusion
+from raglab.stores.lexical.postgres import PostgresLexicalStore
 from raglab.stores.vector.postgres import PostgresVectorStore
 
 LOGGER = logging.getLogger(__name__)
@@ -22,6 +24,7 @@ class QueryService:
         self.session = session
         self.settings = settings or get_settings()
         self.vector_store = PostgresVectorStore()
+        self.lexical_store = PostgresLexicalStore(k1=self.settings.bm25_k1, b=self.settings.bm25_b)
         self.generator = OllamaGenerator(self.settings)
 
     def _resolve_index_run(
@@ -53,23 +56,7 @@ class QueryService:
             )
         return index_run
 
-    def query(
-        self,
-        *,
-        question: str,
-        corpus_name: str | None = None,
-        strategy: ChunkingStrategy | None = None,
-        index_run_id: str | None = None,
-        top_k: int | None = None,
-        generate_answer: bool = True,
-        filters: RetrievalFilters | None = None,
-    ) -> QueryResponse:
-        index_run = self._resolve_index_run(
-            corpus_name=corpus_name,
-            strategy=strategy,
-            index_run_id=index_run_id,
-        )
-
+    def _embed_question(self, index_run, question: str) -> list[float]:
         # Each index_run points to an embedding_space that carries the exact
         # provider, model and dimension used at indexing time. We use those to
         # build an embedder that matches the index, which is what lets multiple
@@ -85,25 +72,96 @@ class QueryService:
             }
         )
         embedder = build_embedding_provider(effective_settings)
+        return embedder.embed_query(question)
+
+    def query(
+        self,
+        *,
+        question: str,
+        corpus_name: str | None = None,
+        strategy: ChunkingStrategy | None = None,
+        index_run_id: str | None = None,
+        top_k: int | None = None,
+        generate_answer: bool = True,
+        filters: RetrievalFilters | None = None,
+        retrieval_mode: RetrievalMode | str | None = None,
+        lexical_weight: float | None = None,
+        rrf_k: int | None = None,
+    ) -> QueryResponse:
+        mode = RetrievalMode(retrieval_mode or self.settings.default_retrieval_mode)
+        weight = self.settings.hybrid_lexical_weight if lexical_weight is None else lexical_weight
+        fusion_k = self.settings.rrf_k if rrf_k is None else rrf_k
+        effective_top_k = top_k or self.settings.default_top_k
+        # Hybrid fuses deeper lists than it returns: a chunk ranked 30th by
+        # one retriever and 3rd by the other must still be seen by RRF.
+        candidate_k = (
+            max(effective_top_k, self.settings.hybrid_candidates) if mode == RetrievalMode.HYBRID else effective_top_k
+        )
+
+        index_run = self._resolve_index_run(
+            corpus_name=corpus_name,
+            strategy=strategy,
+            index_run_id=index_run_id,
+        )
 
         started = perf_counter()
-        query_embedding = embedder.embed_query(question)
-        embedded = perf_counter()
-        retrieved = self.vector_store.search(
-            self.session,
-            index_run=index_run,
-            query_embedding=query_embedding,
-            top_k=top_k or self.settings.default_top_k,
-            filters=filters,
-        )
+        dense: list[RetrievedChunk] = []
+        lexical: list[RetrievedChunk] = []
+        query_lexemes: list[str] = []
+        stage_ms: dict[str, float] = {}
+
+        if mode in (RetrievalMode.DENSE, RetrievalMode.HYBRID):
+            stage_started = perf_counter()
+            query_embedding = self._embed_question(index_run, question)
+            stage_ms["embed"] = perf_counter() - stage_started
+            stage_started = perf_counter()
+            dense = self.vector_store.search(
+                self.session,
+                index_run=index_run,
+                query_embedding=query_embedding,
+                top_k=candidate_k,
+                filters=filters,
+            )
+            stage_ms["dense"] = perf_counter() - stage_started
+        else:
+            stage_ms["embed"] = 0.0
+
+        if mode in (RetrievalMode.LEXICAL, RetrievalMode.HYBRID):
+            stage_started = perf_counter()
+            lexical, query_lexemes = self.lexical_store.search(
+                self.session,
+                index_run=index_run,
+                question=question,
+                top_k=candidate_k,
+                filters=filters,
+            )
+            stage_ms["lexical"] = perf_counter() - stage_started
+
+        stage_started = perf_counter()
+        if mode == RetrievalMode.DENSE:
+            retrieved = [
+                chunk.model_copy(update={"dense_score": chunk.score, "dense_rank": chunk.rank}) for chunk in dense
+            ]
+        elif mode == RetrievalMode.LEXICAL:
+            retrieved = lexical
+        else:
+            retrieved = reciprocal_rank_fusion(
+                dense,
+                lexical,
+                k=fusion_k,
+                lexical_weight=weight,
+                top_k=effective_top_k,
+            )
+            stage_ms["fusion"] = perf_counter() - stage_started
         searched = perf_counter()
+
         answer = self.generator.generate_answer(question, retrieved) if generate_answer else None
         finished = perf_counter()
         elapsed_ms = (finished - started) * 1000
-        timings_ms = {
-            "embed": round((embedded - started) * 1000, 3),
-            "retrieval": round((searched - embedded) * 1000, 3),
-        }
+        # `embed` + `retrieval` stay the two stages the recall benchmark sums
+        # into its query latency; dense / lexical / fusion detail retrieval.
+        timings_ms = {stage: round(seconds * 1000, 3) for stage, seconds in stage_ms.items()}
+        timings_ms["retrieval"] = round((searched - started) * 1000 - timings_ms["embed"], 3)
         if generate_answer:
             timings_ms["generation"] = round((finished - searched) * 1000, 3)
         log_event(
@@ -113,7 +171,10 @@ class QueryService:
             corpus_name=corpus_name,
             strategy=index_run.strategy,
             index_run_id=index_run.id,
-            top_k=top_k or self.settings.default_top_k,
+            top_k=effective_top_k,
+            retrieval_mode=mode.value,
+            lexical_weight=weight if mode == RetrievalMode.HYBRID else None,
+            rrf_k=fusion_k if mode == RetrievalMode.HYBRID else None,
             generate_answer=generate_answer,
             retrieved_chunks=len(retrieved),
             filters=filters.model_dump() if filters else {},
@@ -127,6 +188,8 @@ class QueryService:
             index_run_id=index_run.id,
             strategy=ChunkingStrategy(index_run.strategy),
             retrieved_chunks=retrieved,
+            retrieval_mode=mode,
+            query_lexemes=query_lexemes,
             filters=filters,
             answer=answer,
             elapsed_ms=elapsed_ms,

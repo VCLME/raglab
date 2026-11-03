@@ -35,4 +35,7 @@ def run_query(body: QueryRequest, session: Session = Depends(get_db)) -> QueryRe
         top_k=body.top_k,
         generate_answer=body.generate,
         filters=filters,
+        retrieval_mode=body.retrieval_mode,
+        lexical_weight=body.lexical_weight,
+        rrf_k=body.rrf_k,
     )

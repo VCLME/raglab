@@ -21,6 +21,7 @@ from raglab.db.crud import (
     resolve_latest_compatible_index_run,
 )
 from raglab.db.indexes import ensure_partial_hnsw_index
+from raglab.db.lexical import refresh_lexical_index
 from raglab.db.models import Chunk, ChunkEmbedding, Document, EmbeddingSpace, IndexRun
 from raglab.domain.enums import ChunkingStrategy, IndexStatus
 from raglab.embeddings.factory import build_embedding_provider
@@ -395,8 +396,16 @@ class IndexingService:
                     embedder=embedder,
                 )
 
+            self.session.flush()
+            lexical_stats = refresh_lexical_index(
+                self.session,
+                index_run.id,
+                default_language=self.settings.default_language,
+            )
+
             index_run.config_json = {
                 **index_run.config_json,
+                "lexical_ts_configs": lexical_stats["ts_configs"],
                 "reused_documents": len(reusable_documents),
                 "reindexed_documents": len(documents_to_index),
                 "reused_chunks": reused_chunks,

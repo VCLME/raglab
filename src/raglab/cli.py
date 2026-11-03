@@ -4,12 +4,15 @@ import json
 from pathlib import Path
 
 import typer
+from sqlalchemy import select
 
 from raglab.benchmarks import AVAILABLE_LOADERS, get_loader
 from raglab.benchmarks.lexml_questions import generate_questions, review_question_set
 from raglab.config import get_settings
 from raglab.db import initialize_database, session_scope
-from raglab.domain.enums import ChunkingStrategy
+from raglab.db.lexical import refresh_lexical_index
+from raglab.db.models import Corpus, IndexRun
+from raglab.domain.enums import ChunkingStrategy, RetrievalMode
 from raglab.experiments.ragas import JudgeConfig
 from raglab.experiments.recall import RecallBenchmarkService
 from raglab.experiments.service import ExperimentService
@@ -56,6 +59,25 @@ def main(
 def db_init() -> None:
     initialize_database()
     typer.echo("Base initialisee avec pgvector.")
+
+
+@db_app.command("refresh-lexical")
+def db_refresh_lexical(
+    corpus: str | None = typer.Option(None, "--corpus", help="Limiter aux runs de ce corpus."),
+    index_run_ids: list[str] | None = typer.Option(None, "--index-run-id", help="Run(s) a recalculer."),
+) -> None:
+    """Recalculer tsvector et statistiques BM25 (apres un changement de langue), sans re-embedder."""
+    with session_scope() as session:
+        stmt = select(IndexRun.id)
+        if index_run_ids:
+            stmt = stmt.where(IndexRun.id.in_(index_run_ids))
+        if corpus:
+            stmt = stmt.join(Corpus, Corpus.id == IndexRun.corpus_id).where(Corpus.name == corpus)
+        results = {
+            run_id: refresh_lexical_index(session, run_id, default_language=get_settings().default_language)
+            for run_id in session.scalars(stmt).all()
+        }
+    typer.echo(json.dumps(results, indent=2, ensure_ascii=False))
 
 
 @ollama_app.command("status")
@@ -166,10 +188,17 @@ def ingest(
     corpus: str = typer.Option(get_settings().default_corpus_name, "--corpus", help="Nom du corpus cible."),
     description: str | None = typer.Option(None, "--description", help="Description optionnelle du corpus."),
     tags: list[str] | None = typer.Option(None, "--tag", help="Tag a appliquer a tous les documents ingeres."),
+    language: str | None = typer.Option(
+        None,
+        "--language",
+        help="Langue du corpus (fr, pt) pour la recherche lexicale. Defaut: metadata.json du loader, sinon RAGLAB_DEFAULT_LANGUAGE.",
+    ),
 ) -> None:
     with session_scope() as session:
         service = IngestionService(session)
-        summary = service.ingest_folder(folder, corpus_name=corpus, description=description, tags=tags)
+        summary = service.ingest_folder(
+            folder, corpus_name=corpus, description=description, tags=tags, language=language
+        )
     typer.echo(json.dumps({"corpus": corpus, **summary}, indent=2, ensure_ascii=False))
 
 
@@ -278,7 +307,7 @@ def lexml_ingest(
 ) -> None:
     with session_scope() as session:
         service = IngestionService(session)
-        summary = service.ingest_folder(folder, corpus_name=corpus, description=description, tags=tags)
+        summary = service.ingest_folder(folder, corpus_name=corpus, description=description, tags=tags, language="pt")
     typer.echo(json.dumps({"corpus": corpus, **summary}, indent=2, ensure_ascii=False))
 
 
@@ -391,6 +420,19 @@ def query(
         "--metadata-eq",
         help="Filtre metadata exact, repetable, au format cle=valeur.",
     ),
+    retrieval_mode: RetrievalMode | None = typer.Option(
+        None,
+        "--retrieval-mode",
+        help="dense (KNN cosinus), lexical (BM25) ou hybrid (fusion RRF). Defaut: RAGLAB_DEFAULT_RETRIEVAL_MODE.",
+    ),
+    lexical_weight: float | None = typer.Option(
+        None,
+        "--lexical-weight",
+        min=0.0,
+        max=1.0,
+        help="Poids du BM25 dans la fusion RRF (0 = dense seul, 1 = BM25 seul). Mode hybrid.",
+    ),
+    rrf_k: int | None = typer.Option(None, "--rrf-k", min=0, help="Constante k de la fusion RRF (defaut 60)."),
 ) -> None:
     filters = build_retrieval_filters(
         document_ids=document_ids,
@@ -409,6 +451,9 @@ def query(
             top_k=top_k,
             generate_answer=generate,
             filters=filters,
+            retrieval_mode=retrieval_mode,
+            lexical_weight=lexical_weight,
+            rrf_k=rrf_k,
         )
     typer.echo(response.model_dump_json(indent=2))
 
@@ -468,6 +513,19 @@ def experiment_recall(
         help="llamacpp (juge independant, demarre si besoin) ou ollama (le generateur se note lui-meme).",
     ),
     judge_model: str | None = typer.Option(None, "--judge-model", help="Modele juge (defaut: judge_model)."),
+    retrieval_mode: RetrievalMode | None = typer.Option(
+        None,
+        "--retrieval-mode",
+        help="dense (KNN cosinus), lexical (BM25) ou hybrid (fusion RRF). Defaut: RAGLAB_DEFAULT_RETRIEVAL_MODE.",
+    ),
+    lexical_weight: float | None = typer.Option(
+        None,
+        "--lexical-weight",
+        min=0.0,
+        max=1.0,
+        help="Poids du BM25 dans la fusion RRF (0 = dense seul, 1 = BM25 seul). Mode hybrid.",
+    ),
+    rrf_k: int | None = typer.Option(None, "--rrf-k", min=0, help="Constante k de la fusion RRF (defaut 60)."),
 ) -> None:
     with session_scope() as session:
         service = RecallBenchmarkService(session)
@@ -477,6 +535,9 @@ def experiment_recall(
             dataset_path=dataset_path,
             lexml_documents_dir=lexml_documents_dir,
             case_limit=case_limit,
+            retrieval_mode=retrieval_mode,
+            lexical_weight=lexical_weight,
+            rrf_k=rrf_k,
             compute_ragas=ragas,
             ragas_case_limit=ragas_limit,
             judge=JudgeConfig(backend=judge_backend, model=judge_model),

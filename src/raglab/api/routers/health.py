@@ -88,4 +88,9 @@ def config(settings: Settings = Depends(get_current_settings)) -> ConfigResponse
         slide_stride=settings.slide_stride,
         late_chunk_size=settings.late_chunk_size,
         late_context_chars=settings.late_context_chars,
+        default_retrieval_mode=settings.default_retrieval_mode,
+        hybrid_lexical_weight=settings.hybrid_lexical_weight,
+        rrf_k=settings.rrf_k,
+        bm25_k1=settings.bm25_k1,
+        bm25_b=settings.bm25_b,
     )

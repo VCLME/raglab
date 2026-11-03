@@ -16,7 +16,7 @@ from raglab.db.crud import (
     create_experiment_run,
     store_experiment_result,
 )
-from raglab.domain.enums import ChunkingStrategy, ExperimentStatus
+from raglab.domain.enums import ChunkingStrategy, ExperimentStatus, RetrievalMode
 from raglab.experiments.metrics import first_relevant_rank, hit_at_k, precision_at_k, reciprocal_rank, relevance_flags
 from raglab.experiments.ragas import (
     AnswerCorrectnessJudge,
@@ -71,6 +71,24 @@ class RecallBenchmarkService:
         store = getattr(self.query_service, "store", None)
         if store is not None and hasattr(store, "close"):
             store.close()
+
+    def _retrieval_config(
+        self,
+        retrieval_mode: RetrievalMode | str | None,
+        lexical_weight: float | None,
+        rrf_k: int | None,
+    ) -> dict[str, Any]:
+        """Resolved retrieval parameters, recorded with the run and passed to each query."""
+        mode = RetrievalMode(retrieval_mode or self.settings.default_retrieval_mode)
+        if self.backend != "pgvector":
+            if mode != RetrievalMode.DENSE:
+                raise ValueError("retrieval_mode lexical/hybrid n'est disponible qu'avec le backend pgvector")
+            return {}
+        config: dict[str, Any] = {"retrieval_mode": mode.value}
+        if mode == RetrievalMode.HYBRID:
+            config["lexical_weight"] = self.settings.hybrid_lexical_weight if lexical_weight is None else lexical_weight
+            config["rrf_k"] = self.settings.rrf_k if rrf_k is None else rrf_k
+        return config
 
     def _load_cases(self, dataset_path: Path) -> list[RecallBenchmarkCase]:
         cases: list[RecallBenchmarkCase] = []
@@ -195,6 +213,9 @@ class RecallBenchmarkService:
         ragas_case_limit: int | None = None,
         judge: JudgeConfig | None = None,
         index_run_id: str | None = None,
+        retrieval_mode: RetrievalMode | str | None = None,
+        lexical_weight: float | None = None,
+        rrf_k: int | None = None,
     ) -> dict[str, Any]:
         """Run retrieval on every case, then (optionally) grade answers.
 
@@ -214,6 +235,7 @@ class RecallBenchmarkService:
             cases = self._load_cases(dataset_path.resolve())
 
         judge = judge or JudgeConfig()
+        retrieval = self._retrieval_config(retrieval_mode, lexical_weight, rrf_k)
         benchmark_label = benchmark_name or _infer_benchmark_name(dataset_path)
         run_name = f"recall-{benchmark_label}-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}"
 
@@ -231,6 +253,7 @@ class RecallBenchmarkService:
                 "strategy": strategy.value,
                 "k_values": list(k_values),
                 "backend": self.backend,
+                **retrieval,
                 "compute_ragas": compute_ragas,
                 **({"judge": judge.label(self.settings), "ragas_case_limit": ragas_case_limit} if compute_ragas else {}),
             },
@@ -271,6 +294,8 @@ class RecallBenchmarkService:
                 }
                 if index_run_id:
                     query_kwargs["index_run_id"] = index_run_id
+                if self.backend == "pgvector":
+                    query_kwargs.update(retrieval)
                 response = self.query_service.query(**query_kwargs)
                 retrieved = [chunk.model_dump() for chunk in response.retrieved_chunks]
                 flags = relevance_flags(retrieved, is_relevant=lambda chunk: self._is_relevant(case, chunk))
@@ -367,6 +392,7 @@ class RecallBenchmarkService:
             "experiment_run_id": experiment_run.id,
             "corpus_name": corpus_name,
             "strategy": strategy.value,
+            **retrieval,
             "dataset_path": str(dataset_path),
             "total_cases": total_cases,
             "judge": judge.label(self.settings) if compute_ragas else None,
