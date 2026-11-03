@@ -14,6 +14,7 @@ from raglab.api.routers import (
     index,
     ingest,
     lexml,
+    llm,
     metrics,
     ollama,
     query,
@@ -60,6 +61,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     if settings.metrics_enabled:
         app.include_router(metrics.router)
     app.include_router(ollama.router)
+    app.include_router(llm.router)
     app.include_router(corpora.router)
     app.include_router(ingest.router)
     app.include_router(index.router)

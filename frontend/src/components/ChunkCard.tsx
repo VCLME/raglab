@@ -9,6 +9,9 @@ interface Props {
   maxScore?: number;
   // Show the dense / BM25 / fused / re-rank breakdown (Retrieval page).
   showScores?: boolean;
+  // Target of the answer's [Rank N] citations, outlined when cited.
+  anchorId?: string;
+  active?: boolean;
 }
 
 function ScoreCell({ label, rank, score, digits }: { label: string; rank?: number | null; score?: number | null; digits: number }) {
@@ -28,7 +31,15 @@ function ScoreCell({ label, rank, score, digits }: { label: string; rank?: numbe
   );
 }
 
-export function ChunkCard({ chunk, maxScore, showScores = false }: Props) {
+/** Which score `chunk.score` is: the last stage that ranked the chunk. */
+function finalScoreType(chunk: RetrievedChunk): "rerank" | "fused" | "lexical" | "dense" {
+  if (chunk.rerank_score != null) return "rerank";
+  if (chunk.fused_score != null) return "fused";
+  if (chunk.lexical_score != null && chunk.dense_score == null) return "lexical";
+  return "dense";
+}
+
+export function ChunkCard({ chunk, maxScore, showScores = false, anchorId, active = false }: Props) {
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
   const preview =
@@ -37,15 +48,20 @@ export function ChunkCard({ chunk, maxScore, showScores = false }: Props) {
       : chunk.chunk_text;
   const scale = maxScore && maxScore > 0 ? maxScore : 1;
   const scorePct = Math.max(0, Math.min(100, Math.round((chunk.score / scale) * 100)));
+  const scoreType = finalScoreType(chunk);
+  const scoreLabel = t(`retrieval.scores_${scoreType}`);
   const hasBreakdown =
     showScores &&
     (chunk.dense_rank != null || chunk.lexical_rank != null || chunk.fused_score != null || chunk.rerank_rank != null);
   return (
-    <div className="chunk">
+    <div className={`chunk${active ? " active" : ""}`} id={anchorId} tabIndex={anchorId ? -1 : undefined}>
       <div className="head">
         <span>
           #{chunk.rank} · <strong>{chunk.file_name}</strong>
           <span className="muted"> — score {chunk.score.toFixed(3)}</span>
+          <span className={`score-type ${scoreType}`} title={t("retrieval.score_final_title", { type: scoreLabel })}>
+            {scoreLabel}
+          </span>
           {chunk.citation_match ? (
             <span className="badge ok" style={{ marginLeft: 8 }} title={t("retrieval.citation_badge_title")}>
               {t("retrieval.citation_badge")}
@@ -68,7 +84,7 @@ export function ChunkCard({ chunk, maxScore, showScores = false }: Props) {
           ) : null}
         </div>
       ) : null}
-      <div className="score-bar">
+      <div className={`score-bar ${scoreType}`} aria-hidden="true">
         <span style={{ width: `${scorePct}%` }} />
       </div>
       <pre>{preview}</pre>
@@ -78,7 +94,7 @@ export function ChunkCard({ chunk, maxScore, showScores = false }: Props) {
           style={{ marginTop: 6, padding: "4px 8px", fontSize: 11 }}
           onClick={() => setExpanded((v) => !v)}
         >
-          {expanded ? "Reduire" : "Voir plus"}
+          {expanded ? t("retrieval.show_less") : t("retrieval.show_more")}
         </button>
       ) : null}
     </div>

@@ -2,7 +2,7 @@ import { data, expect, json, test } from "./fixtures/mock-api";
 
 async function ask(page: import("@playwright/test").Page, question: string) {
   // The corpus and its index come from /api/corpora and /api/index-runs.
-  await expect(page.getByRole("combobox").first()).toHaveValue(data.CORPUS);
+  await expect(page.getByRole("combobox", { name: /^Corpus/ })).toContainText(data.CORPUS);
   await page.getByPlaceholder(/Pose ta question/).fill(question);
   await page.getByRole("button", { name: "Envoyer" }).click();
 }
@@ -21,15 +21,15 @@ test.describe("Chat", () => {
     await expect(page.getByText(/Le Parlement vote la loi/)).toBeVisible();
     // [Rank N] markers become citation buttons, never raw text.
     await expect(page.getByText("[Rank 1]")).toHaveCount(0);
-    await expect(page.getByText("Sources · 2 fichier(s)")).toBeVisible();
+    await expect(page.getByText("Sources · 2 fichiers")).toBeVisible();
 
     const citation = page.getByTitle("Source rank 1 — titre_II_president.txt");
     await expect(citation).toBeVisible();
-    await expect(page.getByRole("button", { name: "Afficher les 3 chunk(s)" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Afficher les 3 chunks" })).toBeVisible();
 
     // Clicking the citation filters the passages down to its source file.
     await citation.click();
-    const filtered = page.getByRole("button", { name: "Afficher les 2 chunk(s) filtré(s)" });
+    const filtered = page.getByRole("button", { name: "Afficher les 2 chunks filtrés" });
     await expect(filtered).toBeVisible();
     await filtered.click();
     await expect(page.getByText("Nul ne peut exercer plus de deux mandats consécutifs.")).toBeVisible();
@@ -37,7 +37,7 @@ test.describe("Chat", () => {
 
     // A second click clears the highlight.
     await citation.click();
-    await expect(page.getByRole("button", { name: "Masquer les 3 chunk(s)" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Masquer les 3 chunks" })).toBeVisible();
     await expect(page.getByText(/Article 24\. Le Parlement vote la loi/)).toBeVisible();
   });
 

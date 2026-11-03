@@ -252,6 +252,83 @@ Toutes les erreurs ont la forme `{"detail": "...", "error": "<Type>", "cause": "
 Les exceptions typées héritent de `RuntimeError` : le code existant qui
 attrapait `RuntimeError` pour un modèle manquant continue de fonctionner.
 
+## Fournisseurs LLM (Ollama, llama.cpp, vLLM)
+
+La génération de la réponse (`/api/query`, `/api/query/stream`,
+`raglab query`) peut passer par Ollama (défaut) ou par un serveur compatible
+OpenAI : `llama-server` (llama.cpp) ou vLLM. Le prompt
+(`build_prompt_bundle`), la température (`RAGLAB_GENERATION_TEMPERATURE`), le
+budget `RAGLAB_GENERATION_TIMEOUT_SECONDS` (sur toute la réponse, en flux ou
+non) et la réponse « contexte insuffisant » sont les mêmes quel que soit le
+fournisseur (`OllamaGenerator` / `OpenAICompatGenerator`,
+`src/raglab/generation/service.py`).
+
+| Variable | Défaut | Rôle |
+|---|---|---|
+| `RAGLAB_LLM_PROVIDERS` | `ollama` | fournisseurs proposés, séparés par des virgules, parmi `ollama`, `llamacpp`, `vllm` |
+| `RAGLAB_DEFAULT_LLM_PROVIDER` | `ollama` | fournisseur d'une requête qui n'en précise pas ; doit figurer dans la liste |
+| `RAGLAB_LLAMACPP_BASE_URL` | `http://127.0.0.1:8080/v1` | serveur llama.cpp (déjà utilisé par les benchmarks) |
+| `RAGLAB_LLAMACPP_API_KEY` | vide | envoyée en `Authorization: Bearer` si renseignée (`llama-server --api-key`) |
+| `RAGLAB_VLLM_BASE_URL` | `http://127.0.0.1:8001/v1` | serveur vLLM |
+| `RAGLAB_VLLM_API_KEY` | vide | idem pour vLLM (`vllm serve --api-key`) |
+
+Un nom inconnu dans `RAGLAB_LLM_PROVIDERS`, une liste vide ou un fournisseur
+par défaut absent de la liste font échouer le démarrage : une faute de frappe
+ne retombe pas en silence sur Ollama. Les clés ne sont jamais journalisées ni
+renvoyées par l'API.
+
+**Choisir le fournisseur.** `QueryRequest` accepte `llm_provider`
+(`null` = défaut) à côté de `llm_model` ; la CLI prend `--provider` et
+`--model` (alias de `--llm-model`). Sans modèle, Ollama utilise
+`RAGLAB_GENERATION_MODEL` et un serveur compatible OpenAI le premier modèle
+listé par `GET <base>/models` (sinon le champ `model` est omis et
+llama-server répond avec son modèle chargé). L'étape `generation` du mode
+pédagogique porte `data: {"provider", "model"}`.
+
+**Lister les modèles : `GET /api/llm/models`.** Seuls les fournisseurs
+actifs sont listés, dans l'ordre de `RAGLAB_LLM_PROVIDERS`, sondés en
+parallèle avec `RAGLAB_READY_TIMEOUT_SECONDS` chacun. Un serveur injoignable
+n'échoue pas l'appel : il apparaît avec `available: false` et une erreur
+courte (`unreachable`, `timeout`, `http 401`...).
+
+```json
+{
+  "default_provider": "ollama",
+  "default_model": "qwen2.5:7b",
+  "providers": [
+    {"name": "ollama", "label": "Ollama", "kind": "ollama", "base_url": "http://localhost:11434",
+     "available": true, "error": null, "models": ["qwen2.5:7b"], "default_model": "qwen2.5:7b"},
+    {"name": "llamacpp", "label": "llama.cpp", "kind": "openai", "base_url": "http://127.0.0.1:8080/v1",
+     "available": false, "error": "unreachable", "models": [], "default_model": null}
+  ]
+}
+```
+
+`GET /api/config` expose aussi `llm_providers`, `default_llm_provider` et
+`citation_resolver`.
+
+**Erreurs.** Typées dans `src/raglab/llm/errors.py` et rendues par le même
+`describe_error` que les erreurs Ollama (réponse HTTP ou événement SSE
+`error`), avec un champ `provider` en plus :
+
+| Situation | Exception | HTTP |
+|---|---|---|
+| Fournisseur inconnu ou désactivé | `UnknownLLMProviderError` | **400**, avant la recherche (et avant l'ouverture du flux SSE) |
+| Modèle non servi (404 « model ... does not exist ») | `LLMProviderModelNotFoundError` | **424** |
+| Connexion refusée, DNS, délai de connexion | `LLMProviderUnreachableError` | **502** |
+| Pas de réponse dans le budget | `LLMProviderTimeoutError` | **504**, `stage: "generation"` |
+| Autre erreur HTTP ou `error` dans le flux | `LLMProviderError` | **502**, message du serveur dans `cause` |
+
+**GPU (8 Go).** Ollama et llama.cpp ne tiennent jamais le GPU en même temps.
+Pour une requête interactive, raglab ne **démarre pas** llama-server (des
+dizaines de secondes de chargement) : il utilise un serveur déjà lancé, sinon
+502. Avant chaque réponse llama.cpp, il demande à Ollama de décharger ses
+modèles (`keep_alive: 0`, même aide que `LocalLLMServer`) ; une requête
+Ollama suivante rechargera qwen2.5, ce qui peut échouer en 503 tant que
+llama-server occupe la mémoire. vLLM est supposé tourner sur une autre
+machine ou un autre GPU : rien n'est déchargé pour lui. Les benchmarks
+continuent de passer par `LocalLLMServer`, qui démarre et arrête llama-server.
+
 ## Mesures
 
 Reproductibles sans GPU ni base :

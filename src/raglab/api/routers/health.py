@@ -145,4 +145,7 @@ def config(settings: Settings = Depends(get_current_settings)) -> ConfigResponse
         rerank_gpu=rerank_gpu_available(settings.rerank_device),
         rerank_model_name=settings.rerank_model_name,
         rerank_candidates=settings.rerank_candidates,
+        citation_resolver=settings.citation_resolver,
+        llm_providers=settings.llm_provider_names,
+        default_llm_provider=settings.default_llm_provider,
     )

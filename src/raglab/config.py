@@ -1,8 +1,12 @@
 from functools import lru_cache
 from pathlib import Path
+from typing import Self
 
-from pydantic import Field
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Answer generators the API, CLI and UI can pick from (see raglab.llm.providers).
+KNOWN_LLM_PROVIDERS = ("ollama", "llamacpp", "vllm")
 
 
 class Settings(BaseSettings):
@@ -26,6 +30,17 @@ class Settings(BaseSettings):
     llamacpp_start_command: str = ""
     llamacpp_stop_command: str = ""
     llamacpp_start_timeout_seconds: int = 300
+    # Sent as `Authorization: Bearer` when set (llama-server --api-key).
+    llamacpp_api_key: str = ""
+    # Optional vLLM server (OpenAI-compatible), used only for generation.
+    vllm_base_url: str = "http://127.0.0.1:8001/v1"
+    vllm_api_key: str = ""
+    # Generation providers offered by /api/query, the CLI and the UI,
+    # comma-separated among KNOWN_LLM_PROVIDERS. Unknown names and a default
+    # outside the list are rejected at startup (a typo must not silently
+    # fall back to Ollama).
+    llm_providers: str = "ollama"
+    default_llm_provider: str = "ollama"
     question_model_profile: str = "qwen35b-moe"
     question_model: str = "qwen3.6-35b-a3b"
     # RAGAS judge served by llama.cpp: a different model family from the
@@ -146,6 +161,42 @@ class Settings(BaseSettings):
     ready_timeout_seconds: float = 3.0
     # Prometheus endpoint `/metrics` and the request-counting middleware.
     metrics_enabled: bool = True
+
+    @field_validator("llm_providers")
+    @classmethod
+    def _normalize_llm_providers(cls, value: str) -> str:
+        names: list[str] = []
+        for raw in value.split(","):
+            name = raw.strip().lower()
+            if not name or name in names:
+                continue
+            if name not in KNOWN_LLM_PROVIDERS:
+                raise ValueError(
+                    f"RAGLAB_LLM_PROVIDERS: fournisseur inconnu {name!r} (attendus : {', '.join(KNOWN_LLM_PROVIDERS)})"
+                )
+            names.append(name)
+        if not names:
+            raise ValueError("RAGLAB_LLM_PROVIDERS doit lister au moins un fournisseur")
+        return ",".join(names)
+
+    @field_validator("default_llm_provider")
+    @classmethod
+    def _normalize_default_llm_provider(cls, value: str) -> str:
+        return value.strip().lower()
+
+    @model_validator(mode="after")
+    def _default_provider_enabled(self) -> Self:
+        if self.default_llm_provider not in self.llm_provider_names:
+            raise ValueError(
+                f"RAGLAB_DEFAULT_LLM_PROVIDER={self.default_llm_provider!r} n'est pas dans "
+                f"RAGLAB_LLM_PROVIDERS ({self.llm_providers})"
+            )
+        return self
+
+    @property
+    def llm_provider_names(self) -> list[str]:
+        """Enabled generation providers, in the order of RAGLAB_LLM_PROVIDERS."""
+        return [name for name in self.llm_providers.split(",") if name]
 
 
 @lru_cache(maxsize=1)

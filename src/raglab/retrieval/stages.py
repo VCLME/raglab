@@ -78,10 +78,11 @@ def _chunk_preview(chunk: Any) -> dict[str, Any]:
         "file_name": payload.get("file_name"),
         "excerpt": (payload.get("chunk_text") or "")[:EXCERPT_CHARS],
     }
-    # `score` plus whatever intermediate scores the pipeline filled in
-    # (dense_score, lexical_score, fused_score, rerank_score).
+    # `score` plus whatever intermediate scores and ranks the pipeline filled
+    # in (dense_*, lexical_*, fused_*, rerank_*): the learning mode draws the
+    # RRF formula and the re-ranking reorder from them.
     for key, value in payload.items():
-        if key.endswith("score") and value is not None:
+        if (key.endswith("score") or key.endswith("_rank")) and value is not None:
             preview[key] = value
     return preview
 
