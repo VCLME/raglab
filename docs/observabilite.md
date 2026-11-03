@@ -95,11 +95,13 @@ re-ranking sans GPU (sauté ou sur CPU).
 
 ![Tableau de bord Grafana raglab sur trafic réel](images/grafana-overview.png)
 
-*Capture prise sur une API lancée sur l'hôte, avec quelques centaines de
-requêtes de recherche sans génération ni re-ranking (`bench_piaf_fr` et
+*Capture prise sur une API lancée sur l'hôte : environ 640 requêtes de
+recherche en 9 minutes, sans génération ni re-ranking (`bench_piaf_fr` et
 `bench_lexml_pt`, modes dense, lexical et hybride, résolveur de citations
-actif). La latence `embed` élevée au début de la fenêtre est le chargement du
-modèle d'embedding à la première requête.*
+actif), plus quelques requêtes en 400 sur un corpus inconnu. Les panneaux
+débit de génération et re-ranking sans GPU restent vides faute de génération
+et de re-ranking ; la médiane BM25 plafonne à 1 parce que ses scores tombent
+dans le seau `+Inf`.*
 
 Vérifié en local (sans GPU) : `promtool check config` valide, cible
 `host.docker.internal:8000` *up*, tableau de bord provisionné et lisible sans
