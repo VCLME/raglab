@@ -699,8 +699,8 @@ def _context_owner(body: str, position: int, heading_end: int) -> _Owner:
     Otherwise the article belongs to this law.
     """
     if _POSSESSIVE_RE.search(body, max(heading_end, position - 24), position):
-        named = list(_LAW_RE.finditer(body, heading_end, position))
-        return _Owner("law", parse_law_mention(body, named[-1])) if named else _Owner("external")
+        laws_before = list(_LAW_RE.finditer(body, heading_end, position))
+        return _Owner("law", parse_law_mention(body, laws_before[-1])) if laws_before else _Owner("external")
     clause_start = max(body.rfind(mark, heading_end, position) for mark in ("(", ";", "\n", ":"))
     clause = body[max(clause_start + 1, heading_end) : position]
     designation = _DESIGNATION_BEFORE_RE.search(clause)
