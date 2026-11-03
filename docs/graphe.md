@@ -51,7 +51,9 @@ graph LR
 | `(:Law)-[:AMENDS|REVOKES]->(:Law|:Article)` | dispositifs de la loi elle-même : « A Lei nº X passa a vigorar… », « altera a Lei nº X », « Ficam revogados… » ; `via` = l'article qui le dit |
 | `(:GraphRun)` | profil, date, durée et comptes du dernier build de l'index run |
 
-Le profil se choisit par corpus avec `RAGLAB_GRAPH_PROFILES='{"bench_lexml_pt": "laws"}'`, ou par build (`--profile laws|generic|auto`).
+Le profil se choisit par corpus avec `RAGLAB_GRAPH_PROFILES='{"bench_lexml_pt": "laws"}'`, ou par build (`--profile laws|eu_acts|generic|auto`).
+
+**Profil « actes de l'UE »** (`eu_acts`, détecté si au moins la moitié des documents portent `celex` et `unit`) : voir [Profil actes de l'UE](#profil-actes-de-lue).
 
 ## Les règles (sans LLM)
 
@@ -61,6 +63,24 @@ Les renvois juridiques sont explicites dans le texte : une règle les lit mieux 
 - **Renvois** : « art. 12 », « arts. 3º e 4º », « arts. 10 a 15 » (plage développée jusqu'à 10 articles, au-delà seule la borne haute est gardée), « artigo anterior / seguinte ». Le texte qui suit le numéro décide à qui il appartient : « desta Lei » ou rien → cette loi ; « da Lei nº X » → la loi X ; « da Constituição », « do Decreto-Lei », « da Medida Provisória », « do Código »… → pas un article du corpus, ignoré. Les connecteurs (« , § 2º, inciso III, ») sont sautés ; dans « o art. 5º e o § 2º do art. 7º da Lei nº X », l'art. 5 hérite de la loi X. Sans qualificatif, le contexte peut désigner une autre loi : « Decreto-Lei nº 1.940, de 1982, art. 1º », « A Lei nº X passa a vigorar acrescida do seguinte art. 4º-A », un en-tête de liste « II - da Medida Provisória nº … : », « inclusive em seu art. 16 ».
 - **Ignoré** : le texte entre guillemets (il appartient à la loi modifiée), les notes éditoriales « (Vide …) », les renvois d'un article à lui-même et ceux vers un numéro absent de la loi.
 - **Modifications** : les marqueurs du texte compilé (« Redação dada pela Lei nº X », « Incluído pela… », « (Revogado pela…) ») sont rattachés à l'article qui les contient, avec la portée lue en début de ligne (caput, paragraphe, inciso, alínea) ; un marqueur posé sur un titre de chapitre est ignoré ; les marqueurs « pela Medida Provisória » n'ont pas de loi source et ne sont pas gardés. Les dispositifs de la loi elle-même (« passa a vigorar », « altera a Lei nº », « Ficam revogados : I - … ») donnent des liens loi → loi ou loi → article ; « com a redação dada pela Lei nº Y » ou « alterado pelo art. 13 da Lei nº Y » ne désignent pas Y comme modifiée.
+
+## Profil actes de l'UE
+
+Pour les corpus de `raglab eurlex fetch` ([corpus-eurlex.md](corpus-eurlex.md)), où chaque document est déjà un considérant, un article ou une annexe d'un acte, dans une langue et une version. Les renvois sont lus à la collecte, par règles (`raglab.eurlex.references`), et rangés dans les métadonnées ; le profil (`src/raglab/graph/eu_acts.py`) les transforme en graphe sans relire le texte.
+
+| Élément | Contenu |
+|---|---|
+| `(:Act)` | un acte par CELEX, toutes langues confondues : `celex`, `key` (« GDPR », « DORA », « Regulation (EU) No 1093/2010 »), `type`, `role` (`base`, `delegated`, `implementing`, `amending`) ; `external: true` pour un acte cité hors corpus |
+| `(:Article)`, `(:Recital)`, `(:Annex)` | une unité par document : `celex`, `number`, `label`, `title`, `language`, `version`, `in_force`, `valid_from`, `valid_to`, `unit_key` ; `PART_OF` vers son acte, ses chunks `PART_OF` vers elle (`first` sur le premier) |
+| `CITES` | unité → article, annexe ou considérant cité, dans la même langue et la version qui s'appliquait (la version en vigueur pour une version en vigueur) ; `scope` (`within_act`, `across_acts`), `ref_scope` (comment l'acte a été lu), `snippet` ; vers un `(:Act)` quand l'acte est hors corpus ou l'unité introuvable (`articles`) |
+| `EXPLAINS` | considérant → article de son propre acte, quand le considérant nomme cet acte (« de l'article 26, paragraphe 10, du présent règlement ») |
+| `SUPPLEMENTS` | acte délégué ou d'exécution → article de l'acte de base qui le fonde (« vu le règlement (UE) 2022/2554, et notamment son article 15 »), dans chaque langue |
+| `AMENDS` | acte modificatif → version consolidée qu'il a produite (marqueurs « ▼M1 » de la version consolidée) ; `kind` = `replaced`, `inserted`, `deleted` |
+| `SAME_AS` | la même unité, dans la même version, dans une autre langue |
+
+Les nœuds `Article` gardent les clés du profil lois (`document_id`, `number`, uid `<run>:<document>:art:<numéro>`) : la branche de recherche graphe suit les renvois entre actes de l'UE avec la même requête Cypher, et l'article cité par la question (« article 28 de DORA ») lui sert de départ.
+
+Précision vérifiée à la main sur un échantillon tiré avec une graine (`raglab eurlex graph-sample`, sans PostgreSQL ni Neo4j) : 39/39 avec les règles livrées (v5, graine 46), après quatre versions mesurées chacune sur une graine neuve ; détail dans [corpus-eurlex.md](corpus-eurlex.md#précision-vérifiée-à-la-main).
 
 ## Construire le graphe
 

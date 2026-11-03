@@ -215,6 +215,11 @@ Toute nouvelle brique doit servir l'un de ces modes d'échec ou l'expérience de
 - `raglab legifrance fetch --code consommation` : Code de la consommation avec tout son historique (données LEGI de la DILA via le dépôt git tricoteuses du code, figé sur un commit), un document par version d'article, état, dates, textes modificatifs et renvois dans les métadonnées ; 5 998 versions de 3 391 articles (2 106 en vigueur), 3 593 renvois internes, 1 352 articles réécrits, 321 numéros réutilisés par la recodification de 2016
 - résolveur de citations, profil français (« article L. 221-18 du code de la consommation », « l'article 1240 du code civil »), suite `legi_consommation` (sur demande), générateur de questions avec partie `dev` / `heldout` ; questions et mesures à lancer
 
+**Corpus de conformité UE 🚧** : voir [corpus-eurlex.md](corpus-eurlex.md)
+
+- `raglab eurlex fetch` : 15 actes de l'UE (RGPD, AI Act, DORA, NIS 2, actes délégués et d'exécution, omnibus numérique sur l'IA) en français, anglais et portugais, depuis CELLAR (sans compte), versions consolidées figées ; un document par considérant, article ou annexe, par langue et par version : 4 236 documents, 9 632 renvois en vigueur dont 1 395 d'un acte à l'autre, 38 articles de l'AI Act réécrits par l'omnibus de 2026
+- résolveur de citations, profil UE (« article 32 du RGPD », « Article 6(1)(a) GDPR », « considérant 39 ») ; graphe, profil `eu_acts` (`CITES`, `EXPLAINS`, `SUPPLEMENTS`, `AMENDS`, `SAME_AS`), précision relue 39/39 ; suite `eurlex_compliance` (sur demande) et générateur de questions (`scenario` majoritaire, `cross_reference`, `cross_language`) ; questions et mesures à lancer
+
 **Mode Démo 📋 (planifié)** : questions pièges pré-remplies (une par mode d'échec), bouton « Comparer : RAG classique / raglab » qui affiche les deux réponses et leurs passages côte à côte, description de chaque corpus dans le sélecteur, pages Expert secondaires rangées dans une section « Outils ».
 
 - `GET /metrics` (Prometheus) : latence par étape (embed, retrieval, citation, dense, lexical, fusion, rerank, generation : chaque clé de `timings_ms`), tokens/s, score top-1, requêtes par route et statut, compteurs de cache (`embedder`, `reranker` depuis `rerank_stats`), re-ranking sans GPU (`raglab_rerank_notices_total`) et abstention (9.4) ; labels à faible cardinalité (gabarits de route)

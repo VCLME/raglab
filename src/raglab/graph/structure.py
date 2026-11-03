@@ -24,6 +24,10 @@ Laws profile (Brazilian federal laws, LexML-like text), rules in
 Laws outside the corpus are `(:Law {external: true})` stubs, so "rewritten by
 Lei nº 14.026" stays visible even when that law is not indexed.
 
+EU acts profile (`raglab eurlex fetch` corpora, one unit per document):
+`(:Act)`, `(:Article|:Recital|:Annex)`, `CITES`, `EXPLAINS`, `SUPPLEMENTS`,
+`AMENDS`, `SAME_AS`, read from the metadata (`raglab.graph.eu_acts`).
+
 This module is pure: rows in, a `GraphPayload` out. `raglab.graph.structured`
 writes it to Neo4j.
 """
@@ -34,6 +38,7 @@ from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from typing import Any
 
+from raglab.graph.eu_acts import add_eu_structure, looks_like_eu_act
 from raglab.graph.legal import (
     LawMention,
     LawStructure,
@@ -45,7 +50,7 @@ from raglab.graph.legal import (
     parse_markdown_sections,
 )
 
-PROFILES = ("auto", "laws", "generic")
+PROFILES = ("auto", "laws", "eu_acts", "generic")
 # Share of a corpus' documents that must look like laws for "auto" to pick
 # the laws profile.
 AUTO_LAWS_SHARE = 0.5
@@ -98,13 +103,16 @@ class GraphPayload:
 
 
 def resolve_profile(profile: str, documents: list[DocumentRow]) -> str:
-    """ "laws" or "generic"; "auto" looks at the documents."""
+    """ "laws", "eu_acts" or "generic"; "auto" looks at the documents."""
     if profile not in PROFILES:
         raise ValueError(f"Profil de graphe inconnu: {profile} (attendu: {', '.join(PROFILES)})")
     if profile != "auto":
         return profile
     if not documents:
         return "generic"
+    eu_units = sum(1 for document in documents if looks_like_eu_act(document.metadata or {}))
+    if eu_units / len(documents) >= AUTO_LAWS_SHARE:
+        return "eu_acts"
     laws = sum(1 for document in documents if looks_like_law(document.content))
     return "laws" if laws / len(documents) >= AUTO_LAWS_SHARE else "generic"
 
@@ -252,6 +260,8 @@ def build_payload(
                 nodes, relationships, stats, base, laws, document, structure, ordered, key=key, year=year
             )
 
+    if resolved == "eu_acts":
+        add_eu_structure(nodes, relationships, stats, base, documents, chunks_by_document)
     nodes["Law"].extend({**base, **row} for row in laws.external.values())
     payload.nodes = dict(nodes)
     payload.relationships = dict(relationships)
@@ -522,5 +532,7 @@ def law_label(key: str | None, year: int | None) -> str:
     """ "Lei nº 8.078/1990", "Lei Complementar nº 101" from a law key."""
     if not key:
         return ""
+    if not key.removeprefix("LC").isdigit():
+        return key  # an EU act ("GDPR", "Regulation (EU) No 1093/2010")
     kind = "Lei Complementar" if key.startswith("LC") else "Lei"
     return f"{kind} nº {format_law_number(key.removeprefix('LC'))}" + (f"/{year}" if year else "")

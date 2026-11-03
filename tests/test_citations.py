@@ -109,3 +109,68 @@ def test_french_citation_label():
     assert Citation(None, "L221-18", code="consommation").label() == "art. L. 221-18 — Code de la consommation"
     assert Citation(None, "R212-1").label() == "art. R. 212-1"
     assert Citation("8078", "49", 1990).label() == "art. 49 — Lei nº 8078 (1990)"
+
+
+GDPR = "32016R0679"
+
+
+@pytest.mark.parametrize(
+    ("question", "celex", "unit", "number", "paragraph", "point", "language"),
+    [
+        ("Que dit l'article 32 du RGPD ?", GDPR, "article", "32", None, None, "fr"),
+        ("What does Article 6(1)(a) GDPR require?", GDPR, "article", "6", "1", "a", "en"),
+        ("O que prevê o artigo 5.º do Regulamento (UE) 2016/679?", GDPR, "article", "5", None, None, "pt"),
+        ("Que dit le considérant 39 du RGPD ?", GDPR, "recital", "39", None, None, "fr"),
+        ("What does Annex III of the AI Act list?", "32024R1689", "annex", "III", None, None, "en"),
+        (
+            "Under Article 4a of the AI Act, may providers process special data?",
+            "32024R1689",
+            "article",
+            "4a",
+            None,
+            None,
+            "en",
+        ),
+        (
+            "Quelles obligations impose l'article 28, paragraphe 2, du règlement (UE) 2022/2554 ?",
+            "32022R2554",
+            "article",
+            "28",
+            "2",
+            None,
+            "fr",
+        ),
+        ("Que dit l'article 21 de la directive NIS 2 ?", "32022L2555", "article", "21", None, None, "fr"),
+    ],
+)
+def test_parse_eu_citations(question, celex, unit, number, paragraph, point, language):
+    citation = parse_citation(question)
+    assert citation is not None and citation.law_number is None and citation.code is None
+    assert (citation.celex, citation.unit, citation.article, citation.paragraph, citation.point, citation.language) == (
+        celex,
+        unit,
+        number,
+        paragraph,
+        point,
+        language,
+    )
+
+
+def test_eu_act_named_without_a_unit_and_labels():
+    citation = parse_citation("What does the GDPR say about consent?")
+    assert citation is not None and (citation.celex, citation.unit, citation.article) == (GDPR, None, None)
+    assert citation.label() == "GDPR"
+    assert parse_citation("What does Article 6(1)(a) GDPR require?").label() == "Article 6(1)(a) — GDPR"
+    assert parse_citation("Que dit le considérant 39 du RGPD ?").label() == "Considérant 39 — RGPD"
+    # The act named right after the unit wins.
+    assert parse_citation("Que dit l'article 5 de DORA, et l'article 6 du RGPD ?").celex == "32022R2554"
+
+
+def test_eu_profile_leaves_the_other_profiles_alone():
+    assert parse_citation("O que dispõe o art. 49 da Lei nº 8.078?") == Citation("8078", "49")
+    assert parse_citation("Que dispose l'article 1240 du code civil ?") == Citation(None, "1240", code="civil")
+    assert parse_citation("Que prévoit l'article L. 221-18 du Code de la consommation ?") == Citation(
+        None, "L221-18", code="consommation"
+    )
+    # An article number without an act or a recital is not an EU citation.
+    assert parse_citation("What does Article 6 say about lawfulness?") is None

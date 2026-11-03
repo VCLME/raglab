@@ -127,7 +127,16 @@ def test_round_trip_through_neo4j():
         store.write(payload, duration_ms=1.0)
         store.write(payload, duration_ms=1.0)  # idempotent rebuild
         counts = store.counts(run)
-        assert counts["nodes"] == {"Document": 1, "Section": 0, "Chunk": 2, "Article": 2, "Law": 2}
+        assert counts["nodes"] == {
+            "Document": 1,
+            "Section": 0,
+            "Chunk": 2,
+            "Article": 2,
+            "Law": 2,
+            "Act": 0,
+            "Recital": 0,
+            "Annex": 0,
+        }
         assert counts["relationships"]["CITES->Article"] == 1
         assert counts["relationships"]["AMENDS"] == 1
         assert store.run_info(run)["status"] == "completed"
@@ -140,6 +149,70 @@ def test_round_trip_through_neo4j():
             "1": ["c0"],
             "2": ["c1"],
         }
+    finally:
+        store.delete_run(run)
+        assert store.run_info(run) is None
+        store.close()
+
+
+def _eu_payload(run: str):
+    def unit(doc: str, unit: str, number: str, language: str, references: list[dict], text: str) -> DocumentRow:
+        metadata = {
+            "celex": "32022R2554",
+            "unit": unit,
+            "unit_number": number,
+            "unit_label": f"{unit.title()} {number}",
+            "unit_key": f"32022R2554:{unit}:{number}",
+            "language": language,
+            "in_force": True,
+            "version": 1,
+            "valid_from": "2022-12-27",
+            "references": references,
+        }
+        return DocumentRow(doc, f"{doc}.txt", text, metadata)
+
+    cite = [{"unit": "article", "number": "30", "celex": "32022R2554", "scope": "same_act", "text": "Article 30"}]
+    explain = [{"unit": "article", "number": "28", "celex": "32022R2554", "scope": "same_act", "text": "Article 28"}]
+    documents = [
+        unit("a28", "article", "28", "en", cite, "Article 28. In line with Article 30."),
+        unit("a30", "article", "30", "en", [], "Article 30. Key contractual provisions."),
+        unit("a30fr", "article", "30", "fr", [], "Article 30. Principales dispositions contractuelles."),
+        unit("r1", "recital", "1", "en", explain, "(1) As laid down in Article 28 of this Regulation."),
+    ]
+    chunks = [ChunkRow(f"c-{d.id}", d.id, 0, 0, len(d.content)) for d in documents]
+    return build_payload(index_run_id=run, corpus="eu", documents=documents, chunks=chunks)
+
+
+@pytest.mark.skipif(not NEO4J_URI, reason="RAGLAB_TEST_NEO4J_URI not set")
+def test_eu_acts_round_trip_through_neo4j():
+    run = f"test-{uuid.uuid4()}"
+    store = StructuredGraphStore(uri=NEO4J_URI, settings=Settings())
+    try:
+        payload = _eu_payload(run)
+        assert payload.profile == "eu_acts"
+        store.write(payload, duration_ms=1.0)
+        counts = store.counts(run)
+        assert {label: counts["nodes"][label] for label in ("Act", "Article", "Recital", "Chunk")} == {
+            "Act": 1,
+            "Article": 3,
+            "Recital": 1,
+            "Chunk": 4,
+        }
+        assert counts["relationships"]["CITES->Article"] == 1
+        assert counts["relationships"]["EXPLAINS->Article"] == 1
+        assert counts["relationships"]["SAME_AS"] == 1
+        # The graph retrieval branch follows EU citations with the laws query.
+        rows = store.cited_articles(
+            run,
+            seed_chunks=[{"id": "c-a28", "rank": 1}],
+            seed_articles=[],
+            max_seeds=5,
+            per_seed=3,
+            chunks_per_article=2,
+        )
+        assert [(row["target_number"], row["target_law_key"], row["chunk_ids"]) for row in rows] == [
+            ("30", "DORA", ["c-a30"])
+        ]
     finally:
         store.delete_run(run)
         assert store.run_info(run) is None
