@@ -1,0 +1,13 @@
+# Scrape config for the `obs` compose profile (docs/observabilite.md).
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: raglab-api
+    metrics_path: /metrics
+    static_configs:
+      # `api` is the compose service (profile `app`); host.docker.internal
+      # covers an API started on the host with `uvicorn ... --port 8000`.
+      # Only one of them is up at a time, the other shows as down.
+      - targets: ["api:8000", "host.docker.internal:8000"]
