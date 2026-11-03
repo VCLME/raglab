@@ -40,7 +40,17 @@ with `mcp__ccd_session__spawn_task` rather than folding them in.
 
 ## Production track (roadmap phase 9)
 
-raglab is being hardened phase by phase (9.1 to 9.8, see `docs/roadmap.md`).
+raglab is being hardened phase by phase (9.1 to 9.10, see `docs/roadmap.md`).
+
+Project thesis (owner-approved, `docs/audit-2026-11.md`): naive RAG fails on
+structured, cross-referenced, versioned documents; raglab shows where,
+measures it and fixes it, fully local. Four failure modes, each with a frozen
+question set and a measured brick: identifiers (citation resolver, done),
+cross-references (Neo4j citation graph, 9.9), versions (amended/revoked
+articles, 9.10), out of scope (router and abstention, 9.4). New work must
+serve one of them or the Demo mode; anything else is out of scope unless the
+owner asks.
+
 Rules for that work:
 
 - Every brick must show a measured gain on the frozen benchmarks (Recall@5/10,
