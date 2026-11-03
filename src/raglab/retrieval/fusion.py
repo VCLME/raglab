@@ -13,6 +13,8 @@ so the cosine and BM25 scales never have to be calibrated against each other.
 
 from __future__ import annotations
 
+from typing import Any
+
 from raglab.domain.schemas import RetrievedChunk
 
 
@@ -41,14 +43,16 @@ def reciprocal_rank_fusion(
         existing = merged.get(chunk.chunk_id)
         merged[chunk.chunk_id] = existing.model_copy(update=update) if existing else chunk.model_copy(update=update)
     for chunk in graph or []:
-        update = {
+        graph_update: dict[str, Any] = {
             "graph_score": chunk.graph_score,
             "graph_rank": chunk.graph_rank,
             "graph_reason": chunk.graph_reason,
             "graph_via": chunk.graph_via,
         }
         existing = merged.get(chunk.chunk_id)
-        merged[chunk.chunk_id] = existing.model_copy(update=update) if existing else chunk.model_copy(update=update)
+        merged[chunk.chunk_id] = (
+            existing.model_copy(update=graph_update) if existing else chunk.model_copy(update=graph_update)
+        )
 
     def fused_score(chunk: RetrievedChunk) -> float:
         score = 0.0
