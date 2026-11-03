@@ -636,7 +636,7 @@ def legifrance_questions(
         None, "--profile", help="Profil llama.cpp a demarrer (defaut: question_model_profile)."
     ),
 ) -> None:
-    """Generer un jeu de questions typees (paraphrase / reference / entity) sur un code francais."""
+    """Generer un jeu de questions typees (scenario / paraphrase / reference / entity) sur un code francais."""
     from raglab.benchmarks.legi_questions import generate_questions as generate_legi_questions
 
     result = generate_legi_questions(

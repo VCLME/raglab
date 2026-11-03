@@ -4,8 +4,14 @@ Same protocol as LexML (`raglab.benchmarks.lexml_questions`): passages are
 drawn at random inside the articles, a local model writes one question per
 passage with a short answer quoted from it, the quote is located in the
 document to give a gold span, and questions that fail the checks are
-dropped. Three types, as for LexML:
+dropped. Four types:
 
+* ``scenario`` (the main type, about half of the set) — a concrete
+  situation as a consumer, a company or a lawyer describes it (« Mon client
+  a acheté un canapé en ligne il y a dix jours, peut-il encore se
+  rétracter ? »): no article number, no code name, no 6 consecutive words of
+  the article, no date (the answer is the version in force). A question that
+  names the article is solved by a Ctrl+F; real users describe their case;
 * ``paraphrase`` — the question avoids the article's wording and cites no
   article number;
 * ``reference`` — the question cites the article the way a lawyer does
@@ -39,7 +45,7 @@ from raglab.benchmarks.base import GroundTruthCase, write_ground_truth, write_me
 from raglab.benchmarks.lexml_questions import MAX_ANSWER_WORDS, _letter_ratio, _parse, lexical_overlap
 from raglab.benchmarks.squad_style import locate_span
 from raglab.config import Settings, get_settings
-from raglab.legifrance.codes import get_code
+from raglab.legifrance.codes import find_code_mentions, get_code
 from raglab.legifrance.collector import IN_FORCE_STATES
 from raglab.legifrance.references import article_label
 from raglab.llm.openai_compat import OpenAICompatibleChat
@@ -49,7 +55,17 @@ from raglab.retrieval.citations import parse_citation, parse_code_citation
 
 LOGGER = logging.getLogger(__name__)
 
-QUESTION_TYPES = ("paraphrase", "reference", "entity")
+QUESTION_TYPES = ("scenario", "paraphrase", "reference", "entity")
+# Target share of each type: situations first, as users ask; citations of
+# articles (the identifiers failure mode) stay, as a minority.
+TYPE_SHARES = {"scenario": 0.55, "paraphrase": 0.15, "reference": 0.15, "entity": 0.15}
+# A question that copies this many consecutive words of the passage is a
+# Ctrl+F, not a user's question.
+MAX_COPIED_WORDS = 6
+_WORD_RE = re.compile(r"\w+", re.UNICODE)
+# A year in a scenario dates the situation: the answer would then be the
+# version of that date, not the one in force.
+_YEAR_RE = re.compile(r"\b(?:19|20)\d{2}\b")
 DEV_SHARE = 0.25
 MIN_PASSAGE_CHARS = 200
 # Phrasings that only make sense next to the passage ("cet article", "le
@@ -89,6 +105,12 @@ français dont la réponse se trouve dans cet extrait, et la RÉPONSE courte \
 copiée mot pour mot de l'extrait.
 
 Types :
+* scenario — la question d'un vrai utilisateur (consommateur, entreprise ou \
+avocat) face à une situation concrète, en français naturel (ex. : « Mon client \
+a acheté un canapé en ligne il y a dix jours, peut-il encore se rétracter ? », \
+« Un vendeur peut-il me facturer des frais de recouvrement ? ») : ne cite aucun \
+numéro d'article, ne nomme aucun code, ne recopie pas l'extrait, ne donne \
+aucune année.
 * paraphrase — reformule avec d'autres mots : n'emprunte pas les expressions \
 de l'extrait (utilise des synonymes), ne cite aucun numéro d'article ni de texte.
 * reference — la question cite l'article indiqué en RÉFÉRENCE, comme le ferait \
@@ -210,7 +232,7 @@ def sample_passages(
 
 
 def eligible_types(passage: ArticlePassage) -> list[str]:
-    types = ["paraphrase", "reference"]
+    types = ["scenario", "paraphrase", "reference"]
     if _ENTITY_RE.search(passage.text):
         types.append("entity")
     return types
@@ -218,6 +240,16 @@ def eligible_types(passage: ArticlePassage) -> list[str]:
 
 def pick_question_type(passage: ArticlePassage, wanted: str) -> str:
     return wanted if wanted in eligible_types(passage) else "paraphrase"
+
+
+def copied_wording(question: str, text: str, size: int = MAX_COPIED_WORDS) -> bool:
+    """The question repeats `size` consecutive words of `text`."""
+
+    def grams(value: str) -> set[tuple[str, ...]]:
+        words = [word.lower() for word in _WORD_RE.findall(value)]
+        return {tuple(words[index : index + size]) for index in range(len(words) - size + 1)}
+
+    return bool(grams(question) & grams(text))
 
 
 def text_rejection_reason(question: str, answer: str) -> str | None:
@@ -254,6 +286,13 @@ def _rejection_reason(generated: dict[str, str] | None, passage: ArticlePassage,
         return "leaks_reference"
     if question_type == "reference" and not cites_reference(question, passage):
         return "reference_missing"
+    if question_type == "scenario":
+        if find_code_mentions(question):
+            return "names_code"
+        if copied_wording(question, passage.text):
+            return "copies_wording"
+        if _YEAR_RE.search(question):
+            return "dated"
     return None
 
 
@@ -385,6 +424,9 @@ class LegiQuestionGenerator:
                 "reference_missing",
                 "vague",
                 "boilerplate_answer",
+                "names_code",
+                "copies_wording",
+                "dated",
             ),
             0,
         )
@@ -398,7 +440,8 @@ class LegiQuestionGenerator:
             available = [kind for kind in QUESTION_TYPES if failed_by_type[kind] < 3 * kept_by_type[kind] + 10] or [
                 "paraphrase"
             ]
-            wanted = min(available, key=lambda kind: kept_by_type[kind])
+            # The type furthest below its share (TYPE_SHARES) first.
+            wanted = min(available, key=lambda kind: kept_by_type[kind] / TYPE_SHARES[kind])
             question_type = pick_question_type(passage, wanted)
             generated = self._ask(passage, question_type)
             reason = _rejection_reason(generated, passage, question_type)
