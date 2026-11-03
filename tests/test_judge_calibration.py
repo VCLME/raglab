@@ -39,10 +39,12 @@ def test_summary_counts_unparsed_verdicts_as_wrong():
         {"variant": "fabricated", "expected": False, "score": 0.0},
         {"variant": "embellished", "expected": False, "score": 0.8},
         {"variant": "embellished", "expected": False, "score": None},
-        {"variant": "on_topic", "expected": True, "score": 0.5},
+        {"variant": "embellished", "expected": False, "score": 0.5},  # half-grounded: problem detected
+        {"variant": "on_topic", "expected": True, "score": 1.0},
         {"variant": "off_topic", "expected": False, "score": 0.2},
     ]
     summary = summarise(rows)
-    assert summary["accuracy_by_variant"]["embellished"] == 0.0
-    assert summary["accuracy_by_metric"] == {"faithfulness": 0.5, "answer_relevancy": 1.0}
+    assert summary["accuracy_by_variant"]["embellished"] == 0.333
+    assert summary["accuracy_by_metric"] == {"faithfulness": 0.6, "answer_relevancy": 1.0}
+    assert summary["mean_score_by_variant"]["embellished"] == 0.65
     assert summary["unparsed"] == 1

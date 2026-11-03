@@ -14,7 +14,10 @@ how often each judge agrees:
 * ``off_topic``     — answers another question about the same paragraph →
   not relevant.
 
-A verdict counts as "positive" when the judge's score is >= 0.5.
+A verdict counts as "positive" when the score is >= 0.75, i.e. only a
+full mark. The judges' rubric gives 0.5 to a half-grounded answer: that is
+the *right* grade for an embellished answer, so 0.5 must count as "problem
+detected", not as "faithful".
 """
 
 from __future__ import annotations
@@ -33,6 +36,8 @@ from raglab.llm.openai_compat import OpenAICompatibleChat
 from raglab.logging_utils import log_event
 
 LOGGER = logging.getLogger(__name__)
+
+POSITIVE_THRESHOLD = 0.75
 
 # Unsupported but plausible additions, written so they never appear in a
 # Wikipedia paragraph about the topic.
@@ -116,14 +121,17 @@ def grade(items: list[CalibrationItem], settings: Settings, config: JudgeConfig)
 def summarise(rows: list[dict[str, Any]]) -> dict[str, Any]:
     """Accuracy per variant and per metric; unparsable verdicts count as wrong."""
     per_variant: dict[str, list[bool]] = {}
+    scores: dict[str, list[float]] = {}
     unparsed = 0
     for row in rows:
         if row["score"] is None:
             unparsed += 1
             correct = False
         else:
-            correct = (row["score"] >= 0.5) == row["expected"]
+            correct = (row["score"] >= POSITIVE_THRESHOLD) == row["expected"]
         per_variant.setdefault(row["variant"], []).append(correct)
+        if row["score"] is not None:
+            scores.setdefault(row["variant"], []).append(row["score"])
     accuracy = {variant: round(sum(flags) / len(flags), 3) for variant, flags in sorted(per_variant.items())}
     groups = {"faithfulness": ("faithful", "fabricated", "embellished"), "answer_relevancy": ("on_topic", "off_topic")}
     by_metric = {}
@@ -131,7 +139,14 @@ def summarise(rows: list[dict[str, Any]]) -> dict[str, Any]:
         flags = [flag for variant in variants for flag in per_variant.get(variant, [])]
         if flags:
             by_metric[metric] = round(sum(flags) / len(flags), 3)
-    return {"accuracy_by_variant": accuracy, "accuracy_by_metric": by_metric, "unparsed": unparsed}
+    mean_score = {variant: round(sum(values) / len(values), 3) for variant, values in sorted(scores.items())}
+    return {
+        "threshold": POSITIVE_THRESHOLD,
+        "accuracy_by_variant": accuracy,
+        "accuracy_by_metric": by_metric,
+        "mean_score_by_variant": mean_score,
+        "unparsed": unparsed,
+    }
 
 
 def calibrate(
