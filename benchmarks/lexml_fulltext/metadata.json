@@ -1,0 +1,33 @@
+{
+  "loader": "lexml_fulltext",
+  "language": "pt",
+  "licence": "Public domain (Lei 9.610/1998, art. 8º, IV)",
+  "generator_model": "qwen3.6-35b-a3b",
+  "generator_backend": "llamacpp",
+  "seed": 42,
+  "case_count": 300,
+  "by_type": {
+    "paraphrase": 100,
+    "reference": 100,
+    "entity": 100
+  },
+  "rejected": {
+    "invalid_json": 2,
+    "quote_not_found": 27,
+    "answer_too_long": 9,
+    "leaks_reference": 33,
+    "reference_missing": 57,
+    "vague": 10,
+    "boilerplate_answer": 11
+  },
+  "corpus_dir": "data/lexml/fulltext/corpus",
+  "review": {
+    "rejected_after_generation": {
+      "boilerplate_answer": 4,
+      "vague": 19
+    },
+    "usable_cases": 277,
+    "manual_sample_read": 40,
+    "command": "raglab lexml review-questions"
+  }
+}

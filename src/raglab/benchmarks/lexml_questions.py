@@ -47,10 +47,21 @@ MAX_ANSWER_WORDS = 40
 _VAGUE_RE = re.compile(
     r"\b(?:nest[ea]s?|dest[ea]s?|est[ea]s?)\s+(?:trecho|texto|lei|artigo|par[aá]grafo|anexo|dispositivo)\b"
     r"|\b(?:segundo|conforme)\s+o\s+texto\b"
-    r"|\bem\s+(?:an[aá]lise|quest[aã]o)\b",
+    r"|\bem\s+(?:an[aá]lise|quest[aã]o)\b"
+    r"|\b(?:mencionad|referid|citad|introduzid)[oa]s?\b"
+    r"|\bconforme\s+(?:o|a)\s+(?:inciso|al[ií]nea|item|subt[ií]tulo|par[aá]grafo|dispositivo)\b",
     re.IGNORECASE,
 )
-_BOILERPLATE_RE = re.compile(r"PRESIDENT[EA]\s+DA\s+REP[UÚ]BLICA|Congresso Nacional decreta", re.IGNORECASE)
+# Answers that carry no content of their own: the enacting formula, the
+# "in force on publication" clause, vetoed or exempt markers, amendment notes
+# and the Planalto page footer.
+_BOILERPLATE_RE = re.compile(
+    r"PRESIDENT[EA]\s+DA\s+REP[UÚ]BLICA|Congresso Nacional decreta"
+    r"|entra\s+em\s+vigor|^\(?VETADO\)?$|^ISENTO$|Reda[cç][aã]o dada pela"
+    r"|n[aã]o substitui o publicado",
+    re.IGNORECASE,
+)
+MIN_ANSWER_WORDS = 1
 _BUDGET_EMENTA_RE = re.compile(r"^\s*(?:abre|reabre)\b", re.IGNORECASE)
 
 _JSON_BLOCK_RE = re.compile(r"\{[\s\S]*\}")
@@ -257,20 +268,56 @@ def generate_questions(
         return generator.generate(corpus_dir=corpus_dir, output_dir=output_dir, count=count, seed=seed)
 
 
+def text_rejection_reason(question: str, answer: str) -> str | None:
+    """Checks that only need the question and its answer.
+
+    Also applied to an existing question set by `review_question_set`, so a
+    rule added after generation can be enforced without regenerating.
+    """
+    words = len(answer.split())
+    if words > MAX_ANSWER_WORDS:
+        return "answer_too_long"
+    if words < MIN_ANSWER_WORDS or _letter_ratio(answer) < 0.5 or _BOILERPLATE_RE.search(answer.strip()):
+        return "boilerplate_answer"
+    if _VAGUE_RE.search(question):
+        return "vague"
+    return None
+
+
+def review_question_set(ground_truth_path: Path) -> dict[str, int]:
+    """Mark as `rejected` the cases that fail the current text rules.
+
+    Rejected cases stay in the file (with `rejection_reason`) so the set can
+    be audited, but the recall benchmark skips them.
+    """
+    lines = ground_truth_path.read_text(encoding="utf-8").splitlines()
+    counts: dict[str, int] = {}
+    output: list[str] = []
+    for line in lines:
+        if not line.strip():
+            continue
+        case = json.loads(line)
+        if case.get("review_status") != "rejected":
+            reason = text_rejection_reason(case["question"], case.get("ground_truth_answer") or "")
+            if reason is not None:
+                case["review_status"] = "rejected"
+                case["rejection_reason"] = reason
+                counts[reason] = counts.get(reason, 0) + 1
+        output.append(json.dumps(case, ensure_ascii=False))
+    ground_truth_path.write_text("\n".join(output) + "\n", encoding="utf-8")
+    return counts
+
+
 def _rejection_reason(generated: dict[str, str] | None, passage: Passage, question_type: str) -> str | None:
     if generated is None:
         return "invalid_json"
     span = locate_span(passage.text, generated["answer"])
     if span is None:
         return "quote_not_found"
-    if len(span["text"].split()) > MAX_ANSWER_WORDS:
-        return "answer_too_long"
-    if _letter_ratio(span["text"]) < 0.5 or _BOILERPLATE_RE.search(span["text"]):
-        # "......" filler lines of amendment texts, or the enacting formula.
-        return "boilerplate_answer"
+    reason = text_rejection_reason(generated["question"], span["text"])
+    if reason is not None:
+        return reason
     question = generated["question"]
-    if _VAGUE_RE.search(question):
-        return "vague"
     if question_type != "reference" and re.search(r"\b(?:art\.|artigo|lei n)", question, re.I):
         return "leaks_reference"
     if question_type == "reference" and not _cites_reference(question, passage):

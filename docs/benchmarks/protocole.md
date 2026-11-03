@@ -31,7 +31,7 @@ raglab bench download piaf --limit 500 --seed 42
 - Corpus : tous les paragraphes du split `train` d'`etalab-ia/piaf`, soit 761 paragraphes (≈ 540 Ko de texte), un fichier par paragraphe, texte déjà normalisé.
 - Questions : 500 tirées avec la graine. La réponse annotée (`answer_start`) est relocalisée dans le texte normalisé (les 500 l'ont été) : le passage attendu est la réponse elle-même.
 - `--sample-corpus` restaure l'ancien comportement (corpus réduit aux paragraphes des questions tirées), utile seulement pour un test rapide.
-- Licence : CC-BY-SA (Wikipédia). Le jeu dérivé n'est pas versionné dans le dépôt ; la commande le régénère.
+- Licence : CC-BY-SA (Wikipédia). Les 500 questions sont figées dans `benchmarks/piaf/` (le corpus, lui, se régénère avec la commande).
 
 ## LexML texte intégral (portugais)
 
@@ -70,7 +70,7 @@ Le modèle doit aussi rendre une **réponse copiée mot pour mot** du passage. U
 
 Chaque cas enregistre `lexical_overlap` : la part des mots de la question (plus de 3 lettres) présents dans le passage. Les questions générées par un LLM reprennent souvent les mots du texte, ce qui favorise la recherche lexicale ; ce chiffre permet de le vérifier au lieu de le supposer.
 
-**Relecture.** Les cas sont écrits avec `review_status: "generated"`. Un échantillon est relu à la main ; un cas passé à `"rejected"` est ignoré par le benchmark, un cas relu passe à `"reviewed"`.
+**Relecture.** 40 questions ont été relues à la main. Les défauts trouvés (réponses sans contenu comme « (VETADO) » ou « Esta Lei entra em vigor… », renvois vagues comme « conforme o inciso VI ») sont devenus des règles automatiques, appliquées après coup par `raglab lexml review-questions` : 23 cas sur 300 sont marqués `review_status: "rejected"` avec leur `rejection_reason`. Ils restent dans le fichier pour l'audit, le benchmark les ignore. Résultat : **277 questions utilisables** (93 paraphrases, 97 références, 87 entités) sur 168 lois. Le jeu est figé dans `benchmarks/lexml_fulltext/`.
 
 ## Limites connues
 

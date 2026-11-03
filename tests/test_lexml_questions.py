@@ -189,3 +189,26 @@ def test_passages_start_after_the_enacting_formula(tmp_path: Path):
     corpus = _corpus(tmp_path)
     for passage in sample_passages(corpus, count=6, seed=5, target_chars=120):
         assert "Dispõe sobre" not in passage.text
+
+
+def test_review_marks_contentless_and_vague_cases_without_dropping_them(tmp_path: Path):
+    from raglab.benchmarks.lexml_questions import review_question_set
+
+    rows = [
+        {"id": "a", "question": "Na lei do FGTS, qual o prazo?", "ground_truth_answer": "até o dia sete de cada mês"},
+        {"id": "b", "question": "O que dispõe o art. 10 da Lei nº 9.262?", "ground_truth_answer": "(VETADO)"},
+        {"id": "c", "question": "Quando entra em vigor a lei X?", "ground_truth_answer": "Esta Lei entra em vigor na data de sua publicação"},
+        {"id": "d", "question": "Qual o percentual conforme o subtítulo mencionado?", "ground_truth_answer": "quarenta por cento da soma"},
+    ]
+    path = tmp_path / "ground_truth.jsonl"
+    path.write_text("\n".join(json.dumps(row, ensure_ascii=False) for row in rows) + "\n", encoding="utf-8")
+
+    counts = review_question_set(path)
+
+    cases = {case["id"]: case for case in map(json.loads, path.read_text(encoding="utf-8").splitlines())}
+    assert len(cases) == 4
+    assert "review_status" not in cases["a"]
+    assert cases["b"]["rejection_reason"] == "boilerplate_answer"
+    assert cases["c"]["rejection_reason"] == "boilerplate_answer"
+    assert cases["d"]["rejection_reason"] == "vague"
+    assert counts == {"boilerplate_answer": 2, "vague": 1}

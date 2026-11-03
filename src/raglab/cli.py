@@ -6,7 +6,7 @@ from pathlib import Path
 import typer
 
 from raglab.benchmarks import AVAILABLE_LOADERS, get_loader
-from raglab.benchmarks.lexml_questions import generate_questions
+from raglab.benchmarks.lexml_questions import generate_questions, review_question_set
 from raglab.config import get_settings
 from raglab.db import initialize_database, session_scope
 from raglab.domain.enums import ChunkingStrategy
@@ -249,6 +249,19 @@ def lexml_questions(
         profile=profile,
     )
     typer.echo(json.dumps(result, indent=2, ensure_ascii=False))
+
+
+@lexml_app.command("review-questions")
+def lexml_review_questions(
+    ground_truth: Path = typer.Option(
+        get_settings().data_dir / "benchmarks" / "lexml_fulltext" / "ground_truth.jsonl",
+        "--ground-truth",
+        help="Jeu de questions a re-verifier avec les regles actuelles.",
+    ),
+) -> None:
+    """Marquer `rejected` les questions qui echouent aux regles actuelles (sans les supprimer)."""
+    counts = review_question_set(ground_truth)
+    typer.echo(json.dumps({"ground_truth": str(ground_truth), "newly_rejected": counts}, indent=2, ensure_ascii=False))
 
 
 @lexml_app.command("ingest")
