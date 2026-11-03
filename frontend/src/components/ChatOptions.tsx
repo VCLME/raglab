@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import type { ConfigResponse, RetrievalMode } from "../api/types";
 import { SlidersIcon } from "./Icon";
 import { SlideIndicator } from "./SlideIndicator";
+import { useGpuWhy } from "../hooks/useGpuWhy";
 import { HelpTip } from "./HelpTip";
 import { Switch } from "./Switch";
 import { VersionsField, parseVersionsValue } from "./Versions";
@@ -71,6 +72,7 @@ export function ChatOptions({ value, onChange, config, legalCorpus }: Props) {
     value.rerank !== null ||
     (legalCorpus && (value.citations !== null || value.graph !== null || value.versions !== null));
   const noGpu = config?.rerank_gpu === false;
+  const gpuWhy = useGpuWhy();
 
   useEffect(() => {
     if (!open) return;
@@ -155,7 +157,7 @@ export function ChatOptions({ value, onChange, config, legalCorpus }: Props) {
             label={t("retrieval.rerank_label")}
             description={
               noGpu
-                ? t("chat.options_rerank_no_gpu")
+                ? t("chat.options_rerank_no_gpu", { why: gpuWhy })
                 : t("chat.options_rerank_hint", { model: config?.rerank_model_name ?? "bge-reranker-v2-m3" })
             }
             checked={current.rerank}

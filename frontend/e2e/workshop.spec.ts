@@ -119,3 +119,18 @@ test("Re-ranking without a GPU says the API has none, not that the machine has n
   await expect(page.getByText(/Re-ranking désactivé \(GPU non disponible pour l'API\)/)).toBeVisible();
   await expect(page.getByText("pas de GPU")).toHaveCount(0);
 });
+
+test("Re-ranking without a GPU says why when the API tells: GPU turned off in the configuration", async ({ page, api }) => {
+  api.set("GET /api/config", json({ ...data.config, rerank_gpu: false, rerank_device: "cpu", rerank_gpu_status: "device_cpu" }));
+  api.set("POST /api/query", json({ ...data.queryResponse, rerank_notice: "skipped_no_gpu" }));
+  await page.goto("/workshop/retrieval");
+  await page
+    .locator(".form-row")
+    .filter({ has: page.locator("label", { hasText: /^Question$/ }) })
+    .locator("textarea")
+    .fill(data.QUESTION);
+  await page.getByRole("button", { name: "Exécuter" }).click();
+  await expect(
+    page.getByText(/Re-ranking désactivé \(GPU désactivé par la configuration, RAGLAB_RERANK_DEVICE=cpu\)/)
+  ).toBeVisible();
+});
