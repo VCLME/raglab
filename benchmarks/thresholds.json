@@ -1,0 +1,8 @@
+{
+  "description": "Planchers de la porte de qualite (raglab gate). Fixes a partir de baseline-v1, moins une tolerance ; a relever quand une brique ameliore durablement les chiffres.",
+  "source_run": null,
+  "suites": {
+    "piaf": {"recall@5": 0.0, "mrr": 0.0, "faithfulness_mean": 0.0},
+    "lexml_fulltext": {"recall@5": 0.0, "mrr": 0.0, "faithfulness_mean": 0.0}
+  }
+}
