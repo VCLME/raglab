@@ -50,7 +50,7 @@ export function TopBar() {
   return (
     <header className="topbar">
       <div className="brand">
-        <span className={`dot ${dotClass}`} title={dotLabel} />
+        <span className={`dot ${dotClass}`} title={dotLabel} role="img" aria-label={dotLabel} />
         {t("topbar.brand")}
       </div>
       <div className="inline" style={{ gap: 10 }}>

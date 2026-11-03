@@ -65,6 +65,33 @@ L'interface se scinde en deux modes accessibles via un toggle en haut a droite :
 
 Le top-bar affiche en plus un indicateur de sante (point colore) qui ping `/api/health` toutes les 15 s, et un **selecteur de langue** (drapeau + code pays) avec menu deroulant a gauche du toggle Chat/Expert.
 
+## Systeme de design (theme clair)
+
+L'interface utilise un theme clair d'outil de developpeur : neutres legerement teintes, un seul accent (bleu cobalt) reserve aux actions, a la selection et au focus, et la police monospace pour les donnees (scores, ids, latences). Le cadrage produit (public, principes, accessibilite) est dans [`PRODUCT.md`](../PRODUCT.md).
+
+Tout passe par les tokens CSS de `frontend/src/styles.css` (valeurs en OKLCH) ; aucune page ne doit coder une couleur en dur.
+
+| Famille | Tokens | Usage |
+| --- | --- | --- |
+| Surfaces | `--bg`, `--bg-panel`, `--surface`, `--surface-2`, `--surface-hover` | fond de page, barre laterale, cartes, champs secondaires, survol |
+| Bordures | `--border`, `--border-strong`, `--border-input` | separateurs, boutons secondaires, contour des champs (>= 3:1) |
+| Texte | `--text`, `--muted`, `--dim` | texte principal, secondaire, libelles discrets (tous >= 4,5:1) |
+| Accent | `--accent`, `--accent-strong`, `--accent-soft`, `--accent-border`, `--on-accent`, `--focus-ring` | bouton principal, lien, selection, anneau de focus |
+| Statuts | `--ok`, `--warn`, `--err` + `-soft` / `-border` | badges, bannieres d'erreur ou d'avertissement |
+| Series de scores | `--score-dense`, `--score-bm25`, `--score-fused`, `--score-rerank` | scores par chunk sur la page Retrieval |
+| Metriques | `--metric-r1`, `--metric-r5`, `--metric-r10`, `--metric-mrr` | barres du graphique Benchmarks |
+
+Composants et regles partages :
+
+- **Formulaires** : libelles en casse normale au-dessus du champ, aide en `.hint`, largeur max 720 px ; tout `select` / `input` hors `.form-row` (filtres, barres d'outils) recoit le meme style.
+- **Focus** : anneau visible sur tous les elements interactifs (`:focus-visible`), y compris le composer du Chat.
+- **Scores multiples** : `.score-grid` contient des `.score-cell.dense|bm25|fused|rerank` (libelle, valeur monospace, barre coloree). Prevu pour afficher dense, BM25, fusion et reranker cote a cote sur un chunk.
+- **Etats** : `Spinner` est annonce aux lecteurs d'ecran (`role="status"`). `ErrorBanner` reconnait une API injoignable (erreur reseau, 502/503/504, ou 5xx sans corps renvoye par le proxy Vite) et affiche un titre, la commande pour demarrer le backend et l'erreur brute ; avec `compact`, il se reduit a une ligne quand une autre banniere de la page explique deja la panne (cas du Dashboard). Les bannieres d'avertissement utilisent `.error-banner.warn`.
+- **Responsive** : sous 960 px, la barre laterale devient une bande horizontale defilante (le lien actif reste visible) et les mises en page en deux colonnes passent sur une seule ; les tableaux larges defilent dans leur carte. Teste a 375 px sans defilement horizontal de la page.
+- **Mouvement** : transitions courtes (160 ms, ease-out) et `prefers-reduced-motion` respecte.
+
+Les captures de `docs/images/` se regenerent avec `node scripts/snap-screenshots.mjs <url>` (API demarree pour avoir des donnees reelles).
+
 ## Internationalisation (i18n)
 
 L'UI est traduite en trois langues via `react-i18next` :

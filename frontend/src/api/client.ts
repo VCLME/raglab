@@ -45,9 +45,12 @@ export async function apiFetch<T>(
     }
   }
   if (!response.ok) {
+    // A bare "HTTP <status>" means an empty body, i.e. the proxy found no API.
     const message =
       (parsed && typeof parsed === "object" && "detail" in parsed
         ? String((parsed as { detail: unknown }).detail)
+        : typeof parsed === "string" && parsed.trim()
+        ? `HTTP ${response.status}: ${parsed.trim().slice(0, 200)}`
         : `HTTP ${response.status}`) || `HTTP ${response.status}`;
     throw new ApiError(message, response.status, parsed);
   }

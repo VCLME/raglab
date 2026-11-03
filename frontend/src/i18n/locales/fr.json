@@ -38,7 +38,10 @@
     "selected_placeholder": "— sélectionner —",
     "auto": "auto",
     "show_explanation": "En savoir plus",
-    "hide_explanation": "Masquer"
+    "hide_explanation": "Masquer",
+    "api_down_title": "API raglab injoignable",
+    "api_down_hint": "Vérifie que le backend tourne (<code>raglab serve --dev</code>), puis rafraîchis la page.",
+    "api_down_short": "Indisponible tant que l'API ne répond pas."
   },
   "topbar": {
     "brand": "raglab",

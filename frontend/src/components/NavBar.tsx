@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 
 interface Link {
   to: string;
@@ -70,6 +70,15 @@ export function NavBar() {
     Object.fromEntries(GROUPS.map((g) => [g.id, readOpen(g.id)]))
   );
 
+  const location = useLocation();
+  const navRef = useRef<HTMLElement>(null);
+
+  // On narrow screens the nav is a horizontal strip: keep the active link visible.
+  useEffect(() => {
+    const active = navRef.current?.querySelector<HTMLElement>("a.active");
+    active?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }, [location.pathname]);
+
   const toggle = (id: string) => {
     setOpenGroups((prev) => {
       const next = { ...prev, [id]: !prev[id] };
@@ -81,7 +90,7 @@ export function NavBar() {
   return (
     <aside className="sidebar">
       <div className="section-title">{t("nav.expert_section")}</div>
-      <nav>
+      <nav ref={navRef} aria-label={t("nav.expert_section")}>
         {TOP_LINKS.map((link) => (
           <NavLink key={link.to} to={link.to} end={link.end}>
             {t(link.labelKey)}
