@@ -44,7 +44,7 @@ test("Retrieval page: hybrid mode sends its settings and shows dense / BM25 / RR
   const row = (label: RegExp) => page.locator(".form-row").filter({ has: page.locator("label", { hasText: label }) });
   await row(/^Question$/).locator("textarea").fill(data.QUESTION);
   // Custom listbox: open it, then pick the option by its label.
-  await row(/^Mode de retrieval$/).getByRole("combobox").click();
+  await row(/^Mode de recherche$/).getByRole("combobox").click();
   await page.getByRole("option", { name: "hybrid (RRF)" }).click();
   await row(/^Poids du BM25$/).locator("input").fill("0.3");
   await page.getByRole("button", { name: "Exécuter" }).click();

@@ -31,7 +31,8 @@
   --accent-border: oklch(0.8 0.08 140);
   --accent-brand: oklch(0.82 0.085 140);
   --on-accent: oklch(0.99 0.006 140);
-  --focus-ring: oklch(0.47 0.105 145 / 0.3);
+  /* Keyboard focus: a thin ring, >= 3:1 on the page and the surfaces, never a halo. */
+  --focus: oklch(0.58 0.07 145);
 
   /* status: each has a text-safe tone (>= 4.5:1 on surface) and a soft fill */
   --ok: oklch(0.5 0.11 165);
@@ -109,9 +110,13 @@ a:hover {
   color: var(--accent-strong);
 }
 
+/* Focus rings for keyboard users only; a mouse click shows none. */
 :focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 1.5px solid var(--focus);
   outline-offset: 2px;
+}
+:focus:not(:focus-visible) {
+  outline: none;
 }
 
 code,
@@ -259,6 +264,8 @@ pre {
 }
 .lang-caret {
   color: var(--muted);
+  font-size: 10px;
+  line-height: 1;
 }
 .lang-menu {
   position: absolute;
@@ -598,12 +605,17 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="
   min-height: 32px;
   font-size: 13px;
 }
+/* Text fields match :focus-visible on click too: a border tint, no outline. */
 select:focus-visible,
 textarea:focus-visible,
 input:focus-visible {
   outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--focus-ring);
+  border-color: var(--focus);
+}
+input[type="checkbox"]:focus-visible,
+input[type="radio"]:focus-visible,
+input[type="range"]:focus-visible {
+  outline: 1.5px solid var(--focus);
 }
 .form-row input,
 .form-row textarea,
@@ -655,8 +667,7 @@ input[type="range"] {
 .settings-bar input:focus,
 .composer-row select:focus {
   outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--focus-ring);
+  border-color: var(--focus);
 }
 .form-row input:disabled,
 .form-row textarea:disabled,
@@ -718,10 +729,6 @@ button > svg {
 }
 button:active {
   transform: translateY(1px);
-}
-button:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
 }
 button[disabled] {
   background: var(--surface-2);
@@ -905,7 +912,7 @@ button.sm {
 }
 .chunk.active {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--focus-ring);
+  background: var(--accent-soft);
 }
 .chunk:focus {
   outline: none;
@@ -1379,8 +1386,7 @@ button.sm {
   transition: border-color var(--dur) var(--ease-out), box-shadow var(--dur) var(--ease-out);
 }
 .composer:focus-within {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--focus-ring), var(--shadow-raised);
+  border-color: var(--focus);
 }
 .composer textarea {
   width: 100%;
@@ -1785,6 +1791,40 @@ button.sm {
   border: 0;
 }
 
+/* ——— toolbar controls ———
+ * Top-bar buttons and the Chat settings bar (pickers, Options, New
+ * conversation) share one look: height, border, radius, hover, press. */
+.edu-toggle,
+.lang-current,
+.settings-bar .select-trigger,
+.settings-bar button.ghost {
+  height: var(--control-h);
+  min-height: 0;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+}
+.edu-toggle:hover,
+.lang-current:hover,
+.settings-bar .select-trigger:hover,
+.settings-bar button.ghost:hover {
+  background: var(--surface-hover);
+  border-color: var(--muted);
+}
+.edu-toggle:active,
+.lang-current:active,
+.settings-bar .select-trigger:active,
+.settings-bar button.ghost:active {
+  transform: translateY(1px);
+}
+.settings-bar button.ghost[disabled] {
+  background: var(--surface);
+  border-color: var(--border);
+  transform: none;
+}
+
 /* ——— select: custom listbox replacing the native <select> ——— */
 
 .select-trigger {
@@ -1809,14 +1849,8 @@ button.sm {
   background: var(--surface);
   border-color: var(--muted);
 }
-.select-trigger:active {
-  transform: none;
-}
-.select-trigger:focus-visible,
 .select-trigger.open {
-  outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--focus-ring);
+  border-color: var(--muted);
 }
 .select-trigger[disabled] {
   background: var(--surface-2);
@@ -1922,9 +1956,6 @@ button.sm {
 .chat-options {
   position: relative;
 }
-.settings-bar .options-trigger {
-  min-height: 36px;
-}
 .options-trigger .options-summary {
   font-family: var(--mono);
   font-size: 11.5px;
@@ -2008,7 +2039,7 @@ button.sm {
   cursor: pointer;
 }
 .segmented label:has(input:focus-visible) {
-  outline: 2px solid var(--accent);
+  outline: 1.5px solid var(--focus);
   outline-offset: 1px;
 }
 .switch-row {
@@ -2016,6 +2047,8 @@ button.sm {
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
+}
+.switch-text {
   cursor: pointer;
 }
 .switch-row .switch-label {
@@ -2024,39 +2057,47 @@ button.sm {
 .switch-row .options-hint {
   margin-top: 3px;
 }
-input.switch {
-  appearance: none;
-  flex-shrink: 0;
+/* Pill track with a round knob; the knob slides with transform only. */
+button.switch {
   position: relative;
-  width: 34px;
-  height: 20px;
-  margin: 1px 0 0;
+  flex: 0 0 auto;
+  display: block;
+  width: 40px;
+  height: 24px;
+  min-height: 0;
+  padding: 0;
+  margin-top: 1px;
+  border: 1px solid var(--border-input);
   border-radius: var(--radius-pill);
-  background: var(--border-strong);
-  cursor: pointer;
-  transition: background var(--dur) var(--ease-out);
+  background: var(--surface-2);
+  transition: background var(--dur) var(--ease-out), border-color var(--dur) var(--ease-out);
 }
-input.switch::after {
-  content: "";
+button.switch:hover {
+  background: var(--surface-hover);
+}
+button.switch:active {
+  transform: none;
+}
+.switch-knob {
   position: absolute;
   top: 2px;
   left: 2px;
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   background: var(--surface);
-  box-shadow: 0 1px 2px oklch(0.25 0.02 110 / 0.25);
+  box-shadow: 0 1px 2px oklch(0.25 0.02 110 / 0.3);
   transition: transform var(--dur) var(--ease-out);
 }
-input.switch:checked {
+button.switch.on {
   background: var(--accent);
+  border-color: var(--accent);
 }
-input.switch:checked::after {
-  transform: translateX(14px);
+button.switch.on:hover {
+  background: var(--accent-strong);
 }
-input.switch:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+button.switch.on .switch-knob {
+  transform: translateX(16px);
 }
 .options-foot {
   display: flex;
@@ -2159,7 +2200,7 @@ input.switch:focus-visible {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  max-width: 1240px;
+  max-width: 1320px;
   margin: 0 auto;
 }
 /* One column for strip, lesson and chat, so every left edge lines up.
@@ -2241,6 +2282,24 @@ input.switch:focus-visible {
   display: flex;
   align-items: center;
 }
+/* The branch the retrieval mode leaves out. */
+.edu-lane.off {
+  opacity: 0.4;
+}
+/* Decision node (legal citation): a node with a diamond marker. */
+.edu-node.decision::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border: 1.5px solid currentColor;
+  transform: rotate(45deg);
+  flex-shrink: 0;
+}
+.edu-node.decision .edu-node-meta {
+  max-width: 16ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .edu-arrow.wire {
   flex: 1 0 18px;
 }
@@ -2249,7 +2308,7 @@ input.switch:focus-visible {
 }
 .edu-arrow {
   position: relative;
-  flex: 0 0 22px;
+  flex: 0 0 20px;
   height: 2px;
   background: var(--border-strong);
   transition: background var(--dur) var(--ease-out);
@@ -2275,7 +2334,7 @@ input.switch:focus-visible {
   gap: 7px;
   height: 34px;
   min-height: 0;
-  padding: 0 11px;
+  padding: 0 10px;
   white-space: nowrap;
   background: var(--surface);
   color: var(--text);
@@ -2305,7 +2364,6 @@ input.switch:focus-visible {
 }
 .edu-node.running {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--focus-ring);
   animation: edu-pulse 1.1s ease-in-out infinite;
 }
 .edu-node.disabled {
@@ -2328,16 +2386,64 @@ input.switch:focus-visible {
   border-color: var(--accent);
   border-style: solid;
   color: var(--on-accent);
-  box-shadow: 0 0 0 3px var(--focus-ring);
 }
 .edu-node.active .edu-node-meta {
   color: var(--on-accent);
   opacity: 0.85;
 }
+/* Running: the fill breathes, no ring around the node. */
 @keyframes edu-pulse {
   50% {
-    box-shadow: 0 0 0 5px oklch(0.47 0.105 145 / 0.12);
+    background-color: var(--accent-soft);
   }
+}
+/* Row of decisions under the track: every option, the one taken in accent, and why. */
+.edu-route {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px 18px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.edu-route-title {
+  grid-column: 1 / -1;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.edu-decision {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+.edu-decision-name {
+  font-size: 12px;
+  font-weight: 600;
+}
+.edu-decision-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.edu-option {
+  padding: 1px 8px;
+  border-radius: var(--radius-pill);
+  border: 1px dashed var(--border-strong);
+  font-size: 11.5px;
+  color: var(--dim);
+}
+.edu-option.taken {
+  border: 1px solid var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-weight: 600;
+}
+.edu-decision-reason {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--muted);
 }
 .edu-note {
   margin: 8px 0 0;
@@ -2538,6 +2644,27 @@ button.icon-only {
 .edu-code-head code {
   font-size: 11px;
   overflow-wrap: anywhere;
+}
+/* Syntax colours on the dark code block (all >= 4.5:1 on it). */
+.tok-comment {
+  color: oklch(0.74 0.02 110);
+  font-style: italic;
+}
+.tok-string {
+  color: oklch(0.84 0.1 140);
+}
+.tok-number {
+  color: oklch(0.84 0.1 70);
+}
+.tok-keyword {
+  color: oklch(0.8 0.09 260);
+  font-weight: 600;
+}
+.tok-fn {
+  color: oklch(0.86 0.07 200);
+}
+.tok-op {
+  color: oklch(0.8 0.03 110);
 }
 .edu-code pre {
   margin: 0;
@@ -2797,6 +2924,9 @@ button.icon-only {
 
 @media (max-width: 1100px) {
   .edu-lesson-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .edu-route {
     grid-template-columns: minmax(0, 1fr);
   }
 }

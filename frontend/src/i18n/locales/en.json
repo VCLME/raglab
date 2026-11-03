@@ -109,7 +109,7 @@
     "llm_unreachable": "server unreachable",
     "options": "Options",
     "options_title": "Search options for this conversation",
-    "options_rerank_short": "rerank",
+    "options_rerank_short": "re-ranking",
     "options_citations_short": "citations",
     "options_mode_hint_dense": "Meaning similarity between the question and the passages (embeddings).",
     "options_mode_hint_lexical": "The question's exact words, weighted by how rare they are (BM25).",
@@ -520,7 +520,7 @@
     "status_error": "failed",
     "total": "total {{duration}}",
     "what": "What it does:",
-    "why": "Why it exists:",
+    "why": "Why:",
     "duration": "Duration",
     "replayed": "This stage runs before the stream opens: its duration is real, its animation is replayed.",
     "from_timings": "The API answered without streaming: the diagram is rebuilt from the response timings.",
@@ -623,13 +623,20 @@
         "why": "Every claim can be checked against the cited passage: that is what makes a RAG trustworthy.",
         "disabled": "",
         "short": "Answer"
+      },
+      "citation": {
+        "name": "Legal citation",
+        "short": "Citation",
+        "what": "Spots a cited law and article in the question (“art. 49 da Lei 8.078”) with regular expressions.",
+        "why": "When a law is cited, searching the whole corpus drowns the article among similar texts: the search is restricted to that law and the article goes first.",
+        "disabled": "Option off: the question is searched across the whole corpus."
       }
     },
     "hint_selected": "Click the active stage again to close its explanation.",
     "close": "Close the explanation",
     "replayed_tag": "replayed",
     "not_run_yet": "Ask a question to see this stage's real values.",
-    "how": "How it is done",
+    "how": "The code, line by line",
     "fig": {
       "query": "question",
       "space_label": "The question and its nearest passages in the embedding space",
@@ -645,10 +652,98 @@
       "before": "Before (first search)",
       "after": "After (cross-encoder)",
       "rerank_caption": "Each line joins a passage's position before and after the cross-encoder reread it."
+    },
+    "citation_none": "none",
+    "rerank_skipped": "skipped (no GPU)",
+    "route": {
+      "title": "The path of this question",
+      "title_planned": "The planned path with the current options",
+      "citation": "Legal citation",
+      "citation_opt_none": "none",
+      "citation_opt_law": "law cited",
+      "citation_opt_off": "off",
+      "citation_none": "No law cited: the search covers the whole corpus.",
+      "citation_law": "“{{label}}” recognised: search restricted to that law, cited article first.",
+      "citation_unknown_law": "“{{label}}” recognised but not in the index: the search covers the whole corpus.",
+      "citation_off": "Option off: the question is not analysed.",
+      "mode": "Search mode",
+      "mode_opt_dense": "vector",
+      "mode_opt_lexical": "keywords",
+      "mode_opt_hybrid": "hybrid",
+      "mode_dense": "Vector: only the meaning-based search runs, BM25 is skipped.",
+      "mode_lexical": "Keywords: only BM25 runs, the question is not embedded.",
+      "mode_hybrid": "Hybrid: both searches run (one after the other, independently), then their rankings are fused with RRF.",
+      "rerank": "Re-ranking",
+      "rerank_opt_on": "on",
+      "rerank_opt_off": "off",
+      "rerank_opt_skipped": "skipped",
+      "rerank_on": "On: the cross-encoder rereads the {{count}} best candidates and keeps the most relevant.",
+      "rerank_off": "Off: the search order is kept as is.",
+      "rerank_skipped": "Skipped: no GPU on the server (on CPU it would take several seconds).",
+      "rerank_cpu": "On, running on CPU for lack of a GPU: slower than usual."
+    },
+    "code": {
+      "citation": {
+        "what": "Two regular expressions find a law and an article in the question",
+        "law": "the law number, with or without a dot (8.078 or 8078)",
+        "article": "“art. 49”, “artigo 49”",
+        "parse": "nothing cited: the search covers the whole corpus",
+        "restrict": "law found in the index: only that document is searched",
+        "pin": "the cited article's passages go first"
+      },
+      "embed": {
+        "prefix": "e5 models are trained with a prefix: “query: ” for a question",
+        "encode": "the model returns a vector (384 numbers for e5-small)",
+        "passage": "Indexed passages were embedded with the “passage: ” prefix"
+      },
+      "retrieval": {
+        "what": "Exact search for the passages closest to the question",
+        "distance": "<=> is pgvector's cosine distance (0 = same direction)",
+        "run": "only the passages of the chosen index",
+        "order": "closest first",
+        "score": "Score shown = 1 − distance (cosine similarity)"
+      },
+      "lexical": {
+        "what": "BM25 computed in PostgreSQL (ts_rank has no IDF)",
+        "idf": "a word rare in the index (small df) weighs more",
+        "candidates": "Candidates: passages containing at least one word of the question",
+        "tf": "how many times the word appears in the passage",
+        "norm": "long passages are penalised (b), repetition is capped (k1)",
+        "sum": "score = sum over the question's words"
+      },
+      "fusion": {
+        "what": "Reciprocal Rank Fusion: only ranks count, not scores",
+        "dense": "ranked well by the vector search: it scores",
+        "lexical": "ranked well by BM25 too: it scores again",
+        "absent": "missing from a list: that list adds nothing"
+      },
+      "rerank": {
+        "what": "The cross-encoder reads the question and the passage together",
+        "pairs": "one (question, passage) pair per candidate",
+        "logit": "one relevance score per pair",
+        "sort": "Sort by score; ties keep the search order",
+        "keep": "keep the top_k best"
+      },
+      "prompt": {
+        "what": "Each passage is numbered by its rank in the message sent to the model",
+        "rank": "the model cites this number: [Rank N]",
+        "text": "the passage text, unchanged",
+        "rules": "The instructions: answer only from these excerpts, cite [Rank N]"
+      },
+      "generation": {
+        "what": "Streaming call to the model: the answer arrives piece by piece",
+        "stream": "stream: True, the server sends each token as soon as it is produced",
+        "temperature": "low temperature: factual answers, little invention",
+        "token": "each piece becomes an SSE “token” event in the Chat"
+      },
+      "answer": {
+        "what": "In the browser, every [Rank N] of the answer is found",
+        "click": "and turned into a clickable chip pointing to source N"
+      }
     }
   },
   "retrieval": {
-    "mode_label": "Retrieval mode",
+    "mode_label": "Search mode",
     "mode_hint": "dense = embedding similarity, lexical = BM25 on words, hybrid = fusion of both (RRF).",
     "mode_default": "server default",
     "mode_dense": "dense (embeddings)",
@@ -680,7 +775,7 @@
     "rerank_notice_skipped_no_gpu": "Re-ranking skipped: no GPU available (it would take several seconds on CPU). Force it with “on” if needed.",
     "rerank_notice_cpu": "Re-ranking ran on CPU, without a GPU: expect several seconds per query.",
     "mode_short_dense": "Vector",
-    "mode_short_lexical": "BM25",
+    "mode_short_lexical": "Keywords",
     "mode_short_hybrid": "Hybrid",
     "score_final_title": "Final score of this chunk: {{type}} (last stage that ranked it)",
     "show_more": "Show more",

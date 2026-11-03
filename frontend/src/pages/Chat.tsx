@@ -10,11 +10,11 @@ import type {
   RetrievalMode,
   RetrievedChunk,
 } from "../api/types";
-import { ChatOptions, NO_OVERRIDES, type RetrievalOverrides } from "../components/ChatOptions";
+import { ChatOptions, NO_OVERRIDES, effectiveOptions, type RetrievalOverrides } from "../components/ChatOptions";
 import { ChunkCard } from "../components/ChunkCard";
 import { extractCitedRanks, renderAnswer } from "../components/AnswerText";
 import { SendIcon, StopIcon } from "../components/Icon";
-import { PipelineStrip } from "../components/PipelineStrip";
+import { PipelineStrip, type RouteInfo } from "../components/PipelineStrip";
 import { FieldLabelContext, Select } from "../components/Select";
 import { SourceList } from "../components/SourcePill";
 import { Spinner } from "../components/Spinner";
@@ -448,6 +448,19 @@ export function Chat() {
   );
 
   if (!educational) return page;
+  // Decisions of the last request (from its response), or what the current
+  // options will do before the first question.
+  const planned = effectiveOptions(options, config);
+  const answered = !!lastTurn?.index_run_id;
+  const route: RouteInfo = {
+    known: answered,
+    mode: (answered ? lastTurn?.retrieval_mode : null) ?? planned.mode,
+    rerank: (answered ? lastTurn?.rerank : null) ?? planned.rerank,
+    rerankNotice: answered ? lastTurn?.rerank_notice ?? null : null,
+    rerankCandidates: config?.rerank_candidates ?? 40,
+    citationsOn: planned.citations,
+    citation: answered ? lastTurn?.citation ?? null : null,
+  };
   return (
     <div className="edu-shell">
       <PipelineStrip
@@ -456,6 +469,7 @@ export function Chat() {
         lexemes={lastTurn?.lexemes}
         rrfK={config?.rrf_k ?? 60}
         lexicalWeight={config?.hybrid_lexical_weight ?? 0.5}
+        route={route}
       />
       {page}
     </div>

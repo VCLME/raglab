@@ -8,9 +8,9 @@ async function ask(page: import("@playwright/test").Page) {
 
 test("Select: keyboard navigation, type-ahead, Escape and ARIA listbox", async ({ page }) => {
   await page.goto("/expert/query");
-  const row = page.locator(".form-row").filter({ has: page.locator("label", { hasText: /^Mode de retrieval$/ }) });
+  const row = page.locator(".form-row").filter({ has: page.locator("label", { hasText: /^Mode de recherche$/ }) });
   const trigger = row.getByRole("combobox");
-  await expect(trigger).toHaveAccessibleName(/^Mode de retrieval/);
+  await expect(trigger).toHaveAccessibleName(/^Mode de recherche/);
   await expect(trigger).toHaveAttribute("aria-expanded", "false");
 
   await trigger.focus();
@@ -58,9 +58,9 @@ test("Chat options: only changed options are sent; the rerank notice is shown", 
   await page.goto("/");
 
   const trigger = page.getByRole("button", { name: /^Options/ });
-  await expect(trigger).toContainText("Hybride · rerank · citations");
+  await expect(trigger).toContainText("Hybride · re-ranking · citations");
   await ask(page);
-  await expect(page.getByText(/Re-ranking ignoré : aucun GPU/)).toBeVisible();
+  await expect(page.getByText(/Re-ranking sauté : pas de GPU/)).toBeVisible();
   expect(bodies[0]).not.toHaveProperty("rerank");
   expect(bodies[0]).not.toHaveProperty("retrieval_mode");
 

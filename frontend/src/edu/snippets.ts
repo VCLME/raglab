@@ -1,127 +1,171 @@
+import type { CodeLanguage } from "./highlight";
 import type { NodeId } from "./pipeline";
+
+/** Strip nodes: the backend stages, plus the citation decision drawn by the UI. */
+export type StripNode = NodeId | "citation";
 
 export interface Snippet {
   /** Repository path the excerpt comes from. */
   source: string;
-  language: "python" | "sql" | "text";
+  language: CodeLanguage;
+  /**
+   * Trimmed excerpt of the real code. `@@key@@` is an explanatory comment,
+   * translated from `edu.code.<stage>.<key>` so a non-expert can read each
+   * line in their language.
+   */
   code: string;
 }
 
 /**
- * Short excerpts of the code that runs each stage, trimmed from the repository
- * (comments shortened). Keep them in sync when the source changes: they are
- * shown as "how it is done" in the learning mode.
+ * Short excerpts of the code that runs each stage, trimmed from the
+ * repository. Keep them in sync when the source changes: the learning mode
+ * shows them as "how it is done".
  */
-export const SNIPPETS: Partial<Record<NodeId, Snippet>> = {
-  question: {
+export const SNIPPETS: Partial<Record<StripNode, Snippet>> = {
+  citation: {
     source: "src/raglab/retrieval/citations.py",
     language: "python",
-    code: `# "Lei nº 8.078", "Lei 13.445, de 24 de maio de 2017", "art. 49"
+    code: `# @@what@@
 _LAW_RE = re.compile(
     r"\\blei(?:\\s+complementar)?\\s*(?:n(?:[º°o.]|úmero)?\\s*)?"
-    r"(\\d{1,2}\\.?\\d{3}|\\d{2,3})\\b(?:\\s*/\\s*(\\d{2,4}))?",
+    # @@law@@
+    r"(\\d{1,2}\\.?\\d{3}|\\d{2,3})\\b",
     re.IGNORECASE,
 )
-_ARTICLE_RE = re.compile(
-    r"\\bart(?:igo|\\.)?\\s*(\\d{1,4})\\s*(?:[º°o]\\b|[º°])?(?:\\s*-\\s*([A-Z])\\b)?",
-    re.IGNORECASE,
-)`,
+# @@article@@
+_ARTICLE_RE = re.compile(r"\\bart(?:igo|\\.)?\\s*(\\d{1,4})")
+
+# @@parse@@
+citation = parse_citation(question)
+if citation is not None:
+    law = find_law_document(session, index_run, citation)
+    # @@restrict@@
+    filters = filters.model_copy(update={"document_ids": [law]})
+    # @@pin@@
+    pinned = article_chunks(session, index_run, law, citation.article)`,
   },
   embed: {
     source: "src/raglab/embeddings/transformers_provider.py",
     language: "python",
-    code: `# e5 models are trained with prefixes: "query: " for questions,
-# "passage: " for indexed chunks (RAGLAB_QUERY_PREFIX / _PASSAGE_PREFIX).
+    code: `# @@prefix@@
 def embed_query(self, text: str) -> list[float]:
-    return self._encode_batch([f"{self.settings.query_prefix}{text}"])[0]`,
+    # @@encode@@
+    return self._encode_batch([f"{self.settings.query_prefix}{text}"])[0]
+
+# @@passage@@
+#   embed_chunks(...) -> "passage: " + chunk text`,
   },
   retrieval: {
     source: "src/raglab/stores/vector/postgres.py",
     language: "sql",
-    code: `-- exact mode (default): true nearest neighbours of the index run
+    code: `-- @@what@@
 SELECT chunk.id, chunk.text, document.file_name,
-       embedding <=> :query_vec AS distance      -- pgvector cosine distance
+       -- @@distance@@
+       embedding <=> :query_vec AS distance
 FROM chunks chunk
 JOIN documents document ON document.id = chunk.document_id
 JOIN chunk_embeddings ON chunk_embeddings.chunk_id = chunk.id
+-- @@run@@
 WHERE chunk.index_run_id = :index_run_id
+-- @@order@@
 ORDER BY distance
 LIMIT :top_k;
--- score shown in the UI = 1 - distance (cosine similarity)`,
+-- @@score@@`,
   },
   lexical: {
     source: "src/raglab/stores/lexical/postgres.py",
     language: "python",
-    code: `# Okapi BM25 in PostgreSQL (ts_rank has no IDF):
-#   idf(t) = ln(1 + (N - df(t) + 0.5) / (df(t) + 0.5))
+    code: `# @@what@@
 def bm25_idf(doc_count: int, doc_freq: int) -> float:
+    # @@idf@@
     return math.log(1.0 + (doc_count - doc_freq + 0.5) / (doc_freq + 0.5))
 
-# candidates: chunk.lexical_tsv @@ to_tsquery('mandat | president')
+# @@candidates@@
+#   chunk.lexical_tsv @@ to_tsquery('mandat | president')
+# @@tf@@
 tf = cast(func.coalesce(func.array_length(terms.c.positions, 1), 1), Float)
+# @@norm@@
 norm = k1 * (1.0 - b + b * doc_length / avgdl)
+# @@sum@@
 score = func.sum(query_terms.c.idf * tf * (k1 + 1.0) / (tf + norm))`,
   },
   fusion: {
     source: "src/raglab/retrieval/fusion.py",
     language: "python",
-    code: `#   fused(d) = (1 - w) / (k + rank_dense(d)) + w / (k + rank_lexical(d))
+    code: `# @@what@@
+#   fused(d) = (1 - w) / (k + rank_dense(d)) + w / (k + rank_lexical(d))
 def fused_score(chunk: RetrievedChunk) -> float:
     score = 0.0
+    # @@dense@@
     if chunk.dense_rank is not None:
         score += (1.0 - lexical_weight) / (k + chunk.dense_rank)
+    # @@lexical@@
     if chunk.lexical_rank is not None:
         score += lexical_weight / (k + chunk.lexical_rank)
+    # @@absent@@
     return score`,
   },
   rerank: {
     source: "src/raglab/retrieval/rerank.py",
     language: "python",
-    code: `# bge-reranker-v2-m3 reads (question, passage) together
+    code: `# @@what@@
 encoded = self._tokenizer(
+    # @@pairs@@
     [query] * len(batch), batch,
     padding=True, truncation=True,
     max_length=self.max_length, return_tensors="pt",
 )
+# @@logit@@
 logits = self._model(**encoded).logits.view(-1)
 
+# @@sort@@
 order = sorted(range(len(chunks)),
                key=lambda i: (-scores[i], chunks[i].rank))
+# @@keep@@
 reranked = [chunks[i] for i in order][:top_k]`,
   },
   prompt: {
     source: "src/raglab/generation/prompts.py",
     language: "python",
-    code: `def build_context(chunks: list[RetrievedChunk]) -> str:
+    code: `# @@what@@
+def build_context(chunks: list[RetrievedChunk]) -> str:
     return "\\n\\n".join(
         "\\n".join([
+            # @@rank@@
             f"[Source rank={chunk.rank}]",
             f"Fichier: {chunk.file_name}",
             f"Score: {chunk.score:.4f}",
             "Extrait:",
+            # @@text@@
             chunk.chunk_text,
         ])
         for chunk in chunks
-    )`,
+    )
+# @@rules@@`,
   },
   generation: {
     source: "src/raglab/generation/service.py",
     language: "python",
-    code: `response = requests.post(
+    code: `# @@what@@
+response = requests.post(
     f"{self.settings.ollama_base_url}/api/chat",
+    # @@stream@@
     json={"model": model, "messages": messages, "stream": True,
+          # @@temperature@@
           "options": {"temperature": self.settings.generation_temperature}},
     stream=True,
 )
 for line in response.iter_lines():
     piece = json.loads(line).get("message", {}).get("content", "")
     if piece:
-        yield piece   # one SSE "token" event per fragment`,
+        # @@token@@
+        yield piece`,
   },
   answer: {
-    source: "frontend/src/pages/Chat.tsx",
-    language: "text",
-    code: `// [Rank N] markers become citation buttons linked to their source
-const CITATION_REGEX = /\\[(?:Rank|rank|Source\\s+rank\\s*=)\\s*(\\d+)\\]/g;`,
+    source: "frontend/src/components/AnswerText.tsx",
+    language: "ts",
+    code: `// @@what@@
+const CITATION_REGEX = /\\[(?:Rank|rank|Source\\s+rank\\s*=)\\s*(\\d+)\\]/g;
+// @@click@@`,
   },
 };

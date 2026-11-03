@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { ConfigResponse, RetrievalMode } from "../api/types";
 import { SlidersIcon } from "./Icon";
+import { Switch } from "./Switch";
 
 /** Retrieval options of a Chat request; `null` = the server default. */
 export interface RetrievalOverrides {
@@ -113,37 +114,23 @@ export function ChatOptions({ value, onChange, config }: Props) {
             <p className="options-hint">{t(`chat.options_mode_hint_${current.mode}`)}</p>
           </fieldset>
 
-          <label className="switch-row">
-            <span>
-              <span className="switch-label">{t("retrieval.rerank_label")}</span>
-              <span className="options-hint">
-                {noGpu
-                  ? t("chat.options_rerank_no_gpu")
-                  : t("chat.options_rerank_hint", { model: config?.rerank_model_name ?? "bge-reranker-v2-m3" })}
-              </span>
-            </span>
-            <input
-              type="checkbox"
-              role="switch"
-              className="switch"
-              checked={current.rerank}
-              onChange={(e) => set("rerank", e.target.checked)}
-            />
-          </label>
+          <Switch
+            label={t("retrieval.rerank_label")}
+            description={
+              noGpu
+                ? t("chat.options_rerank_no_gpu")
+                : t("chat.options_rerank_hint", { model: config?.rerank_model_name ?? "bge-reranker-v2-m3" })
+            }
+            checked={current.rerank}
+            onChange={(on) => set("rerank", on)}
+          />
 
-          <label className="switch-row">
-            <span>
-              <span className="switch-label">{t("retrieval.citations_label")}</span>
-              <span className="options-hint">{t("chat.options_citations_hint")}</span>
-            </span>
-            <input
-              type="checkbox"
-              role="switch"
-              className="switch"
-              checked={current.citations}
-              onChange={(e) => set("citations", e.target.checked)}
-            />
-          </label>
+          <Switch
+            label={t("retrieval.citations_label")}
+            description={t("chat.options_citations_hint")}
+            checked={current.citations}
+            onChange={(on) => set("citations", on)}
+          />
 
           <div className="options-foot">
             <span className="options-hint">

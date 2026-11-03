@@ -109,14 +109,14 @@
     "llm_unreachable": "servidor inacessível",
     "options": "Opções",
     "options_title": "Opções de busca desta conversa",
-    "options_rerank_short": "rerank",
+    "options_rerank_short": "re-ranking",
     "options_citations_short": "citações",
-    "options_mode_hint_dense": "Similaridade de sentido entre a pergunta e os trechos (embeddings).",
-    "options_mode_hint_lexical": "As palavras exatas da pergunta, ponderadas pela raridade (BM25).",
-    "options_mode_hint_hybrid": "As duas buscas, fundidas por posição (RRF). Melhor recall medido.",
+    "options_mode_hint_dense": "Busca pelo sentido: os trechos próximos da pergunta, mesmo escritos de outro jeito.",
+    "options_mode_hint_lexical": "Busca por palavras-chave: os trechos que contêm as palavras da pergunta (BM25).",
+    "options_mode_hint_hybrid": "As duas buscas, depois a fusão dos rankings (RRF). A configuração mais confiável medida.",
     "options_rerank_hint": "{{model}} relê os melhores candidatos junto com a pergunta.",
-    "options_rerank_no_gpu": "Nenhuma GPU detectada: por padrão o re-ranking é ignorado. Ativá-lo aqui o executa na CPU (vários segundos).",
-    "options_citations_hint": "“art. 49 da Lei 8.078”: limita a busca à lei citada e coloca o artigo no topo.",
+    "options_rerank_no_gpu": "Nenhuma GPU detectada: por padrão o re-ranking é pulado. Ativá-lo aqui o roda na CPU (vários segundos).",
+    "options_citations_hint": "Se a pergunta cita uma lei (“art. 49 da Lei 8.078”), a busca se limita a essa lei e o artigo citado vai para o topo.",
     "options_defaults": "Padrões do servidor.",
     "options_changed": "Alterado para esta conversa.",
     "options_reset": "Restaurar",
@@ -519,8 +519,8 @@
     "status_disabled": "desativada",
     "status_error": "falhou",
     "total": "total {{duration}}",
-    "what": "O que faz:",
-    "why": "Por que existe:",
+    "what": "Para que serve:",
+    "why": "Por quê:",
     "duration": "Duração",
     "replayed": "Esta etapa roda antes de o fluxo abrir: a duração é real, a animação é reproduzida.",
     "from_timings": "A API respondeu sem streaming: o diagrama é reconstruído a partir das durações da resposta.",
@@ -569,10 +569,10 @@
         "short": "Roteador"
       },
       "embed": {
-        "name": "Embedding",
-        "what": "Um modelo de embedding transforma a pergunta em um vetor de números que codifica seu sentido.",
-        "why": "Textos de sentido parecido geram vetores próximos: é isso que permite buscar pelo sentido, não só pelas palavras.",
-        "disabled": "Sem busca vetorial nesta consulta, portanto sem embedding.",
+        "name": "Vetorização",
+        "what": "Um modelo de embedding converte a pergunta numa lista de números (um vetor) que resume o seu sentido.",
+        "why": "Dois textos sobre o mesmo assunto ganham vetores próximos: dá para buscar pelo sentido, mesmo sem palavras em comum.",
+        "disabled": "Sem busca por significado nesta pergunta: não é preciso vetorizá-la.",
         "short": "Vetorização"
       },
       "retrieval": {
@@ -584,22 +584,22 @@
       },
       "lexical": {
         "name": "BM25",
-        "what": "Busca textual clássica: pontua os trechos pelas palavras exatas da pergunta e por sua raridade.",
-        "why": "Embeddings às vezes perdem termos precisos (números de artigo, siglas, nomes próprios) que o BM25 sempre encontra.",
-        "disabled": "Busca híbrida desativada: só a busca vetorial é usada.",
+        "what": "Busca por palavras-chave: cada trecho recebe uma nota conforme as palavras da pergunta que contém, e as palavras raras valem mais.",
+        "why": "O sentido nem sempre basta: um número de artigo, uma sigla ou um nome próprio se acham melhor palavra por palavra.",
+        "disabled": "Só busca vetorial: sem busca por palavras-chave.",
         "short": "BM25"
       },
       "fusion": {
         "name": "Fusão",
-        "what": "Combina os dois rankings (vetorial e BM25) em um só, por Reciprocal Rank Fusion.",
-        "why": "Aproveitar o melhor das duas buscas sem comparar scores de escalas diferentes.",
+        "what": "Junta o ranking vetorial e o ranking BM25 num só (Reciprocal Rank Fusion): um trecho bem colocado nos dois sobe.",
+        "why": "Aproveitar as duas buscas sem comparar seus scores, que não estão na mesma escala: só as posições contam.",
         "disabled": "Sem fusão: só uma busca foi executada.",
         "short": "Fusão"
       },
       "rerank": {
         "name": "Re-ranking",
-        "what": "Um cross-encoder relê cada par (pergunta, trecho) e os reordena com precisão.",
-        "why": "Mais preciso que a busca, mas lento demais para todo o corpus: só é aplicado aos melhores candidatos.",
+        "what": "Um cross-encoder relê cada par (pergunta, trecho) inteiro, dá uma nota de relevância mais fina e os trechos são reordenados.",
+        "why": "Mais preciso que a busca, mas lento demais para o índice inteiro: só é aplicado aos melhores candidatos.",
         "disabled": "Re-ranking desativado: a ordem da busca é mantida.",
         "short": "Re-ranking"
       },
@@ -623,13 +623,20 @@
         "why": "Cada afirmação pode ser conferida no trecho citado: é isso que torna um RAG confiável.",
         "disabled": "",
         "short": "Resposta"
+      },
+      "citation": {
+        "name": "Citação jurídica",
+        "short": "Citação",
+        "what": "Detecta na pergunta uma lei e um artigo citados (“art. 49 da Lei 8.078”) com expressões regulares.",
+        "why": "Quando uma lei é citada, buscar em todo o corpus afoga o artigo entre textos parecidos: a busca fica restrita a essa lei e o artigo vai para o topo.",
+        "disabled": "Opção desativada: a pergunta é buscada em todo o corpus."
       }
     },
     "hint_selected": "Clique de novo na etapa ativa para fechar a explicação.",
     "close": "Fechar a explicação",
     "replayed_tag": "reexibida",
     "not_run_yet": "Faça uma pergunta para ver os valores reais desta etapa.",
-    "how": "Como é feito",
+    "how": "O código, linha por linha",
     "fig": {
       "query": "pergunta",
       "space_label": "A pergunta e seus trechos mais próximos no espaço de embeddings",
@@ -645,10 +652,98 @@
       "before": "Antes (1ª busca)",
       "after": "Depois (cross-encoder)",
       "rerank_caption": "Cada linha liga a posição de um trecho antes e depois da releitura pelo cross-encoder."
+    },
+    "citation_none": "nenhuma",
+    "rerank_skipped": "pulado (sem GPU)",
+    "route": {
+      "title": "O caminho desta pergunta",
+      "title_planned": "O caminho previsto com as opções atuais",
+      "citation": "Citação jurídica",
+      "citation_opt_none": "nenhuma",
+      "citation_opt_law": "lei citada",
+      "citation_opt_off": "desativada",
+      "citation_none": "Nenhuma lei citada: a busca cobre todo o corpus.",
+      "citation_law": "“{{label}}” reconhecida: busca limitada a essa lei, artigo citado no topo.",
+      "citation_unknown_law": "“{{label}}” reconhecida, mas fora do índice: a busca cobre todo o corpus.",
+      "citation_off": "Opção desativada: a pergunta não é analisada.",
+      "mode": "Modo de busca",
+      "mode_opt_dense": "vetorial",
+      "mode_opt_lexical": "palavras-chave",
+      "mode_opt_hybrid": "híbrida",
+      "mode_dense": "Vetorial: só a busca por significado roda, o BM25 é pulado.",
+      "mode_lexical": "Palavras-chave: só o BM25 roda, a pergunta não é vetorizada.",
+      "mode_hybrid": "Híbrida: as duas buscas rodam (uma depois da outra, de forma independente) e seus rankings são fundidos por RRF.",
+      "rerank": "Re-ranking",
+      "rerank_opt_on": "ativado",
+      "rerank_opt_off": "desativado",
+      "rerank_opt_skipped": "pulado",
+      "rerank_on": "Ativado: o cross-encoder relê os {{count}} melhores candidatos e fica com os mais relevantes.",
+      "rerank_off": "Desativado: a ordem da busca é mantida.",
+      "rerank_skipped": "Pulado: sem GPU no servidor (na CPU levaria vários segundos).",
+      "rerank_cpu": "Ativado na CPU, por falta de GPU: mais lento que o normal."
+    },
+    "code": {
+      "citation": {
+        "what": "Duas expressões regulares encontram uma lei e um artigo na pergunta",
+        "law": "o número da lei, com ou sem ponto (8.078 ou 8078)",
+        "article": "“art. 49”, “artigo 49”",
+        "parse": "nada citado: a busca cobre todo o corpus",
+        "restrict": "lei encontrada no índice: só esse documento é buscado",
+        "pin": "os trechos do artigo citado vão para o topo"
+      },
+      "embed": {
+        "prefix": "Os modelos e5 são treinados com um prefixo: “query: ” para uma pergunta",
+        "encode": "o modelo devolve um vetor (384 números no e5-small)",
+        "passage": "Os trechos do índice foram vetorizados com o prefixo “passage: ”"
+      },
+      "retrieval": {
+        "what": "Busca exata dos trechos mais próximos da pergunta",
+        "distance": "<=> : distância de cosseno do pgvector (0 = mesma direção)",
+        "run": "só os trechos do índice escolhido",
+        "order": "os mais próximos primeiro",
+        "score": "Score exibido = 1 − distância (similaridade de cosseno)"
+      },
+      "lexical": {
+        "what": "BM25 calculado no PostgreSQL (ts_rank não tem IDF)",
+        "idf": "uma palavra rara no índice (df pequeno) pesa mais",
+        "candidates": "Candidatos: os trechos que contêm pelo menos uma palavra da pergunta",
+        "tf": "número de ocorrências da palavra no trecho",
+        "norm": "trecho longo é penalizado (b), a repetição tem teto (k1)",
+        "sum": "score = soma sobre as palavras da pergunta"
+      },
+      "fusion": {
+        "what": "Reciprocal Rank Fusion: só as posições contam, não os scores",
+        "dense": "bem colocado na busca vetorial: ganha pontos",
+        "lexical": "bem colocado no BM25 também: ganha mais",
+        "absent": "ausente de uma lista: essa lista não soma nada"
+      },
+      "rerank": {
+        "what": "O cross-encoder lê a pergunta e o trecho juntos",
+        "pairs": "um par (pergunta, trecho) por candidato",
+        "logit": "uma nota de relevância por par",
+        "sort": "Reordena pela nota; em empate, mantém a ordem da busca",
+        "keep": "fica com os top_k melhores"
+      },
+      "prompt": {
+        "what": "Cada trecho é numerado pela sua posição na mensagem enviada ao modelo",
+        "rank": "o modelo cita esse número: [Rank N]",
+        "text": "o texto do trecho, tal como está",
+        "rules": "As instruções: responder só a partir desses trechos e citar [Rank N]"
+      },
+      "generation": {
+        "what": "Chamada ao modelo em streaming: a resposta chega aos pedaços",
+        "stream": "stream: True, o servidor envia cada token assim que é gerado",
+        "temperature": "temperatura baixa: respostas factuais, pouca invenção",
+        "token": "cada pedaço vira um evento SSE “token” no Chat"
+      },
+      "answer": {
+        "what": "No navegador, cada [Rank N] da resposta é detectado",
+        "click": "e vira uma etiqueta clicável que leva à fonte N"
+      }
     }
   },
   "retrieval": {
-    "mode_label": "Modo de recuperação",
+    "mode_label": "Modo de busca",
     "mode_hint": "dense = similaridade de embeddings, lexical = BM25 nas palavras, hybrid = fusão dos dois (RRF).",
     "mode_default": "padrão do servidor",
     "mode_dense": "dense (embeddings)",
@@ -680,7 +775,7 @@
     "rerank_notice_skipped_no_gpu": "Re-ranking ignorado: nenhuma GPU disponível (levaria vários segundos na CPU). Force com “ativado” se precisar.",
     "rerank_notice_cpu": "Re-ranking executado na CPU, sem GPU: conte vários segundos por consulta.",
     "mode_short_dense": "Vetorial",
-    "mode_short_lexical": "BM25",
+    "mode_short_lexical": "Palavras-chave",
     "mode_short_hybrid": "Híbrida",
     "score_final_title": "Score final deste chunk: {{type}} (última etapa que o classificou)",
     "show_more": "Ver mais",

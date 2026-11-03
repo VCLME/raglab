@@ -1,7 +1,9 @@
 import { Fragment, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import type { CitationInfo, RetrievalMode } from "../api/types";
+import { highlight } from "../edu/highlight";
 import { DIAGRAM_NODES, prefersReducedMotion, type NodeId, type NodeState, type PipelineState } from "../edu/pipeline";
-import { SNIPPETS } from "../edu/snippets";
+import { SNIPPETS, type StripNode } from "../edu/snippets";
 import { CloseIcon } from "./Icon";
 import { JsonViewer } from "./JsonViewer";
 import { LexicalBars, RerankReorder, RrfMerge, VectorBars, VectorSpace, type ChunkPreview } from "./edu/Schematics";
@@ -21,6 +23,34 @@ function formatValue(key: string, value: unknown): string {
   return String(value);
 }
 
+/** The decisions of a request: which branches of the flowchart it takes. */
+export interface RouteInfo {
+  /** False until the response says what actually ran (then the options' plan is shown). */
+  known: boolean;
+  mode: RetrievalMode;
+  rerank: boolean;
+  /** "skipped_no_gpu" or "cpu" when the re-ranker had no GPU. */
+  rerankNotice: string | null;
+  rerankCandidates: number;
+  citationsOn: boolean;
+  citation: CitationInfo | null;
+}
+
+type CitationBranch = "off" | "none" | "law" | "unknown_law";
+type RerankBranch = "on" | "off" | "skipped" | "cpu";
+
+function citationBranch(route: RouteInfo): CitationBranch {
+  if (!route.citationsOn) return "off";
+  if (!route.citation) return "none";
+  return route.citation.law_found ? "law" : "unknown_law";
+}
+
+function rerankBranch(route: RouteInfo): RerankBranch {
+  if (route.rerankNotice === "skipped_no_gpu") return "skipped";
+  if (route.rerankNotice === "cpu") return "cpu";
+  return route.rerank ? "on" : "off";
+}
+
 interface Props {
   state: PipelineState;
   /** Question of the request drawn, shown in the embedding lesson. */
@@ -29,17 +59,19 @@ interface Props {
   lexemes?: string[];
   rrfK: number;
   lexicalWeight: number;
+  route: RouteInfo;
 }
 
 /**
- * Learning mode: the RAG pipeline as one horizontal strip above the chat.
- * Each stage lights up as its SSE `stage` event arrives; clicking one opens
- * its lesson below the strip (what it does, this request's values, the code
- * that runs it, a small schematic).
+ * Learning mode: the RAG pipeline as a horizontal flowchart above the chat.
+ * The track shows the stages (lit as their SSE `stage` events arrive, the
+ * branches this request does not take dimmed); the row below names each
+ * decision (legal citation, retrieval mode, re-ranking) with the branch taken
+ * and why. Clicking a stage opens its lesson below.
  */
-export function PipelineStrip({ state, question, lexemes = [], rrfK, lexicalWeight }: Props) {
+export function PipelineStrip({ state, question, lexemes = [], rrfK, lexicalWeight, route }: Props) {
   const { t } = useTranslation();
-  const [selected, setSelected] = useState<NodeId | null>(null);
+  const [selected, setSelected] = useState<StripNode | null>(null);
   const [announce, setAnnounce] = useState("");
   const previous = useRef<PipelineState | null>(null);
   const stripRef = useRef<HTMLElement | null>(null);
@@ -76,7 +108,22 @@ export function PipelineStrip({ state, question, lexemes = [], rrfK, lexicalWeig
     }
   }, [state, t]);
 
-  const meta = (id: NodeId, node: NodeState): string => {
+  const citation = citationBranch(route);
+  const rerank = rerankBranch(route);
+  // The citation check runs with the search: drawn from the response.
+  const citationNode: NodeState =
+    citation === "off"
+      ? { status: "disabled" }
+      : route.known
+      ? { status: "done" }
+      : { status: state.nodes.question.status === "done" && state.planned ? "running" : "idle" };
+  const nodeState = (id: StripNode): NodeState => (id === "citation" ? citationNode : state.nodes[id]);
+
+  const meta = (id: StripNode, node: NodeState): string => {
+    if (id === "citation" && node.status === "done") {
+      return citation === "law" ? route.citation?.label ?? "" : t("edu.citation_none");
+    }
+    if (id === "rerank" && rerank === "skipped") return t("edu.rerank_skipped");
     if (node.status === "disabled") return t("edu.status_disabled");
     if (node.status === "running") return t("edu.status_running");
     if (node.status === "error") return t("edu.status_error");
@@ -85,15 +132,15 @@ export function PipelineStrip({ state, question, lexemes = [], rrfK, lexicalWeig
     return formatMs(node.duration_ms);
   };
 
-  const node = (id: NodeId) => {
-    const current = state.nodes[id];
+  const node = (id: StripNode) => {
+    const current = nodeState(id);
     const name = t(`edu.stages.${id}.name`);
     const sub = meta(id, current);
     const active = selected === id;
     return (
       <button
         type="button"
-        className={`edu-node ${current.status}${active ? " active" : ""}`}
+        className={`edu-node ${current.status}${active ? " active" : ""}${id === "citation" ? " decision" : ""}`}
         aria-pressed={active}
         aria-controls={active ? "edu-lesson" : undefined}
         aria-label={`${name}${sub ? ` — ${sub}` : ""}`}
@@ -105,9 +152,9 @@ export function PipelineStrip({ state, question, lexemes = [], rrfK, lexicalWeig
     );
   };
 
-  const reached = (id: NodeId) => ["done", "running"].includes(state.nodes[id].status);
-  const arrow = (from: NodeId, to: NodeId, extra = "") => {
-    const lit = reached(to) && state.nodes[from].status !== "idle";
+  const reached = (id: StripNode) => ["done", "running"].includes(nodeState(id).status);
+  const arrow = (from: StripNode, to: StripNode, extra = "") => {
+    const lit = reached(to) && nodeState(from).status !== "idle";
     return <span className={`edu-arrow${lit ? " lit" : ""}${extra}`} aria-hidden="true" />;
   };
   // Lane ends: wires between the fork / merge bars and the lane's nodes.
@@ -117,8 +164,10 @@ export function PipelineStrip({ state, question, lexemes = [], rrfK, lexicalWeig
 
   // The router is optional: drawn only when the request runs it.
   const withRouting = state.nodes.routing.status !== "disabled" && state.planned?.includes("routing");
-  const entry: NodeId = withRouting ? "routing" : "question";
   const main: NodeId[] = ["fusion", "rerank", "prompt", "generation", "answer"];
+  // Branches the retrieval mode leaves out are dimmed, not only greyed.
+  const vectorOff = route.mode === "lexical";
+  const lexicalOff = route.mode === "dense";
 
   return (
     <>
@@ -136,16 +185,18 @@ export function PipelineStrip({ state, question, lexemes = [], rrfK, lexicalWeig
                 {node("routing")}
               </>
             ) : null}
-            {arrow(entry, "embed", reached("embed") || reached("lexical") ? " lit" : "")}
-            <div className="edu-branch">
-              <div className="edu-lane">
+            {arrow(withRouting ? "routing" : "question", "citation", citation !== "off" && reached("citation") ? " lit" : "")}
+            {node("citation")}
+            {arrow("citation", "embed", reached("embed") || reached("lexical") ? " lit" : "")}
+            <div className={`edu-branch${route.mode === "hybrid" ? " both" : ""}`}>
+              <div className={`edu-lane${vectorOff ? " off" : ""}`}>
                 {wire(reached("embed"), true)}
                 {node("embed")}
                 {arrow("embed", "retrieval")}
                 {node("retrieval")}
                 {wire(state.nodes.retrieval.status === "done", false)}
               </div>
-              <div className="edu-lane">
+              <div className={`edu-lane${lexicalOff ? " off" : ""}`}>
                 {wire(reached("lexical"), true)}
                 {node("lexical")}
                 {wire(state.nodes.lexical.status === "done", false)}
@@ -161,6 +212,7 @@ export function PipelineStrip({ state, question, lexemes = [], rrfK, lexicalWeig
             ))}
           </div>
         </div>
+        <RouteRow route={route} citation={citation} rerank={rerank} />
         {state.fromTimings ? <p className="edu-note">{t("edu.from_timings")}</p> : null}
         <div className="sr-only" aria-live="polite">
           {announce}
@@ -171,7 +223,7 @@ export function PipelineStrip({ state, question, lexemes = [], rrfK, lexicalWeig
         <StageLesson
           sectionRef={lessonRef}
           id={selected}
-          node={state.nodes[selected]}
+          node={nodeState(selected)}
           question={question}
           lexemes={lexemes}
           rrfK={rrfK}
@@ -183,9 +235,62 @@ export function PipelineStrip({ state, question, lexemes = [], rrfK, lexicalWeig
   );
 }
 
+interface RouteRowProps {
+  route: RouteInfo;
+  citation: CitationBranch;
+  rerank: RerankBranch;
+}
+
+/** The three decisions of the request, each option shown, the one taken highlighted, with its reason. */
+function RouteRow({ route, citation, rerank }: RouteRowProps) {
+  const { t } = useTranslation();
+  const decisions: { key: string; options: string[]; taken: string; reason: string }[] = [
+    {
+      key: "citation",
+      options: ["none", "law", "off"],
+      taken: citation === "unknown_law" ? "law" : citation,
+      reason: t(`edu.route.citation_${citation}`, { label: route.citation?.label ?? "" }),
+    },
+    {
+      key: "mode",
+      options: ["dense", "lexical", "hybrid"],
+      taken: route.mode,
+      reason: t(`edu.route.mode_${route.mode}`),
+    },
+    {
+      key: "rerank",
+      options: ["on", "off", "skipped"],
+      taken: rerank === "cpu" ? "on" : rerank,
+      reason: t(`edu.route.rerank_${rerank}`, { count: route.rerankCandidates }),
+    },
+  ];
+  return (
+    <div className="edu-route" role="list" aria-label={t("edu.route.title")}>
+      <span className="edu-route-title">{route.known ? t("edu.route.title") : t("edu.route.title_planned")}</span>
+      {decisions.map((decision) => (
+        <div key={decision.key} className="edu-decision" role="listitem">
+          <span className="edu-decision-name">{t(`edu.route.${decision.key}`)}</span>
+          <span className="edu-decision-options">
+            {decision.options.map((option) => (
+              <span
+                key={option}
+                className={`edu-option${option === decision.taken ? " taken" : ""}`}
+                aria-current={option === decision.taken ? "true" : undefined}
+              >
+                {t(`edu.route.${decision.key}_opt_${option}`)}
+              </span>
+            ))}
+          </span>
+          <span className="edu-decision-reason">{decision.reason}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 interface LessonProps {
   sectionRef: React.Ref<HTMLElement>;
-  id: NodeId;
+  id: StripNode;
   node: NodeState;
   question?: string;
   lexemes: string[];
@@ -309,7 +414,12 @@ function StageLesson({ sectionRef, id, node, question, lexemes, rrfK, lexicalWei
                 <code>{snippet.source}</code>
               </div>
               <pre>
-                <code>{snippet.code}</code>
+                <code>
+                  {highlight(
+                    snippet.code.replace(/@@(\w+)@@/g, (_, key: string) => t(`edu.code.${id}.${key}`)),
+                    snippet.language
+                  )}
+                </code>
               </pre>
             </div>
           ) : null}

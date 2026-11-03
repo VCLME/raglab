@@ -17,7 +17,7 @@ test("Mode pédagogique: horizontal pipeline follows the stage events, explains 
   // No separate show / hide control: leaving the mode is how the diagram goes away.
   await expect(page.getByRole("button", { name: /Masquer le schéma|Afficher le schéma/ })).toHaveCount(0);
   // Before any question every stage is idle: no duration yet.
-  await expect(diagram.getByRole("button", { name: "Embedding", exact: true })).toBeVisible();
+  await expect(diagram.getByRole("button", { name: "Vectorisation", exact: true })).toBeVisible();
 
   // The strip sits above the chat, both on screen at once.
   const stripBox = await strip.boundingBox();
@@ -31,7 +31,7 @@ test("Mode pédagogique: horizontal pipeline follows the stage events, explains 
   // Durations come from the mocked `stage` events; stages left out of the
   // `pipeline` event are greyed out.
   for (const name of [
-    "Embedding — 12 ms",
+    "Vectorisation — 12 ms",
     "Recherche vectorielle — 8.3 ms",
     "Prompt — 0.6 ms",
     "LLM — 1.53 s",
@@ -56,9 +56,14 @@ test("Mode pédagogique: horizontal pipeline follows the stage events, explains 
   await expect(lesson.getByText("Meilleurs passages")).toBeVisible();
   await expect(lesson.getByText("src/raglab/stores/vector/postgres.py")).toBeVisible();
   await expect(lesson.getByRole("img", { name: /plus proches passages/ })).toBeVisible();
-  const lessonBox = await lesson.boundingBox();
-  const stripAfter = await strip.boundingBox();
-  expect(lessonBox && stripAfter && lessonBox.y >= stripAfter.y + stripAfter.height - 1).toBeTruthy();
+  // Below the strip (the page may still be scrolling it into view).
+  await expect
+    .poll(async () => {
+      const lessonBox = (await lesson.boundingBox())!;
+      const stripAfter = (await strip.boundingBox())!;
+      return lessonBox.y >= stripAfter.y + stripAfter.height - 1;
+    })
+    .toBe(true);
 
   // A second click on the active stage closes the lesson.
   await vector.click();

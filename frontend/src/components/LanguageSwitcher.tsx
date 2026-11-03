@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { SUPPORTED_LANGUAGES } from "../i18n";
 import { FlagIcon } from "./FlagIcon";
-import { ChevronDownIcon } from "./Icon";
 
 function resolveCurrent(lng: string): string {
   if (lng.toLowerCase().startsWith("pt")) return "pt-BR";
@@ -40,7 +39,7 @@ export function LanguageSwitcher() {
       >
         <FlagIcon code={currentLang.code} size={18} />
         <span className="lang-code">{currentLang.code.split("-")[0].toUpperCase()}</span>
-        <ChevronDownIcon size={14} className="lang-caret" />
+        <span className="lang-caret" aria-hidden="true">▾</span>
       </button>
       {open ? (
         <ul className="lang-menu" role="listbox">
