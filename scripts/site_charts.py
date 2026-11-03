@@ -3,16 +3,20 @@
 Stdlib only. Every chart is HTML plus an inline SVG drawn in a 0-100 box with
 ``preserveAspectRatio="none"``: lines and whiskers stretch with the container
 while dots, labels and ticks are HTML positioned in percent, so text keeps its
-real size at 375 px. ``site/assets/site.js`` adds the switches, the slider and
-the tooltips; without it the default view and the data tables still read.
+real size at 375 px. ``site/assets/site.js`` animates the results chart between
+question sets, toggles its series and adds the readouts; without it the default
+view still reads. Each chart carries a visually hidden data table.
 
 Series colours were run through the dataviz palette validator against the
-paper surface (#f9f6f2): baseline slate #4f7cc0, raglab green #0e7348.
+paper surface (#f9f6f2), all pairs: Recall@1 blue #2a78d6, Recall@5 raglab
+green #0e7348, Recall@10 amber #c98500 (below 3:1, so every line is labelled at
+its end); the trade-off chart keeps slate #4f7cc0 against the green.
 """
 
 from __future__ import annotations
 
 import html
+import json
 import math
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -26,17 +30,33 @@ TYPE_NAMES = {
     "paraphrase": "Paraphrases the passage",
     "reference": "Cites an article number",
 }
-METRICS = [("recall@1", "Recall@1"), ("recall@5", "Recall@5"), ("recall@10", "Recall@10"), ("mrr", "MRR")]
 
-# The stage-by-stage story, in the order the bricks were added.
-STAGE_RUNS = [
+# The results chart: each stage adds one brick to the previous one, in the order they were added.
+RESULT_STAGES = [
     ("baseline-v1", "Baseline v1"),
     ("hybrid-v1", "+ BM25 hybrid"),
     ("rerank-v1", "+ re-ranking"),
-    ("citations-v1", "Citations only"),
-    ("full-v1", "Full pipeline"),
+    ("full-v1", "+ citation resolver"),
 ]
-SWEEP_RUNS = [("rerank-sorted-c20", 20), ("rerank-sorted-c30", 30), ("rerank-sorted-c40", 40)]
+SHORT_STAGES = {
+    "Baseline v1": "Baseline",
+    "+ BM25 hybrid": "+ BM25",
+    "+ re-ranking": "+ rerank",
+    "+ citation resolver": "+ citations",
+}
+# Question sets offered by the switch; one appears as soon as a stage run has its suite.
+CORPORA = [
+    ("lexml_fulltext", "LexML"),
+    ("piaf", "PIAF"),
+    ("reference", "Article-number questions"),
+    ("legi_consommation", "Code de la consommation"),
+]
+# Three cut-offs on one 0-1 scale. MRR stays in the tables: a fourth hue cannot clear the
+# all-pairs colour-blind floor next to these three.
+SERIES = [("recall@1", "Recall@1"), ("recall@5", "Recall@5"), ("recall@10", "Recall@10")]
+SERIES_IDS = ["r1", "r5", "r10"]
+Y_TICKS = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
+PLOT_HEIGHT = 320
 
 
 def suite(run: dict[str, Any] | None, name: str) -> dict[str, Any] | None:
@@ -157,29 +177,23 @@ def ticks(lo: float, hi: float, step: float, fmt: Callable[[float], str]) -> lis
     return out
 
 
-def cat_x(i: int, n: int) -> float:
-    return (i + 0.5) / n * 100
-
-
 def legend(items: list[tuple[str, str]]) -> str:
     return (
         '<ul class="legend">' + "".join(f'<li><span class="key s-{s}"></span>{esc(t)}</li>' for s, t in items) + "</ul>"
     )
 
 
-def table(caption: str, head: list[str], rows: list[list[str]]) -> str:
+def sr_table(caption: str, head: list[str], rows: list[list[str]]) -> str:
+    """A data table for screen readers only: the charts' text alternative."""
     th = "".join(f'<th scope="col">{esc(h)}</th>' for h in head)
     body = "".join(
-        "<tr>"
-        + f'<th scope="row">{esc(r[0])}</th>'
-        + "".join(f'<td class="num">{esc(c)}</td>' for c in r[1:])
-        + "</tr>"
+        "<tr>" + f'<th scope="row">{esc(r[0])}</th>' + "".join(f"<td>{esc(c)}</td>" for c in r[1:]) + "</tr>"
         for r in rows
     )
+    # Wrapped: a table grows to fit its cells, so the clipping goes on a block around it.
     return (
-        f'<details class="chart-data"><summary>{esc(caption)}</summary>'
-        f'<div class="table-wrap" tabindex="0" role="region" aria-label="{esc(caption)}">'
-        f"<table><thead><tr>{th}</tr></thead><tbody>{body}</tbody></table></div></details>"
+        f'<div class="sr-only"><table><caption>{esc(caption)}</caption>'
+        f"<thead><tr>{th}</tr></thead><tbody>{body}</tbody></table></div>"
     )
 
 
@@ -191,82 +205,164 @@ def switch(name: str, label: str, options: list[tuple[str, str]], default: str) 
     return f'<div class="switch" role="group" aria-label="{esc(label)}" data-switch="{esc(name)}">{buttons}</div>'
 
 
-# ── a. Stage by stage, with 95% bootstrap intervals ──────────────────────────
+# ── a. The results chart: every stage, three cut-offs, one question set at a time ──
 
 
-def stage_values(
-    run: dict[str, Any] | None, corpus: str, metric: str
-) -> tuple[float | None, float | None, float | None]:
+def corpus_values(run: dict[str, Any] | None, corpus: str, metric: str) -> list[float] | None:
+    """[value, ci_low, ci_high] for a suite, [value] for the article-number subset, None if absent."""
     if corpus == "reference":
-        return by_type(run, "lexml_fulltext", "reference", metric), None, None
-    return (
-        summary(run, corpus, metric),
-        summary(run, corpus, f"{metric}_ci_low"),
-        summary(run, corpus, f"{metric}_ci_high"),
-    )
+        v = by_type(run, "lexml_fulltext", "reference", metric)
+        return None if v is None else [round(v, 4)]
+    v = summary(run, corpus, metric)
+    if v is None:
+        return None
+    lo, hi = summary(run, corpus, f"{metric}_ci_low"), summary(run, corpus, f"{metric}_ci_high")
+    return [round(v, 4)] if lo is None or hi is None else [round(v, 4), round(lo, 4), round(hi, 4)]
 
 
-def stage_chart(runs: dict[str, dict[str, Any]]) -> str:
-    stages = [(label, name) for label, name in STAGE_RUNS if label in runs]
+def corpus_cases(runs: list[dict[str, Any] | None], corpus: str) -> int | None:
+    for run in runs:
+        if corpus == "reference":
+            n = by_type(run, "lexml_fulltext", "reference", "cases")
+        else:
+            n = (suite(run, corpus) or {}).get("total_cases")
+        if n:
+            return int(n)
+    return None
+
+
+def stage_x(i: int, n: int) -> float:
+    return 6 + i / max(n - 1, 1) * 88
+
+
+def dodge(ys: list[tuple[str, float]], height: float, gap: float = 18) -> dict[str, float]:
+    """Spread end labels (y in % of the plot height) so no two sit closer than ``gap`` pixels."""
+    placed: dict[str, float] = {}
+    last = -1e9
+    for key, y in sorted(ys, key=lambda p: p[1]):
+        px = max(y / 100 * height, last + gap)
+        placed[key] = px / height * 100
+        last = px
+    return placed
+
+
+def results_chart(runs: dict[str, dict[str, Any]]) -> str:
+    stages = [(label, name) for label, name in RESULT_STAGES if label in runs]
     if len(stages) < 2:
         return ""
-    corpora = [("lexml_fulltext", "LexML"), ("piaf", "PIAF"), ("reference", "Article-number questions")]
+    stage_runs = [runs[label] for label, _ in stages]
+    corpora = []
+    for key, name in CORPORA:
+        values = {m: [corpus_values(r, key, m) for r in stage_runs] for m, _ in SERIES}
+        if any(v for vs in values.values() for v in vs):
+            corpora.append({"key": key, "name": name, "cases": corpus_cases(stage_runs, key), "values": values})
+    if not corpora:
+        return ""
+    data = {
+        "stages": [name for _, name in stages],
+        "series": [{"key": k, "name": n, "id": sid} for (k, n), sid in zip(SERIES, SERIES_IDS, strict=True)],
+        "corpora": corpora,
+    }
+    first = corpora[0]
     n = len(stages)
-    panels, rows = [], []
-    for corpus, corpus_name in corpora:
-        for metric, metric_name in METRICS:
-            values = [stage_values(runs[label], corpus, metric) for label, _ in stages]
-            lows = [lo if lo is not None else v for v, lo, _ in values if v is not None]
-            if not lows:
-                continue
-            lo = max(0.0, nice_floor(min(lows) - 0.05, 0.1))
-            step = 0.1 if 1 - lo <= 0.6 else 0.2
-            plot = Plot(
-                ydom=(lo, 1.0),
-                yticks=ticks(lo, 1.0, step, lambda v: f"{v:.1f}"),
-                xticks=[(cat_x(i, n), name) for i, (_, name) in enumerate(stages)],
-                xlabel="",
-                ylabel=metric_name,
-                height="240px",
-                cats=n,
+
+    def py(v: float) -> float:
+        return 100 - v * 100
+
+    # Static render of the default view: what reads without JS, and what the script animates from.
+    grid = "".join(f'<line x1="0" x2="100" y1="{py(v):.2f}" y2="{py(v):.2f}" class="grid"/>' for v in Y_TICKS)
+    paths, dots, ends, whiskers = [], [], [], []
+    end_ys = []
+    for (key, _), sid in zip(SERIES, SERIES_IDS, strict=True):
+        vals = first["values"][key]
+        pts = [(stage_x(i, n), py(v[0])) for i, v in enumerate(vals) if v]
+        d = " ".join(f"{'M' if j == 0 else 'L'}{x:.2f},{y:.2f}" for j, (x, y) in enumerate(pts))
+        paths.append(f'<path class="line s-{sid}" data-series="{sid}" d="{d}"/>')
+        for i, v in enumerate(vals):
+            style = f"left:{stage_x(i, n):.2f}%;top:{py(v[0]):.2f}%" if v else "display:none"
+            dots.append(f'<span class="mark s-{sid}" data-series="{sid}" data-col="{i}" style="{style}"></span>')
+            lo, hi = (py(v[1]), py(v[2])) if v and len(v) == 3 else (0, 0)
+            whiskers.append(
+                f'<line class="whisker s-{sid}" data-series="{sid}" data-col="{i}" x1="{stage_x(i, n):.2f}" '
+                f'x2="{stage_x(i, n):.2f}" y1="{lo:.2f}" y2="{hi:.2f}"/>'
             )
-            for i, ((_, name), (v, vlo, vhi)) in enumerate(zip(stages, values, strict=True)):
-                if v is None:
-                    continue
-                ci = f", 95% interval {vlo:.3f}–{vhi:.3f}" if vlo is not None else ""
-                if vlo is not None:
-                    plot.whiskers.append(("main", cat_x(i, n), vlo, vhi))
-                first_or_last = i in (0, n - 1)
-                plot.dots.append(
-                    Dot(
-                        cat_x(i, n),
-                        v,
-                        "main",
-                        f"{name}: {metric_name} {v:.3f}{ci}",
-                        f"{v:.2f}" if first_or_last else "",
-                        "right" if i == 0 else "left",
-                    )
-                )
-            hidden = "" if (corpus, metric) == ("lexml_fulltext", "recall@5") else " hidden"
-            panels.append(f'<div class="chart-panel" data-panel="{corpus}|{metric}"{hidden}>{plot.render()}</div>')
-            for (_, name), (v, vlo, vhi) in zip(stages, values, strict=True):
-                interval = f"{vlo:.3f}–{vhi:.3f}" if vlo is not None else "—"
-                rows.append([f"{corpus_name}, {metric_name}, {name}", ratio(v), interval])
+        last = next((v for v in reversed(vals) if v), None)
+        if last:
+            end_ys.append((sid, py(last[0])))
+    placed = dodge(end_ys, PLOT_HEIGHT)
+    for (key, name), sid in zip(SERIES, SERIES_IDS, strict=True):
+        last = next((v for v in reversed(first["values"][key]) if v), None)
+        value = f"{last[0]:.2f}" if last else ""
+        top = placed.get(sid, 0)
+        ends.append(
+            f'<span class="end-label" data-series="{sid}" style="top:{top:.2f}%"><span class="end-key s-{sid}"></span>'
+            f'<span class="end-name"><span class="end-pre">Recall</span>{esc(name.removeprefix("Recall"))}</span> '
+            f"<b>{value}</b></span>"
+        )
+    cols = "".join(
+        f'<button type="button" class="col" data-col="{i}" style="left:{stage_x(i, n):.2f}%" '
+        f'aria-label="{esc(name)}"></button>'
+        for i, (_, name) in enumerate(stages)
+    )
+    yt = "".join(f'<span style="top:{py(v):.2f}%">{v:.1f}</span>' for v in Y_TICKS)
+    xt = "".join(
+        f'<span style="left:{stage_x(i, n):.2f}%"><span class="long">{esc(name)}</span>'
+        f'<span class="short">{esc(SHORT_STAGES.get(name, name))}</span></span>'
+        for i, (_, name) in enumerate(stages)
+    )
+    plot = (
+        f'<div class="plot results-plot" style="--plot-h:{PLOT_HEIGHT}px">'
+        f'<div class="plot-y" aria-hidden="true">{yt}</div>'
+        '<div class="plot-area">'
+        f'<svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">'
+        f'{grid}<g class="whiskers">{"".join(whiskers)}</g>{"".join(paths)}</svg>'
+        f'<span class="crosshair" aria-hidden="true"></span>'
+        f'<div class="marks" aria-hidden="true">{"".join(dots)}</div>'
+        f'<div class="ends" aria-hidden="true">{"".join(ends)}</div>'
+        f'<div class="cols">{cols}</div>'
+        '<div class="readout" aria-hidden="true" hidden></div></div>'
+        f'<div class="plot-x" aria-hidden="true">{xt}</div></div>'
+    )
+    legend_buttons = "".join(
+        f'<button type="button" class="s-{sid}" data-series="{sid}" aria-pressed="true">'
+        f'<span class="key"></span>{esc(name)}</button>'
+        for (_, name), sid in zip(SERIES, SERIES_IDS, strict=True)
+    )
     controls = (
         '<div class="chart-controls">'
-        + switch("corpus", "Question set", [(c, t) for c, t in corpora], "lexml_fulltext")
-        + switch("metric", "Metric", METRICS, "recall@5")
+        + switch("corpus", "Question set", [(c["key"], c["name"]) for c in corpora], first["key"])
+        + f'<div class="legend" role="group" aria-label="Series shown">{legend_buttons}</div>'
         + "</div>"
     )
+    tables = "".join(
+        sr_table(
+            f"{c['name']}, {c['cases'] or '?'} questions: recall by stage"
+            + ("" if c["key"] == "reference" else ", with 95% bootstrap intervals"),
+            ["Stage", *(name for _, name in SERIES)],
+            [
+                [stage]
+                + [
+                    "—" if not v else f"{v[0]:.3f}" + (f" ({v[1]:.3f}–{v[2]:.3f})" if len(v) == 3 else "")
+                    for v in (c["values"][key][i] for key, _ in SERIES)
+                ]
+                for i, (_, stage) in enumerate(stages)
+            ],
+        )
+        for c in corpora
+    )
+    payload = json.dumps(data, separators=(",", ":")).replace("</", "<\\/")
     return (
-        '<figure class="chart" data-chart="stages" data-corpus="lexml_fulltext" data-metric="recall@5">'
-        '<p class="chart-title">Each brick, measured on the same frozen questions</p>'
-        f"{controls}{''.join(panels)}"
-        "<figcaption>Dots are the share of questions answered from the right passage; bars are 95% bootstrap "
-        "intervals over the questions (none for the article-number subset, 97 questions). “Citations only” is a "
-        "comparison run: dense search plus the citation resolver, without BM25 or re-ranking.</figcaption>"
-        + table("Data table", ["Run", "Value", "95% interval"], rows)
-        + "</figure>"
+        f'<figure class="chart results-chart" data-chart="results" data-corpus="{first["key"]}">'
+        '<p class="chart-title">Share of questions whose answer passage is retrieved, stage by stage</p>'
+        f'<p class="chart-sub" aria-live="polite">{esc(first["name"])}: {first["cases"] or "?"} frozen questions</p>'
+        f"{controls}{plot}"
+        "<figcaption>Each stage adds one brick to the one before, measured on the same frozen questions. "
+        "Recall@k counts a question as found when its answer passage is in the first k retrieved chunks. "
+        "Hover or focus a stage for the values and their 95% bootstrap intervals (none for the article-number "
+        "subset, a slice of LexML).</figcaption>"
+        f"{tables}"
+        f'<script type="application/json" class="chart-json">{payload}</script>'
+        "</figure>"
     )
 
 
@@ -316,9 +412,11 @@ def tradeoff_chart(runs: dict[str, dict[str, Any]], stages: list[Any]) -> str:
             steps.append((lx(lat), frontier[i - 1][1]))
         steps.append((lx(lat), r5))
     plot.lines.append(("main", steps, "frontier"))
-    # Direct labels only on the frontier, alternating above and below so neighbours never collide.
+    # Direct labels only on the frontier. Near the right edge they end at their dot, alternating above and
+    # below from the last run so close neighbours never collide; elsewhere they sit above, clear of the steps.
     place = {
-        p[3]: ("above" if i % 2 == 0 else "below") + ("-end" if lx(p[0]) > 70 else "") for i, p in enumerate(frontier)
+        p[3]: ("above-end" if (len(frontier) - 1 - i) % 2 == 0 else "below-end") if lx(p[0]) > 70 else "above"
+        for i, p in enumerate(frontier)
     }
     for lat, r5, name, label in points:
         front = label in place
@@ -339,181 +437,13 @@ def tradeoff_chart(runs: dict[str, dict[str, Any]], stages: list[Any]) -> str:
         + legend([("main", "On the frontier: nothing is both faster and better"), ("base", "Dominated run")])
         + plot.render()
         + "<figcaption>Each dot is a recorded run. The step line joins the runs no other run beats on both "
-        "axes; moving right along it buys recall with latency. Re-ranking is the expensive step.</figcaption>"
-        + table("Data table", ["Run", "LexML Recall@5", "Search p50", "Frontier"], rows)
-        + "</figure>"
-    )
-
-
-# ── c. Re-ranking candidates sweep ───────────────────────────────────────────
-
-
-def sweep_chart(runs: dict[str, dict[str, Any]]) -> str:
-    pts = [(n, runs[label]) for label, n in SWEEP_RUNS if label in runs]
-    if len(pts) < 2:
-        return ""
-    ns = [n for n, _ in pts]
-    lo_n, hi_n = min(ns) - 5, max(ns) + 5
-
-    def px(n: float) -> float:
-        return (n - lo_n) / (hi_n - lo_n) * 100
-
-    xt = [(px(n), str(n)) for n in ns]
-    default_i = len(pts) - 1
-
-    def small(
-        title: str, key: str, fmt: Callable[[float], str], dom: tuple[float, float], yt: list[tuple[float, str]]
-    ) -> str:
-        # LexML only: the hard set, where the candidates matter. PIAF stays in the readout and the table.
-        plot = Plot(
-            ydom=dom, yticks=yt, xticks=xt, xlabel="Candidates re-ranked", ylabel=title, height="200px", cls="is-small"
+        "axes; moving right along it buys recall with latency. Re-ranking is the expensive step: twenty "
+        "candidates instead of forty is clearly faster for a small loss in recall.</figcaption>"
+        + sr_table(
+            "Every run: LexML Recall@5 against search latency",
+            ["Run", "LexML Recall@5", "Search p50", "Frontier"],
+            rows,
         )
-        line = []
-        for i, (n, run) in enumerate(pts):
-            v = summary(run, "lexml_fulltext", key)
-            if v is None:
-                continue
-            line.append((px(n), v))
-            plot.dots.append(
-                Dot(px(n), v, "main", f"LexML, {n} candidates: {fmt(v)}", fmt(v), "above", attrs=f' data-i="{i}"')
-            )
-        plot.lines.append(("main", line, ""))
-        return f'<div class="sweep-cell">{plot.render()}</div>'
-
-    recalls = [summary(r, "lexml_fulltext", "recall@5") for _, r in pts]
-    lats = [summary(r, "lexml_fulltext", "latency_query_p50_ms") for _, r in pts]
-    rlo = max(0.0, nice_floor(min(v for v in recalls if v is not None) - 0.05, 0.05))
-    lhi = math.ceil(max(v for v in lats if v is not None) / 200) * 200
-    recall_plot = small("LexML Recall@5", "recall@5", ratio, (rlo, 1.0), ticks(rlo, 1.0, 0.05, lambda v: f"{v:.2f}"))
-    latency_plot = small(
-        "LexML search p50", "latency_query_p50_ms", ms, (0, lhi), ticks(0, lhi, 200, lambda v: f"{v:.0f} ms")
-    )
-    readouts = "".join(
-        f'<p class="sweep-readout" data-i="{i}"{"" if i == default_i else " hidden"}><strong>{n} candidates</strong>: '
-        f"LexML Recall@5 {ratio(summary(r, 'lexml_fulltext', 'recall@5'))}, search {ms(summary(r, 'lexml_fulltext', 'latency_query_p50_ms'))} p50; "
-        f"PIAF {ratio(summary(r, 'piaf', 'recall@5'))}, {ms(summary(r, 'piaf', 'latency_query_p50_ms'))}.</p>"
-        for i, (n, r) in enumerate(pts)
-    )
-    rows = [
-        [
-            f"{n} candidates",
-            ratio(summary(r, "lexml_fulltext", "recall@5")),
-            ms(summary(r, "lexml_fulltext", "latency_query_p50_ms")),
-            ratio(summary(r, "piaf", "recall@5")),
-            ms(summary(r, "piaf", "latency_query_p50_ms")),
-        ]
-        for n, r in pts
-    ]
-    return (
-        f'<figure class="chart" data-chart="sweep" data-sel="{default_i}">'
-        '<p class="chart-title">How many candidates to re-rank</p>'
-        '<label class="slider"><span>Candidates</span>'
-        f'<input type="range" min="0" max="{len(pts) - 1}" step="1" value="{default_i}" '
-        f'aria-valuetext="{pts[default_i][0]} candidates" data-labels="{esc(",".join(str(n) for n in ns))}">'
-        f"<output>{pts[default_i][0]}</output></label>"
-        f'{readouts}<div class="sweep-grid">{recall_plot}{latency_plot}</div>'
-        "<figcaption>The cross-encoder reads every (question, passage) pair it is given, so fewer candidates mean "
-        "less work. Twenty is clearly faster than forty for a small loss in recall; thirty loses recall yet is barely "
-        "faster than forty on LexML and slower on PIAF, a reminder that one run's latency is noisy. Re-ranking pairs are sorted by length in all three.</figcaption>"
-        + table("Data table", ["Run", "LexML Recall@5", "LexML p50", "PIAF Recall@5", "PIAF p50"], rows)
-        + "</figure>"
-    )
-
-
-# ── d. Per question type, before and after ───────────────────────────────────
-
-
-def types_chart(runs: dict[str, dict[str, Any]], before: str = "baseline-v1", after: str = "full-v1") -> str:
-    b, a = runs.get(before), runs.get(after)
-    types = [t for t in TYPE_NAMES if by_type(b, "lexml_fulltext", t, "recall@5") is not None]
-    if not types or a is None:
-        return ""
-    n = len(types)
-    plot = Plot(
-        ydom=(0, 1),
-        yticks=ticks(0, 1, 0.25, lambda v: f"{v * 100:.0f}%"),
-        xticks=[(cat_x(i, n), TYPE_NAMES[t]) for i, t in enumerate(types)],
-        xlabel="",
-        ylabel="Recall@5, LexML",
-        height="240px",
-        cats=n,
-    )
-    rows = []
-    for i, t in enumerate(types):
-        vb, va = by_type(b, "lexml_fulltext", t, "recall@5"), by_type(a, "lexml_fulltext", t, "recall@5")
-        cases = by_type(a, "lexml_fulltext", t, "cases")
-        x = cat_x(i, n)
-        plot.lines.append(("main", [(x, vb), (x, va)], "link"))
-        plot.dots.append(
-            Dot(x, vb, "base", f"{TYPE_NAMES[t]}, baseline v1: {pct(vb)}", pct(vb), "below" if va >= vb else "above")
-        )
-        plot.dots.append(
-            Dot(x, va, "main", f"{TYPE_NAMES[t]}, full pipeline: {pct(va)}", pct(va), "above" if va >= vb else "below")
-        )
-        rows.append([f"{TYPE_NAMES[t]} ({int(cases) if cases else '?'} questions)", pct(vb), pct(va)])
-    return (
-        '<figure class="chart" data-chart="types">'
-        '<p class="chart-title">Recall@5 by kind of question, before and after</p>'
-        + legend([("base", "Baseline v1"), ("main", "Full pipeline")])
-        + plot.render()
-        + "<figcaption>Questions that cite an article number were the blind spot of dense search. The citation "
-        "resolver closes most of that gap, and the other two kinds improve as well.</figcaption>"
-        + table("Data table", ["Question kind", "Baseline v1", "Full pipeline"], rows)
-        + "</figure>"
-    )
-
-
-# ── e. Recall@k curves ───────────────────────────────────────────────────────
-
-
-def recall_k_chart(runs: dict[str, dict[str, Any]], before: str = "baseline-v1", after: str = "full-v1") -> str:
-    b, a = runs.get(before), runs.get(after)
-    if b is None or a is None:
-        return ""
-    ks = [1, 5, 10]
-
-    def px(k: float) -> float:  # padded so the end dots and labels stay inside the plot
-        return 4 + (k - 1) / 9 * 92
-
-    panels, rows = [], []
-    for corpus, cname in (("lexml_fulltext", "LexML"), ("piaf", "PIAF")):
-        vals = {lab: [summary(r, corpus, f"recall@{k}") for k in ks] for lab, r in (("base", b), ("main", a))}
-        flat = [v for vs in vals.values() for v in vs if v is not None]
-        if not flat:
-            continue
-        lo = max(0.0, nice_floor(min(flat) - 0.05, 0.1))
-        plot = Plot(
-            ydom=(lo, 1),
-            yticks=ticks(lo, 1, 0.1, lambda v: f"{v:.1f}"),
-            xticks=[(px(k), f"k = {k}") for k in ks],
-            xlabel="Passages kept (k)",
-            ylabel=f"Recall@k, {cname}",
-            height="240px",
-        )
-        for s, name in (("base", "Baseline v1"), ("main", "Full pipeline")):
-            line = [(px(k), v) for k, v in zip(ks, vals[s], strict=True) if v is not None]
-            plot.lines.append((s, line, ""))
-            for j, (k, v) in enumerate(zip(ks, vals[s], strict=True)):
-                if v is None:
-                    continue
-                end = f"{name} {v:.2f}" if j == len(ks) - 1 else ""
-                plot.dots.append(
-                    Dot(px(k), v, s, f"{name}, Recall@{k} {v:.3f}", end, "above-end" if s == "main" else "below-end")
-                )
-            rows.append([f"{cname}, {name}"] + [ratio(v) for v in vals[s]])
-        hidden = "" if corpus == "lexml_fulltext" else " hidden"
-        panels.append(f'<div class="chart-panel" data-panel="{corpus}"{hidden}>{plot.render()}</div>')
-    return (
-        '<figure class="chart" data-chart="recallk" data-corpus="lexml_fulltext">'
-        '<p class="chart-title">Recall at 1, 5 and 10 passages</p>'
-        '<div class="chart-controls">'
-        + switch("corpus", "Question set", [("lexml_fulltext", "LexML"), ("piaf", "PIAF")], "lexml_fulltext")
-        + "</div>"
-        + legend([("base", "Baseline v1"), ("main", "Full pipeline")])
-        + "".join(panels)
-        + "<figcaption>The full pipeline is ahead at every k on both sets. On PIAF the gain is largest at k = 1: "
-        "re-ranking moves the right passage to the top, which is what a short prompt needs.</figcaption>"
-        + table("Data table", ["Run", "Recall@1", "Recall@5", "Recall@10"], rows)
         + "</figure>"
     )
 

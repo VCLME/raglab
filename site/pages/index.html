@@ -4,13 +4,13 @@ nav: index
 ---
 <section class="hero" id="top">
   <div class="wrap">
-    <p class="eyebrow">Open-source RAG pipeline · MIT</p>
     <h1>Private RAG you can measure.</h1>
-    <p class="lede">Naive RAG breaks on structured, cross-referenced, versioned documents such as laws and contracts. raglab shows where, measures it and fixes it, entirely on your own servers. Every component is kept only if it moves the numbers on frozen benchmarks.</p>
+    <p class="lede">Naive RAG breaks on structured, cross-referenced, versioned documents such as laws and contracts. raglab, an open-source pipeline, shows where, measures it and fixes it, entirely on your own servers. Every component is kept only if it moves the numbers on frozen benchmarks.</p>
     <p class="cta">
       <a class="button" href="results.html">See the results</a>
       <a class="button secondary" href="{{repo_url}}">Read the code</a>
     </p>
+    <div class="hero-facts">
     <dl class="headline" aria-label="Full pipeline against baseline v1">
       <div><dt>LexML Recall@5</dt><dd>{{lexml_r5_v1}} → <strong>{{lexml_r5_full}}</strong></dd></div>
       <div><dt>Article-number questions</dt><dd>{{ref_r5_v1}} → <strong>{{ref_r5_full}}</strong></dd></div>
@@ -18,6 +18,7 @@ nav: index
       <div><dt>Answer correctness, LexML</dt><dd>{{correct_lexml_v1}} → <strong>{{correct_lexml_full}}</strong></dd></div>
     </dl>
     <p class="headline-note">Full pipeline against baseline v1 on the same frozen questions; faithfulness holds ({{faith_lexml_v1}} → {{faith_lexml_full}} on LexML). <a href="results.html">Every run</a> · <a href="method.html">how it's measured</a></p>
+    </div>
   </div>
 </section>
 
@@ -78,7 +79,7 @@ nav: index
 </section>
 
 <section class="wrap story" aria-labelledby="story">
-  <h2 id="story">The article-number problem</h2>
+  <h2 id="story">Article numbers</h2>
   <div class="story-grid">
     <p class="big-number" aria-hidden="true">{{ref_r5_v0}}</p>
     <div>
@@ -87,17 +88,16 @@ nav: index
       <p>What fixed it is a <a href="{{repo_url}}/blob/main/docs/citations.md">citation resolver</a>: “art. N da Lei X” is parsed, the search is restricted to that law and the cited article is pinned first. Those questions went from {{ref_r5_v1}} to {{ref_r5_cites}} with the resolver alone, and {{ref_r5_full}} in the full pipeline.</p>
     </div>
   </div>
-  {{chart_types}}
 </section>
 
 <section class="wrap" aria-labelledby="results">
   <h2 id="results">Results, before and after</h2>
   <p>Each brick was added on its own and measured on the same frozen questions, with bootstrap intervals so a gain can be told from noise.</p>
-  {{chart_stages}}
+  {{chart_results}}
   {{chart_tradeoff}}
   <p>The full table: each row adds one component to the previous one. Rows marked <em>measuring</em> have code but no recorded run yet.</p>
   {{results_table}}
-  <p class="note">The embedder cache cut search latency from {{latency_v0}} to {{latency_cache}} per question (the model was being reloaded from disk for every question). Every run, the candidate sweep and recall at k on the <a href="results.html">results page</a>.</p>
+  <p class="note">The embedder cache cut search latency from {{latency_v0}} to {{latency_cache}} per question (the model was being reloaded from disk for every question). Every run, with all its metrics and the exact command, is on the <a href="results.html">results page</a>.</p>
 </section>
 
 <section class="wrap" aria-labelledby="built">

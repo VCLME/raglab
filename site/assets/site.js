@@ -1,58 +1,233 @@
-// raglab showcase: chart switches, the candidates slider, tooltips, the pipeline
-// explainer and the nav's active section. Everything here is progressive: without
-// it the default chart view, the data tables and every pipeline stage still read.
+// raglab showcase: the results chart (question-set switch, series toggles, stage
+// readout), tooltips on the trade-off chart, the pipeline explainer and the nav's
+// active section. Everything here is progressive: without it the default chart
+// view, the hidden data tables and every pipeline stage still read.
 (function () {
   "use strict";
   document.documentElement.classList.add("js");
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
 
-  // Chart switches: a figure shows the panel matching all its switch values.
-  document.querySelectorAll("figure.chart").forEach(function (fig) {
-    var groups = fig.querySelectorAll("[data-switch]");
-    if (!groups.length) return;
-    function sync() {
-      fig.querySelectorAll(".chart-panel").forEach(function (panel) {
-        var keys = panel.dataset.panel.split("|");
-        var names = Array.prototype.map.call(groups, function (g) { return g.dataset.switch; });
-        // Panel keys follow the switch order as written by the generator (corpus, then metric).
-        var match = names.every(function (name, i) { return keys[i] === undefined || fig.dataset[name] === keys[i]; });
-        panel.hidden = !match;
+  // ── Results chart ───────────────────────────────────────────────────────────
+  // The generator renders the default view; this redraws it from the embedded data
+  // and tweens every value when the question set changes, from wherever it stands.
+  document.querySelectorAll('figure[data-chart="results"]').forEach(function (fig) {
+    var data = JSON.parse(fig.querySelector(".chart-json").textContent);
+    var area = fig.querySelector(".plot-area");
+    var sub = fig.querySelector(".chart-sub");
+    var readout = fig.querySelector(".readout");
+    var cross = fig.querySelector(".crosshair");
+    var cols = Array.prototype.slice.call(fig.querySelectorAll("button.col"));
+    var legend = Array.prototype.slice.call(fig.querySelectorAll(".legend button"));
+    var n = data.stages.length;
+    var off = {};
+    var corpus = data.corpora[0];
+    var shown = values(corpus); // what is on screen now, tweened towards the target
+    var active = -1;
+    var frame = 0;
+
+    function x(i) { return 6 + (i / Math.max(n - 1, 1)) * 88; }
+    function y(v) { return 100 - v * 100; }
+    function values(c) {
+      return data.series.map(function (s) {
+        return c.values[s.key].map(function (v) { return v ? v[0] : null; });
       });
     }
-    groups.forEach(function (group) {
-      group.addEventListener("click", function (e) {
-        var btn = e.target.closest("button[data-value]");
-        if (!btn) return;
-        fig.dataset[group.dataset.switch] = btn.dataset.value;
-        group.querySelectorAll("button").forEach(function (b) { b.setAttribute("aria-pressed", String(b === btn)); });
-        sync();
+    function el(sel, sid, col) {
+      return area.querySelector(sel + '[data-series="' + sid + '"]' + (col === undefined ? "" : '[data-col="' + col + '"]'));
+    }
+
+    function draw(vals) {
+      var ends = [];
+      data.series.forEach(function (s, k) {
+        var d = "", started = false;
+        vals[k].forEach(function (v, i) {
+          var mark = el(".mark", s.id, i);
+          if (v === null) { mark.style.display = "none"; started = false; return; }
+          d += (started ? "L" : "M") + x(i).toFixed(2) + "," + y(v).toFixed(2);
+          started = true;
+          mark.style.display = "";
+          mark.style.left = x(i) + "%";
+          mark.style.top = y(v) + "%";
+        });
+        el("path.line", s.id).setAttribute("d", d);
+        var last = vals[k].filter(function (v) { return v !== null; }).pop();
+        var end = el(".end-label", s.id);
+        end.querySelector("b").textContent = last === undefined ? "" : last.toFixed(2);
+        if (last !== undefined && !off[s.id]) ends.push({ id: s.id, top: y(last), el: end });
+        end.hidden = last === undefined;
+      });
+      // End labels never overlap: spread them at least 18 px apart, top to bottom.
+      var h = area.clientHeight || 320, prev = -1e9;
+      ends.sort(function (a, b) { return a.top - b.top; }).forEach(function (e) {
+        var px = Math.max((e.top / 100) * h, prev + 18);
+        e.el.style.top = (px / h) * 100 + "%";
+        prev = px;
+      });
+    }
+
+    function whiskers() {
+      data.series.forEach(function (s) {
+        corpus.values[s.key].forEach(function (v, i) {
+          var w = el("line.whisker", s.id, i);
+          var has = v && v.length === 3;
+          w.setAttribute("y1", has ? y(v[1]).toFixed(2) : 0);
+          w.setAttribute("y2", has ? y(v[2]).toFixed(2) : 0);
+          w.classList.toggle("is-on", has && i === active && !off[s.id]);
+        });
+      });
+    }
+
+    function tween(target, dur) {
+      cancelAnimationFrame(frame);
+      if (reduce.matches) { shown = target; draw(shown); return; }
+      var from = shown, t0 = performance.now();
+      dur = dur || 320;
+      function step(now) {
+        var t = Math.min(1, (now - t0) / dur);
+        // Ease-in-out: the lines morph in place, so they accelerate and settle like one shape.
+        var e = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+        shown = target.map(function (row, k) {
+          return row.map(function (v, i) {
+            var a = from[k][i];
+            if (v === null || a === null) return v;
+            return a + (v - a) * e;
+          });
+        });
+        draw(shown);
+        if (t < 1) frame = requestAnimationFrame(step);
+      }
+      frame = requestAnimationFrame(step);
+    }
+
+    function fmt(v) { return v.toFixed(3); }
+    function label(i) {
+      return data.series.filter(function (s) { return !off[s.id]; }).map(function (s) {
+        var v = corpus.values[s.key][i];
+        if (!v) return s.name + " not measured";
+        return s.name + " " + fmt(v[0]) + (v.length === 3 ? ", 95% interval " + fmt(v[1]) + " to " + fmt(v[2]) : "");
+      }).join("; ");
+    }
+    function labelCols() {
+      cols.forEach(function (b, i) { b.setAttribute("aria-label", data.stages[i] + ", " + corpus.name + ": " + label(i)); });
+    }
+
+    // One readout for the whole stage: every visible series, value first, interval after.
+    function show(i) {
+      active = i;
+      area.classList.add("is-reading");
+      cross.style.left = x(i) + "%";
+      area.querySelectorAll(".mark").forEach(function (m) { m.classList.toggle("is-active", m.dataset.col === String(i)); });
+      whiskers();
+      readout.textContent = "";
+      var head = document.createElement("p");
+      head.className = "readout-head";
+      head.textContent = data.stages[i];
+      readout.appendChild(head);
+      data.series.forEach(function (s) {
+        if (off[s.id]) return;
+        var v = corpus.values[s.key][i];
+        var row = document.createElement("p");
+        row.className = "readout-row s-" + s.id;
+        var key = document.createElement("span");
+        key.className = "key";
+        var val = document.createElement("strong");
+        val.textContent = v ? fmt(v[0]) : "—";
+        var name = document.createElement("span");
+        name.textContent = s.name;
+        row.append(key, val, name);
+        if (v && v.length === 3) {
+          var ci = document.createElement("span");
+          ci.className = "ci";
+          ci.textContent = fmt(v[1]) + "–" + fmt(v[2]);
+          row.appendChild(ci);
+        }
+        readout.appendChild(row);
+      });
+      readout.hidden = false;
+      // Beside the stage, on whichever side has room, in the half of the plot the lines leave empty.
+      var vis = data.series.filter(function (s) { return !off[s.id] && corpus.values[s.key][i]; });
+      var mean = vis.reduce(function (a, s) { return a + corpus.values[s.key][i][0]; }, 0) / (vis.length || 1);
+      readout.style.top = mean > 0.5 ? "auto" : "0";
+      readout.style.bottom = mean > 0.5 ? "0" : "auto";
+      var left = i < n / 2;
+      readout.style.left = left ? "calc(" + x(i) + "% + 16px)" : "auto";
+      readout.style.right = left ? "auto" : "calc(" + (100 - x(i)) + "% + 16px)";
+    }
+    function hide() {
+      active = -1;
+      area.classList.remove("is-reading");
+      readout.hidden = true;
+      area.querySelectorAll(".mark.is-active").forEach(function (m) { m.classList.remove("is-active"); });
+      whiskers();
+    }
+
+    cols.forEach(function (b, i) {
+      b.addEventListener("pointerenter", function () { show(i); });
+      b.addEventListener("focus", function () { show(i); });
+      b.addEventListener("click", function () { show(i); }); // a tap on touch screens
+      b.addEventListener("keydown", function (e) {
+        var j = e.key === "ArrowRight" ? i + 1 : e.key === "ArrowLeft" ? i - 1 : -1;
+        if (e.key === "Escape") { hide(); return; }
+        if (j >= 0 && j < n) { e.preventDefault(); cols[j].focus(); }
       });
     });
-    sync();
-  });
+    area.addEventListener("pointerleave", function (e) { if (e.pointerType === "mouse") hide(); });
+    fig.addEventListener("focusout", function (e) { if (!area.contains(e.relatedTarget)) hide(); });
 
-  // Candidates slider: highlights the chosen run on both small charts.
-  document.querySelectorAll('figure[data-chart="sweep"]').forEach(function (fig) {
-    var input = fig.querySelector('input[type="range"]');
-    var output = fig.querySelector("output");
-    var labels = input.dataset.labels.split(",");
-    function sync() {
-      var i = input.value;
-      fig.querySelectorAll(".dot[data-i]").forEach(function (d) { d.classList.toggle("is-sel", d.dataset.i === i); });
-      fig.querySelectorAll(".sweep-readout").forEach(function (p) { p.hidden = p.dataset.i !== i; });
-      output.textContent = labels[i];
-      input.setAttribute("aria-valuetext", labels[i] + " candidates");
+    fig.querySelector('[data-switch="corpus"]').addEventListener("click", function (e) {
+      var btn = e.target.closest("button[data-value]");
+      if (!btn || btn.getAttribute("aria-pressed") === "true") return;
+      this.querySelectorAll("button").forEach(function (b) { b.setAttribute("aria-pressed", String(b === btn)); });
+      corpus = data.corpora.filter(function (c) { return c.key === btn.dataset.value; })[0];
+      fig.dataset.corpus = corpus.key;
+      sub.textContent = corpus.name + ": " + (corpus.cases || "?") + " frozen questions";
+      tween(values(corpus));
+      if (active >= 0) show(active); else whiskers();
+      labelCols();
+    });
+
+    legend.forEach(function (b) {
+      b.addEventListener("click", function () {
+        var id = b.dataset.series;
+        var visible = legend.filter(function (l) { return !off[l.dataset.series]; }).length;
+        if (!off[id] && visible === 1) return; // keep at least one line on the chart
+        off[id] = !off[id];
+        b.setAttribute("aria-pressed", String(!off[id]));
+        area.querySelectorAll('[data-series="' + id + '"]').forEach(function (m) { m.classList.toggle("is-off", !!off[id]); });
+        draw(shown);
+        if (active >= 0) show(active); else whiskers();
+        labelCols();
+      });
+    });
+
+    draw(shown);
+    whiskers();
+    labelCols();
+    window.addEventListener("resize", function () { draw(shown); });
+
+    // First view only: every line starts level at its baseline value and climbs to what
+    // each brick measured. Skipped when the chart is already on screen or motion is reduced.
+    if ("IntersectionObserver" in window && !reduce.matches && fig.getBoundingClientRect().top > window.innerHeight) {
+      var real = values(corpus);
+      shown = real.map(function (row) { return row.map(function (v) { return v === null ? null : row[0]; }); });
+      draw(shown);
+      var reveal = new IntersectionObserver(function (entries) {
+        if (!entries[0].isIntersecting) return;
+        reveal.disconnect();
+        tween(values(corpus), 900);
+      }, { threshold: 0.5 });
+      reveal.observe(area);
+      window.addEventListener("beforeprint", function () { reveal.disconnect(); shown = values(corpus); draw(shown); });
     }
-    input.addEventListener("input", sync);
-    sync();
   });
 
-  // One shared tooltip for every data mark (hover and keyboard focus).
+  // ── Trade-off chart: one shared tooltip for every data mark (hover and focus) ──
   var tip = document.createElement("div");
   tip.className = "tip";
   tip.setAttribute("role", "status");
   tip.hidden = true;
   document.body.appendChild(tip);
-  function show(el) {
+  function showTip(el) {
     tip.textContent = el.dataset.tip;
     tip.hidden = false;
     var r = el.getBoundingClientRect();
@@ -63,14 +238,14 @@
     tip.style.left = left + window.scrollX + "px";
     tip.style.top = top + window.scrollY + "px";
   }
-  function hide() { tip.hidden = true; }
-  document.addEventListener("pointerover", function (e) { var el = e.target.closest("[data-tip]"); if (el) show(el); });
-  document.addEventListener("pointerout", function (e) { if (e.target.closest("[data-tip]")) hide(); });
-  document.addEventListener("focusin", function (e) { var el = e.target.closest("[data-tip]"); if (el) show(el); else hide(); });
-  document.addEventListener("keydown", function (e) { if (e.key === "Escape") hide(); });
-  window.addEventListener("scroll", hide, { passive: true });
+  function hideTip() { tip.hidden = true; }
+  document.addEventListener("pointerover", function (e) { var el = e.target.closest("[data-tip]"); if (el) showTip(el); });
+  document.addEventListener("pointerout", function (e) { if (e.target.closest("[data-tip]")) hideTip(); });
+  document.addEventListener("focusin", function (e) { var el = e.target.closest("[data-tip]"); if (el) showTip(el); else hideTip(); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") hideTip(); });
+  window.addEventListener("scroll", hideTip, { passive: true });
 
-  // Pipeline explainer: one stage open at a time; the first opens by default.
+  // ── Pipeline explainer: one stage open at a time; the first opens by default ──
   document.querySelectorAll("[data-pipeline]").forEach(function (root) {
     var buttons = root.querySelectorAll("button.stage");
     function open(id) {
@@ -84,7 +259,7 @@
     open("citation");
   });
 
-  // Nav: highlight the in-page section crossing the middle of the viewport (as on the portfolio).
+  // ── Nav: highlight the in-page section crossing the middle of the viewport ──
   var links = Array.prototype.filter.call(document.querySelectorAll(".site-header nav a"), function (a) {
     return a.getAttribute("href").charAt(0) === "#";
   });

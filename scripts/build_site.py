@@ -356,11 +356,8 @@ def build_site(out: Path, site_url: str) -> None:
     runs = load_results()
     values = {
         "results_table": html_table(stages, runs),
-        "chart_stages": site_charts.stage_chart(runs),
+        "chart_results": site_charts.results_chart(runs),
         "chart_tradeoff": site_charts.tradeoff_chart(runs, stages),
-        "chart_sweep": site_charts.sweep_chart(runs),
-        "chart_types": site_charts.types_chart(runs),
-        "chart_recallk": site_charts.recall_k_chart(runs),
         "pipeline": site_charts.pipeline(runs, REPO_URL),
         "run_details": run_details(runs),
         "calibration_table": calibration_table(),
