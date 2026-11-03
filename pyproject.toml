@@ -16,6 +16,7 @@ dependencies = [
   "neo4j>=5.20.0",
   "numpy>=2.1.0",
   "pgvector>=0.3.6",
+  "prometheus-client>=0.21.0",
   "psycopg[binary]>=3.2.0",
   "pydantic>=2.8.0",
   "pydantic-settings>=2.4.0",

@@ -186,4 +186,11 @@ Objectif : passer du laboratoire à un pipeline RAG prêt pour la production, ch
 
 - **9.7 — Portes de qualité (outillage en place)** : `raglab gate` et seuils versionnés dans `benchmarks/thresholds.json` (à fixer depuis `baseline-v1`), workflow hebdomadaire de retrieval sur CPU, voir [portes-qualite.md](portes-qualite.md)
 
-**À venir** : 9.4 compréhension de la requête et abstention · 9.6 observabilité (Prometheus, Grafana, dérive) · 9.7 portes de qualité · 9.8 vitrine
+**9.6 — Observabilité ✅ (PR #34)** : voir [observabilite.md](observabilite.md)
+
+- `GET /metrics` (Prometheus) : latence par étape (embed, retrieval, citation, dense, lexical, fusion, rerank, generation : chaque clé de `timings_ms`), tokens/s, score top-1, requêtes par route et statut, compteurs de cache (`embedder`, `reranker` depuis `rerank_stats`), re-ranking sans GPU (`raglab_rerank_notices_total`) et abstention (9.4) ; labels à faible cardinalité (gabarits de route)
+- profil Compose `obs` : Prometheus v3.5.0 et Grafana 12.1.1, ports sur 127.0.0.1, source de données et tableau de bord versionnés, lecture anonyme
+- `raglab experiment drift` et `POST /api/experiments/drift` : test KS sur les distributions de scores et de rangs, écarts des moyennes RAGAS / MRR / recall entre deux index runs, experiment runs ou fenêtres de dates ; Markdown ou JSON, `--fail-on-drift` ; scores désormais stockés dans `metrics_json.retrieved_scores`
+- coût mesuré sans GPU (`scripts/bench_observability.py`) : +105 µs sur une requête simulée de 60 ms (+0,17 %, objectif < 1 %) ; capture Grafana sur trafic réel dans [observabilite.md](observabilite.md#profil-compose-obs)
+
+**À venir** : 9.4 compréhension de la requête et abstention · 9.7 portes de qualité · 9.8 vitrine

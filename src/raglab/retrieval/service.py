@@ -21,6 +21,7 @@ from raglab.embeddings.factory import build_embedding_provider
 from raglab.generation.prompts import build_prompt_bundle
 from raglab.generation.service import OllamaGenerator
 from raglab.logging_utils import log_event
+from raglab.observability.metrics import observe_query
 from raglab.retrieval.citations import article_chunks, find_law_document, merge_with_citation, parse_citation
 from raglab.retrieval.fusion import reciprocal_rank_fusion
 from raglab.retrieval.rerank import Reranker, get_reranker, rerank_gpu_available
@@ -29,6 +30,9 @@ from raglab.stores.lexical.postgres import PostgresLexicalStore
 from raglab.stores.vector.postgres import PostgresVectorStore
 
 LOGGER = logging.getLogger(__name__)
+
+# Scorer behind `RetrievedChunk.score` when re-ranking is off.
+_SCORE_TYPES = {RetrievalMode.DENSE: "cosine", RetrievalMode.LEXICAL: "bm25", RetrievalMode.HYBRID: "rrf"}
 
 # SQLSTATE raised by Postgres when statement_timeout cancels a query.
 _QUERY_CANCELED = "57014"
@@ -492,6 +496,16 @@ class QueryService:
             question_length=len(outcome.question),
             elapsed_ms=round(elapsed_ms, 3),
             timings_ms=outcome.timings_ms,
+        )
+        observe_query(
+            timings_ms=outcome.timings_ms,
+            scores=(chunk.score for chunk in outcome.retrieved),
+            strategy=str(outcome.index_run.strategy),
+            generated=generate_answer,
+            generation_stats=self.generator.last_stats if generate_answer else None,
+            rerank_stats=outcome.rerank_stats,
+            rerank_notice=outcome.rerank_notice,
+            score_type="rerank" if outcome.rerank else _SCORE_TYPES[outcome.retrieval_mode],
         )
 
     @contextmanager

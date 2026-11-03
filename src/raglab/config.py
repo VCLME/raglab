@@ -142,6 +142,8 @@ class Settings(BaseSettings):
     api_rate_limit_requests: int = 0
     api_rate_limit_window_seconds: float = 60.0
     ready_timeout_seconds: float = 3.0
+    # Prometheus endpoint `/metrics` and the request-counting middleware.
+    metrics_enabled: bool = True
 
 
 @lru_cache(maxsize=1)

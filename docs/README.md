@@ -45,4 +45,5 @@ Par où commencer selon ce que vous voulez faire. Le [README du dépôt](../READ
 |---|---|
 | [exploitation.md](exploitation.md) | démarrer / arrêter, budget GPU, réglages llama.cpp, sauvegardes, dépannage des erreurs Ollama |
 | [api-production.md](api-production.md) | streaming SSE, budgets par étape, `X-Request-ID`, clé d'API, rate limit, `/health` et `/ready` |
+| [observabilite.md](observabilite.md) | métriques Prometheus (`/metrics`), tableau de bord Grafana (profil `obs`), rapport de dérive |
 | [portes-qualite.md](portes-qualite.md) | vérifier qu'un changement ne dégrade pas la qualité |
