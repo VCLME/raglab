@@ -57,6 +57,31 @@ test("Retrieval page: hybrid mode sends its settings and shows dense / BM25 / RR
   expect(body).toMatchObject({ retrieval_mode: "hybrid", lexical_weight: 0.3, rrf_k: null });
 });
 
+test("Retrieval page: the citations option pins the cited article and says which law it resolved", async ({ page, api }) => {
+  const [first, second] = data.chunks;
+  let body: Record<string, unknown> = {};
+  api.set("POST /api/query", async (route) => {
+    body = route.request().postDataJSON();
+    return json({
+      ...data.queryResponse,
+      citation: { label: "art. 49 — Lei nº 8078", law_number: "8078", article: "49", law_found: true, article_found: true },
+      retrieved_chunks: [{ ...first, score: 1, citation_match: true }, { ...second, rank: 2 }],
+    })(route);
+  });
+  await page.goto("/expert/query");
+
+  const row = (label: RegExp) => page.locator(".form-row").filter({ has: page.locator("label", { hasText: label }) });
+  await row(/^Question$/).locator("textarea").fill("O que dispõe o art. 49 da Lei nº 8.078?");
+  await row(/^Citations juridiques$/).getByRole("checkbox").check();
+  await page.getByRole("button", { name: "Exécuter" }).click();
+
+  await expect(page.getByText("Citation reconnue : art. 49 — Lei nº 8078")).toBeVisible();
+  const cards = page.locator(".chunk");
+  await expect(cards.first()).toContainText("article cité");
+  await expect(cards.nth(1)).not.toContainText("article cité");
+  expect(body).toMatchObject({ citations: true });
+});
+
 test("Benchmarks page: history table renders the experiment runs", async ({ page }) => {
   await page.goto("/expert/benchmarks");
   await page.getByRole("button", { name: "Historique" }).click();

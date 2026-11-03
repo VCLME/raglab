@@ -135,6 +135,17 @@ export interface RetrievedChunk {
   lexical_score?: number | null;
   lexical_rank?: number | null;
   fused_score?: number | null;
+  // True when pinned because the question cites this chunk's law and article.
+  citation_match?: boolean | null;
+}
+
+/** Legal citation parsed from the question (citations option). */
+export interface CitationInfo {
+  label: string;
+  law_number: string;
+  article: string | null;
+  law_found: boolean;
+  article_found: boolean;
 }
 
 export type RetrievalMode = "dense" | "lexical" | "hybrid";
@@ -146,6 +157,7 @@ export interface QueryResponse {
   retrieved_chunks: RetrievedChunk[];
   retrieval_mode?: RetrievalMode;
   query_lexemes?: string[];
+  citation?: CitationInfo | null;
   answer: string | null;
   elapsed_ms: number;
   filters: unknown;

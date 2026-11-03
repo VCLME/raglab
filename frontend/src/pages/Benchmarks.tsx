@@ -101,6 +101,7 @@ function LaunchTab({ onLaunched }: { onLaunched: () => void }) {
   const [ragasLimit, setRagasLimit] = useState("");
   const [judgeBackend, setJudgeBackend] = useState<"ollama" | "llamacpp">("ollama");
   const [retrievalMode, setRetrievalMode] = useState<RetrievalMode>("dense");
+  const [citations, setCitations] = useState(false);
   const [lexicalWeight, setLexicalWeight] = useState("");
   const [rrfK, setRrfK] = useState("");
 
@@ -157,6 +158,7 @@ function LaunchTab({ onLaunched }: { onLaunched: () => void }) {
       // "both" comparison stays dense.
       if (backend === "pgvector") {
         body.retrieval_mode = retrievalMode;
+        body.citations = citations;
         if (retrievalMode === "hybrid") {
           if (lexicalWeight !== "") body.lexical_weight = Number(lexicalWeight);
           if (rrfK !== "") body.rrf_k = Number(rrfK);
@@ -206,6 +208,14 @@ function LaunchTab({ onLaunched }: { onLaunched: () => void }) {
               </option>
             ))}
           </select>
+        </FieldRow>
+      ) : null}
+      {backendChoice !== "neo4j" ? (
+        <FieldRow label={t("retrieval.citations_label")} hint={t("retrieval.citations_hint")}>
+          <label className="inline" style={{ gap: 4 }}>
+            <input type="checkbox" checked={citations} onChange={(e) => setCitations(e.target.checked)} />
+            {t("retrieval.citations_checkbox")}
+          </label>
         </FieldRow>
       ) : null}
       {backendChoice !== "neo4j" && retrievalMode === "hybrid" ? (
