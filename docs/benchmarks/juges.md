@@ -44,19 +44,21 @@ Une note compte comme « positive » à partir de 0,75, donc seulement une note 
 
 | Taux de bons verdicts | qwen2.5:7b (Ollama) | Gemma 4 26B-A4B (llama.cpp) |
 |---|---|---|
-| Réponse fidèle reconnue fidèle | 0,80 | **0,90** |
-| Réponse inventée repérée | **1,00** | 0,97 |
-| Ajout inventé repéré | **1,00** | 0,97 |
-| **Faithfulness** | 0,933 | **0,944** |
+| Réponse fidèle reconnue fidèle | 0,83 | **0,93** |
+| Réponse inventée repérée | 1,00 | 1,00 |
+| Ajout inventé repéré | 1,00 | 1,00 |
+| **Faithfulness** | 0,944 | **0,978** |
 | Bonne réponse jugée pertinente | 0,40 | **0,97** |
 | Réponse à une autre question repérée | **0,93** | 0,70 |
 | **Answer relevancy** | 0,667 | **0,833** |
 
 Les notes brutes sont dans [`benchmarks/judge_calibration.json`](../../benchmarks/judge_calibration.json).
 
+**Deuxième correction : le juge lisait un contexte tronqué.** Une première version du juge de fidélité ne gardait que les 600 premiers caractères de chaque passage (un chunk en fait jusqu'à 900, un paragraphe PIAF souvent plus). Il pouvait donc juger « inventée » une affirmation présente dans la partie coupée. Mesuré avant correction : faithfulness 0,933 (qwen2.5) et 0,944 (Gemma), les erreurs portant surtout sur des réponses pourtant fidèles. Avec les passages complets : 0,944 et 0,978.
+
 **Lecture**
 
-- Sur la fidélité, les deux juges se valent. Choisir Gemma ne rend pas la détection meilleure : il évite que le générateur se note lui-même.
+- Sur la fidélité, les deux juges repèrent toutes les réponses inventées ou enjolivées ; Gemma reconnaît mieux les réponses fidèles (0,93 contre 0,83), donc il accuse moins souvent à tort. Il évite surtout que le générateur se note lui-même.
 - Sur la pertinence, qwen2.5 pénalise à tort plus de la moitié des bonnes réponses courtes (« 100 000. » à « Combien de personnes… ? » reçoit 0,5 ou 0).
 - Gemma se laisse tromper 3 fois sur 10 par une réponse du bon format à une autre question (un nombre pour un « combien »). C'est en partie dû au protocole : le juge de pertinence ne voit pas le contexte, il ne peut donc pas savoir que « 20 000 » répond à une autre question.
 
