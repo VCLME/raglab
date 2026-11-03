@@ -51,11 +51,7 @@ def health(
     finally:
         store.close()
 
-    overall = (
-        "ok"
-        if postgres_state == "ok" and ollama_state == "ok" and neo4j_state == "ok"
-        else "degraded"
-    )
+    overall = "ok" if postgres_state == "ok" and ollama_state == "ok" and neo4j_state == "ok" else "degraded"
     return HealthResponse(
         status=overall,
         api="ok",

@@ -98,34 +98,45 @@ def test_index_corpus_incremental_reuses_all_documents_without_loading_models():
     index_run = SimpleNamespace(id="run-1", config_json={})
     base_run = SimpleNamespace(id="run-0")
 
-    with patch("raglab.indexing.service.get_corpus_by_name", return_value=corpus), patch(
-        "raglab.indexing.service.list_documents_for_corpus",
-        return_value=[document],
-    ), patch(
-        "raglab.indexing.service.get_or_create_embedding_space",
-        return_value=embedding_space,
-    ), patch(
-        "raglab.indexing.service.create_index_run",
-        return_value=index_run,
-    ), patch(
-        "raglab.indexing.service.complete_index_run",
-    ) as complete_index_run, patch.object(
-        service,
-        "_resolve_incremental_plan",
-        return_value=(base_run, [document], [], {"doc-1": [(_chunk("doc-1", "checksum-1"), _embedding([0.1]))]}),
-    ), patch.object(
-        service,
-        "_copy_reused_documents",
-        return_value=3,
-    ) as copy_reused_documents, patch.object(
-        service,
-        "_index_documents",
-        return_value=0,
-    ) as index_documents, patch(
-        "raglab.indexing.service.build_chunker",
-    ) as build_chunker, patch(
-        "raglab.indexing.service.build_embedding_provider",
-    ) as build_embedding_provider:
+    with (
+        patch("raglab.indexing.service.get_corpus_by_name", return_value=corpus),
+        patch(
+            "raglab.indexing.service.list_documents_for_corpus",
+            return_value=[document],
+        ),
+        patch(
+            "raglab.indexing.service.get_or_create_embedding_space",
+            return_value=embedding_space,
+        ),
+        patch(
+            "raglab.indexing.service.create_index_run",
+            return_value=index_run,
+        ),
+        patch(
+            "raglab.indexing.service.complete_index_run",
+        ) as complete_index_run,
+        patch.object(
+            service,
+            "_resolve_incremental_plan",
+            return_value=(base_run, [document], [], {"doc-1": [(_chunk("doc-1", "checksum-1"), _embedding([0.1]))]}),
+        ),
+        patch.object(
+            service,
+            "_copy_reused_documents",
+            return_value=3,
+        ) as copy_reused_documents,
+        patch.object(
+            service,
+            "_index_documents",
+            return_value=0,
+        ) as index_documents,
+        patch(
+            "raglab.indexing.service.build_chunker",
+        ) as build_chunker,
+        patch(
+            "raglab.indexing.service.build_embedding_provider",
+        ) as build_embedding_provider,
+    ):
         result = service.index_corpus(
             corpus_name="demo",
             strategy=ChunkingStrategy.TRADITIONAL,

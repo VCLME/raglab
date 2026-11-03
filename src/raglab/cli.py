@@ -236,7 +236,9 @@ def lexml_questions(
         help="llamacpp (serveur compatible OpenAI, demarre si besoin) ou ollama.",
     ),
     model: str | None = typer.Option(None, "--model", help="Modele (defaut: question_model ou generation_model)."),
-    profile: str | None = typer.Option(None, "--profile", help="Profil llama.cpp a demarrer (defaut: question_model_profile)."),
+    profile: str | None = typer.Option(
+        None, "--profile", help="Profil llama.cpp a demarrer (defaut: question_model_profile)."
+    ),
 ) -> None:
     """Generer un jeu de questions typees (paraphrase / reference / entity) sur le corpus LexML."""
     result = generate_questions(
@@ -460,7 +462,9 @@ def experiment_recall(
         help="Dossier LexML utilise pour generer le dataset Recall par defaut.",
     ),
     case_limit: int = typer.Option(10, "--case-limit", min=1, help="Nombre max de cas si generation auto."),
-    ragas: bool = typer.Option(False, "--ragas", help="Generer les reponses et les noter (faithfulness, relevancy, correctness)."),
+    ragas: bool = typer.Option(
+        False, "--ragas", help="Generer les reponses et les noter (faithfulness, relevancy, correctness)."
+    ),
     ragas_limit: int | None = typer.Option(None, "--ragas-limit", min=1, help="Noter seulement les N premiers cas."),
     judge_backend: str = typer.Option(
         "llamacpp",
