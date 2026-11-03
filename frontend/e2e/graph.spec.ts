@@ -97,17 +97,32 @@ test("Graph page: a law's neighbourhood, an article's references and the passage
   await expect(page.getByRole("heading", { name: "Voisinage — Lei nº 9.307 de 23/09/1996" })).toBeVisible();
   await expect(page.getByTestId("citation-graph").locator("canvas").first()).toBeVisible();
   await expect(page.getByText("41 articles sans renvoi ne sont pas dessinés.")).toBeVisible();
+  const legend = page.getByRole("group", { name: "Légende du graphe" });
+  for (const entry of ["Loi du corpus", "Article de la loi", "Article d'une autre loi", "Loi hors corpus"]) {
+    await expect(legend).toContainText(entry);
+  }
+  for (const entry of ["CITESrenvoie à", "AMENDSmodifie", "REVOKESabroge", "PART_OFfait partie de"]) {
+    await expect(legend).toContainText(entry);
+  }
 
   const articles = page.getByRole("group", { name: "Articles de la loi" });
   await expect(articles.getByRole("button")).toHaveText(["Art. 5º", "Art. 7º"]);
   await articles.getByRole("button", { name: "Art. 5º" }).click();
+  await expect(articles.getByRole("button", { name: "Art. 5º" })).toHaveAttribute("aria-pressed", "true");
   const selection = page.locator(".graph-selection");
   await expect(selection).toContainText("renvoie à Art. 7º — Lei nº 9.307/1996");
   await expect(selection).toContainText("« poderá a outra parte propor a demanda de que trata o art. 7º desta Lei »");
   await expect(selection).toContainText("renvoie à Art. 10 — Lei nº 7.998/1990");
 
+  // The overview button lets go of the selection.
+  await page.getByRole("button", { name: "Vue d'ensemble" }).click();
+  await expect(selection).toHaveCount(0);
+  await expect(page.getByText(/^Cliquer sur un nœud ou un article/)).toBeVisible();
+
+  await articles.getByRole("button", { name: "Art. 5º" }).click();
   await selection.getByRole("button", { name: "Voir les renvois de cet article" }).click();
   await expect(page.getByRole("heading", { name: "Art. 5 — Lei nº 9.307 de 23/09/1996" })).toBeVisible();
+  await expect(articles.getByRole("button")).toHaveText(["Art. 5º"]);
   expect(requested).toEqual(["", "5"]);
   await expect(page.locator(".graph-cypher")).toContainText(`MATCH (l:Law {uid: "${LAW}"})<-[:PART_OF]-(a:Article {number: "5"})`);
 });
