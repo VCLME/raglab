@@ -128,6 +128,26 @@ Ecran par defaut. Trois elements verticaux :
 
 Chaque envoi declenche un appel `/api/query` independant. L'historique conversationnel est conserve cote React (pas de multi-tour cote backend : le Playground couvre ce cas sans RAG).
 
+## Mode pédagogique (schéma du pipeline en direct)
+
+Bouton **« Mode pédagogique »** dans la barre du haut (icône de toque, libellé masqué sur téléphone). L'état est mémorisé dans `localStorage` (`raglab.educationalMode`) et partagé entre la barre et le Chat (`frontend/src/hooks/useEducationalMode.ts`). Pensé pour une démo : un prospect voit à quoi sert chaque brique du RAG pendant que sa question la traverse.
+
+Quand il est actif, la page Chat affiche à côté de la conversation (au-dessus sous 1180 px, en colonne sur téléphone) un schéma SVG de l'architecture :
+
+```
+Question → Routeur → Embedding → Recherche vectorielle ┐
+                   └──────────→ BM25 ──────────────────┴→ Fusion → Re-ranking → Prompt → LLM → Réponse
+```
+
+- **Allumage étape par étape** : chaque étape passe de « en attente » à « en cours » (bordure accent, flèche animée) puis « terminée » avec sa durée, au fil des événements SSE `stage` de `/api/query/stream`.
+- **Étapes désactivées grisées** (pointillés, « désactivé ») : celles que la requête n'exécute pas, d'après l'événement `pipeline`. Aujourd'hui le routeur, BM25, la fusion et le re-ranking sont grisés ; ils s'allumeront d'eux-mêmes une fois les phases 9.2 (hybride), 9.3 (re-ranking) et 9.4 (routeur) fusionnées, sans changement côté interface.
+- **Clic (ou Entrée / Espace au clavier) sur une étape** : panneau de détail avec une explication courte en français (« Ce qu'elle fait », « Pourquoi elle existe »), la durée, les compteurs (dimension du vecteur, passages retenus, top_k, taille du prompt, tokens lus / générés, tokens/s, délai du premier token) et les données intermédiaires : 8 premières valeurs du vecteur de la question (barres + valeurs, norme), meilleurs passages avec tous leurs scores (vectoriel, BM25, fusion, re-ranking quand ils existent), aperçu du prompt envoyé au LLM, modèle utilisé. Sans sélection, le panneau suit l'étape en cours (« Suivi en direct ») ; « Suivre en direct » rend la main après un clic.
+- **Embedding et recherche sont rejoués** : ils s'exécutent avant l'ouverture du flux (pour garder de vrais codes HTTP 400 / 504), leurs événements arrivent donc d'un bloc avec `live: false`. L'interface les espace de ~280 ms pour qu'on puisse les suivre ; les durées affichées sont les durées réelles. Prompt et génération sont émis en direct.
+- **Repli sans streaming** : si l'API répond via `/api/query`, le schéma est reconstruit à partir de `timings_ms` et `generation_stats`, avec une mention explicite.
+- **Accessibilité** : étapes focusables (`role="button"`, `aria-pressed`), annonces `aria-live` à chaque étape terminée, `prefers-reduced-motion` coupe les animations et l'espacement du rejeu. Textes en fr / en / pt-BR (clés `edu.*`).
+
+Format des événements : voir [api-production.md](api-production.md#mode-pédagogique--événements-pipeline-et-stage). Côté code : `src/raglab/retrieval/stages.py` (backend), `frontend/src/edu/pipeline.ts` (état) et `frontend/src/components/PipelineDiagram.tsx` (schéma).
+
 ## Pages de l'interface
 
 ### Dashboard (`/expert`)

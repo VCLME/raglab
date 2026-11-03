@@ -159,6 +159,8 @@ Objectif : passer du laboratoire à un pipeline RAG prêt pour la production, ch
 - mesuré sans GPU (`scripts/bench_api_hardening.py`) : sources affichées après ~65 ms au lieu de ~3,4 s, premier token à 366 ms (préremplissage simulé 300 ms) ; middlewares +0,16 ms par requête ; TTFT réel sur GPU à mesurer
 - migrations Alembic : introduites avec 9.2 (`feature/hybrid-retrieval`), aucune migration dans cette PR
 
+- **Mode pédagogique (vitrine, en revue)** : bouton « Mode pédagogique » dans la barre du haut ; schéma SVG du pipeline à côté du Chat qui s'allume étape par étape via les événements SSE `pipeline` / `stage` (durée, compteurs, vecteur de la question, meilleurs passages et scores, aperçu du prompt, tokens/s) avec explication de chaque brique ; les étapes 9.2 / 9.3 / 9.4 apparaissent d'elles-mêmes une fois fusionnées. Voir [frontend-ui.md](frontend-ui.md#mode-pédagogique-schéma-du-pipeline-en-direct)
+
 - **9.7 — Portes de qualité (outillage en place)** : `raglab gate` et seuils versionnés dans `benchmarks/thresholds.json` (à fixer depuis `baseline-v1`), workflow hebdomadaire de retrieval sur CPU, voir [portes-qualite.md](portes-qualite.md)
 
 **À venir** : 9.2 retrieval hybride BM25 + RRF · 9.3 re-ranking cross-encoder · 9.4 compréhension de la requête et abstention · 9.6 observabilité (Prometheus, Grafana, dérive) · 9.7 portes de qualité · 9.8 vitrine
