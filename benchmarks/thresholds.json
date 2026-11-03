@@ -1,8 +1,16 @@
 {
-  "description": "Planchers de la porte de qualite (raglab gate). Fixes a partir de baseline-v1, moins une tolerance ; a relever quand une brique ameliore durablement les chiffres.",
-  "source_run": null,
+  "description": "Planchers de la porte de qualite (raglab gate). Recall@5 et MRR : borne basse de l'intervalle a 95 % de baseline-v1, pour ne pas echouer sur le bruit d'un run a l'autre ; faithfulness : valeur de baseline-v1 moins 0,05. A relever quand une brique ameliore durablement les chiffres.",
+  "source_run": "baseline-v1",
   "suites": {
-    "piaf": {"recall@5": 0.0, "mrr": 0.0, "faithfulness_mean": 0.0},
-    "lexml_fulltext": {"recall@5": 0.0, "mrr": 0.0, "faithfulness_mean": 0.0}
+    "piaf": {
+      "recall@5": 0.85,
+      "mrr": 0.727,
+      "faithfulness_mean": 0.88
+    },
+    "lexml_fulltext": {
+      "recall@5": 0.408,
+      "mrr": 0.327,
+      "faithfulness_mean": 0.853
+    }
   }
 }
