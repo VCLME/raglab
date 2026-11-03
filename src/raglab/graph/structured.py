@@ -147,11 +147,14 @@ class StructuredGraphStore:
             for batch in _batches(rows):
                 self._run(f"UNWIND $rows AS row MERGE (n:{label} {{uid: row.uid}}) SET n += row {extra}", rows=batch)
         for (kind, source_label, target_label), rows in payload.relationships.items():
+            # A law can both rewrite and insert parts of one article: one
+            # AMENDS relationship per kind.
+            key = " {kind: row.props.kind}" if kind in {"AMENDS", "REVOKES"} else ""
             for batch in _batches(rows):
                 self._run(
                     f"UNWIND $rows AS row "
                     f"MATCH (a:{source_label} {{uid: row.source}}) MATCH (b:{target_label} {{uid: row.target}}) "
-                    f"MERGE (a)-[r:{kind}]->(b) SET r += row.props",
+                    f"MERGE (a)-[r:{kind}{key}]->(b) SET r += row.props",
                     rows=batch,
                 )
         self._run(

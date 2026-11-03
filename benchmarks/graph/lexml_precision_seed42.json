@@ -940,8 +940,8 @@
         "text"
       ],
       "evidence": "mento Agrário - GTERDA, a partir de 1º de janeiro de 2009, ficará incorporado ao vencimento básico dos titulares de cargos de provimento efetivo integrantes do Plano de Carreira dos Cargos de Reforma e Desenvolvimento Agrário, conforme valores estabelecidos no Anexo II desta Lei. (Incluído pela Lei nº 11,784, de 2008) (Revogado pela Lei nº 15.141, de 2025) (Revogado pela Lei nº 11.784, de 2008) Art. 27. Os cargos efetivos de Agente de Inspeção Sanitária e Industrial de Produtos de Origem Animal e de Agente de Atividades Agropecuárias do Quadro de Pessoal do Ministério da Agricultura, Pecuária e Abastecimento são reestruturados em cl",
-      "verdict": "correct",
-      "note": ""
+      "verdict": "incorrect",
+      "note": "Re-judged after reading the raw lines: '(Revogado pela Lei nº 15.141, de 2025)' stands alone between art. 24-D and art. 27, so it marks a stripped article (25 or 26), not art. 24-D."
     },
     {
       "id": "amends_revokes-011",
@@ -1257,6 +1257,6 @@
   ],
   "review": {
     "reviewer": "manual reading of each edge's evidence against the law text",
-    "rules": "raglab.graph.legal as of this commit; frozen before the sample was drawn (development samples used seeds 7 and 11)"
+    "rules": "rules v1 (first frozen version, before the fixes listed in lexml_precision_seed43.json)"
   }
 }
