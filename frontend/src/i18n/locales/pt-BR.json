@@ -469,5 +469,23 @@
     "download": "Baixar",
     "downloading": "Baixando…",
     "pull_status": "status: {{status}}"
+  },
+  "retrieval": {
+    "mode_label": "Modo de recuperação",
+    "mode_hint": "dense = similaridade de embeddings, lexical = BM25 nas palavras, hybrid = fusão dos dois (RRF).",
+    "mode_default": "padrão do servidor",
+    "mode_dense": "dense (embeddings)",
+    "mode_lexical": "lexical (BM25)",
+    "mode_hybrid": "hybrid (RRF)",
+    "lexical_weight_label": "Peso do BM25",
+    "lexical_weight_hint": "0 = só a ordem densa, 1 = só a ordem BM25, 0,5 = RRF clássica.",
+    "rrf_k_label": "Constante k da RRF",
+    "rrf_k_hint": "Quanto menor o k, mais pesam as primeiras posições. Padrão 60.",
+    "query_lexemes": "Lexemas BM25 da pergunta",
+    "timings": "Tempo por etapa",
+    "scores_dense": "dense",
+    "scores_lexical": "BM25",
+    "scores_fused": "RRF",
+    "not_retrieved": "ausente"
   }
 }

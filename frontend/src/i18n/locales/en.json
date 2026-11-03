@@ -469,5 +469,23 @@
     "download": "Download",
     "downloading": "Downloading…",
     "pull_status": "status: {{status}}"
+  },
+  "retrieval": {
+    "mode_label": "Retrieval mode",
+    "mode_hint": "dense = embedding similarity, lexical = BM25 on words, hybrid = fusion of both (RRF).",
+    "mode_default": "server default",
+    "mode_dense": "dense (embeddings)",
+    "mode_lexical": "lexical (BM25)",
+    "mode_hybrid": "hybrid (RRF)",
+    "lexical_weight_label": "BM25 weight",
+    "lexical_weight_hint": "0 = dense order only, 1 = BM25 order only, 0.5 = plain RRF.",
+    "rrf_k_label": "RRF constant k",
+    "rrf_k_hint": "The smaller k, the more top ranks weigh. Default 60.",
+    "query_lexemes": "BM25 lexemes of the question",
+    "timings": "Time per stage",
+    "scores_dense": "dense",
+    "scores_lexical": "BM25",
+    "scores_fused": "RRF",
+    "not_retrieved": "absent"
   }
 }

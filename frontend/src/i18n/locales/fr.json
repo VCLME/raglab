@@ -469,5 +469,23 @@
     "download": "Télécharger",
     "downloading": "Téléchargement…",
     "pull_status": "statut : {{status}}"
+  },
+  "retrieval": {
+    "mode_label": "Mode de retrieval",
+    "mode_hint": "dense = similarité d'embeddings, lexical = BM25 sur les mots, hybrid = fusion des deux (RRF).",
+    "mode_default": "défaut du serveur",
+    "mode_dense": "dense (embeddings)",
+    "mode_lexical": "lexical (BM25)",
+    "mode_hybrid": "hybrid (RRF)",
+    "lexical_weight_label": "Poids du BM25",
+    "lexical_weight_hint": "0 = ordre dense seul, 1 = ordre BM25 seul, 0,5 = RRF classique.",
+    "rrf_k_label": "Constante k de la RRF",
+    "rrf_k_hint": "Plus k est petit, plus les premiers rangs pèsent. Défaut 60.",
+    "query_lexemes": "Lexèmes BM25 de la question",
+    "timings": "Temps par étape",
+    "scores_dense": "dense",
+    "scores_lexical": "BM25",
+    "scores_fused": "RRF",
+    "not_retrieved": "absent"
   }
 }
