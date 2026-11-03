@@ -108,13 +108,11 @@ def test_recall_endpoint_and_cli_forward_rerank(client):
     assert cli_cls.return_value.run.call_args.kwargs["rerank"] is True
 
 
-def test_bench_all_forwards_rerank():
+def test_bench_all_forwards_rerank(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)  # the command writes benchmarks/results/<label>.json
     with patch("raglab.benchmarks.suite.run_all") as run_all, patch("raglab.benchmarks.suite.render_markdown"):
         run_all.return_value = {"label": "x"}
-        with CliRunner().isolated_filesystem():
-            result = CliRunner().invoke(
-                cli_app, ["bench", "all", "--label", "x", "--rerank", "--retrieval-mode", "hybrid"]
-            )
+        result = CliRunner().invoke(cli_app, ["bench", "all", "--label", "x", "--rerank", "--retrieval-mode", "hybrid"])
     assert result.exit_code == 0, result.output
     kwargs = run_all.call_args.kwargs
     assert kwargs["rerank"] is True
