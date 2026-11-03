@@ -161,4 +161,11 @@ Objectif : passer du laboratoire à un pipeline RAG prêt pour la production, ch
 
 - **9.7 — Portes de qualité (outillage en place)** : `raglab gate` et seuils versionnés dans `benchmarks/thresholds.json` (à fixer depuis `baseline-v1`), workflow hebdomadaire de retrieval sur CPU, voir [portes-qualite.md](portes-qualite.md)
 
-**À venir** : 9.2 retrieval hybride BM25 + RRF · 9.3 re-ranking cross-encoder · 9.4 compréhension de la requête et abstention · 9.6 observabilité (Prometheus, Grafana, dérive) · 9.7 portes de qualité · 9.8 vitrine
+**9.4 — Routeur de requêtes et abstention 🚧 (PR brouillon, empilée sur 9.1b)** : voir [routing.md](routing.md)
+
+- routeur sans LLM derrière un flag (`routing`, désactivé par défaut) dans `QueryService`, `/api/query`, `/api/query/stream`, `raglab query --routing`, Chat et Retrieval (panneau détaillé en mode expert)
+- langue fr / pt / autre par mots-outils et diacritiques, repli sur l'exemple étiqueté le plus proche ; intention par centroïdes d'exemples écrits à part (`documentary`, `conversational`, `out_of_scope`) avec marge ; corpus par centroïde des embeddings de chunks de chaque index_run (mis en cache) ; abstention sous un seuil par corpus, score dense aujourd'hui, score du reranker 9.3 ensuite
+- `raglab experiment routing` / `POST /api/experiments/routing` : jeu d'abstention + 80 questions in-scope tirées, seuils calibrés sur 200 autres questions in-scope, balayage et courbe précision / rappel, trois points candidats
+- mesuré (CPU) : langue 99,4 %, corpus 100 %, décision du routeur p95 7,5 ms (l'embedding de la question, 25 ms, est partagé avec le retrieval) ; abstention au point prudent : précision 0,98, rappel 0,75, 1,2 % de fausses abstentions ; le rappel cible (0,8) n'est atteint qu'à 15 % de fausses abstentions ; point de fonctionnement à choisir
+
+**À venir** : 9.2 retrieval hybride BM25 + RRF · 9.3 re-ranking cross-encoder · 9.6 observabilité (Prometheus, Grafana, dérive) · 9.7 portes de qualité · 9.8 vitrine
