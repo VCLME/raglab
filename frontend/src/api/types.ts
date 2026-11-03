@@ -34,6 +34,9 @@ export interface ConfigResponse {
   rrf_k: number;
   bm25_k1: number;
   bm25_b: number;
+  default_rerank?: boolean;
+  rerank_model_name?: string;
+  rerank_candidates?: number;
 }
 
 export interface OllamaStatus {
@@ -135,6 +138,10 @@ export interface RetrievedChunk {
   lexical_score?: number | null;
   lexical_rank?: number | null;
   fused_score?: number | null;
+  fused_rank?: number | null;
+  // Cross-encoder re-ranking; score / rank are then these.
+  rerank_score?: number | null;
+  rerank_rank?: number | null;
 }
 
 export type RetrievalMode = "dense" | "lexical" | "hybrid";
@@ -146,6 +153,9 @@ export interface QueryResponse {
   retrieved_chunks: RetrievedChunk[];
   retrieval_mode?: RetrievalMode;
   query_lexemes?: string[];
+  rerank?: boolean;
+  // candidates, scored, cache_hits, cache_hit_rate, cache_size, cache_hit_rate_total
+  rerank_stats?: Record<string, number>;
   answer: string | null;
   elapsed_ms: number;
   timings_ms?: Record<string, number>;
@@ -174,6 +184,9 @@ export interface ExperimentRunSummary {
   retrieval_mode?: RetrievalMode | null;
   lexical_weight?: number | null;
   rrf_k?: number | null;
+  rerank?: boolean | null;
+  rerank_model?: string | null;
+  rerank_candidates?: number | null;
 }
 
 export interface ExperimentResultCase {
