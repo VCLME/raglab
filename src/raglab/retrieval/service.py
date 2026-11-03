@@ -20,6 +20,7 @@ from raglab.domain.schemas import QueryResponse, RetrievalFilters, RetrievedChun
 from raglab.embeddings.factory import build_embedding_provider
 from raglab.generation.service import OllamaGenerator
 from raglab.logging_utils import log_event
+from raglab.observability.metrics import observe_query
 from raglab.stores.vector.postgres import PostgresVectorStore
 
 LOGGER = logging.getLogger(__name__)
@@ -244,6 +245,13 @@ class QueryService:
             question_length=len(outcome.question),
             elapsed_ms=round(elapsed_ms, 3),
             timings_ms=outcome.timings_ms,
+        )
+        observe_query(
+            timings_ms=outcome.timings_ms,
+            scores=(chunk.score for chunk in outcome.retrieved),
+            strategy=str(outcome.index_run.strategy),
+            generated=generate_answer,
+            generation_stats=self.generator.last_stats if generate_answer else None,
         )
 
     @contextmanager

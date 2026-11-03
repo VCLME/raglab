@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from raglab.api.errors import register_error_handlers
-from raglab.api.middleware import ApiKeyRateLimitMiddleware, RequestIdMiddleware
+from raglab.api.middleware import ApiKeyRateLimitMiddleware, MetricsMiddleware, RequestIdMiddleware
 from raglab.api.routers import (
     bench,
     corpora,
@@ -14,6 +14,7 @@ from raglab.api.routers import (
     index,
     ingest,
     lexml,
+    metrics,
     ollama,
     query,
 )
@@ -31,7 +32,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         description="API HTTP pour piloter le RAG local raglab depuis un frontend ou un script.",
     )
     # Starlette wraps the app in reverse order of registration, so the
-    # request flows: RequestId -> CORS -> API key / rate limit -> routes.
+    # request flows: Metrics -> RequestId -> CORS -> API key / rate limit ->
+    # routes. Metrics sits outermost so 401/429 answers are counted too.
     # CORS sits outside the key check so preflights pass and 401/429 answers
     # still carry the CORS headers the browser needs to read them.
     app.add_middleware(
@@ -49,10 +51,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         expose_headers=["X-Request-ID", "Retry-After"],
     )
     app.add_middleware(RequestIdMiddleware)
+    if settings.metrics_enabled:
+        app.add_middleware(MetricsMiddleware)
 
     register_error_handlers(app, settings)
 
     app.include_router(health.router)
+    if settings.metrics_enabled:
+        app.include_router(metrics.router)
     app.include_router(ollama.router)
     app.include_router(corpora.router)
     app.include_router(ingest.router)
