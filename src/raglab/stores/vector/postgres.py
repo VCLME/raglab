@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 from pgvector.sqlalchemy import VECTOR
 from sqlalchemy import Float, bindparam, cast, func, select, text
 from sqlalchemy.orm import Session
@@ -64,7 +66,7 @@ class PostgresVectorStore:
         if self.search_mode == "exact":
             # No cast: the expression no longer matches the partial HNSW
             # index, so Postgres computes the exact distance for the run's rows.
-            typed_embedding = ChunkEmbedding.embedding
+            typed_embedding: Any = ChunkEmbedding.embedding
             query_param = bindparam("query_vec", query_embedding, type_=VECTOR())
         else:
             typed_embedding = cast(ChunkEmbedding.embedding, VECTOR(dim))
