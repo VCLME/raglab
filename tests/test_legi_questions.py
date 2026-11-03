@@ -177,3 +177,29 @@ def test_review_marks_cases_failing_current_rules(tmp_path: Path):
     reviewed = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
     assert [row.get("review_status") for row in reviewed] == ["rejected", None]
     assert reviewed[0]["rejection_reason"] == "vague"
+
+
+def test_scenario_questions_describe_a_situation_without_giving_the_article_away(tmp_path: Path):
+    passage = next(p for p in sample_passages(_corpus(tmp_path), count=4, seed=0) if p.legi_id == "LEGIARTI2")
+    answer = "quatorze jours"
+    good = {"question": "Mon client a acheté un canapé en ligne il y a dix jours, peut-il encore annuler ?"}
+    assert _rejection_reason({**good, "answer": answer}, passage, "scenario") is None
+    cited = {"question": "Mon client peut-il annuler selon l'article L. 221-18 ?"}
+    assert _rejection_reason({**cited, "answer": answer}, passage, "scenario") == "leaks_reference"
+    code = {"question": "Selon le code de la consommation, mon client peut-il encore annuler son achat ?"}
+    assert _rejection_reason({**code, "answer": answer}, passage, "scenario") == "names_code"
+    copied = {"question": "Le consommateur dispose d'un délai de combien pour exercer son droit ?"}
+    assert _rejection_reason({**copied, "answer": answer}, passage, "scenario") == "copies_wording"
+    dated = {"question": "Mon client a acheté un canapé en ligne en 2015, pouvait-il annuler ?"}
+    assert _rejection_reason({**dated, "answer": answer}, passage, "scenario") == "dated"
+
+
+def test_scenario_is_the_main_type(tmp_path: Path):
+    corpus = _corpus(tmp_path)
+    client = MagicMock()
+    client.chat.side_effect = _fake_writer
+    generator = LegiQuestionGenerator(client=client, backend="llamacpp", model="qwen-test")
+    result = generator.generate(corpus_dir=corpus, output_dir=tmp_path / "out", count=2, seed=0)
+    assert result["by_type"]["scenario"] >= 1
+    first_prompt = client.chat.call_args_list[0].kwargs["messages"][0]["content"]
+    assert "TYPE : scenario" in first_prompt

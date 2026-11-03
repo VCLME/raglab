@@ -93,7 +93,7 @@ L'article est retrouvé par ses métadonnées (`article_number`, `code`) dans le
 
 ## Le jeu de questions (à générer)
 
-Le générateur suit le protocole LexML ([protocole.md](benchmarks/protocole.md#code-de-la-consommation-français)) : passages tirés dans les articles **en vigueur** (un par article d'abord), questions `paraphrase`, `reference` et `entity` écrites par Qwen3.6-35B-A3B via llama.cpp, réponse copiée mot pour mot et retrouvée dans le texte, filtres en français, relecture, partie `dev` / `heldout` tirée avec la graine. Chaque cas note dans `context` le nombre de versions de son article et si la réponse figure aussi dans une version ancienne (`answer_in_other_version`) : on pourra mesurer à part le piège des versions.
+Le générateur suit le protocole LexML ([protocole.md](benchmarks/protocole.md#code-de-la-consommation-français)) : passages tirés dans les articles **en vigueur** (un par article d'abord), questions `scenario` (le type principal : une situation concrète, sans numéro d'article, sans nom de code ni formulation recopiée), `paraphrase`, `reference` et `entity` écrites par Qwen3.6-35B-A3B via llama.cpp, réponse copiée mot pour mot et retrouvée dans le texte, filtres en français, relecture, partie `dev` / `heldout` tirée avec la graine. Chaque cas note dans `context` le nombre de versions de son article et si la réponse figure aussi dans une version ancienne (`answer_in_other_version`) : on pourra mesurer à part le piège des versions.
 
 ```bash
 raglab legifrance fetch --code consommation
