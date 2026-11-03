@@ -9,9 +9,23 @@ from raglab.domain.schemas import RetrievalFilters, RetrievedChunk
 
 
 class PostgresVectorStore:
-    def __init__(self, *, iterative_scan: bool = True):
-        # Off reproduces the pre-9.1b behaviour (filter after a 40-candidate
-        # ANN scan), measured in baseline-v0.
+    def __init__(self, *, search_mode: str = "exact", iterative_scan: bool = True):
+        """`search_mode="exact"` scans the run's vectors (always the true
+        nearest neighbours); `"hnsw"` uses the shared partial HNSW index.
+
+        The HNSW index is shared by every index run of a dimension. Measured
+        on PIAF: once the same corpus has been indexed several times, the
+        graph holds identical copies of each vector and the filter on the run
+        is applied after the approximate search, so recall depends on what
+        else is in the database (0.09 to 0.63 Recall@5 for two runs of the
+        same corpus, 0.91 with an exact scan). Exact search costs ~10-15 ms
+        for a few thousand chunks, so it is the default; HNSW pays off with
+        hundreds of thousands of vectors and one index per run.
+        `iterative_scan=False` reproduces the pre-9.1b HNSW behaviour.
+        """
+        if search_mode not in ("exact", "hnsw"):
+            raise ValueError(f"Mode de recherche vectorielle inconnu: {search_mode}")
+        self.search_mode = search_mode
         self.iterative_scan = iterative_scan
 
     @staticmethod
@@ -47,8 +61,14 @@ class PostgresVectorStore:
         # vector to `vector(dim)`, and we add the `vector_dims` predicate that
         # matches the partial index WHERE clause.
         dim = index_run.embedding_space.dimension
-        typed_embedding = cast(ChunkEmbedding.embedding, VECTOR(dim))
-        query_param = bindparam("query_vec", query_embedding, type_=VECTOR(dim))
+        if self.search_mode == "exact":
+            # No cast: the expression no longer matches the partial HNSW
+            # index, so Postgres computes the exact distance for the run's rows.
+            typed_embedding = ChunkEmbedding.embedding
+            query_param = bindparam("query_vec", query_embedding, type_=VECTOR())
+        else:
+            typed_embedding = cast(ChunkEmbedding.embedding, VECTOR(dim))
+            query_param = bindparam("query_vec", query_embedding, type_=VECTOR(dim))
         # `<=>` returns a scalar float (cosine distance). We pin the
         # return_type so SQLAlchemy doesn't try to parse the result as a
         # Vector (the operator itself takes two Vector operands).
@@ -73,7 +93,7 @@ class PostgresVectorStore:
         # several runs in the base, a query could get fewer than top_k chunks,
         # even none. Iterative scans (pgvector >= 0.8) keep scanning until
         # enough rows pass the filter; strict_order keeps exact distance order.
-        if self.iterative_scan:
+        if self.search_mode == "hnsw" and self.iterative_scan:
             session.execute(text("SET LOCAL hnsw.iterative_scan = strict_order"))
             session.execute(text(f"SET LOCAL hnsw.ef_search = {max(40, int(top_k))}"))
         rows = session.execute(stmt).all()
