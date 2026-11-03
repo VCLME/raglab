@@ -206,7 +206,7 @@ class QueryRequest(BaseModel):
 
 class CorpusFeatures(BaseModel):
     # The corpus holds law or code articles (LexML `number`, Légifrance
-    # `article_number` metadata): the Chat offers the article-reference
+    # `article_number`, EU acts `celex` metadata): the Chat offers the article-reference
     # option (citation resolver) only then.
     legal_citations: bool = False
     # Documents carry version metadata (Légifrance `etat`, dates): the
@@ -428,8 +428,8 @@ class GraphBuildRequest(BaseModel):
     # One of corpus (latest pgvector index run) or index_run_id.
     corpus: str | None = None
     index_run_id: str | None = None
-    # laws, generic or auto; None = RAGLAB_GRAPH_PROFILES, else auto.
-    profile: str | None = Field(None, pattern="^(auto|laws|generic)$")
+    # laws, eu_acts, generic or auto; None = RAGLAB_GRAPH_PROFILES, else auto.
+    profile: str | None = Field(None, pattern="^(auto|laws|eu_acts|generic)$")
 
 
 class GraphStatusResponse(BaseModel):

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { SlideIndicator } from "../components/SlideIndicator";
 import { apiFetch, get, post } from "../api/client";
 import { useApiAction, useApiLoad } from "../hooks/useApi";
 import type {
@@ -864,13 +865,14 @@ export function Benchmarks() {
         storageKey="raglab.explain.benchmarks"
       />
       <div className="tabs">
-        <button className={tab === "launch" ? "active" : ""} onClick={() => setTab("launch")}>
+        <SlideIndicator activeKey={tab} variant="underline" />
+        <button className={tab === "launch" ? "active" : ""} data-active={tab === "launch"} onClick={() => setTab("launch")}>
           {t("benchmarks.launch_tab")}
         </button>
-        <button className={tab === "history" ? "active" : ""} onClick={() => setTab("history")}>
+        <button className={tab === "history" ? "active" : ""} data-active={tab === "history"} onClick={() => setTab("history")}>
           {t("benchmarks.history_tab")}
         </button>
-        <button className={tab === "custom" ? "active" : ""} onClick={() => setTab("custom")}>
+        <button className={tab === "custom" ? "active" : ""} data-active={tab === "custom"} onClick={() => setTab("custom")}>
           {t("benchmarks.custom_tab")}
         </button>
       </div>

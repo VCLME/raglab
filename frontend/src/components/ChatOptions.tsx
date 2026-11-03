@@ -2,6 +2,8 @@ import { useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { ConfigResponse, RetrievalMode } from "../api/types";
 import { SlidersIcon } from "./Icon";
+import { SlideIndicator } from "./SlideIndicator";
+import { HelpTip } from "./HelpTip";
 import { Switch } from "./Switch";
 import { VersionsField, parseVersionsValue } from "./Versions";
 
@@ -36,7 +38,8 @@ const MODES: RetrievalMode[] = ["dense", "lexical", "hybrid"];
 export function effectiveOptions(value: RetrievalOverrides, config: ConfigResponse | null, legalCorpus = true) {
   return {
     mode: (value.retrieval_mode ?? config?.default_retrieval_mode ?? "hybrid") as RetrievalMode,
-    rerank: value.rerank ?? config?.default_rerank ?? false,
+    // Without a GPU the server leaves a default re-ranking off: so does the UI.
+    rerank: value.rerank ?? ((config?.default_rerank ?? false) && config?.rerank_gpu !== false),
     citations: legalCorpus && (value.citations ?? config?.citation_resolver ?? true),
     graph: legalCorpus && (value.graph ?? config?.graph_retrieval ?? false),
     versions: legalCorpus ? (value.versions ?? config?.versions_default ?? "all") : "all",
@@ -126,10 +129,14 @@ export function ChatOptions({ value, onChange, config, legalCorpus }: Props) {
       {open ? (
         <div id={panelId} className="options-pop" role="dialog" aria-label={t("chat.options_title")}>
           <fieldset className="options-group">
-            <legend>{t("retrieval.mode_label")}</legend>
+            <legend>
+              {t("retrieval.mode_label")}
+              <HelpTip text={t("chat.help_mode")} label={t("chat.help_label", { option: t("retrieval.mode_label") })} />
+            </legend>
             <div className="segmented">
+              <SlideIndicator activeKey={current.mode} variant="pill" />
               {MODES.map((mode) => (
-                <label key={mode} className={current.mode === mode ? "on" : ""}>
+                <label key={mode} className={current.mode === mode ? "on" : ""} data-active={current.mode === mode}>
                   <input
                     type="radio"
                     name={`${panelId}-mode`}
@@ -153,6 +160,8 @@ export function ChatOptions({ value, onChange, config, legalCorpus }: Props) {
             }
             checked={current.rerank}
             onChange={(on) => set("rerank", on)}
+            badge={noGpu && !current.rerank ? t("chat.options_no_gpu_badge") : undefined}
+            help={{ text: t("chat.help_rerank"), label: t("chat.help_label", { option: t("retrieval.rerank_label") }) }}
           />
 
           {legalCorpus ? (
@@ -162,12 +171,17 @@ export function ChatOptions({ value, onChange, config, legalCorpus }: Props) {
                 description={t("chat.options_citations_hint")}
                 checked={current.citations}
                 onChange={(on) => set("citations", on)}
+                help={{
+                  text: t("chat.help_citations"),
+                  label: t("chat.help_label", { option: t("retrieval.citations_label") }),
+                }}
               />
               <Switch
                 label={t("retrieval.graph_label")}
                 description={t("chat.options_graph_hint")}
                 checked={current.graph}
                 onChange={(on) => set("graph", on)}
+                help={{ text: t("chat.help_graph"), label: t("chat.help_label", { option: t("retrieval.graph_label") }) }}
               />
               <fieldset className="options-group">
                 <legend>{t("versions.label")}</legend>

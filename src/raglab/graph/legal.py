@@ -241,6 +241,8 @@ def article_sort_key(article: str) -> tuple[int, int]:
 
 def article_label(article: str) -> str:
     number, _, letter = article.partition("-")
+    if not number.isdigit():
+        return f"Art. {article}"  # an EU article ("4a")
     ordinal = "º" if int(number) < 10 else ""
     return f"Art. {number}{ordinal}" + (f"-{letter}" if letter else "")
 

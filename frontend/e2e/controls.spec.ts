@@ -58,24 +58,25 @@ test("Chat options: only changed options are sent; the rerank notice is shown", 
   await page.goto("/");
 
   const trigger = page.getByRole("button", { name: /^Options/ });
-  await expect(trigger).toContainText("Hybride · re-ranking · articles de loi");
+  // Without a GPU the default re-ranking is off, as the server does.
+  await expect(trigger).toContainText("Hybride · articles de loi");
   await ask(page);
-  await expect(page.getByText(/Re-ranking sauté : pas de GPU/)).toBeVisible();
+  await expect(page.getByText(/Re-ranking désactivé \(pas de GPU\)/)).toBeVisible();
   expect(bodies[0]).not.toHaveProperty("rerank");
   expect(bodies[0]).not.toHaveProperty("retrieval_mode");
 
   await trigger.click();
   const dialog = page.getByRole("dialog", { name: /Options de recherche/ });
-  await expect(dialog.getByText(/Pas de GPU détecté/)).toBeVisible();
-  await dialog.getByRole("switch", { name: /Re-ranking/ }).uncheck();
+  await expect(dialog.getByText(/Désactivé faute de GPU/)).toBeVisible();
+  await dialog.getByRole("switch", { name: /Re-ranking/ }).check();
   await dialog.getByRole("radio", { name: "Vectorielle" }).check();
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
-  await expect(trigger).toContainText("Vectorielle · articles de loi");
+  await expect(trigger).toContainText("Vectorielle · re-ranking · articles de loi");
 
   await ask(page);
   await expect.poll(() => bodies.length).toBe(2);
-  expect(bodies[1]).toMatchObject({ rerank: false, retrieval_mode: "dense" });
+  expect(bodies[1]).toMatchObject({ rerank: true, retrieval_mode: "dense" });
   expect(bodies[1]).not.toHaveProperty("citations");
 });
 

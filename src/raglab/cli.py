@@ -43,6 +43,7 @@ db_app = typer.Typer(no_args_is_help=True, help="Commandes base de donnees.")
 experiment_app = typer.Typer(no_args_is_help=True, help="Commandes d'experimentation.")
 lexml_app = typer.Typer(no_args_is_help=True, help="Collecte LexML Brasil.")
 legifrance_app = typer.Typer(no_args_is_help=True, help="Codes francais (donnees LEGI de Legifrance).")
+eurlex_app = typer.Typer(no_args_is_help=True, help="Actes de l'UE (EUR-Lex / CELLAR) : RGPD, AI Act, DORA, NIS 2.")
 ollama_app = typer.Typer(no_args_is_help=True, help="Pilotage du service Ollama.")
 bench_app = typer.Typer(no_args_is_help=True, help="Datasets de benchmark.")
 graph_app = typer.Typer(no_args_is_help=True, help="Graphe structure dans Neo4j (lois, articles, renvois).")
@@ -51,6 +52,7 @@ app.add_typer(db_app, name="db")
 app.add_typer(experiment_app, name="experiment")
 app.add_typer(lexml_app, name="lexml")
 app.add_typer(legifrance_app, name="legifrance")
+app.add_typer(eurlex_app, name="eurlex")
 app.add_typer(ollama_app, name="ollama")
 app.add_typer(bench_app, name="bench")
 app.add_typer(graph_app, name="graph")
@@ -146,7 +148,10 @@ def bench_all(
     suite: list[str] | None = typer.Option(
         None,
         "--suite",
-        help="piaf, lexml_fulltext, legi_consommation, lexml_references (renvois, 9.9b) ou legi_versions (versions, 9.10) (defaut: piaf + lexml_fulltext).",
+        help=(
+            "piaf, lexml_fulltext, legi_consommation, eurlex_compliance, lexml_references (renvois, 9.9b) ou legi_versions (versions, 9.10) "
+            "(defaut: piaf + lexml_fulltext)."
+        ),
     ),
     strategy: ChunkingStrategy = typer.Option(ChunkingStrategy.TRADITIONAL, "--strategy"),
     ragas_limit: int = typer.Option(
@@ -338,7 +343,7 @@ def graph_build(
     corpus: str | None = typer.Option(None, "--corpus", help="Corpus (dernier index run pgvector)."),
     index_run_id: str | None = typer.Option(None, "--index-run", help="Index run explicite."),
     profile: str | None = typer.Option(
-        None, "--profile", help="laws, generic ou auto (defaut: RAGLAB_GRAPH_PROFILES, sinon auto)."
+        None, "--profile", help="laws, eu_acts, generic ou auto (defaut: RAGLAB_GRAPH_PROFILES, sinon auto)."
     ),
 ) -> None:
     """Construire (ou reconstruire) le graphe structure d'un index run dans Neo4j."""
@@ -563,10 +568,19 @@ def lexml_reference_questions(
     profile: str | None = typer.Option(
         None, "--profile", help="Profil llama.cpp a demarrer (defaut: question_model_profile)."
     ),
+    mix: str = typer.Option(
+        "via_topic=0.5,scenario=0.3,via_article=0.2",
+        "--mix",
+        help="Part de chaque type : via_topic (sujet de A), scenario (situation concrete), via_article (cite A).",
+    ),
 ) -> None:
     """Generer le jeu « renvois » : l'article A renvoie a l'article B, la reponse est dans B (9.9b)."""
-    from raglab.benchmarks.lexml_references import generate_reference_questions
+    from raglab.benchmarks.lexml_references import generate_reference_questions, parse_mix
 
+    try:
+        shares = parse_mix(mix)
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc), param_hint="--mix") from exc
     result = generate_reference_questions(
         get_settings(),
         backend=backend,
@@ -576,6 +590,7 @@ def lexml_reference_questions(
         seed=seed,
         model=model,
         profile=profile,
+        shares=shares,
     )
     typer.echo(json.dumps(result, indent=2, ensure_ascii=False))
 
@@ -639,7 +654,7 @@ def legifrance_questions(
         None, "--profile", help="Profil llama.cpp a demarrer (defaut: question_model_profile)."
     ),
 ) -> None:
-    """Generer un jeu de questions typees (paraphrase / reference / entity) sur un code francais."""
+    """Generer un jeu de questions typees (scenario / paraphrase / reference / entity) sur un code francais."""
     from raglab.benchmarks.legi_questions import generate_questions as generate_legi_questions
 
     result = generate_legi_questions(
@@ -707,6 +722,127 @@ def legifrance_review_questions(
     from raglab.benchmarks.legi_questions import review_question_set as review_legi_question_set
 
     counts = review_legi_question_set(ground_truth)
+    typer.echo(json.dumps({"ground_truth": str(ground_truth), "newly_rejected": counts}, indent=2, ensure_ascii=False))
+
+
+def _csv(value: str | None) -> list[str] | None:
+    return [item.strip() for item in value.split(",") if item.strip()] if value else None
+
+
+@eurlex_app.command("fetch")
+def eurlex_fetch(
+    acts: str | None = typer.Option(
+        None, "--acts", help="Actes (cles separees par des virgules, ex. gdpr,ai_act,dora,nis2). Defaut: les 15."
+    ),
+    languages: str = typer.Option("fr,en,pt", "--lang", help="Langues (fr, en, pt)."),
+    output_dir: Path | None = typer.Option(
+        None, "--output-dir", help="Dossier de sortie (raw/, corpus/, manifest.json). Defaut: data/eurlex/compliance/"
+    ),
+    delay: float = typer.Option(1.0, "--delay", min=0.2, help="Secondes entre deux requetes CELLAR."),
+) -> None:
+    """Collecter les actes : un document par considerant, article ou annexe, par langue et par version."""
+    from raglab.eurlex.collector import EurlexCollector
+
+    result = EurlexCollector().collect(acts=_csv(acts), languages=_csv(languages), output_dir=output_dir, delay=delay)
+    typer.echo(json.dumps(result, indent=2, ensure_ascii=False))
+
+
+@eurlex_app.command("acts")
+def eurlex_acts(
+    check: bool = typer.Option(
+        False, "--check", help="Interroger CELLAR (SPARQL) : versions consolidees publiees depuis le gel."
+    ),
+) -> None:
+    """Lister les actes du corpus et leurs versions consolidees figees."""
+    from raglab.eurlex.acts import ACTS
+    from raglab.eurlex.cellar import list_consolidations
+
+    rows = []
+    for act in ACTS:
+        row = {"key": act.key, "celex": act.celex, "role": act.role, "pinned": list(act.consolidations)}
+        if check:
+            available = list_consolidations(act.celex)
+            row["newer"] = [celex for celex in available if celex > max(act.consolidations, default="")]
+        rows.append(row)
+    typer.echo(json.dumps(rows, indent=2, ensure_ascii=False))
+
+
+@eurlex_app.command("graph-sample")
+def eurlex_graph_sample(
+    output: Path = typer.Option(..., "--output", help="Fichier JSON de l'echantillon a relire."),
+    corpus_dir: Path = typer.Option(
+        get_settings().eurlex_dir / "compliance" / "corpus", "--corpus-dir", help="Corpus de `raglab eurlex fetch`."
+    ),
+    seed: int = typer.Option(42, "--seed"),
+) -> None:
+    """Tirer ~40 aretes du graphe des actes (sans Postgres ni Neo4j) a verifier a la main."""
+    from raglab.eurlex.graph_eval import corpus_payload, draw_sample
+
+    payload, documents = corpus_payload(corpus_dir)
+    sample = draw_sample(payload, documents, seed=seed)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(json.dumps(sample, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    typer.echo(json.dumps({"items": len(sample["items"]), "population": sample["population"], "output": str(output)}))
+
+
+@eurlex_app.command("graph-report")
+def eurlex_graph_report(
+    sample: Path = typer.Option(..., "--sample", exists=True, dir_okay=False, help="Echantillon relu (verdicts)."),
+) -> None:
+    """Precision du graphe des actes, par relation, sur un echantillon relu."""
+    from raglab.eurlex.graph_eval import precision_report
+
+    typer.echo(
+        json.dumps(precision_report(json.loads(sample.read_text(encoding="utf-8"))), indent=2, ensure_ascii=False)
+    )
+
+
+@eurlex_app.command("questions")
+def eurlex_questions(
+    corpus_dir: Path = typer.Option(
+        get_settings().eurlex_dir / "compliance" / "corpus", "--corpus-dir", help="Corpus de `raglab eurlex fetch`."
+    ),
+    output_dir: Path = typer.Option(
+        get_settings().data_dir / "benchmarks" / "eurlex_compliance",
+        "--output-dir",
+        help="Dossier du dataset (ground_truth.jsonl + metadata.json).",
+    ),
+    count: int = typer.Option(300, "--count", min=1, help="Nombre de questions a garder."),
+    seed: int = typer.Option(
+        42, "--seed", help="Graine du tirage des passages, des types et de la partie dev / heldout."
+    ),
+    backend: str = typer.Option("llamacpp", "--backend", help="llamacpp (demarre si besoin) ou ollama."),
+    model: str | None = typer.Option(None, "--model", help="Modele (defaut: question_model ou generation_model)."),
+    profile: str | None = typer.Option(None, "--profile", help="Profil llama.cpp (defaut: question_model_profile)."),
+) -> None:
+    """Generer le jeu de questions typees (paraphrase, reference, entity, cross_reference, cross_language)."""
+    from raglab.benchmarks.eurlex_questions import generate_questions as generate_eurlex_questions
+
+    result = generate_eurlex_questions(
+        get_settings(),
+        backend=backend,
+        corpus_dir=corpus_dir,
+        output_dir=output_dir,
+        count=count,
+        seed=seed,
+        model=model,
+        profile=profile,
+    )
+    typer.echo(json.dumps(result, indent=2, ensure_ascii=False))
+
+
+@eurlex_app.command("review-questions")
+def eurlex_review_questions(
+    ground_truth: Path = typer.Option(
+        get_settings().data_dir / "benchmarks" / "eurlex_compliance" / "ground_truth.jsonl",
+        "--ground-truth",
+        help="Jeu de questions a re-verifier avec les regles actuelles.",
+    ),
+) -> None:
+    """Marquer `rejected` les questions qui echouent aux regles actuelles (sans les supprimer)."""
+    from raglab.benchmarks.eurlex_questions import review_question_set as review_eurlex_question_set
+
+    counts = review_eurlex_question_set(ground_truth)
     typer.echo(json.dumps({"ground_truth": str(ground_truth), "newly_rejected": counts}, indent=2, ensure_ascii=False))
 
 

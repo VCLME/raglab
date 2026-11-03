@@ -6,6 +6,7 @@ import type { HealthResponse } from "../api/types";
 import { useEducationalMode } from "../hooks/useEducationalMode";
 import { ChatIcon, FlaskIcon, GraduationIcon } from "./Icon";
 import { LanguageSwitcher } from "./LanguageSwitcher";
+import { SlideIndicator } from "./SlideIndicator";
 
 export function TopBar() {
   const { t } = useTranslation();
@@ -70,10 +71,12 @@ export function TopBar() {
         </button>
         <LanguageSwitcher />
         <div className="mode-switch" role="tablist" aria-label="Mode">
+          <SlideIndicator activeKey={isExpert} variant="pill" />
           <button
             role="tab"
             aria-selected={!isExpert}
             className={!isExpert ? "active" : ""}
+            data-active={!isExpert}
             onClick={() => navigate("/")}
             title={t("topbar.chat_title")}
           >
@@ -84,6 +87,7 @@ export function TopBar() {
             role="tab"
             aria-selected={isExpert}
             className={isExpert ? "active" : ""}
+            data-active={isExpert}
             onClick={() => navigate("/expert")}
             title={t("topbar.expert_title")}
           >

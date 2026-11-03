@@ -543,10 +543,28 @@ def test_paired_comparison_of_outdated_hits():
     assert "1.000 → 0.000" in text
 
 
-def test_system_prompt_mentions_versions_only_when_a_passage_has_a_status():
+def test_default_all_keeps_the_grounded_prompt_byte_identical():
+    """#55's prompt is kept as measured: under the shipped default (`all`)
+    the version state is not told to the model, so the prompt is the same
+    bytes as for chunks without any version; `in_force` only adds a status
+    line to the context blocks, never to the instructions."""
     from raglab.generation.prompts import build_prompt_bundle
 
-    plain = build_prompt_bundle("q", [_chunk("piaf", 1, "Paris.")], no_context_answer="X").system_prompt
-    assert "Statut" not in plain
-    tagged = annotate([_chunk("new", 1)], resolve_policy(None, "q", today=TODAY), {"doc-new": _l121_21(4)})
-    assert "Statut" in build_prompt_bundle("q", tagged, no_context_answer="X").system_prompt
+    question = "Quel délai pour se rétracter d'un contrat conclu à distance ?"
+    metadata = {"doc-old": _l121_21(3), "doc-law": {}}
+    raw = [_chunk("old", 1, "Le consommateur dispose de quatorze jours."), _chunk("law", 2, LEXML_MIXED)]
+    plain = build_prompt_bundle(question, raw, no_context_answer="X")
+
+    naive = annotate(raw, resolve_policy("all", question, today=TODAY), metadata)
+    assert all(chunk.version is not None for chunk in naive)
+    as_all = build_prompt_bundle(question, naive, no_context_answer="X")
+    assert (as_all.system_prompt, as_all.user_prompt) == (plain.system_prompt, plain.user_prompt)
+
+    aware = annotate(raw, resolve_policy("in_force", question, today=TODAY), metadata)
+    in_force = build_prompt_bundle(question, aware, no_context_answer="X")
+    assert in_force.system_prompt == plain.system_prompt
+    assert "Statut : ancienne version de l'article L121-21" in in_force.user_prompt
+    assert "É vedada" not in in_force.user_prompt
+    # Only status lines were added (and repealed wording replaced).
+    added = [line for line in in_force.user_prompt.splitlines() if line not in plain.user_prompt.splitlines()]
+    assert added and all(line.startswith("Statut :") or "[disposition abrogée" in line for line in added)

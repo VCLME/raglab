@@ -93,6 +93,9 @@ def test_the_french_code_suite_is_registered_but_opt_in(tmp_path: Path):
     assert (legi.corpus_name, legi.language, legi.default) == ("bench_legi_consommation_fr", "fr", False)
     assert legi.manifest_path == tmp_path / "benchmarks" / "legi_consommation" / "corpus_manifest.json"
     assert [name for name, suite in suites.items() if suite.default] == ["piaf", "lexml_fulltext"]
+    eurlex = suites["eurlex_compliance"]
+    assert (eurlex.corpus_name, eurlex.language, eurlex.default) == ("bench_eurlex_compliance", "multi", False)
+    assert eurlex.manifest_path == tmp_path / "benchmarks" / "eurlex_compliance" / "corpus_manifest.json"
 
 
 def test_a_suite_without_questions_says_so(tmp_path: Path):
@@ -113,3 +116,11 @@ def test_report_breaks_down_by_split_when_the_set_has_one():
     text = render_markdown([run])
     assert "| Recall@5 / MRR par partie du jeu | v1 |" in text
     assert "| dev | 0.800 / 0.600 (25) |" in text
+
+
+def test_report_breaks_down_the_held_out_part_by_type():
+    run = _run("v1", 0.7, 10.0, True)
+    run["suites"][0]["by_type_heldout"] = {"scenario": {"cases": 21, "recall@5": 0.5, "mrr": 0.4}}
+    text = render_markdown([run])
+    assert "| Recall@5 / MRR par type, partie heldout | v1 |" in text
+    assert "| scenario | 0.500 / 0.400 (21) |" in text

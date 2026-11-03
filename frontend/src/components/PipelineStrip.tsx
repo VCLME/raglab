@@ -57,7 +57,8 @@ export interface RouteInfo {
 }
 
 type CitationBranch = "off" | "none" | "law" | "unknown_law";
-type RerankBranch = "on" | "off" | "skipped" | "cpu";
+// No GPU is not a separate state for the reader: re-ranking is off, and says why.
+type RerankBranch = "on" | "off" | "off_no_gpu" | "cpu";
 type GraphBranch = "on" | "off" | "skipped";
 
 function citationBranch(route: RouteInfo): CitationBranch {
@@ -72,7 +73,7 @@ function graphBranch(route: RouteInfo): GraphBranch {
 }
 
 function rerankBranch(route: RouteInfo): RerankBranch {
-  if (route.rerankNotice === "skipped_no_gpu") return "skipped";
+  if (route.rerankNotice === "skipped_no_gpu") return "off_no_gpu";
   if (route.rerankNotice === "cpu") return "cpu";
   return route.rerank ? "on" : "off";
 }
@@ -157,7 +158,7 @@ export function PipelineStrip({ state, question, lexemes = [], rrfK, lexicalWeig
     if (id === "citation" && node.status === "done") {
       return citation === "law" ? route.citation?.label ?? "" : t("edu.citation_none");
     }
-    if (id === "rerank" && rerank === "skipped") return t("edu.rerank_skipped");
+    if (id === "rerank" && rerank === "off_no_gpu") return t("edu.rerank_off_no_gpu");
     if (id === "graph" && graph === "skipped") return t("edu.graph_skipped");
     if (id === "graph" && node.status === "done" && route.graphStats?.added != null) {
       return `+${route.graphStats.added} · ${formatMs(node.duration_ms)}`;
@@ -333,8 +334,8 @@ function RouteRow({ route, citation, rerank, graph }: RouteRowProps) {
     },
     {
       key: "rerank",
-      options: ["on", "off", "skipped"],
-      taken: rerank === "cpu" ? "on" : rerank,
+      options: ["on", "off"],
+      taken: rerank === "cpu" ? "on" : rerank === "off_no_gpu" ? "off" : rerank,
       reason: t(`edu.route.rerank_${rerank}`, { count: route.rerankCandidates }),
     },
     {

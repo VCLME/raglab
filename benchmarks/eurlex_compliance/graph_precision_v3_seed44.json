@@ -1,0 +1,678 @@
+{
+  "corpus": "compliance",
+  "seed": 44,
+  "population": {
+    "CITES_within_act": 4232,
+    "CITES_across_acts": 1274,
+    "EXPLAINS": 23,
+    "SUPPLEMENTS": 26,
+    "AMENDS": 126,
+    "SAME_AS": 4221
+  },
+  "items": [
+    {
+      "id": "cites_within_act-01",
+      "group": "CITES_within_act",
+      "relation": "CITES",
+      "source": "GDPR — Artigo 6.º (pt, v1)",
+      "target": "GDPR — Artigo 10.º (pt, v1)",
+      "detail": {
+        "ref_scope": "same_act",
+        "mentions": 1
+      },
+      "evidence": "igo 9.º, ou se os dados pessoais relacionados com condenações penais e infrações forem tratados nos termos do artigo 10.º;",
+      "source_preview": "",
+      "target_preview": "Regulamento (UE) 2016/679 (RGPD) — Artigo 10.º Tratamento de dados pessoais relacionados com condenações penais e infrações O tratamento de dados pessoais relacionados com condenações penais e infrações ou com medidas de segurança conexas c",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites_within_act-02",
+      "group": "CITES_within_act",
+      "relation": "CITES",
+      "source": "AI Act — Article 50 (fr, v2)",
+      "target": "AI Act — Article 56 (fr, v2)",
+      "detail": {
+        "ref_scope": "same_act",
+        "details": [
+          "6/"
+        ],
+        "mentions": 1
+      },
+      "evidence": "t des obligations énoncées aux paragraphes 2 et 4 du présent article, conformément à la procédure établie à l'article 56, paragraphe 6. Si elle estime que le code de bonne pratique n'est pas approprié, la Commission peut adopter un acte d'exécu",
+      "source_preview": "",
+      "target_preview": "Règlement (UE) 2024/1689 (règlement sur l'IA) — Article 56 Codes de bonne pratique 1. Le Bureau de l’IA encourage et facilite l’élaboration de codes de bonne pratique au niveau de l’Union afin de contribuer à la bonne application du présent",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites_within_act-03",
+      "group": "CITES_within_act",
+      "relation": "CITES",
+      "source": "GDPR — Artigo 42.º (pt, v2)",
+      "target": "GDPR — Artigo 58.º (pt, v1)",
+      "detail": {
+        "ref_scope": "same_act",
+        "details": [
+          "3/"
+        ],
+        "mentions": 1
+      },
+      "evidence": "artigo 43.º ou pela autoridade de controlo competente, com base nos critérios por esta aprovados por força do artigo 58.º, n.º 3, ou pelo Comité por força do artigo 63.º. Caso os critérios sejam aprovados pelo Comité, podem ter como resul",
+      "source_preview": "",
+      "target_preview": "Regulamento (UE) 2016/679 (RGPD) — Artigo 58.º Poderes 1. Cada autoridade de controlo dispõe dos seguintes poderes de investigação: a) Ordenar que o responsável pelo tratamento e o subcontratante e, se existir, o seu representante, lhe forn",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites_within_act-04",
+      "group": "CITES_within_act",
+      "relation": "CITES",
+      "source": "NIS 2 — Article 19 (en, v2)",
+      "target": "NIS 2 — Article 23 (en, v1)",
+      "detail": {
+        "ref_scope": "same_act",
+        "mentions": 1
+      },
+      "evidence": "level of implementation of the cybersecurity risk-management measures and reporting obligations laid down in Articles 21 and 23;",
+      "source_preview": "",
+      "target_preview": "Directive (EU) 2022/2555 (NIS 2) — Article 23 Reporting obligations 1. Each Member State shall ensure that essential and important entities notify, without undue delay, its CSIRT or, where applicable, its competent authority in accordance w",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites_within_act-05",
+      "group": "CITES_within_act",
+      "relation": "CITES",
+      "source": "AI Act — Artigo 49.º (pt, v1)",
+      "target": "AI Act — Artigo 6.º (pt, v2)",
+      "detail": {
+        "ref_scope": "same_act",
+        "details": [
+          "3/"
+        ],
+        "mentions": 1
+      },
+      "evidence": "e um sistema de IA relativamente ao qual o prestador tenha concluído que não é de risco elevado nos termos do artigo 6.º, n.º 3, esse prestador ou, se for caso disso, o mandatário deve registar-se e registar esse sistema na base de dados",
+      "source_preview": "",
+      "target_preview": "Regulamento (UE) 2024/1689 (Regulamento IA) — Artigo 6.º Regras para a classificação de sistemas de IA de risco elevado 1. Independentemente de a colocação no mercado ou a colocação em serviço de um sistema de IA ser feita separadamente dos",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites_within_act-06",
+      "group": "CITES_within_act",
+      "relation": "CITES",
+      "source": "GDPR — Article 83 (fr, v1)",
+      "target": "GDPR — Article 33 (fr, v1)",
+      "detail": {
+        "ref_scope": "same_act",
+        "mentions": 1
+      },
+      "evidence": "a) les obligations incombant au responsable du traitement et au sous-traitant en vertu des articles 8, 11, 25 à 39, 42 et 43;",
+      "source_preview": "",
+      "target_preview": "Règlement (UE) 2016/679 (RGPD) — Article 33 Notification à l'autorité de contrôle d'une violation de données à caractère personnel 1. En cas de violation de données à caractère personnel, le responsable du traitement en notifie la violation",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites_within_act-07",
+      "group": "CITES_within_act",
+      "relation": "CITES",
+      "source": "GDPR — Article 70 (en, v2)",
+      "target": "GDPR — Article 43 (en, v2)",
+      "detail": {
+        "ref_scope": "same_act",
+        "details": [
+          "3/"
+        ],
+        "mentions": 3
+      },
+      "evidence": "(p) approve the requirements referred to in Article 43(3) with a view to the accreditation of certification bodies referred to in Article 43;",
+      "source_preview": "",
+      "target_preview": "Regulation (EU) 2016/679 (GDPR) — Article 43 Certification bodies 1. Without prejudice to the tasks and powers of the competent supervisory authority under Articles 57 and 58, certification bodies which have an appropriate level of expertis",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites_within_act-08",
+      "group": "CITES_within_act",
+      "relation": "CITES",
+      "source": "Delegated Regulation (EU) 2024/1774 — Article 32 (fr, v1)",
+      "target": "Delegated Regulation (EU) 2024/1774 — Article 30 (fr, v1)",
+      "detail": {
+        "ref_scope": "same_act",
+        "details": [
+          "1/"
+        ],
+        "mentions": 1
+      },
+      "evidence": "sécurité physique conçues sur la base de l’éventail des menaces et conformément à la classification visée à l’article 30, paragraphe 1, du présent règlement, au profil de risque global des actifs de TIC et aux actifs informationnels accessibles",
+      "source_preview": "",
+      "target_preview": "Règlement (UE) 2024/1774 (Règlement délégué (UE) 2024/1774) — Article 30 Classification des actifs informationnels et des actifs de TIC 1. Au titre du cadre simplifié de gestion du risque lié aux TIC visé à l’article 16, paragraphe 1, point",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites_within_act-09",
+      "group": "CITES_within_act",
+      "relation": "CITES",
+      "source": "Delegated Regulation (EU) 2025/1190 — Article 12 (en, v1)",
+      "target": "Delegated Regulation (EU) 2025/1190 — Annex VI (en, v1)",
+      "detail": {
+        "ref_scope": "same_act",
+        "mentions": 2
+      },
+      "evidence": "the blue team shall submit to the control team a blue team test report containing the information set out in Annex VI. The control team shall provide the blue team test report to the testers and the test managers without undue",
+      "source_preview": "",
+      "target_preview": "Regulation (EU) 2025/1190 (Delegated Regulation (EU) 2025/1190) — Annex VI Content of the blue team test report (Article 12(4)) The blue team test report shall contain information on at least all of the following: 1. for each attack step de",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites_within_act-10",
+      "group": "CITES_within_act",
+      "relation": "CITES",
+      "source": "DORA — Artigo 16.º (pt, v1)",
+      "target": "DORA — Artigo 11.º (pt, v1)",
+      "detail": {
+        "ref_scope": "same_act",
+        "mentions": 1
+      },
+      "evidence": "1. Os artigos 5.º a 15.° do presente regulamento não se aplicam às empresas de investimento de pequena dimensão e não interligadas, ne",
+      "source_preview": "",
+      "target_preview": "Regulamento (UE) 2022/2554 (DORA) — Artigo 11.º Resposta e recuperação 1. Para efeitos do quadro de gestão do risco associado às TIC referido no artigo 6.º, n.º 1, e com base nos requisitos de identificação definidos no artigo 8.º, as entid",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites_across_acts-01",
+      "group": "CITES_across_acts",
+      "relation": "CITES",
+      "source": "Delegated Regulation (EU) 2024/1772 — Considérant 6 (fr, v1)",
+      "target": "DORA — Article 18 (fr, v1)",
+      "detail": {
+        "ref_scope": "other_act",
+        "mentions": 1
+      },
+      "evidence": "nné que les établissements de crédit sont soumis à la fois au cadre de classification des incidents prévu à l’article 18 du règlement (UE) 2022/2554 et au cadre relatif au risque opérationnel prévu par le règlement délégué (UE) 20",
+      "source_preview": "",
+      "target_preview": "Règlement (UE) 2022/2554 (DORA) — Article 18 Classification des incidents liés aux TIC et des cybermenaces 1. Les entités financières classent les incidents liés aux TIC et déterminent leur incidence sur la base des critères suivants: a) le",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites_across_acts-02",
+      "group": "CITES_across_acts",
+      "relation": "CITES",
+      "source": "Regulation (EU) 2026/1744 — Article 1 (en, v1)",
+      "target": "AI Act — Article 13 (en, v1)",
+      "detail": {
+        "ref_scope": "context",
+        "mentions": 3
+      },
+      "evidence": "AI systems referred to in Article 6(1), the application of specific requirements or obligations laid down in Articles 9 to 15 and 17 to 25 may be limited, where and to the extent that:",
+      "source_preview": "",
+      "target_preview": "Regulation (EU) 2024/1689 (AI Act) — Article 13 Transparency and provision of information to deployers 1. High-risk AI systems shall be designed and developed in such a way as to ensure that their operation is sufficiently transparent to en",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites_across_acts-03",
+      "group": "CITES_across_acts",
+      "relation": "CITES",
+      "source": "NIS 2 — Artigo 35.º (pt, v1)",
+      "target": "GDPR — Artigo 55.º (pt, v1)",
+      "detail": {
+        "ref_scope": "anaphora",
+        "mentions": 2
+      },
+      "evidence": "º do referido regulamento, devem, sem demora injustificada, informar as autoridades de controlo referidas nos artigos 55.º e 56.º do referido regulamento.",
+      "source_preview": "",
+      "target_preview": "Regulamento (UE) 2016/679 (RGPD) — Artigo 55.º Competência 1. As autoridades de controlo são competentes para prosseguir as atribuições e exercer os poderes que lhes são conferidos pelo presente regulamento no território do seu próprio Esta",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites_across_acts-04",
+      "group": "CITES_across_acts",
+      "relation": "CITES",
+      "source": "Implementing Regulation (EU) 2024/2690 — Article 2 (en, v1)",
+      "target": "NIS 2 — Article 21 (en, v1)",
+      "detail": {
+        "ref_scope": "other_act",
+        "details": [
+          "2/a"
+        ],
+        "mentions": 1
+      },
+      "evidence": "tities the technical and methodological requirements of cybersecurity risk-management measures referred to in Article 21(2), points (a) to (j), of Directive (EU) 2022/2555 are set out in the Annex to this Regulation.",
+      "source_preview": "",
+      "target_preview": "Directive (EU) 2022/2555 (NIS 2) — Article 21 Cybersecurity risk-management measures 1. Member States shall ensure that essential and important entities take appropriate and proportionate technical, operational and organisational measures t",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites_across_acts-05",
+      "group": "CITES_across_acts",
+      "relation": "CITES",
+      "source": "Regulation (EU) 2026/1744 — Considérant 11 (fr, v1)",
+      "target": "AI Act — Article 5 (fr, v2)",
+      "detail": {
+        "ref_scope": "other_act",
+        "mentions": 1
+      },
+      "evidence": "r et de perpétuer la violence sexuelle à l'égard des enfants. En conséquence, il est nécessaire de modifier l'article 5 du règlement (UE) 2024/1689 à la fois pour protéger les femmes, les enfants, les autres personnes et la socié",
+      "source_preview": "",
+      "target_preview": "Règlement (UE) 2024/1689 (règlement sur l'IA) — Article 5 Pratiques interdites en matière d’IA 1. Les pratiques en matière d’IA suivantes sont interdites: a) la mise sur le marché, la mise en service ou l’utilisation d’un système d’IA qui a",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites_across_acts-06",
+      "group": "CITES_across_acts",
+      "relation": "CITES",
+      "source": "Delegated Regulation (EU) 2024/1774 — Article 37 (en, v1)",
+      "target": "DORA — Article 16 (en, v1)",
+      "detail": {
+        "ref_scope": "other_act",
+        "details": [
+          "1/"
+        ],
+        "mentions": 1
+      },
+      "evidence": "The financial entities referred to in Article 16(1) of Regulation (EU) 2022/2554 shall design and implement, where appropriate, a procedure governing the acquisi",
+      "source_preview": "",
+      "target_preview": "Regulation (EU) 2022/2554 (DORA) — Article 16 Simplified ICT risk management framework 1. Articles 5 to 15 of this Regulation shall not apply to small and non-interconnected investment firms, payment institutions exempted pursuant to Direct",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites_across_acts-07",
+      "group": "CITES_across_acts",
+      "relation": "CITES",
+      "source": "Delegated Regulation (EU) 2024/1502 — Article 2 (en, v1)",
+      "target": "DORA — Article 2 (en, v1)",
+      "detail": {
+        "ref_scope": "other_act",
+        "details": [
+          "1/"
+        ],
+        "mentions": 7
+      },
+      "evidence": "1.1: share of the number of financial entities, broken down by categories of financial entities as listed in Article 2(1) of Regulation (EU) 2022/2554, to which ICT services are provided by the same ICT third-party service provider",
+      "source_preview": "",
+      "target_preview": "Regulation (EU) 2022/2554 (DORA) — Article 2 Scope 1. Without prejudice to paragraphs 3 and 4, this Regulation applies to the following entities: (a) credit institutions; (b) payment institutions, including payment institutions exempted pur",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites_across_acts-08",
+      "group": "CITES_across_acts",
+      "relation": "CITES",
+      "source": "Regulation (EU) 2026/1744 — Article 1 (en, v1)",
+      "target": "AI Act — Article 11 (en, v2)",
+      "detail": {
+        "ref_scope": "context",
+        "mentions": 7
+      },
+      "evidence": "AI systems referred to in Article 6(1), the application of specific requirements or obligations laid down in Articles 9 to 15 and 17 to 25 may be limited, where and to the extent that:",
+      "source_preview": "",
+      "target_preview": "Regulation (EU) 2024/1689 (AI Act) — Article 11 Technical documentation 1. The technical documentation of a high-risk AI system shall be drawn up before that system is placed on the market or put into service and shall be kept up-to date. T",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites_across_acts-09",
+      "group": "CITES_across_acts",
+      "relation": "CITES",
+      "source": "AI Act — Considérant 140 (fr, v1)",
+      "target": "GDPR — Article 22 (fr, v1)",
+      "detail": {
+        "ref_scope": "other_act",
+        "details": [
+          "2/b"
+        ],
+        "mentions": 1
+      },
+      "evidence": "t applicables. En particulier, le présent règlement ne devrait pas constituer une base juridique au sens de l’article 22, paragraphe 2, point b), du règlement (UE) 2016/679 et de l’article 24, paragraphe 2, point b), du règlement (UE) 2018/1725. Les four",
+      "source_preview": "",
+      "target_preview": "Règlement (UE) 2016/679 (RGPD) — Article 22 Décision individuelle automatisée, y compris le profilage 1. La personne concernée a le droit de ne pas faire l'objet d'une décision fondée exclusivement sur un traitement automatisé, y compris le",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites_across_acts-10",
+      "group": "CITES_across_acts",
+      "relation": "CITES",
+      "source": "Implementing Regulation (EU) 2024/2690 — Considérant 41 (fr, v1)",
+      "target": "NIS 2 — Article 21 (fr, v1)",
+      "detail": {
+        "ref_scope": "other_act",
+        "details": [
+          "5/"
+        ],
+        "mentions": 1
+      },
+      "evidence": "e vue et a coopéré avec le groupe de coopération et l’ENISA sur le projet d’acte d’exécution conformément à l’article 21, paragraphe 5, et à l’article 23, paragraphe 11, de la directive (UE) 2022/2555.",
+      "source_preview": "",
+      "target_preview": "Directive (UE) 2022/2555 (NIS 2) — Article 21 Mesures de gestion des risques en matière de cybersécurité 1. Les États membres veillent à ce que les entités essentielles et importantes prennent les mesures techniques, opérationnelles et orga",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "explains-01",
+      "group": "EXPLAINS",
+      "relation": "EXPLAINS",
+      "source": "AI Act — Recital 41 (en, v1)",
+      "target": "AI Act — Article 5 (en, v2)",
+      "detail": {
+        "ref_scope": "same_act",
+        "details": [
+          "1/g"
+        ],
+        "mentions": 3
+      },
+      "evidence": "22 on the position of Denmark, annexed to the TEU and to the TFEU, Denmark is not bound by rules laid down in Article 5(1), first subparagraph, point (g), to the extent it applies to the use of biometric categorisation systems for activities in the field of polic",
+      "source_preview": "",
+      "target_preview": "Regulation (EU) 2024/1689 (AI Act) — Article 5 Prohibited AI practices 1. The following AI practices shall be prohibited: (a) the placing on the market, the putting into service or the use of an AI system that deploys subliminal techniques ",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "explains-02",
+      "group": "EXPLAINS",
+      "relation": "EXPLAINS",
+      "source": "DORA — Recital 34 (en, v1)",
+      "target": "DORA — Article 6 (en, v1)",
+      "detail": {
+        "ref_scope": "same_act",
+        "details": [
+          "1/c"
+        ],
+        "mentions": 1
+      },
+      "evidence": "t in the public interest or in the exercise of official authority vested in the controller, as referred to in Article 6(1), points (c) and (e), respectively, of that Regulation.",
+      "source_preview": "",
+      "target_preview": "Regulation (EU) 2022/2554 (DORA) — Article 6 ICT risk management framework 1. Financial entities shall have a sound, comprehensive and well-documented ICT risk management framework as part of their overall risk management system, which enab",
+      "verdict": "incorrect",
+      "note": "'Article 6(1), points (c) and (e), respectively, of that Regulation' (DORA recital 34): GDPR Article 6, the word 'respectively' broke the connector chain."
+    },
+    {
+      "id": "explains-03",
+      "group": "EXPLAINS",
+      "relation": "EXPLAINS",
+      "source": "AI Act — Considérant 41 (fr, v1)",
+      "target": "AI Act — Article 5 (fr, v2)",
+      "detail": {
+        "ref_scope": "same_act",
+        "details": [
+          "1/g"
+        ],
+        "mentions": 4
+      },
+      "evidence": "et au traité sur le fonctionnement de l’Union européenne, le Danemark n’est pas lié par les règles fixées à l’article 5, paragraphe 1, premier alinéa, point g), dans la mesure où il s’applique à l’utilisation de systèmes de catégorisation biométrique pour des activités",
+      "source_preview": "",
+      "target_preview": "Règlement (UE) 2024/1689 (règlement sur l'IA) — Article 5 Pratiques interdites en matière d’IA 1. Les pratiques en matière d’IA suivantes sont interdites: a) la mise sur le marché, la mise en service ou l’utilisation d’un système d’IA qui a",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "explains-04",
+      "group": "EXPLAINS",
+      "relation": "EXPLAINS",
+      "source": "DORA — Considerando 34 (pt, v1)",
+      "target": "DORA — Artigo 6.º (pt, v1)",
+      "detail": {
+        "ref_scope": "same_act",
+        "details": [
+          "1/c"
+        ],
+        "mentions": 1
+      },
+      "evidence": "ou da autoridade pública de que está investido o responsável pelo tratamento dos dados, conforme referido no artigo 6.º, n.º 1, alíneas c) e e), respetivamente, desse regulamento.",
+      "source_preview": "",
+      "target_preview": "Regulamento (UE) 2022/2554 (DORA) — Artigo 6.º Quadro de gestão do risco associado às TIC 1. As entidades financeiras dispõem de um quadro de gestão do risco associado às TIC sólido, abrangente e bem documentado, que faz parte do seu sistem",
+      "verdict": "incorrect",
+      "note": "same recital in Portuguese ('alíneas c) e e), respetivamente, desse regulamento')."
+    },
+    {
+      "id": "explains-05",
+      "group": "EXPLAINS",
+      "relation": "EXPLAINS",
+      "source": "DORA — Considérant 34 (fr, v1)",
+      "target": "DORA — Article 6 (fr, v1)",
+      "detail": {
+        "ref_scope": "same_act",
+        "details": [
+          "1/c"
+        ],
+        "mentions": 1
+      },
+      "evidence": "blic ou relevant de l’exercice de l’autorité publique dont est investi le responsable du traitement, visé à l’article 6, paragraphe 1, points c) et e), respectivement, dudit règlement.",
+      "source_preview": "",
+      "target_preview": "Règlement (UE) 2022/2554 (DORA) — Article 6 Cadre de gestion du risque lié aux TIC 1. Les entités financières disposent d’un cadre de gestion du risque lié aux TIC solide, complet et bien documenté, faisant partie de leur système global de ",
+      "verdict": "incorrect",
+      "note": "same recital in French ('points c) et e), respectivement, dudit règlement')."
+    },
+    {
+      "id": "explains-06",
+      "group": "EXPLAINS",
+      "relation": "EXPLAINS",
+      "source": "AI Act — Considerando 41 (pt, v1)",
+      "target": "AI Act — Artigo 26.º (pt, v1)",
+      "detail": {
+        "ref_scope": "same_act",
+        "mentions": 1
+      },
+      "evidence": "de IA abrangidos por essa disposição, e no artigo 5.º, n.º 1, primeiro parágrafo, alínea h), n.ºs 2 a 6, e no artigo 26.º, n. 10, do presente regulamento, adotadas com base no artigo 16.º do TFUE que digam respeito ao tratamento de",
+      "source_preview": "",
+      "target_preview": "Regulamento (UE) 2024/1689 (Regulamento IA) — Artigo 26.º Obrigações dos responsáveis pela implantação de sistemas de IA de risco elevado 1. Os responsáveis pela implantação de sistemas de IA de risco elevado devem tomar medidas técnicas e ",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "supplements-01",
+      "group": "SUPPLEMENTS",
+      "relation": "SUPPLEMENTS",
+      "source": "Delegated Regulation (EU) 2024/1773 (32024R1773)",
+      "target": "DORA — Artigo 28.º (pt, v1)",
+      "detail": {
+        "article": "28"
+      },
+      "evidence": "Tendo em conta o Regulamento (UE) 2022/2554 do Parlamento Europeu e do Conselho, de 14 de dezembro de 2022, relativo à resiliência operacional digital do setor financeiro e que altera os Regulamentos (CE) n.º 1060/2009, (UE) n.º 648/2012, (UE) n.º 600/2014 e (UE) n.º 909/2014 e (UE) 2016/1011 , nomeadamente o artigo 28.º, n.º 10, terceiro parágrafo,",
+      "source_preview": "",
+      "target_preview": "Regulamento (UE) 2022/2554 (DORA) — Artigo 28.º Princípios gerais 1. As entidades financeiras gerem o risco associado às TIC devido a terceiros como componente integrante do risco associado às TIC no âmbito do seu quadro de gestão do risco ",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "supplements-02",
+      "group": "SUPPLEMENTS",
+      "relation": "SUPPLEMENTS",
+      "source": "Delegated Regulation (EU) 2025/1190 (32025R1190)",
+      "target": "DORA — Article 26 (fr, v2)",
+      "detail": {
+        "article": "26"
+      },
+      "evidence": "vu le règlement (UE) 2022/2554 du Parlement européen et du Conseil du 14 décembre 2022 sur la résilience opérationnelle numérique du secteur financier et modifiant les règlements (CE) nº 1060/2009, (UE) nº 648/2012, (UE) nº 600/2014, (UE) nº 909/2014 et (UE) 2016/1011 , et plus particulièrement son article 26, paragraphe 11, quatrième alinéa,",
+      "source_preview": "",
+      "target_preview": "Règlement (UE) 2022/2554 (DORA) — Article 26 Tests avancés d’outils, de systèmes et de processus de TIC sur la base de tests d’intrusion fondés sur la menace 1. Les entités financières, autres que les entités visées à l’article 16, paragrap",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "supplements-03",
+      "group": "SUPPLEMENTS",
+      "relation": "SUPPLEMENTS",
+      "source": "Delegated Regulation (EU) 2024/1772 (32024R1772)",
+      "target": "DORA — Article 18 (fr, v1)",
+      "detail": {
+        "article": "18"
+      },
+      "evidence": "vu le règlement (UE) 2022/2554 du Parlement européen et du Conseil du 14 décembre 2022 sur la résilience opérationnelle numérique du secteur financier et modifiant les règlements (CE) nº 1060/2009, (UE) nº 648/2012, (UE) nº 600/2014, (UE) nº 909/2014 et (UE) 2016/1011 , et notamment son article 18, paragraphe 4, troisième alinéa,",
+      "source_preview": "",
+      "target_preview": "Règlement (UE) 2022/2554 (DORA) — Article 18 Classification des incidents liés aux TIC et des cybermenaces 1. Les entités financières classent les incidents liés aux TIC et déterminent leur incidence sur la base des critères suivants: a) le",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "supplements-04",
+      "group": "SUPPLEMENTS",
+      "relation": "SUPPLEMENTS",
+      "source": "Delegated Regulation (EU) 2024/1772 (32024R1772)",
+      "target": "DORA — Artigo 18.º (pt, v1)",
+      "detail": {
+        "article": "18"
+      },
+      "evidence": "Tendo em conta o Regulamento (UE) 2022/2554 do Parlamento Europeu e do Conselho, de 14 de dezembro de 2022, relativo à resiliência operacional digital do setor financeiro e que altera os Regulamentos (CE) n.º 1060/2009, (UE) n.º 648/2012, (UE) n.º 600/2014, (UE) n.º 909/2014 e (UE) 2016/1011 , nomeadamente o artigo 18.º, n.º 4, terceiro parágrafo,",
+      "source_preview": "",
+      "target_preview": "Regulamento (UE) 2022/2554 (DORA) — Artigo 18.º Classificação dos incidentes relacionados com as TIC e das ciberameaças 1. As entidades financeiras classificam os incidentes relacionados com as TIC e determinam o respetivo impacto com base ",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "supplements-05",
+      "group": "SUPPLEMENTS",
+      "relation": "SUPPLEMENTS",
+      "source": "Delegated Regulation (EU) 2024/1502 (32024R1502)",
+      "target": "DORA — Artigo 31.º (pt, v1)",
+      "detail": {
+        "article": "31"
+      },
+      "evidence": "Tendo em conta o Regulamento (UE) 2022/2554 do Parlamento Europeu e do Conselho, de 14 de dezembro de 2022, relativo à resiliência operacional digital do setor financeiro e que altera os Regulamentos (CE) n.º 1060/2009, (UE) n.º 648/2012, (UE) n.º 600/2014, (UE) n.º 909/2014 e (UE) 2016/1011 , nomeadamente o artigo 31.º, n.º 6,",
+      "source_preview": "",
+      "target_preview": "Regulamento (UE) 2022/2554 (DORA) — Artigo 31.º Designação dos terceiros prestadores de serviços de TIC críticos 1. As AES, através do Comité Conjunto e mediante recomendação do fórum de superintendência criado nos termos do artigo 32.º, n.",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "supplements-06",
+      "group": "SUPPLEMENTS",
+      "relation": "SUPPLEMENTS",
+      "source": "Implementing Decision (EU) 2021/914 (32021D0914)",
+      "target": "GDPR — Artigo 46.º (pt, v1)",
+      "detail": {
+        "article": "46"
+      },
+      "evidence": "Tendo em conta o Regulamento (UE) 2016/679 do Parlamento Europeu e do Conselho, de 27 de abril de 2016, relativo à proteção das pessoas singulares no que diz respeito ao tratamento de dados pessoais e à livre circulação desses dados e que revoga a Diretiva 95/46/CE (Regulamento Geral sobre a Proteção de Dados) , nomeadamente o artigo 28.º, n.º 7, e o artigo 46.º, n.º 2, alínea c),",
+      "source_preview": "",
+      "target_preview": "Regulamento (UE) 2016/679 (RGPD) — Artigo 46.º Transferências sujeitas a garantias adequadas 1. Não tendo sido tomada qualquer decisão nos termos do artigo 45.º, n.º 3, os responsáveis pelo tratamento ou subcontratantes só podem transferir ",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "amends-01",
+      "group": "AMENDS",
+      "relation": "AMENDS",
+      "source": "Regulation (EU) 2026/1744 (32026R1744)",
+      "target": "AI Act — Anexo XIV (pt, v1)",
+      "detail": {
+        "kind": "inserted"
+      },
+      "evidence": "Regulamento (UE) 2024/1689 (Regulamento IA) — Anexo XIV Lista de códigos, categorias e tipos de sistemas de IA correspondentes para efeitos do procedimento de notificação a que se refere o artigo 30.º, que especifica o âmbito da designação como organismos notificados 1. Introdução A avaliação da conformidade dos sistemas de IA de risco elevado nos termos do presente regulamento pode exigir a parti",
+      "source_preview": "",
+      "target_preview": "Regulamento (UE) 2024/1689 (Regulamento IA) — Anexo XIV Lista de códigos, categorias e tipos de sistemas de IA correspondentes para efeitos do procedimento de notificação a que se refere o artigo 30.º, que especifica o âmbito da designação ",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "amends-02",
+      "group": "AMENDS",
+      "relation": "AMENDS",
+      "source": "Regulation (EU) 2026/1744 (32026R1744)",
+      "target": "AI Act — Anexo VIII (pt, v2)",
+      "detail": {
+        "kind": "deleted"
+      },
+      "evidence": "Regulamento (UE) 2024/1689 (Regulamento IA) — Anexo VIII Informações a apresentar aquando do registo de sistemas de IA de risco elevado em conformidade com o artigo 49.º SECÇÃO A Informações a apresentar pelos prestadores de sistemas de IA de risco elevado em conformidade com o artigo 49.º, n.º 1 As informações a seguir indicadas devem ser fornecidas e, subsequentemente, mantidas atualizadas no re",
+      "source_preview": "",
+      "target_preview": "Regulamento (UE) 2024/1689 (Regulamento IA) — Anexo VIII Informações a apresentar aquando do registo de sistemas de IA de risco elevado em conformidade com o artigo 49.º SECÇÃO A Informações a apresentar pelos prestadores de sistemas de IA ",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "amends-03",
+      "group": "AMENDS",
+      "relation": "AMENDS",
+      "source": "Regulation (EU) 2026/1744 (32026R1744)",
+      "target": "AI Act — Article 28 (fr, v2)",
+      "detail": {
+        "kind": "inserted"
+      },
+      "evidence": "Règlement (UE) 2024/1689 (règlement sur l'IA) — Article 28 Autorités notifiantes 1. Chaque État membre désigne ou établit au moins une autorité notifiante chargée de mettre en place et d’accomplir les procédures nécessaires à l’évaluation, à la désignation et à la notification des organismes d’évaluation de la conformité et à leur contrôle. Ces procédures sont élaborées en coopération entre les au",
+      "source_preview": "",
+      "target_preview": "Règlement (UE) 2024/1689 (règlement sur l'IA) — Article 28 Autorités notifiantes 1. Chaque État membre désigne ou établit au moins une autorité notifiante chargée de mettre en place et d’accomplir les procédures nécessaires à l’évaluation, ",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "amends-04",
+      "group": "AMENDS",
+      "relation": "AMENDS",
+      "source": "Regulation (EU) 2026/1744 (32026R1744)",
+      "target": "AI Act — Annex XIV (en, v1)",
+      "detail": {
+        "kind": "inserted"
+      },
+      "evidence": "Regulation (EU) 2024/1689 (AI Act) — Annex XIV The list of codes, categories and corresponding types of AI systems for the purpose of the notification procedure referred to in Article 30 specifying the scope of the designation as notified bodies 1. Introduction Conformity assessment of high-risk AI systems pursuant to this Regulation may require the involvement of conformity assessment bodies. Onl",
+      "source_preview": "",
+      "target_preview": "Regulation (EU) 2024/1689 (AI Act) — Annex XIV The list of codes, categories and corresponding types of AI systems for the purpose of the notification procedure referred to in Article 30 specifying the scope of the designation as notified b",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "same_as-01",
+      "group": "SAME_AS",
+      "relation": "SAME_AS",
+      "source": "GDPR — Recital 130 (en, v1)",
+      "target": "GDPR — Considerando 130 (pt, v1)",
+      "detail": {},
+      "evidence": "Regulamento (UE) 2016/679 (RGPD) — Considerando 130 (130) Nos casos em que a autoridade de controlo a que a reclamação é apresentada não seja a principal, a autoridade de controlo principal deverá cooperar estreitamente com a autoridade de ",
+      "source_preview": "Regulation (EU) 2016/679 (GDPR) — Recital 130 (130) Where the supervisory authority with which the complaint has been lodged is not the lead supervisory authority, the lead supervisory authority should closely cooperate with the supervisory",
+      "target_preview": "",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "same_as-02",
+      "group": "SAME_AS",
+      "relation": "SAME_AS",
+      "source": "GDPR — Article 76 (fr, v1)",
+      "target": "GDPR — Artigo 76.º (pt, v1)",
+      "detail": {},
+      "evidence": "Regulamento (UE) 2016/679 (RGPD) — Artigo 76.º Confidencialidade 1. Os debates do Comité são confidenciais quando o Comité o considerar necessário, nos termos do seu regulamento interno. 2. O acesso aos documentos apresentados aos membros d",
+      "source_preview": "Règlement (UE) 2016/679 (RGPD) — Article 76 Confidentialité 1. Lorsque le comité le juge nécessaire, ses débats sont confidentiels, comme le prévoit son règlement intérieur. 2. L'accès aux documents présentés aux membres du comité, aux expe",
+      "target_preview": "",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "same_as-03",
+      "group": "SAME_AS",
+      "relation": "SAME_AS",
+      "source": "GDPR — Article 69 (en, v1)",
+      "target": "GDPR — Article 69 (fr, v1)",
+      "detail": {},
+      "evidence": "Règlement (UE) 2016/679 (RGPD) — Article 69 Indépendance 1. Le comité exerce les missions et les pouvoirs qui lui sont conférés conformément aux articles 70 et 71 en toute indépendance. 2. Sans préjudice des demandes de la Commission visées",
+      "source_preview": "Regulation (EU) 2016/679 (GDPR) — Article 69 Independence 1. The Board shall act independently when performing its tasks or exercising its powers pursuant to Articles 70 and 71. 2. Without prejudice to requests by the Commission referred to",
+      "target_preview": "",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "same_as-04",
+      "group": "SAME_AS",
+      "relation": "SAME_AS",
+      "source": "GDPR — Recital 72 (en, v1)",
+      "target": "GDPR — Considerando 72 (pt, v1)",
+      "detail": {},
+      "evidence": "Regulamento (UE) 2016/679 (RGPD) — Considerando 72 (72) A definição de perfis está sujeita às regras do presente regulamento que regem o tratamento de dados pessoais, como o fundamento jurídico do tratamento ou os princípios da proteção de ",
+      "source_preview": "Regulation (EU) 2016/679 (GDPR) — Recital 72 (72) Profiling is subject to the rules of this Regulation governing the processing of personal data, such as the legal grounds for processing or data protection principles. The European Data Prot",
+      "target_preview": "",
+      "verdict": "correct",
+      "note": ""
+    }
+  ],
+  "rules": "v3 (fixes v2; \"respectively\" and English \"thereof\" in citations fixed in v4, measured on a fresh seed)"
+}

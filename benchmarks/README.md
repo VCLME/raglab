@@ -6,9 +6,10 @@ Ces fichiers sont la référence des mesures de la phase 9 : toutes les comparai
 |---|---|---|---|---|
 | `piaf/` | français | 500 | 761 paragraphes de Wikipédia, `raglab bench download piaf --limit 500 --seed 42` | CC-BY-SA 3.0 (Etalab, d'après Wikipédia) |
 | `lexml_fulltext/` | portugais | 277 sur 300 (23 marquées `rejected`) | 252 lois fédérales, `raglab lexml fulltext` ; empreintes dans `corpus_manifest.json` | domaine public (Lei 9.610/1998, art. 8º, IV) |
-| `lexml_references/` (à générer) | portugais | environ 100 (`dev` 30 %, `heldout` 70 %) : l'article A renvoie à l'article B, la réponse est dans B | le corpus LexML ci-dessus ; `raglab lexml reference-questions` | domaine public |
+| `lexml_references/` (à générer) | portugais | environ 100 (`dev` 30 %, `heldout` 70 %) : l'article A renvoie à l'article B, la réponse est dans B ; moitié `via_topic`, 30 % `scenario` (situation concrète, ni loi ni article nommés), 20 % `via_article` | le corpus LexML ci-dessus ; `raglab lexml reference-questions` | domaine public |
 | `legi_consommation/` | français | à générer (`raglab legifrance questions`) | Code de la consommation avec son historique : 5 998 versions de 3 391 articles, `raglab legifrance fetch` ; empreintes dans `corpus_manifest.json` | Licence Ouverte 2.0 (DILA, via tricoteuses) |
 | `legi_versions/` (à générer) | français | environ 100 questions pièges (`rewritten`, `reused_number`, `moved`, `as_of`), chacune avec la version qui répond (`expected_spans`) et celle qui tromperait (`trap`) ; `dev` 25 %, `heldout` 75 % | le corpus `legi_consommation` ci-dessus ; `raglab legifrance version-questions` | Licence Ouverte 2.0 (DILA, via tricoteuses) |
+| `eurlex_compliance/` | fr + en + pt | à générer (`raglab eurlex questions`) | 15 actes de l'UE (RGPD, AI Act, DORA, NIS 2 et actes de niveau 2) : 4 236 considérants, articles et annexes, par langue et par version, `raglab eurlex fetch` ; empreintes dans `corpus_manifest.json` ; précision du graphe relue dans `graph_precision_v*_seed*.json` | © Union européenne, réutilisation autorisée (décision 2011/833/UE) |
 | `abstention/` | fr + pt | 80 questions sans réponse dans les corpus (phase 9.4) | — | rédigées pour raglab |
 
 Chaque ligne de `ground_truth.jsonl` porte `expected_spans` (fichier + positions de la réponse dans le texte normalisé) : la pertinence est jugée au niveau du passage, quelle que soit la stratégie de chunking.
@@ -18,6 +19,8 @@ Chaque ligne de `ground_truth.jsonl` porte `expected_spans` (fichier + positions
 **Vérifier le corpus LexML.** Une collecte faite plus tard peut différer, car Planalto met ses textes consolidés à jour. Comparez les `sha256` de `corpus_manifest.json` avec ceux de `data/lexml/fulltext/manifest.json` : si un texte diffère, ses spans peuvent ne plus tomber au bon endroit.
 
 **Code de la consommation.** Le corpus est figé sur un commit du dépôt git du code publié par tricoteuses (données LEGI de la DILA) : deux collectes donnent les mêmes empreintes. Voir [docs/corpus-legi.md](../docs/corpus-legi.md).
+
+**Actes de l'UE.** Le corpus est figé sur des versions consolidées nommées (CELEX daté) et le manifeste garde l'empreinte de chaque fichier téléchargé : si CELLAR régénère un XHTML, la collecte le dit. Voir [docs/corpus-eurlex.md](../docs/corpus-eurlex.md).
 
 **Abstention (phase 9.4).** `abstention/questions.jsonl` contient des questions auxquelles les corpus ne répondent pas. Elles servent à mesurer si le système sait dire « je ne trouve pas cela dans les documents » au lieu d'inventer :
 

@@ -115,10 +115,10 @@ test("Learning mode: a skipped graph branch is dimmed with its reason", async ({
   api.set("POST /api/query/stream", sse(events));
   await ask(page, true);
   const diagram = page.getByRole("group", { name: /Schéma de l'architecture RAG/ });
-  await expect(diagram.getByRole("button", { name: "Graphe des renvois — sautée", exact: true })).toBeVisible();
+  await expect(diagram.getByRole("button", { name: "Graphe des renvois — indisponible", exact: true })).toBeVisible();
   const decision = page.getByRole("listitem").filter({ hasText: "Graphe des renvois" });
-  await expect(decision.locator(".edu-option.taken")).toHaveText("sauté");
-  await expect(decision).toContainText("Sauté : Neo4j ne répond pas, la réponse le signale.");
+  await expect(decision.locator(".edu-option.taken")).toHaveText("indisponible");
+  await expect(decision).toContainText("Indisponible : Neo4j ne répond pas, la réponse le signale.");
 });
 
 test("Learning mode: without the option the graph lane is off", async ({ page, api }) => {

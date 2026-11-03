@@ -1,11 +1,12 @@
 """`raglab bench all`: rebuild every benchmark number from a single command.
 
 For each suite (PIAF in French, LexML full text in Portuguese, and on
-request the Code de la consommation with its version history) the runner:
+request the Code de la consommation with its version history or the EU
+compliance acts in three languages) the runner:
 
 1. makes sure the corpus is on disk (downloads / collects it otherwise) and,
-   for LexML and the French code, that every text still matches the frozen
-   manifest;
+   for LexML, the French code and the EU acts, that every text still matches
+   the frozen manifest;
 2. ingests and indexes it in a dedicated corpus (`bench_*`), reusing a
    compatible index run when nothing changed;
 3. runs the recall benchmark on the frozen question set, generating and
@@ -98,6 +99,18 @@ def default_suites(settings: Settings, repo_root: Path) -> list[Suite]:
             manifest_path=repo_root / "benchmarks" / "legi_consommation" / "corpus_manifest.json",
             default=False,
         ),
+        # EU compliance acts (GDPR, AI Act, DORA, NIS 2 and the acts that
+        # complete them) in French, English and Portuguese: run when named,
+        # `--suite eurlex_compliance`.
+        Suite(
+            name="eurlex_compliance",
+            language="multi",
+            corpus_name="bench_eurlex_compliance",
+            corpus_dir=settings.eurlex_dir / "compliance" / "corpus",
+            dataset_path=repo_root / "benchmarks" / "eurlex_compliance" / "ground_truth.jsonl",
+            manifest_path=repo_root / "benchmarks" / "eurlex_compliance" / "corpus_manifest.json",
+            default=False,
+        ),
         # Questions whose answer is in the article cited by another (9.9b), on
         # the LexML corpus: run when named, `--suite lexml_references`.
         Suite(
@@ -144,6 +157,10 @@ def _ensure_corpus(suite: Suite, settings: Settings) -> None:
         from raglab.legifrance.collector import CodeCollector
 
         CodeCollector(settings).collect(code="consommation", output_dir=suite.corpus_dir.parent)
+    elif suite.name == "eurlex_compliance":
+        from raglab.eurlex.collector import EurlexCollector
+
+        EurlexCollector(settings).collect(output_dir=suite.corpus_dir.parent)
     else:
         raise ValueError(f"Corpus absent et pas de recette pour le produire: {suite.corpus_dir}")
 
@@ -382,6 +399,7 @@ def run_suite(
         "summary": report["summary"],
         "by_type": report.get("by_type") or {},
         **({"by_split": report["by_split"]} if report.get("by_split") else {}),
+        **({"by_type_heldout": report["by_type_heldout"]} if report.get("by_type_heldout") else {}),
         "report_path": report["report_path"],
         "experiment_run_id": report["experiment_run_id"],
         # Per-question outcomes, so two runs can be compared question by
@@ -546,8 +564,13 @@ def render_markdown(results: list[dict[str, Any]]) -> str:
         if any(judged):
             lines.append("")
             lines.append(f"Juges RAGAS calculés sur les {max(j or 0 for j in judged)} premières questions.")
-        # Per question type, and per split (dev / heldout) for sets that have one.
-        for key, heading in (("by_type", "par type"), ("by_split", "par partie du jeu")):
+        # Per question type, per split (dev / heldout) for sets that have one,
+        # and per type on the held-out part only (the numbers to report).
+        for key, heading in (
+            ("by_type", "par type"),
+            ("by_split", "par partie du jeu"),
+            ("by_type_heldout", "par type, partie heldout"),
+        ):
             group_runs = [s.get(key) if s else None for s in per_run]
             if not any(group_runs):
                 continue

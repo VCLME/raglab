@@ -128,3 +128,34 @@ def test_a_cited_article_resolves_to_its_version_in_force(session):
 
     # The Brazilian lookup is untouched by the French metadata.
     assert find_law_document(session, run, Citation("8078", "49")) == ids["lei_8078_1990.txt"]
+
+
+def _unit(language: str, number: str, in_force: bool = True, valid_from: str = "2016-05-04") -> dict:
+    return {
+        "celex": "32016R0679",
+        "unit": "article",
+        "unit_number": number,
+        "language": language,
+        "in_force": in_force,
+        "valid_from": valid_from,
+    }
+
+
+def test_an_eu_citation_resolves_to_the_unit_in_the_question_language(session):
+    from raglab.retrieval.citations import find_eu_unit, has_eu_act
+
+    run, ids = _seed(
+        session,
+        {
+            "gdpr_en_art037_oj.txt": (_unit("en", "37", in_force=False), ["Article 37 old"]),
+            "gdpr_en_art037_c.txt": (_unit("en", "37"), ["Article 37 corrected"]),
+            "gdpr_fr_art037_oj.txt": (_unit("fr", "37"), ["Article 37 fr"]),
+        },
+    )
+    citation = Citation(None, "37", celex="32016R0679", unit="article", language="fr")
+    assert find_eu_unit(session, run, citation).document_id == ids["gdpr_fr_art037_oj.txt"]
+    # No Portuguese copy: the version in force in another language.
+    portuguese = Citation(None, "37", celex="32016R0679", unit="article", language="pt")
+    assert find_eu_unit(session, run, portuguese).document_id == ids["gdpr_en_art037_c.txt"]
+    assert find_eu_unit(session, run, Citation(None, "99", celex="32016R0679", unit="article")) is None
+    assert has_eu_act(session, run, "32016R0679") and not has_eu_act(session, run, "32022R2554")

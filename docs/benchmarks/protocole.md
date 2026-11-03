@@ -84,9 +84,11 @@ raglab legifrance review-questions --ground-truth benchmarks/legi_consommation/g
 
 **Questions.** Même méthode que LexML, avec ces différences :
 
+- **le type principal est `scenario`** (55 % du jeu visé ; `paraphrase`, `reference` et `entity` 15 % chacun) : une situation concrète, vue par un consommateur, une entreprise ou un avocat, en français naturel (« Mon client a acheté un canapé en ligne il y a dix jours, peut-il encore se rétracter ? », « Un vendeur peut-il me facturer des frais de recouvrement ? »). On sait quel article répond (le passage d'or), la question ne le révèle pas : aucun numéro d'article, aucun nom de code, aucune suite de 6 mots recopiée du passage, aucune année (une situation datée appellerait la version de cette date, pas celle en vigueur). Pourquoi : « Que dit l'article L. 221-18 du code de la consommation ? » se résout par un Ctrl+F, et les vrais utilisateurs décrivent leur cas sans citer la loi. Les questions `reference` restent, minoritaires, parce que les juristes citent les articles (mode d'échec « identifiants ») ; les résultats sont donnés par type (`by_type`) ;
+
 - les passages sont tirés dans les versions **en vigueur** des articles numérotés (L., R., D. ; pas les annexes, qui sont des formulaires), un par article d'abord ; un article plus court que 700 caractères est pris en entier s'il en fait au moins 200 ;
 - le rédacteur reçoit la place de l'article dans le code (Partie > Livre > Titre…) au lieu de l'ementa ;
-- une question `reference` doit citer l'article sous une forme que lit le résolveur de citations (« article L. 221-18 du code de la consommation ») ; une `paraphrase` ou une `entity` ne doit citer ni article ni numéro de loi, décret ou ordonnance ;
+- une question `reference` doit citer l'article sous une forme que lit le résolveur de citations (« article L. 221-18 du code de la consommation ») ; une `scenario`, une `paraphrase` ou une `entity` ne doit citer ni article ni numéro de loi, décret ou ordonnance ;
 - les filtres de formulation sont en français : « cet article », « le présent code », « mentionné », « ci-dessus » rendent une question vague ; « (Abrogé) », « entrent en vigueur… » ou « par décret en Conseil d'État » seuls ne sont pas des réponses ;
 - chaque cas porte une partie `split` tirée avec la graine, par type : un quart `dev` (qu'on peut regarder pendant la mise au point d'une méthode), trois quarts `heldout` (jamais regardés). Le rapport donne Recall@k et MRR par partie (`by_split`), pour vérifier qu'un gain tient sur les questions jamais vues, comme pour le résolveur de citations sur LexML ;
 - `context` note l'article, le nombre de versions de même numéro et si la réponse figure aussi dans une autre version (`answer_in_other_version`) : retrouver une version ancienne compte comme un échec (mauvais fichier), et ce champ permet de mesurer ce piège à part.
@@ -101,6 +103,26 @@ raglab legifrance review-questions --ground-truth benchmarks/legi_versions/groun
 ```
 
 Environ 100 questions posées comme des situations (« Mon client a sept jours pour se rétracter, c'est bien ça ? » : ni numéro d'article sauf pour un numéro réutilisé, ni nom de code, ni formulation recopiée, date passée dite comme un utilisateur la dit), dont la réponse naïve vient d'une version qui ne s'applique plus : ligne réécrite (`rewritten`, 40 %), numéro réutilisé (`reused_number`, 20 %), article déplacé (`moved`, 20 %), question sur le passé (`as_of`, 20 %, la version attendue est l'ancienne). Les paires sont trouvées par des règles dans l'historique ; une question n'est gardée que si la réponse est copiée de la version attendue et, pour `rewritten` et `as_of`, la réponse périmée copiée du piège, chacune absente de l'autre version. Chaque cas porte `expected_spans` sur la version attendue, `trap` (fichiers, article, réponse périmée) et `context.as_of` pour les questions sur le passé ; partie `dev` / `heldout` comme ci-dessus. Métriques en plus du Recall@k : `outdated_hit@k` (une version périmée classée au-dessus de la bonne dans le top-k) et `outdated_answer_rate` (réponse générée qui reprend la version périmée). Détail dans [versions.md](../versions.md). Suite `legi_versions`, sur demande.
+
+## Actes de l'UE (conformité)
+
+```bash
+raglab eurlex fetch
+raglab eurlex questions --count 300 --seed 42 --output-dir benchmarks/eurlex_compliance
+raglab eurlex review-questions --ground-truth benchmarks/eurlex_compliance/ground_truth.jsonl
+```
+
+**Corpus.** 15 actes (RGPD, AI Act, DORA, NIS 2, sept actes de niveau 2 de DORA, le règlement d'exécution de NIS 2, le règlement sur le groupe scientifique de l'AI Act, l'omnibus numérique sur l'IA, les clauses contractuelles types), en français, anglais et portugais, un document par considérant, article ou annexe, par langue et par version : 4 236 documents, 7,9 millions de caractères. Source : CELLAR (Office des publications, sans compte), versions consolidées figées ; `benchmarks/eurlex_compliance/corpus_manifest.json` donne l'empreinte de chaque texte et de chaque fichier téléchargé. Détails dans [corpus-eurlex.md](../corpus-eurlex.md).
+
+**Questions.** Même méthode que LexML et le Code de la consommation, avec ces différences :
+
+- les passages sont tirés dans les unités **en vigueur** (considérants, articles, annexes), une unité à la fois toutes langues confondues, articles et annexes d'abord, dans une langue tirée avec la graine ;
+- le type principal, au moins la moitié du jeu, est `scenario` : une situation de conformité concrète (entreprise, DPO, banque) en langage courant, sans nommer l'acte (numéro ou nom court) ni d'article, de considérant ou d'annexe, et sans reprendre 5 mots consécutifs du passage (filtres `names_reference`, `copies_passage`) ;
+- les autres types : `paraphrase`, `reference` (l'unité citée comme un juriste, lue par le résolveur), `entity`, `cross_reference` (la question cite l'unité A, la réponse est dans l'unité B que A cite ; pertinence sur B seule, la phrase de A dans `citing_spans`) et `cross_language` (question dans une autre langue que le passage) ;
+- les filtres de formulation couvrent les trois langues (« this Article », « cet article », « este artigo », « mentioned », « ci-dessus ») ; la langue de la question est vérifiée ;
+- `context` note l'unité, les langues, les fichiers de la même unité dans les autres langues, le nombre de versions et si la réponse figure aussi dans une version ancienne (`answer_in_other_version`) ; partie `split` tirée avec la graine (un quart `dev`, le reste `heldout`).
+
+La pertinence reste au niveau du passage du fichier tiré : retrouver le même article dans une autre langue ne compte pas (les autres fichiers sont dans `context.same_unit_files`, pour une analyse à part). La suite `eurlex_compliance` ne tourne que sur demande (`raglab bench all --suite eurlex_compliance`).
 
 ## Changer de générateur
 

@@ -28,7 +28,9 @@ from raglab.retrieval.citations import (
     article_chunks,
     document_chunks,
     find_code_article,
+    find_eu_unit,
     find_law_document,
+    has_eu_act,
     merge_with_citation,
     parse_citation,
 )
@@ -315,12 +317,24 @@ class QueryService:
         law_document_id: str | None = None
         pinned: list[RetrievedChunk] = []
         cited_code: str | None = None
+        eu_act_found = False
         if parsed is not None and parsed.law_number is not None:
             law_document_id = find_law_document(self.session, index_run, parsed)
             if citation is not None and law_document_id is not None:
                 if citation.article:
                     pinned = article_chunks(self.session, index_run, law_document_id, citation.article)
                 filters = (filters or RetrievalFilters()).model_copy(update={"document_ids": [law_document_id]})
+        elif parsed is not None and parsed.celex is not None:
+            # A unit of an EU act is a document of its own (one per language):
+            # pin it and search the rest of the cited act.
+            eu_unit = find_eu_unit(self.session, index_run, parsed)
+            law_document_id = eu_unit.document_id if eu_unit is not None else None
+            eu_act_found = eu_unit is not None or has_eu_act(self.session, index_run, parsed.celex)
+            if citation is not None and eu_act_found:
+                if eu_unit is not None:
+                    pinned = document_chunks(self.session, index_run, eu_unit.document_id)
+                base = filters or RetrievalFilters()
+                filters = base.model_copy(update={"metadata_equals": {**base.metadata_equals, "celex": parsed.celex}})
         elif citation is not None:
             # An article of a French code is a document of its own: pin it
             # and search the rest of the cited code.
@@ -334,12 +348,13 @@ class QueryService:
                 if cited_code:
                     base = filters or RetrievalFilters()
                     filters = base.model_copy(update={"metadata_equals": {**base.metadata_equals, "code": cited_code}})
-        # The graph holds laws (profile "laws"): only a cited law's article seeds it.
+        # The graph holds laws (profile "laws") and EU acts (profile
+        # "eu_acts"): a cited law's or EU act's article seeds it.
         seed_articles = (
             [{"document_id": law_document_id, "number": parsed.article, "rank": 0}]
             if use_graph
             and parsed is not None
-            and parsed.law_number is not None
+            and (parsed.law_number is not None or parsed.unit == "article")
             and parsed.article
             and law_document_id is not None
             else []
@@ -521,7 +536,8 @@ class QueryService:
                     "law_number": citation.law_number,
                     "article": citation.article,
                     "code": cited_code or citation.code,
-                    "law_found": law_document_id is not None,
+                    "celex": citation.celex,
+                    "law_found": law_document_id is not None or eu_act_found,
                     "article_found": bool(pinned),
                 }
                 if citation is not None

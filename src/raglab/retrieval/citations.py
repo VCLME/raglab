@@ -24,6 +24,14 @@ article; the one in force on the reference date of the `versions` option
 when the question asks about the past), whose chunks are pinned first; the search is restricted to the
 cited code, the analogue of restricting to the cited Brazilian law.
 
+EU acts (`raglab eurlex fetch`) are stored one unit (article, recital,
+annex) per document and language, with the act's CELEX and the unit in the
+metadata (`celex`, `unit`, `unit_number`, `language`). A question citing
+"l'article 32 du RGPD", "Article 6(1)(a) GDPR", "o artigo 5.º do Regulamento
+(UE) 2016/679" or "considérant 39 du RGPD" resolves to that unit in the
+question's language (else another language), the version in force; its
+chunks are pinned first and the search is restricted to the cited act.
+
 When the question cites no law, or a law absent from the index, retrieval is
 unchanged. Chunking is untouched: this only reads chunk text and order.
 """
@@ -41,6 +49,8 @@ from sqlalchemy.orm import Session
 from raglab.db.models import Chunk, Document, IndexRun
 from raglab.domain.schemas import RetrievedChunk
 from raglab.domain.versions import valid_at
+from raglab.eurlex.acts import BY_CELEX, UNIT_NAMES, celex_label
+from raglab.eurlex.references import extract_references, find_act_names, find_acts
 from raglab.legifrance.codes import CODES, find_code_mentions
 from raglab.legifrance.references import article_label, find_plain_article, find_prefixed_article
 
@@ -72,8 +82,19 @@ class Citation:
     #: French code slug ("consommation", "civil"); None when the question
     #: cites an article ("art. R. 212-1") without naming its code.
     code: str | None = None
+    #: EU act CELEX ("32016R0679") when the question cites an EU act; then
+    #: `article` is the unit number and `unit` says which kind of unit.
+    celex: str | None = None
+    #: "article", "recital" or "annex"; None when only the act is named.
+    unit: str | None = None
+    paragraph: str | None = None
+    point: str | None = None
+    #: Language of the question ("fr", "en", "pt"), guessed for EU citations.
+    language: str | None = None
 
     def label(self) -> str:
+        if self.celex is not None:
+            return eu_citation_label(self)
         if self.law_number is None:
             label = f"art. {article_label(self.article or '')}"
             return label + (f" — {CODES[self.code].title}" if self.code in CODES else "")
@@ -87,7 +108,7 @@ class Citation:
 def parse_citation(question: str) -> Citation | None:
     law = _LAW_RE.search(question)
     if law is None:
-        return parse_code_citation(question)
+        return parse_eu_citation(question) or parse_code_citation(question)
     number = law.group(1).replace(".", "")
     year: int | None = None
     if law.group(2):
@@ -129,6 +150,137 @@ def parse_code_citation(question: str) -> Citation | None:
     if named is None:
         return None
     return Citation(law_number=None, article=article, code=named.slug)
+
+
+_LANGUAGE_WORDS = {
+    "fr": {
+        *("le", "la", "les", "du", "des", "de", "quel", "quelle", "quels", "quelles", "est", "que", "dans", "pour"),
+        *("selon", "article", "considérant", "annexe", "dit", "prévoit", "doit", "qui", "sur", "une", "au", "aux"),
+    },
+    "en": {
+        *("the", "of", "what", "which", "is", "does", "under", "for", "according", "to", "how", "must", "who"),
+        *("recital", "annex", "say", "says", "in", "an", "and", "are"),
+    },
+    "pt": {
+        *("o", "os", "as", "do", "da", "dos", "das", "que", "qual", "quais", "é", "para", "nos", "segundo"),
+        *("artigo", "considerando", "anexo", "diz", "prevê", "deve", "um", "uma", "no", "na", "em"),
+    },
+}
+_EU_RECITAL_RE = re.compile(r"\b(?:recitals?|consid[ée]rants?|considerandos?)\s+\(?\d", re.IGNORECASE)
+
+
+def guess_language(question: str) -> str:
+    """ "fr", "en" or "pt" from function words (EU questions only)."""
+    words = re.findall(r"[a-zà-ÿ]+", question.lower())
+    scores = {language: sum(word in vocabulary for word in words) for language, vocabulary in _LANGUAGE_WORDS.items()}
+    return max(scores, key=lambda language: (scores[language], language == "en"))
+
+
+def parse_eu_citation(question: str) -> Citation | None:
+    """A unit of an EU act: "article 32 du RGPD", "Article 6(1)(a) GDPR",
+    "artigo 5.º do Regulamento (UE) 2016/679", "considérant 39 du RGPD".
+
+    The act must be named (short name or number), except for a recital,
+    which only EU acts have. A unit not qualified by a numbered act belongs
+    to the act named right after it ("l'article 5 de DORA"), else to the
+    first act named.
+    """
+    named = [*find_act_names(question), *(m for m in find_acts(question) if m.celex is not None)]
+    mentions = sorted({(m.start, m.celex): m for m in named}.values(), key=lambda mention: mention.start)
+    if not mentions and not _EU_RECITAL_RE.search(question):
+        return None
+    language = guess_language(question)
+    default = mentions[0].celex if mentions else None
+    references = [
+        reference
+        for reference in extract_references(question, language, own_celex=default or "")
+        if reference.celex is not None
+    ]
+    if not references:
+        if default is None:
+            return None
+        return Citation(law_number=None, celex=default, language=language)
+    reference = references[0]
+    celex = reference.celex or None
+    if reference.scope == "same_act":
+        after = next((mention for mention in mentions if 0 <= mention.start - reference.end <= 40), None)
+        celex = after.celex if after is not None else default
+    if celex is None:
+        return None
+    return Citation(
+        law_number=None,
+        article=reference.number,
+        celex=celex,
+        unit=reference.unit,
+        paragraph=reference.paragraph,
+        point=reference.point,
+        language=language,
+    )
+
+
+def eu_citation_label(citation: Citation) -> str:
+    """ "Article 32(1)(b) — GDPR", "Considérant 39 — RGPD"."""
+    language = citation.language or "en"
+    act = BY_CELEX.get(citation.celex or "")
+    act_name = act.short_name(language) if act is not None else celex_label(citation.celex or "", language)
+    if citation.unit is None:
+        return act_name
+    number = citation.article or ""
+    if citation.unit == "article":
+        number += "".join(f"({part})" for part in (citation.paragraph, citation.point) if part)
+    return f"{UNIT_NAMES[language][citation.unit]} {number} — {act_name}"
+
+
+@dataclass(slots=True, frozen=True)
+class EuUnit:
+    document_id: str
+    celex: str
+    language: str | None
+    in_force: bool
+
+
+def find_eu_unit(session: Session, index_run: IndexRun, citation: Citation) -> EuUnit | None:
+    """The document of the cited unit in this index run's corpus: in the
+    question's language when the corpus has it, the version in force first."""
+    if citation.celex is None or citation.unit is None or citation.article is None:
+        return None
+    rows = session.execute(
+        select(Document.id, Document.metadata_json).where(
+            Document.corpus_id == index_run.corpus_id,
+            Document.metadata_json["celex"].astext == citation.celex,
+            Document.metadata_json["unit"].astext == citation.unit,
+            Document.metadata_json["unit_number"].astext == citation.article,
+        )
+    ).all()
+    if not rows:
+        return None
+
+    def rank(row: Any) -> tuple[int, int, str]:
+        metadata = row[1] or {}
+        return (
+            int(metadata.get("language") == citation.language),
+            int(bool(metadata.get("in_force", True))),
+            str(metadata.get("valid_from") or ""),
+        )
+
+    document_id, metadata = max(rows, key=rank)
+    metadata = metadata or {}
+    return EuUnit(
+        document_id=str(document_id),
+        celex=citation.celex,
+        language=metadata.get("language"),
+        in_force=bool(metadata.get("in_force", True)),
+    )
+
+
+def has_eu_act(session: Session, index_run: IndexRun, celex: str) -> bool:
+    """Whether this index run's corpus holds units of the act."""
+    row = session.execute(
+        select(Document.id)
+        .where(Document.corpus_id == index_run.corpus_id, Document.metadata_json["celex"].astext == celex)
+        .limit(1)
+    ).first()
+    return row is not None
 
 
 @dataclass(slots=True, frozen=True)

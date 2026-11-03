@@ -12,8 +12,9 @@ from raglab.retrieval.versions import corpus_has_versions
 router = APIRouter(tags=["corpora"])
 
 # Metadata keys of a law / code article: LexML laws carry `number`,
-# Légifrance articles `article_number` (what the citation resolver matches).
-LEGAL_METADATA_KEYS = ("number", "article_number")
+# Légifrance articles `article_number`, EU act units `celex` (what the
+# citation resolver matches).
+LEGAL_METADATA_KEYS = ("number", "article_number", "celex")
 
 
 def legal_articles_query(corpus_id: str):

@@ -11,16 +11,27 @@ directly from the frozen corpus files, so the set does not depend on an index
 run, its chunking or Neo4j. The local LLM (Qwen3.6 via llama.cpp, as for the
 LexML set) writes one question and quotes the answer from B; the same checks
 as the LexML set drop the rest (quote found in B, length, boilerplate,
-vagueness), plus three of their own: the question must not cite B's number
-(the citation resolver would then find B directly), the answer must not also
-be in A, and a `via_article` question must cite A and its law.
+vagueness), plus their own: the question must not cite B's number (the
+citation resolver would then find B directly), the answer must not also be in
+A, and a `via_article` question must cite A and its law.
 
-Two question types:
+Three question types. A question that cites the article is answered by a
+Ctrl+F on its number, so most do not:
 
-* ``via_article`` — the question cites article A and its law ("Quais
-  penalidades se aplicam a quem descumpre o art. 5º da Lei nº 8.078?"), the
-  canonical case;
-* ``via_topic`` — the question names A's subject without any number.
+* ``via_topic`` (half) — the question names A's subject in other words,
+  without any number;
+* ``scenario`` (30 %) — a concrete situation in everyday Brazilian
+  Portuguese, from a citizen's, a company's or a lawyer's point of view, whose
+  answer is in B ("Comprei uma geladeira pela internet e me arrependi no dia
+  seguinte. Posso devolver?"). It names no law or article (no "art.", "Lei
+  nº", law number or acronym such as CDC);
+* ``via_article`` (20 %) — the question cites article A and its law ("Quais
+  penalidades se aplicam a quem descumpre o art. 5º da Lei nº 8.078?"): the
+  identifiers case, kept as a minority.
+
+Neither ``via_topic`` nor ``scenario`` may copy the articles' wording: a run of
+5 words or more (two of them content words) found verbatim in A or B rejects
+the question.
 
 Relevance is judged on B only (`expected_spans`): a run that returns A alone
 must not pass. A's citing sentence is kept in `citing_spans` for analysis. A
@@ -56,7 +67,17 @@ from raglab.ollama.service import OllamaService
 
 LOGGER = logging.getLogger(__name__)
 
-QUESTION_TYPES = ("via_article", "via_topic")
+QUESTION_TYPES = ("via_topic", "scenario", "via_article")
+# Share of each type in the set (`--mix` on the CLI).
+DEFAULT_SHARES = {"via_topic": 0.5, "scenario": 0.3, "via_article": 0.2}
+# Points of view of the scenarios, drawn in turn.
+PERSONAS = {
+    "citizen": "um cidadão que vive a situação (consumidor, trabalhador, contribuinte, segurado, morador...)",
+    "company": "uma empresa (dono de um pequeno negócio, gerente, setor de RH, jurídico ou financeiro)",
+    "lawyer": "um advogado que prepara o caso de um cliente",
+}
+# Copying: this many words in a row (two of them of 4+ letters) found in A or B.
+COPY_RUN_WORDS = 5
 DEV_SHARE = 0.3
 MAX_ARTICLE_CHARS = 1800
 MIN_TARGET_CHARS = 120
@@ -69,11 +90,18 @@ origem cuja resposta só está no artigo citado, e a RESPOSTA curta copiada \
 literalmente do ARTIGO CITADO.
 
 Tipos:
+* via_topic — a pergunta descreve o assunto do artigo de origem com outras \
+palavras, sem citar nenhum número de artigo nem de lei.
+* scenario — a pergunta conta, em 1 a 3 frases curtas, uma situação concreta \
+vivida por quem está indicado em PONTO DE VISTA (quem, o quê, quando) e termina \
+perguntando o que se aplica a ela; a resposta está no ARTIGO CITADO. Escreva \
+em português do Brasil natural, como essa pessoa escreveria a um advogado ou a \
+um atendimento (ex.: "Comprei uma geladeira pela internet e me arrependi no \
+dia seguinte. Posso devolver?"). Nunca nomeie a lei nem o artigo: nada de \
+"art.", "artigo", "Lei nº", número de lei, nome ou sigla da lei (CDC, CLT...).
 * via_article — a pergunta cita o número do artigo de origem e o número da \
 lei indicados em REFERÊNCIA (ex.: "Que prazo se aplica aos contratos do \
 art. 10-B da Lei nº 11.445?").
-* via_topic — a pergunta descreve o assunto do artigo de origem com outras \
-palavras, sem citar nenhum número de artigo nem de lei.
 
 Regras:
 * Nunca cite o número do ARTIGO CITADO: quem pergunta não sabe para onde o \
@@ -81,6 +109,8 @@ artigo de origem remete.
 * A pergunta deve fazer sentido sozinha para quem não leu os artigos: \
 mencione o tema da lei para que só exista uma resposta entre todas as leis. \
 Nunca escreva "neste artigo", "segundo o texto", "o referido".
+* Em via_topic e scenario, use suas próprias palavras: não copie trechos \
+dos artigos (nunca cinco palavras seguidas iguais às do texto).
 * A resposta deve ser uma cópia exata de um pedaço do ARTIGO CITADO (3 a 25 \
 palavras) que não aparece no artigo de origem.
 
@@ -91,6 +121,24 @@ _AMENDING_RE = re.compile(r"passa(?:m)?\s+a\s+vigorar|fica(?:m)?\s+acrescid", re
 _FORMAL_CLAUSE_RE = re.compile(
     r"entra(?:m)?\s+em\s+vigor|revoga(?:m)?-se|fica(?:m)?\s+revogad|produzindo\s+efeitos", re.IGNORECASE
 )
+# A law or a provision named in a scenario: "art.", "artigo", "§", "inciso",
+# "Lei nº ...", "Lei de / da ...", "Lei Complementar", a decree, a named code
+# or statute, the Constitution, or a law's acronym. Everyday words that share
+# a stem stay allowed: "decretou a falência", "código de barras", "estatuto
+# social", "constituição da empresa".
+_NAMES_LAW_RE = re.compile(
+    r"\bart(?:igo)?s?\b|§|\bincisos?\b|\bal[ií]neas?\b|\bpar[aá]grafo\s+[úu]nico\b"
+    r"|\blei\s+(?:n\.?\s*[º°o]|complementar|federal|d[aeo]s?\b|\d)"
+    r"|\bdecretos?(?:-lei)?\b|\bmedida\s+provis[óo]ria"
+    r"|\bc[óo]digo\s+(?:civil|penal|tribut[áa]rio|comercial|eleitoral|florestal|de\s+processo|de\s+tr[âa]nsito"
+    r"|de\s+defesa|do\s+consumidor|de\s+[ée]tica)"
+    r"|\bestatuto\s+d[aeo]s?\s+(?:crian[çc]a|idoso|pessoa\s+com\s+defici[êe]ncia|cidade|torcedor|terra"
+    r"|desarmamento|juventude|advocacia|microempresa|refugiado)"
+    r"|\bconstitui[çc][ãa]o\s+(?:federal|da\s+rep[úu]blica)|\bconsolida[çc][ãa]o\s+das\s+leis",
+    re.IGNORECASE,
+)
+_LAW_ACRONYM_RE = re.compile(r"\b(?:CDC|CLT|ECA|LGPD|CTB|CTN|CPC|CPP|LRF|LOAS|LDB|CF)\b|\bConstitui[çc][ãa]o\b")
+_WORD_RE = re.compile(r"\w+", re.UNICODE)
 
 
 @dataclass(slots=True)
@@ -220,11 +268,64 @@ def rejection_reason(
         return "leaks_target"
     if question_type == "via_topic" and re.search(r"\b(?:art\.|artigo|lei\s+n)", question, re.IGNORECASE):
         return "leaks_reference"
+    if question_type == "scenario" and names_law(question, pair):
+        return "names_law"
     if question_type == "via_article":
         law_digits = re.sub(r"\D", "", pair.source_law)
         if not _cites_article(question, pair.source_article) or law_digits not in re.sub(r"\D", "", question):
             return "reference_missing"
+    elif copied_run(question, source) or copied_run(question, target):
+        return "copies_wording"
     return None
+
+
+def names_law(question: str, pair: ReferencePair) -> bool:
+    """A scenario must not name the law or the provision: no "art.", "Lei nº",
+    law by name or acronym, and none of the two laws' numbers."""
+    if _NAMES_LAW_RE.search(question) or _LAW_ACRONYM_RE.search(question):
+        return True
+    digits = re.sub(r"(?<=\d)\.(?=\d)", "", question)
+    for law in (pair.source_law, pair.target_law):
+        number = re.sub(r"\D", "", law)
+        if number and re.search(rf"(?<!\d){number}(?!\d)", digits):
+            return True
+    return False
+
+
+def copied_run(question: str, text: str, *, words: int = COPY_RUN_WORDS) -> str | None:
+    """The longest run of at least `words` words of the question found
+    verbatim in the text (case-insensitive, two of them of 4+ letters), or
+    None: a Ctrl+F on it would find the article."""
+    tokens = [token.lower() for token in _WORD_RE.findall(question)]
+    haystack = f" {' '.join(token.lower() for token in _WORD_RE.findall(text))} "
+    best: list[str] = []
+    for start in range(len(tokens)):
+        for end in range(len(tokens), start + max(words, len(best) + 1) - 1, -1):
+            run = tokens[start:end]
+            if sum(len(token) > 3 for token in run) >= 2 and f" {' '.join(run)} " in haystack:
+                best = run
+                break
+    return " ".join(best) or None
+
+
+def type_quotas(count: int, shares: dict[str, float]) -> dict[str, int]:
+    """Questions per type for a set of `count`, by largest remainder."""
+    total = sum(shares.values())
+    exact = {kind: count * shares.get(kind, 0.0) / total for kind in QUESTION_TYPES}
+    quotas = {kind: int(value) for kind, value in exact.items()}
+    for kind in sorted(QUESTION_TYPES, key=lambda kind: (quotas[kind] - exact[kind], QUESTION_TYPES.index(kind))):
+        if sum(quotas.values()) >= count:
+            break
+        quotas[kind] += 1
+    return quotas
+
+
+def next_type(kept: dict[str, int], quotas: dict[str, int]) -> str | None:
+    """The type furthest from its quota (in share of it), None when all are full."""
+    open_types = [kind for kind in QUESTION_TYPES if kept[kind] < quotas[kind]]
+    if not open_types:
+        return None
+    return min(open_types, key=lambda kind: (kept[kind] / quotas[kind], QUESTION_TYPES.index(kind)))
 
 
 def _cites_article(question: str, article: str) -> bool:
@@ -256,7 +357,9 @@ class LexMLReferenceQuestionGenerator:
             self.chat_client = ollama or OllamaService(self.settings)
             self.model = model or self.settings.generation_model
 
-    def _ask(self, pair: ReferencePair, question_type: str, texts: dict[str, str]) -> dict[str, str] | None:
+    def _ask(
+        self, pair: ReferencePair, question_type: str, texts: dict[str, str], persona: str | None = None
+    ) -> dict[str, str] | None:
         source = texts[pair.source_file][pair.source_start : pair.source_end][:MAX_ARTICLE_CHARS]
         target = texts[pair.target_file][pair.target_start : pair.target_end][:MAX_ARTICLE_CHARS]
         reference = (
@@ -264,9 +367,10 @@ class LexMLReferenceQuestionGenerator:
             if question_type == "via_article"
             else ""
         )
+        point_of_view = f"PONTO DE VISTA: {PERSONAS[persona]}\n" if question_type == "scenario" and persona else ""
         user = (
             f"ASSUNTO DA LEI: {pair.source_ementa or pair.source_law}\n"
-            f"TIPO: {question_type}\n{reference}"
+            f"TIPO: {question_type}\n{reference}{point_of_view}"
             f"ARTIGO DE ORIGEM ({pair.source_law}):\n{source}\n\n"
             f"ARTIGO CITADO ({pair.target_law}):\n{target}\n\nResponda apenas com JSON."
         )
@@ -276,7 +380,7 @@ class LexMLReferenceQuestionGenerator:
                 messages=[{"role": "user", "content": user}],
                 model=self.model,
                 system=_SYSTEM_PROMPT,
-                options={"temperature": 0.0, "num_predict": 220, "seed": 42},
+                options={"temperature": 0.0, "num_predict": 320, "seed": 42},
                 **extra,
             )
         except Exception as exc:  # network or model errors drop the pair
@@ -291,26 +395,40 @@ class LexMLReferenceQuestionGenerator:
         output_dir: Path,
         count: int = 100,
         seed: int = 42,
+        shares: dict[str, float] | None = None,
     ) -> dict[str, Any]:
+        shares = shares or DEFAULT_SHARES
+        quotas = type_quotas(count, shares)
         corpus_dir = (corpus_dir or self.settings.lexml_fulltext_dir / "corpus").resolve()
         output_dir = output_dir.resolve()
         documents, texts = load_corpus(corpus_dir)
         urns = {document.id: str(document.metadata.get("urn") or "") for document in documents}
         pairs = reference_pairs(documents)
-        # Over-sample: some questions are rejected by the checks.
-        drawn = sample_pairs(pairs, texts, count=int(count * 2.5) + 10, seed=seed)
+        # Over-sample: some questions are rejected by the checks, scenarios
+        # more often than the others.
+        drawn = sample_pairs(pairs, texts, count=count * 3 + 10, seed=seed)
+        # Scenario points of view in turn, from a seeded order.
+        personas = sorted(PERSONAS)
+        random.Random(f"{seed}:persona").shuffle(personas)
 
         cases: list[dict[str, Any]] = []
         rejected: dict[str, int] = defaultdict(int)
+        rejected_by_type: dict[str, dict[str, int]] = {kind: defaultdict(int) for kind in QUESTION_TYPES}
         kept = dict.fromkeys(QUESTION_TYPES, 0)
+        scenarios_asked = 0
         for pair in drawn:
-            if len(cases) >= count:
+            question_type = next_type(kept, quotas)
+            if question_type is None:
                 break
-            question_type = min(QUESTION_TYPES, key=lambda kind: kept[kind])
-            generated = self._ask(pair, question_type, texts)
+            persona = None
+            if question_type == "scenario":
+                persona = personas[scenarios_asked % len(personas)]
+                scenarios_asked += 1
+            generated = self._ask(pair, question_type, texts, persona)
             reason = rejection_reason(generated, pair, question_type, texts)
             if reason is not None:
                 rejected[reason] += 1
+                rejected_by_type[question_type][reason] += 1
                 continue
             assert generated is not None
             target_text = texts[pair.target_file][pair.target_start : pair.target_end]
@@ -349,6 +467,7 @@ class LexMLReferenceQuestionGenerator:
                     "target_article": f"{article_label(pair.target_article)} — {pair.target_law}",
                     "reference_scope": pair.scope,
                     "question_type": question_type,
+                    **({"persona": persona} if persona else {}),
                     "lexical_overlap": round(lexical_overlap(generated["question"], target_text), 3),
                     "review_status": "generated",
                 }
@@ -362,6 +481,9 @@ class LexMLReferenceQuestionGenerator:
         )
         by_type = {kind: sum(1 for case in cases if case["question_type"] == kind) for kind in QUESTION_TYPES}
         by_split = {split: sum(1 for case in cases if case["split"] == split) for split in ("dev", "heldout")}
+        by_persona = {
+            persona: sum(1 for case in cases if case.get("persona") == persona) for persona in sorted(PERSONAS)
+        }
         write_metadata(
             output_dir / "metadata.json",
             {
@@ -372,10 +494,13 @@ class LexMLReferenceQuestionGenerator:
                 "generator_backend": self.backend,
                 "seed": seed,
                 "case_count": len(cases),
+                "shares": shares,
                 "by_type": by_type,
+                "by_persona": by_persona,
                 "by_split": by_split,
                 "reference_pairs": len(pairs),
                 "rejected": dict(rejected),
+                "rejected_by_type": {kind: dict(reasons) for kind, reasons in rejected_by_type.items()},
                 "corpus_dir": str(corpus_dir),
             },
         )
@@ -384,6 +509,7 @@ class LexMLReferenceQuestionGenerator:
             "ground_truth_path": str(ground_truth_path),
             "case_count": len(cases),
             "by_type": by_type,
+            "by_persona": by_persona,
             "by_split": by_split,
             "reference_pairs": len(pairs),
             "rejected": dict(rejected),
@@ -410,6 +536,7 @@ def generate_reference_questions(
     seed: int,
     model: str | None = None,
     profile: str | None = None,
+    shares: dict[str, float] | None = None,
 ) -> dict[str, Any]:
     """Entry point of the CLI. With llama.cpp, Ollama is unloaded and
     llama-server started for the run, stopped afterwards if raglab started it."""
@@ -417,6 +544,20 @@ def generate_reference_questions(
 
     generator = LexMLReferenceQuestionGenerator(settings, model=model, backend=backend)
     if backend != "llamacpp":
-        return generator.generate(corpus_dir=corpus_dir, output_dir=output_dir, count=count, seed=seed)
+        return generator.generate(corpus_dir=corpus_dir, output_dir=output_dir, count=count, seed=seed, shares=shares)
     with LocalLLMServer(settings, profile=profile or settings.question_model_profile):
-        return generator.generate(corpus_dir=corpus_dir, output_dir=output_dir, count=count, seed=seed)
+        return generator.generate(corpus_dir=corpus_dir, output_dir=output_dir, count=count, seed=seed, shares=shares)
+
+
+def parse_mix(value: str) -> dict[str, float]:
+    """`via_topic=0.5,scenario=0.3,via_article=0.2` -> shares (CLI `--mix`)."""
+    shares: dict[str, float] = {}
+    for item in value.split(","):
+        kind, _, share = item.partition("=")
+        kind = kind.strip()
+        if kind not in QUESTION_TYPES or not share.strip():
+            raise ValueError(f"Type inconnu ou part manquante: {item!r} (types: {', '.join(QUESTION_TYPES)})")
+        shares[kind] = float(share)
+    if sum(shares.values()) <= 0:
+        raise ValueError("Les parts doivent avoir une somme positive.")
+    return shares
