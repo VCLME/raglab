@@ -7,7 +7,7 @@ async function ask(page: import("@playwright/test").Page) {
 }
 
 test("Select: keyboard navigation, type-ahead, Escape and ARIA listbox", async ({ page }) => {
-  await page.goto("/expert/query");
+  await page.goto("/workshop/retrieval");
   const row = page.locator(".form-row").filter({ has: page.locator("label", { hasText: /^Mode de recherche$/ }) });
   const trigger = row.getByRole("combobox");
   await expect(trigger).toHaveAccessibleName(/^Mode de recherche/);
@@ -41,7 +41,7 @@ test("Select: keyboard navigation, type-ahead, Escape and ARIA listbox", async (
   // Outside click closes too.
   await trigger.click();
   await expect(listbox).toBeVisible();
-  await page.getByRole("heading", { name: "Retrieval", level: 2 }).click();
+  await page.getByRole("heading", { name: "Interrogation", level: 2 }).click();
   await expect(listbox).toHaveCount(0);
 });
 
@@ -61,13 +61,13 @@ test("Chat options: only changed options are sent; the rerank notice is shown", 
   // Without a GPU the default re-ranking is off, as the server does.
   await expect(trigger).toContainText("Hybride · articles de loi");
   await ask(page);
-  await expect(page.getByText(/Re-ranking désactivé \(pas de GPU\)/)).toBeVisible();
+  await expect(page.getByText(/Re-ranking désactivé \(GPU non disponible pour l.API\)/)).toBeVisible();
   expect(bodies[0]).not.toHaveProperty("rerank");
   expect(bodies[0]).not.toHaveProperty("retrieval_mode");
 
   await trigger.click();
   const dialog = page.getByRole("dialog", { name: /Options de recherche/ });
-  await expect(dialog.getByText(/Désactivé faute de GPU/)).toBeVisible();
+  await expect(dialog.getByText(/Désactivé : GPU non disponible pour l.API/)).toBeVisible();
   await dialog.getByRole("switch", { name: /Re-ranking/ }).check();
   await dialog.getByRole("radio", { name: "Vectorielle" }).check();
   await page.keyboard.press("Escape");
@@ -117,7 +117,7 @@ test("Welcome text only mentions suggestions when there are some", async ({ page
   await expect(page.getByText(/Choisis une suggestion/)).toHaveCount(0);
 });
 
-test("Top bar: no API key control; the key lives in Expert with its explanation", async ({ page, api }) => {
+test("Top bar: no API key control; the key lives in the Atelier with its explanation", async ({ page, api }) => {
   let header: string | undefined;
   api.set("GET /api/index-runs", async (route) => {
     header = route.request().headers()["x-api-key"];
@@ -126,7 +126,7 @@ test("Top bar: no API key control; the key lives in Expert with its explanation"
   await page.goto("/");
   await expect(page.getByRole("banner").getByText("Clé d'API")).toHaveCount(0);
 
-  await page.goto("/expert");
+  await page.goto("/workshop");
   const card = page.getByRole("region", { name: "Connexion à l'API" });
   await expect(card.getByText(/RAGLAB_API_KEY/)).toBeVisible();
   await card.getByLabel("Clé d'API raglab").fill("secret-test-key");

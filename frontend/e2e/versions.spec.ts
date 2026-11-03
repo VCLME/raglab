@@ -67,7 +67,7 @@ test("Retrieval page: the versions option is sent and every passage shows its ve
       )
     )(route);
   });
-  await page.goto("/expert/query");
+  await page.goto("/workshop/retrieval");
   const row = (label: RegExp) => page.locator(".form-row").filter({ has: page.locator("label", { hasText: label }) });
   await row(/^Question$/).locator("textarea").fill("Quel délai pour se rétracter d'un contrat à distance ?");
   // Shipped default: every version; nothing to send.

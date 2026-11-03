@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { SlideIndicator } from "../components/SlideIndicator";
+import { Tabs, tabPanelProps } from "../components/Tabs";
+import { useWorkshop } from "../workshop/state";
 import { apiFetch, get, post } from "../api/client";
 import { useApiAction, useApiLoad } from "../hooks/useApi";
 import type {
@@ -98,6 +99,7 @@ function LaunchTab({ onLaunched }: { onLaunched: () => void }) {
   const { t } = useTranslation();
   const corpora = useApiLoad<CorpusSummary[]>(() => get("/api/corpora"));
   const datasets = useApiLoad<BenchDatasetOnDisk[]>(() => get("/api/bench/datasets"));
+  const scope = useWorkshop().corpus?.name;
   const [corpus, setCorpus] = useState("");
   const [strategy, setStrategy] = useState<ChunkingStrategy>("traditional");
   const [datasetChoice, setDatasetChoice] = useState<string>("");  // value = "auto-lexml" | dataset_dir | "custom:<path>"
@@ -132,12 +134,12 @@ function LaunchTab({ onLaunched }: { onLaunched: () => void }) {
     }
   }, [corpus, datasetChoice, datasets.data]);
 
-  // Preselect first corpus
+  // Preselect the Atelier's corpus, else the first one
   useEffect(() => {
     if (!corpus && corpora.data && corpora.data.length > 0) {
-      setCorpus(corpora.data[0].name);
+      setCorpus(corpora.data.some((c) => c.name === scope) ? scope! : corpora.data[0].name);
     }
-  }, [corpus, corpora.data]);
+  }, [corpus, corpora.data, scope]);
 
   const chosenDataset: BenchDatasetOnDisk | null = useMemo(() => {
     if (!datasetChoice || datasetChoice === "auto-lexml" || datasetChoice === "custom") return null;
@@ -864,18 +866,18 @@ export function Benchmarks() {
         body={t("benchmarks.explain_body")}
         storageKey="raglab.explain.benchmarks"
       />
-      <div className="tabs">
-        <SlideIndicator activeKey={tab} variant="underline" />
-        <button className={tab === "launch" ? "active" : ""} data-active={tab === "launch"} onClick={() => setTab("launch")}>
-          {t("benchmarks.launch_tab")}
-        </button>
-        <button className={tab === "history" ? "active" : ""} data-active={tab === "history"} onClick={() => setTab("history")}>
-          {t("benchmarks.history_tab")}
-        </button>
-        <button className={tab === "custom" ? "active" : ""} data-active={tab === "custom"} onClick={() => setTab("custom")}>
-          {t("benchmarks.custom_tab")}
-        </button>
-      </div>
+      <Tabs
+        idBase="bench"
+        label={t("benchmarks.tabs_label")}
+        value={tab}
+        onChange={setTab}
+        items={[
+          { key: "launch", label: t("benchmarks.launch_tab") },
+          { key: "history", label: t("benchmarks.history_tab") },
+          { key: "custom", label: t("benchmarks.custom_tab") },
+        ]}
+      />
+      <div {...tabPanelProps("bench", tab)}>
       {tab === "launch" ? (
         <LaunchTab
           key={launchStamp}
@@ -886,6 +888,7 @@ export function Benchmarks() {
       {tab === "custom" ? (
         <CustomDatasetTab onCreated={() => { setLaunchStamp((s) => s + 1); setTab("launch"); }} />
       ) : null}
+      </div>
     </div>
   );
 }
