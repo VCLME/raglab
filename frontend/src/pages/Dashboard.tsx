@@ -109,7 +109,7 @@ export function Dashboard() {
         <div className="card">
           <h3>{t("dashboard.config")}</h3>
           {config.loading ? <Spinner /> : null}
-          <ErrorBanner error={config.error} />
+          <ErrorBanner error={config.error} compact />
           {config.data ? (
             <table className="table">
               <tbody>
@@ -132,7 +132,7 @@ export function Dashboard() {
         <div className="card">
           <h3>{t("dashboard.corpora_count", { count: corpora.data?.length ?? 0 })}</h3>
           {corpora.loading ? <Spinner /> : null}
-          <ErrorBanner error={corpora.error} />
+          <ErrorBanner error={corpora.error} compact />
           {corpora.data && corpora.data.length > 0 ? (
             <table className="table">
               <thead>
@@ -161,7 +161,7 @@ export function Dashboard() {
       <div className="card">
         <h3>{t("dashboard.recent_runs")}</h3>
         {indexRuns.loading ? <Spinner /> : null}
-        <ErrorBanner error={indexRuns.error} />
+        <ErrorBanner error={indexRuns.error} compact />
         {indexRuns.data && indexRuns.data.length > 0 ? (
           <table className="table">
             <thead>

@@ -38,7 +38,10 @@
     "selected_placeholder": "— select —",
     "auto": "auto",
     "show_explanation": "Learn more",
-    "hide_explanation": "Hide"
+    "hide_explanation": "Hide",
+    "api_down_title": "raglab API unreachable",
+    "api_down_hint": "Check that the backend is running (<code>raglab serve --dev</code>), then refresh the page.",
+    "api_down_short": "Unavailable until the API responds."
   },
   "topbar": {
     "brand": "raglab",
