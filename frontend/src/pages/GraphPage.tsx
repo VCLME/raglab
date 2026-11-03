@@ -10,12 +10,14 @@ import type {
   GraphStatus,
   IndexRunSummary,
 } from "../api/types";
-import { CitationGraphView } from "../components/CitationGraphView";
+import { CitationGraphView, articleOrder, nodeClass } from "../components/CitationGraphView";
 import { ErrorBanner } from "../components/ErrorBanner";
 import { ExplainBanner } from "../components/ExplainBanner";
 import { FieldRow } from "../components/FieldRow";
+import { Select } from "../components/Select";
 import { Spinner } from "../components/Spinner";
 import { StatusBadge } from "../components/StatusBadge";
+import { highlight } from "../edu/highlight";
 import { useApiAction, useApiLoad } from "../hooks/useApi";
 
 const NEO4J_BROWSER = "http://localhost:7474/browser/";
@@ -42,7 +44,8 @@ export function GraphPage() {
   );
   const [indexRunId, setIndexRunId] = useState("");
   const status = useApiLoad<GraphStatus | null>(
-    () => (indexRunId ? get(`/api/graph/status?index_run_id=${encodeURIComponent(indexRunId)}`) : Promise.resolve(null)),
+    () =>
+      indexRunId ? get(`/api/graph/status?index_run_id=${encodeURIComponent(indexRunId)}`) : Promise.resolve(null),
     [indexRunId]
   );
   const built = status.data?.graph?.status === "completed";
@@ -51,7 +54,9 @@ export function GraphPage() {
   const laws = useApiLoad<GraphLaw[]>(
     () =>
       indexRunId && built
-        ? get(`/api/graph/laws?index_run_id=${encodeURIComponent(indexRunId)}${query ? `&q=${encodeURIComponent(query)}` : ""}`)
+        ? get(
+            `/api/graph/laws?index_run_id=${encodeURIComponent(indexRunId)}${query ? `&q=${encodeURIComponent(query)}` : ""}`
+          )
         : Promise.resolve([]),
     [indexRunId, built, query]
   );
@@ -107,14 +112,13 @@ export function GraphPage() {
   }, [selected, neighbourhood.data]);
 
   // The canvas is not keyboard-accessible: the law's articles are also buttons.
-  const lawArticles = useMemo(() => {
-    const nodes = (neighbourhood.data?.nodes ?? []).filter((node) => node.kind === "article" && node.law_uid === law?.uid);
-    const key = (node: GraphNode) => {
-      const [number, letter = ""] = (node.number ?? "").split("-");
-      return Number(number) * 100 + (letter ? letter.charCodeAt(0) - 64 : 0);
-    };
-    return nodes.sort((a, b) => key(a) - key(b));
-  }, [neighbourhood.data, law?.uid]);
+  const lawArticles = useMemo(
+    () =>
+      (neighbourhood.data?.nodes ?? [])
+        .filter((node) => node.kind === "article" && node.law_uid === law?.uid)
+        .sort((a, b) => articleOrder(a) - articleOrder(b)),
+    [neighbourhood.data, law?.uid]
+  );
 
   const counts = status.data?.counts;
   const number = (value: number | undefined) => (value ?? 0).toLocaleString(i18n.language);
@@ -127,36 +131,36 @@ export function GraphPage() {
       </div>
       <ExplainBanner subtitle={t("graph.subtitle")} body={t("graph.explain_body")} storageKey="raglab.explain.graph" />
 
-      <div className="split">
-        <div className="card">
+      <div className="graph-controls">
+        <section className="card">
           <h3>{t("graph.index_title")}</h3>
           <FieldRow label={t("common.corpus")}>
-            <select value={corpus} onChange={(e) => setCorpus(e.target.value)}>
+            <Select value={corpus} onChange={(e) => setCorpus(e.target.value)}>
               {(corpora.data ?? []).map((c) => (
                 <option key={c.id} value={c.name}>
                   {c.name}
                 </option>
               ))}
-            </select>
+            </Select>
           </FieldRow>
           <FieldRow label={t("graph.index_run")}>
-            <select value={indexRunId} onChange={(e) => setIndexRunId(e.target.value)}>
+            <Select value={indexRunId} onChange={(e) => setIndexRunId(e.target.value)}>
               {(runs.data ?? []).map((run) => (
                 <option key={run.id} value={run.id}>
                   {run.name} · {run.strategy}
                 </option>
               ))}
-            </select>
+            </Select>
           </FieldRow>
           {status.loading ? <Spinner /> : null}
           {status.data && !status.data.available ? (
-            <div className="inline" style={{ marginBottom: 10 }}>
+            <div className="graph-status">
               <StatusBadge state="err" label="Neo4j" />
               <span className="muted">{t("graph.neo4j_unreachable")}</span>
             </div>
           ) : null}
           {status.data?.available ? (
-            <div className="inline" style={{ marginBottom: 10 }}>
+            <div className="graph-status">
               <StatusBadge state={built ? "ok" : "warn"} label={built ? t("graph.built") : t("graph.not_built")} />
               {built && status.data.graph ? (
                 <span className="muted">
@@ -170,6 +174,7 @@ export function GraphPage() {
           ) : null}
           <button
             type="button"
+            className={built ? "ghost" : undefined}
             onClick={runBuild}
             disabled={!indexRunId || build.loading || status.data?.available === false}
           >
@@ -178,7 +183,11 @@ export function GraphPage() {
           {build.loading ? <Spinner /> : null}
           <ErrorBanner error={build.error} />
           {build.data ? (
-            <p className="muted">{t("graph.build_done", { seconds: (build.data.duration_ms / 1000).toFixed(1) })}</p>
+            <p className="muted">
+              {t("graph.build_done", {
+                seconds: (build.data.duration_ms / 1000).toFixed(1),
+              })}
+            </p>
           ) : null}
           {counts?.nodes ? (
             <details className="graph-counts">
@@ -188,30 +197,30 @@ export function GraphPage() {
                   cites: number(counts.relationships?.["CITES->Article"]),
                 })}
               </summary>
-            <table className="table" style={{ marginTop: 8 }}>
-              <tbody>
-                {Object.entries(counts.nodes).map(([label, value]) => (
-                  <tr key={label}>
-                    <td>{label}</td>
-                    <td>{number(value)}</td>
-                  </tr>
-                ))}
-                {Object.entries(counts.relationships ?? {}).map(([type, value]) => (
-                  <tr key={type}>
-                    <td className="muted">{type}</td>
-                    <td>{number(value)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+              <table className="table">
+                <tbody>
+                  {Object.entries(counts.nodes).map(([label, value]) => (
+                    <tr key={label}>
+                      <td>{label}</td>
+                      <td className="mono">{number(value)}</td>
+                    </tr>
+                  ))}
+                  {Object.entries(counts.relationships ?? {}).map(([type, value]) => (
+                    <tr key={type}>
+                      <td className="muted">{type}</td>
+                      <td className="mono">{number(value)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </details>
           ) : null}
-        </div>
+        </section>
 
-        <div className="card">
+        <section className="card">
           <h3>{t("graph.laws_title")}</h3>
           <form
-            className="inline"
+            className="graph-search"
             onSubmit={(e) => {
               e.preventDefault();
               setQuery(search.trim());
@@ -223,7 +232,9 @@ export function GraphPage() {
               placeholder={t("graph.search_placeholder")}
               aria-label={t("graph.search_placeholder")}
             />
-            <button type="submit">{t("graph.search")}</button>
+            <button type="submit" className="ghost">
+              {t("graph.search")}
+            </button>
           </form>
           <ErrorBanner error={laws.error} />
           {!built && !status.loading ? <p className="muted">{t("graph.build_first")}</p> : null}
@@ -233,100 +244,132 @@ export function GraphPage() {
                 <button
                   type="button"
                   className={item.uid === law?.uid ? "graph-law active" : "graph-law"}
+                  aria-current={item.uid === law?.uid ? "true" : undefined}
                   onClick={() => {
                     setLaw(item);
                     setArticle(null);
                   }}
                   title={item.ementa ?? undefined}
                 >
-                  <span>{item.title}</span>
-                  <span className="muted">
-                    {t("graph.law_counts", { articles: item.articles, cited: item.cited, citing: item.citing })}
+                  <span className="graph-law-title">{item.title}</span>
+                  <span className="graph-law-counts">
+                    {t("graph.law_counts", {
+                      articles: item.articles,
+                      cited: item.cited,
+                      citing: item.citing,
+                    })}
                   </span>
                 </button>
               </li>
             ))}
           </ul>
-        </div>
+        </section>
       </div>
 
       {law ? (
-        <div className="card">
-          <div className="inline" style={{ justifyContent: "space-between" }}>
-            <h3 style={{ margin: 0 }}>
-              {article ? t("graph.article_title", { article, law: law.title }) : t("graph.law_title", { law: law.title })}
-            </h3>
+        <section className="card graph-card">
+          <div className="graph-card-head">
+            <div>
+              <h3>
+                {article
+                  ? t("graph.article_title", { article, law: law.title })
+                  : t("graph.law_title", { law: law.title })}
+              </h3>
+              {neighbourhood.data && !article && neighbourhood.data.isolated_articles > 0 ? (
+                <p className="muted">
+                  {t("graph.isolated", {
+                    count: neighbourhood.data.isolated_articles,
+                  })}
+                </p>
+              ) : null}
+            </div>
             {article ? (
-              <button type="button" className="ghost" onClick={() => setArticle(null)}>
+              <button type="button" className="ghost sm" onClick={() => setArticle(null)}>
                 {t("graph.back_to_law")}
               </button>
             ) : null}
           </div>
-          {neighbourhood.data && !article && neighbourhood.data.isolated_articles > 0 ? (
-            <p className="muted">{t("graph.isolated", { count: neighbourhood.data.isolated_articles })}</p>
-          ) : null}
           <ErrorBanner error={neighbourhood.error} />
           <CitationGraphView
             data={neighbourhood.data}
             loading={neighbourhood.loading}
             selectedId={selected?.id ?? null}
             onSelect={setSelected}
+            article={article}
           />
           {lawArticles.length ? (
-            <div className="graph-chips" role="group" aria-label={t("graph.articles_label")}>
-              {lawArticles.map((node) => (
-                <button
-                  key={node.id}
-                  type="button"
-                  className={node.id === selected?.id ? "graph-chip active" : "graph-chip"}
-                  aria-pressed={node.id === selected?.id}
-                  onClick={() => setSelected(node)}
-                >
-                  {(node.label ?? "").split(" — ")[0]}
-                </button>
-              ))}
+            <div className="graph-articles">
+              <div className="graph-section-label">
+                {t("graph.articles_label")} <span className="mono">{lawArticles.length}</span>
+              </div>
+              <div className="graph-chips" role="group" aria-label={t("graph.articles_label")}>
+                {lawArticles.map((node) => (
+                  <button
+                    key={node.id}
+                    type="button"
+                    className={node.id === selected?.id ? "graph-chip active" : "graph-chip"}
+                    aria-pressed={node.id === selected?.id}
+                    onClick={() => setSelected(node.id === selected?.id ? null : node)}
+                  >
+                    {(node.label ?? "").split(" — ")[0]}
+                  </button>
+                ))}
+              </div>
             </div>
           ) : null}
           {selected ? (
-            <div className="subgraph-selection graph-selection">
-              <div style={{ fontWeight: 600 }}>{selected.label}</div>
-              {selected.revoked ? <div className="muted">{t("graph.revoked")}</div> : null}
-              {selected.preview ? <p className="muted">{selected.preview}…</p> : null}
-              {selected.kind === "article" && selected.law_uid === law.uid && selected.number !== article ? (
-                <button type="button" className="ghost" onClick={() => setArticle(selected.number)}>
-                  {t("graph.focus_article")}
-                </button>
-              ) : null}
+            <div className="graph-selection">
+              <div className="graph-selection-head">
+                <span className={`graph-swatch ${nodeClass(selected, law.uid)}`} aria-hidden="true" />
+                <strong>{selected.label}</strong>
+                {selected.revoked ? <span className="badge err">{t("graph.revoked")}</span> : null}
+                {selected.kind === "article" && selected.law_uid === law.uid && selected.number !== article ? (
+                  <button type="button" className="ghost sm" onClick={() => setArticle(selected.number)}>
+                    {t("graph.focus_article")}
+                  </button>
+                ) : null}
+              </div>
+              {selected.preview ? <p className="graph-preview">{selected.preview}…</p> : null}
               {edgesOfSelected.length ? (
                 <ul className="graph-edge-list">
                   {edgesOfSelected.map((edge) => (
                     <li key={`${edge.type}:${edge.source}:${edge.target}`}>
-                      <strong>{t(edge.outgoing ? `graph.edge_out_${edge.type}` : `graph.edge_in_${edge.type}`)}</strong>{" "}
+                      <span className={`graph-edge-type ${edge.type}`}>
+                        {t(edge.outgoing ? `graph.edge_out_${edge.type}` : `graph.edge_in_${edge.type}`)}
+                      </span>{" "}
                       {edge.other}
                       {edge.articles.length ? ` (art. ${edge.articles.join(", ")})` : ""}
-                      {edge.snippet ? <div className="muted graph-snippet">« {edge.snippet} »</div> : null}
+                      {edge.snippet ? <span className="graph-snippet">« {edge.snippet} »</span> : null}
                     </li>
                   ))}
                 </ul>
               ) : null}
             </div>
           ) : (
-            <p className="muted">{t("graph.click_hint")}</p>
+            <p className="graph-hint muted">{t("graph.click_hint")}</p>
           )}
-        </div>
-      ) : null}
+        </section>
+      ) : (
+        <section className="card graph-placeholder">
+          <p className="muted">{t("graph.placeholder")}</p>
+        </section>
+      )}
 
       {indexRunId && built ? (
-        <div className="card">
+        <section className="card">
           <h3>{t("graph.cypher_title")}</h3>
-          <p className="muted">
+          <p className="muted graph-cypher-hint">
             {t("graph.cypher_hint")}{" "}
             <a href={NEO4J_BROWSER} target="_blank" rel="noreferrer">
               Neo4j Browser
             </a>
           </p>
-          <pre className="graph-cypher">{cypherFor(indexRunId, law, article)}</pre>
-        </div>
+          <div className="edu-code">
+            <pre className="graph-cypher">
+              <code>{highlight(cypherFor(indexRunId, law, article), "cypher")}</code>
+            </pre>
+          </div>
+        </section>
       ) : null}
     </div>
   );

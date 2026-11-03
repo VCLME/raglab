@@ -1553,80 +1553,324 @@ button.sm {
 
 /* ——— citation graph (Graph page) ——— */
 
-.graph-law-list {
-  list-style: none;
-  margin: 10px 0 0;
-  padding: 0;
-  max-height: 340px;
-  overflow-y: auto;
+/* Index and laws side by side; the graph gets the full width below. */
+.graph-controls {
+  display: grid;
+  grid-template-columns: minmax(280px, 2fr) minmax(0, 3fr);
+  gap: 16px;
+  align-items: start;
 }
-.graph-law {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  width: 100%;
-  text-align: left;
-  margin-bottom: 6px;
-  background: var(--surface);
-  color: inherit;
-  border: 1px solid var(--border);
+@media (max-width: 900px) {
+  .graph-controls {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
-.graph-law.active {
-  border-color: var(--accent-border);
-  background: var(--accent-soft);
-}
-.graph-law .muted {
-  font-size: 12px;
-}
-.graph-selection {
-  max-width: none;
-}
-.graph-chips {
+.graph-status {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 10px;
-}
-.graph-chip {
-  padding: 3px 9px;
-  font-size: 12px;
-  background: var(--surface);
-  color: inherit;
-  border: 1px solid var(--border);
-}
-.graph-chip.active {
-  border-color: var(--accent-border);
-  background: var(--accent-soft);
+  align-items: center;
+  gap: 6px 8px;
+  margin: 4px 0 14px;
+  font-size: 12.5px;
 }
 .graph-counts {
-  margin-top: 12px;
-  font-size: 13px;
+  margin-top: 14px;
+  font-size: 12.5px;
 }
 .graph-counts summary {
   cursor: pointer;
   color: var(--muted);
 }
-.graph-edge-list {
-  margin: 8px 0 0;
-  padding-left: 18px;
+.graph-counts .table {
+  margin-top: 8px;
+}
+.graph-search {
+  display: flex;
+  gap: 8px;
+}
+.graph-search input {
+  flex: 1;
+  min-width: 0;
+}
+.graph-law-list {
+  list-style: none;
+  margin: 12px -8px 0;
+  padding: 0;
+  max-height: 300px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.graph-law {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  width: 100%;
+  min-height: 0;
+  padding: 8px 10px 8px 12px;
+  text-align: left;
+  background: transparent;
+  color: var(--text);
+  border: 0;
+  border-radius: var(--radius-sm);
+  box-shadow: inset 3px 0 0 transparent;
+  font-weight: 500;
+}
+.graph-law:hover {
+  background: var(--surface-2);
+}
+.graph-law.active {
+  background: var(--accent-soft);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+.graph-law-title {
   font-size: 13px;
 }
-.graph-edge-list li {
-  margin-bottom: 6px;
+.graph-law.active .graph-law-title {
+  color: var(--accent-strong);
+  font-weight: 600;
+}
+.graph-law-counts {
+  font-size: 11.5px;
+  font-weight: 400;
+  color: var(--muted);
+}
+.graph-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.graph-card-head h3 {
+  margin: 0;
+}
+.graph-card-head p {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+}
+.graph-placeholder p {
+  margin: 0;
+}
+
+/* The canvas: a faint dot grid under the rings. */
+.graph-stage {
+  position: relative;
+}
+.graph-canvas {
+  background-color: var(--bg);
+  background-image: radial-gradient(color-mix(in oklab, var(--border-strong) 70%, transparent) 1px, transparent 1.2px);
+  background-size: 22px 22px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  transition: opacity var(--dur) var(--ease-out);
+}
+.graph-fit {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+.graph-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  pointer-events: none;
+}
+
+/* Legend: the same colours as the canvas (CitationGraphView reads these tokens). */
+.graph-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 32px;
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--text);
+}
+.graph-legend ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+}
+.graph-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.graph-legend .mono {
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+}
+.graph-swatch {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--graph-article);
+}
+.graph-swatch.law,
+.graph-swatch.external_law {
+  border-radius: 3px;
+}
+.graph-swatch.law {
+  background: var(--graph-law);
+}
+.graph-swatch.article_other {
+  background: var(--graph-article-other);
+}
+.graph-swatch.external_law {
+  background: var(--graph-law-external);
+}
+.graph-rel {
+  flex-shrink: 0;
+  color: var(--graph-cites);
+}
+.graph-rel line {
+  stroke: currentColor;
+  stroke-width: 2;
+}
+.graph-rel path {
+  fill: currentColor;
+}
+.graph-rel.AMENDS {
+  color: var(--graph-amends);
+}
+.graph-rel.REVOKES {
+  color: var(--graph-revokes);
+}
+.graph-rel.REVOKES line {
+  stroke-dasharray: 4 2.5;
+}
+.graph-rel.PART_OF {
+  color: var(--dim);
+}
+.graph-rel.PART_OF line {
+  stroke-width: 1.5;
+  stroke-dasharray: 1 3;
+  stroke-linecap: round;
+}
+
+/* The law's articles, also as buttons (the canvas takes no keyboard). */
+.graph-articles {
+  margin-top: 18px;
+}
+.graph-section-label {
+  margin-bottom: 8px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.graph-section-label .mono {
+  margin-left: 4px;
+  font-weight: 500;
+  color: var(--dim);
+}
+.graph-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 128px;
+  overflow-y: auto;
+}
+.graph-chip {
+  min-height: 0;
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+}
+.graph-chip:hover {
+  background: var(--surface-2);
+  border-color: var(--border-strong);
+}
+.graph-chip.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+
+/* The selected node: what it cites, what cites it, and the sentence. */
+.graph-selection {
+  margin-top: 18px;
+  padding: 14px 16px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.graph-selection-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.graph-selection-head .ghost {
+  margin-left: auto;
+}
+.graph-preview {
+  margin: 8px 0 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.graph-edge-list {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 13px;
+}
+.graph-edge-type {
+  display: inline-block;
+  padding: 0 8px;
+  border-radius: var(--radius-pill);
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.6;
+  color: var(--graph-cites);
+  background: color-mix(in oklab, var(--graph-cites) 12%, var(--surface));
+}
+.graph-edge-type.AMENDS {
+  color: oklch(0.5 0.11 70);
+  background: color-mix(in oklab, var(--graph-amends) 16%, var(--surface));
+}
+.graph-edge-type.REVOKES {
+  color: var(--err);
+  background: color-mix(in oklab, var(--graph-revokes) 12%, var(--surface));
 }
 .graph-snippet {
-  font-size: 12px;
-  margin-top: 2px;
+  display: block;
+  margin-top: 4px;
+  padding-left: 10px;
+  border-left: 2px solid color-mix(in oklab, var(--graph-cites) 40%, var(--surface));
+  font-size: 12.5px;
+  line-height: 1.5;
+  font-style: italic;
+  color: var(--muted);
+}
+.graph-hint {
+  margin: 16px 0 0;
+  font-size: 12.5px;
+}
+.graph-cypher-hint {
+  margin: -6px 0 12px;
+  font-size: 12.5px;
 }
 .graph-cypher {
   white-space: pre-wrap;
-  font-size: 12px;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 10px 12px;
-  margin: 0;
 }
 
 /* ——— explain banner ——— */
