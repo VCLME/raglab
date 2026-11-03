@@ -32,6 +32,7 @@ from typing import Any
 import requests
 from sqlalchemy import text
 
+from raglab.benchmarks.compare import case_rows
 from raglab.config import Settings, get_settings
 from raglab.domain.enums import ChunkingStrategy
 from raglab.experiments.ragas import JudgeConfig
@@ -282,6 +283,9 @@ def run_suite(
         "by_type": report.get("by_type") or {},
         "report_path": report["report_path"],
         "experiment_run_id": report["experiment_run_id"],
+        # Per-question outcomes, so two runs can be compared question by
+        # question (`raglab bench compare`) without the local reports.
+        "cases": case_rows(report),
     }
 
 

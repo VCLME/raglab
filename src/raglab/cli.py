@@ -172,6 +172,19 @@ def gate(
         raise typer.Exit(code=1)
 
 
+@bench_app.command("compare")
+def bench_compare(
+    before: str = typer.Argument(..., help="Run de reference (ex. baseline-v1)."),
+    after: str = typer.Argument(..., help="Run compare (ex. hybrid-v1)."),
+    k: int = typer.Option(5, "--k", help="Recall@k compare."),
+) -> None:
+    """Comparer deux runs question par question (McNemar sur le recall, bootstrap apparie sur le MRR)."""
+    from raglab.benchmarks.compare import compare_runs, render
+
+    load = lambda name: json.loads((Path("benchmarks/results") / f"{name}.json").read_text(encoding="utf-8"))  # noqa: E731
+    typer.echo(render(compare_runs(load(before), load(after), k=k), k=k))
+
+
 @bench_app.command("report")
 def bench_report(
     labels: list[str] = typer.Argument(..., help="Runs a comparer, dans l'ordre des colonnes."),
