@@ -58,7 +58,9 @@
     "api_key_placeholder": "Cole a chave de API",
     "api_key_save": "Salvar",
     "api_key_clear": "Apagar",
-    "api_key_hint": "Armazenada apenas neste navegador."
+    "api_key_hint": "Armazenada apenas neste navegador.",
+    "edu": "Modo didático",
+    "edu_title": "Mostrar o diagrama do pipeline RAG e acompanhar a consulta etapa por etapa"
   },
   "nav": {
     "expert_section": "Modo especialista",
@@ -481,5 +483,115 @@
     "download": "Baixar",
     "downloading": "Baixando…",
     "pull_status": "status: {{status}}"
+  },
+  "edu": {
+    "title": "O pipeline ao vivo",
+    "subtitle": "Faça uma pergunta: cada etapa acende quando é executada. Clique em uma etapa para entender seu papel.",
+    "diagram_label": "Diagrama da arquitetura RAG: da pergunta à resposta",
+    "hide": "Ocultar diagrama",
+    "show": "Mostrar diagrama",
+    "hint": "Clique em uma etapa do diagrama para ver o que ela faz e seus dados intermediários.",
+    "status_running": "em andamento…",
+    "status_disabled": "desativada",
+    "status_error": "falhou",
+    "total": "total {{duration}}",
+    "what": "O que faz:",
+    "why": "Por que existe:",
+    "duration": "Duração",
+    "follow_live": "Acompanhar ao vivo",
+    "following": "Ao vivo",
+    "replayed": "Esta etapa roda antes de o fluxo abrir: a duração é real, a animação é reproduzida.",
+    "from_timings": "A API respondeu sem streaming: o diagrama é reconstruído a partir das durações da resposta.",
+    "announce_running": "{{stage}} em andamento",
+    "announce_done": "{{stage}} concluída em {{duration}}",
+    "vector_title": "Vetor da pergunta ({{dimension}} dimensões, 8 primeiros valores)",
+    "vector_norm": "Norma: {{norm}} (embeddings normalizados têm norma próxima de 1).",
+    "top_chunks": "Melhores trechos",
+    "system_prompt": "Instruções do sistema",
+    "user_prompt": "Mensagem enviada (pergunta + contexto)",
+    "prompt_truncated": "Prévia truncada: o prompt completo contém todos os trechos.",
+    "model": "Modelo: {{model}}",
+    "counts": {
+      "dimension": "Dimensões",
+      "chunks_out": "Trechos mantidos",
+      "top_k": "top_k pedido",
+      "candidates_in": "Candidatos de entrada",
+      "chunks_in": "Trechos no contexto",
+      "prompt_chars": "Tamanho do prompt (caracteres)",
+      "prompt_tokens": "Tokens lidos",
+      "output_tokens": "Tokens gerados",
+      "tokens_per_second": "Tokens / s",
+      "fragments": "Fragmentos transmitidos",
+      "first_token_ms": "Primeiro token após"
+    },
+    "scores": {
+      "score": "score",
+      "dense_score": "vetorial",
+      "lexical_score": "BM25",
+      "fused_score": "fusão",
+      "rerank_score": "re-ranking"
+    },
+    "stages": {
+      "question": {
+        "name": "Pergunta",
+        "what": "O texto digitado no Chat, enviado à API com o corpus e o índice escolhidos.",
+        "why": "Tudo começa aqui: a mesma pergunta passa por cada etapa, e o diagrama mostra o que cada uma faz com ela.",
+        "disabled": ""
+      },
+      "routing": {
+        "name": "Roteador",
+        "what": "Detecta idioma e intenção, escolhe o corpus e pode se recusar a responder quando nenhum documento cobre a pergunta.",
+        "why": "Evitar buscar no lugar errado e inventar uma resposta fora do tema: melhor se abster do que alucinar.",
+        "disabled": "O roteador não está ativado nesta consulta: a pergunta vai direto ao corpus escolhido."
+      },
+      "embed": {
+        "name": "Embedding",
+        "what": "Um modelo de embedding transforma a pergunta em um vetor de números que codifica seu sentido.",
+        "why": "Textos de sentido parecido geram vetores próximos: é isso que permite buscar pelo sentido, não só pelas palavras.",
+        "disabled": "Sem busca vetorial nesta consulta, portanto sem embedding."
+      },
+      "retrieval": {
+        "name": "Busca vetorial",
+        "what": "Compara o vetor da pergunta com os vetores dos trechos indexados (pgvector, índice HNSW) e mantém os mais próximos.",
+        "why": "Encontrar em milissegundos, entre milhares de trechos, os que tratam do assunto mesmo sem as mesmas palavras.",
+        "disabled": "A busca é apenas lexical nesta consulta."
+      },
+      "lexical": {
+        "name": "BM25",
+        "what": "Busca textual clássica: pontua os trechos pelas palavras exatas da pergunta e por sua raridade.",
+        "why": "Embeddings às vezes perdem termos precisos (números de artigo, siglas, nomes próprios) que o BM25 sempre encontra.",
+        "disabled": "Busca híbrida desativada: só a busca vetorial é usada."
+      },
+      "fusion": {
+        "name": "Fusão",
+        "what": "Combina os dois rankings (vetorial e BM25) em um só, por Reciprocal Rank Fusion.",
+        "why": "Aproveitar o melhor das duas buscas sem comparar scores de escalas diferentes.",
+        "disabled": "Sem fusão: só uma busca foi executada."
+      },
+      "rerank": {
+        "name": "Re-ranking",
+        "what": "Um cross-encoder relê cada par (pergunta, trecho) e os reordena com precisão.",
+        "why": "Mais preciso que a busca, mas lento demais para todo o corpus: só é aplicado aos melhores candidatos.",
+        "disabled": "Re-ranking desativado: a ordem da busca é mantida."
+      },
+      "prompt": {
+        "name": "Prompt",
+        "what": "Monta as instruções, a pergunta e os trechos recuperados (com seu rank) na mensagem enviada ao LLM.",
+        "why": "É o prompt que obriga o modelo a responder só a partir das fontes e a citá-las [Rank X].",
+        "disabled": "Nenhuma geração pedida: nenhum prompt é montado."
+      },
+      "generation": {
+        "name": "LLM",
+        "what": "O modelo de linguagem local (Ollama) lê o prompt e redige a resposta, token por token.",
+        "why": "Transformar trechos brutos em uma resposta clara e com fontes; é a etapa mais cara em tempo e GPU.",
+        "disabled": "Nenhuma geração pedida nesta consulta."
+      },
+      "answer": {
+        "name": "Resposta",
+        "what": "A resposta exibida no Chat, com citações clicáveis para as fontes.",
+        "why": "Cada afirmação pode ser conferida no trecho citado: é isso que torna um RAG confiável.",
+        "disabled": ""
+      }
+    }
   }
 }

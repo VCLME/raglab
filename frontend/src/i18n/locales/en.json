@@ -58,7 +58,9 @@
     "api_key_placeholder": "Paste the API key",
     "api_key_save": "Save",
     "api_key_clear": "Clear",
-    "api_key_hint": "Stored in this browser only."
+    "api_key_hint": "Stored in this browser only.",
+    "edu": "Learning mode",
+    "edu_title": "Show the RAG pipeline diagram and follow the query stage by stage"
   },
   "nav": {
     "expert_section": "Expert mode",
@@ -481,5 +483,115 @@
     "download": "Download",
     "downloading": "Downloading…",
     "pull_status": "status: {{status}}"
+  },
+  "edu": {
+    "title": "The pipeline, live",
+    "subtitle": "Ask a question: each stage lights up as it runs. Click a stage to learn what it does.",
+    "diagram_label": "RAG architecture diagram: from question to answer",
+    "hide": "Hide diagram",
+    "show": "Show diagram",
+    "hint": "Click a stage of the diagram to see what it does and its intermediate data.",
+    "status_running": "running…",
+    "status_disabled": "disabled",
+    "status_error": "failed",
+    "total": "total {{duration}}",
+    "what": "What it does:",
+    "why": "Why it exists:",
+    "duration": "Duration",
+    "follow_live": "Follow live",
+    "following": "Following live",
+    "replayed": "This stage runs before the stream opens: its duration is real, its animation is replayed.",
+    "from_timings": "The API answered without streaming: the diagram is rebuilt from the response timings.",
+    "announce_running": "{{stage}} running",
+    "announce_done": "{{stage}} done in {{duration}}",
+    "vector_title": "Question vector ({{dimension}} dimensions, first 8 values)",
+    "vector_norm": "Norm: {{norm}} (normalised embeddings have a norm close to 1).",
+    "top_chunks": "Top passages",
+    "system_prompt": "System instructions",
+    "user_prompt": "Message sent (question + context)",
+    "prompt_truncated": "Truncated preview: the full prompt contains every passage.",
+    "model": "Model: {{model}}",
+    "counts": {
+      "dimension": "Dimensions",
+      "chunks_out": "Passages kept",
+      "top_k": "Requested top_k",
+      "candidates_in": "Input candidates",
+      "chunks_in": "Passages in context",
+      "prompt_chars": "Prompt size (characters)",
+      "prompt_tokens": "Tokens read",
+      "output_tokens": "Tokens generated",
+      "tokens_per_second": "Tokens / s",
+      "fragments": "Streamed fragments",
+      "first_token_ms": "First token after"
+    },
+    "scores": {
+      "score": "score",
+      "dense_score": "vector",
+      "lexical_score": "BM25",
+      "fused_score": "fused",
+      "rerank_score": "rerank"
+    },
+    "stages": {
+      "question": {
+        "name": "Question",
+        "what": "The text typed in the Chat, sent to the API with the chosen corpus and index.",
+        "why": "Everything starts here: the same question goes through every stage, and the diagram shows what each one does with it.",
+        "disabled": ""
+      },
+      "routing": {
+        "name": "Router",
+        "what": "Detects language and intent, picks the corpus, and may decline to answer when no document covers the question.",
+        "why": "Avoid searching in the wrong place and inventing an off-topic answer: abstaining beats hallucinating.",
+        "disabled": "The router is not enabled for this request: the question goes straight to the chosen corpus."
+      },
+      "embed": {
+        "name": "Embedding",
+        "what": "An embedding model turns the question into a vector of numbers that encodes its meaning.",
+        "why": "Texts with similar meaning get close vectors: that is what makes search by meaning, not just by words, possible.",
+        "disabled": "No vector search for this request, hence no embedding."
+      },
+      "retrieval": {
+        "name": "Vector search",
+        "what": "Compares the question vector with the vectors of the indexed passages (pgvector, HNSW index) and keeps the closest ones.",
+        "why": "Find, in milliseconds and among thousands of passages, those about the topic even without the same words.",
+        "disabled": "Search is lexical only for this request."
+      },
+      "lexical": {
+        "name": "BM25",
+        "what": "Classic full-text search: scores passages by the exact words of the question and how rare they are.",
+        "why": "Embeddings sometimes miss precise terms (article numbers, acronyms, proper names) that BM25 always finds.",
+        "disabled": "Hybrid search disabled: only vector search is used."
+      },
+      "fusion": {
+        "name": "Fusion",
+        "what": "Merges the two rankings (vector and BM25) into one with Reciprocal Rank Fusion.",
+        "why": "Get the strengths of both searches without comparing scores on different scales.",
+        "disabled": "No fusion: only one search ran."
+      },
+      "rerank": {
+        "name": "Re-ranking",
+        "what": "A cross-encoder reads each (question, passage) pair and re-orders them precisely.",
+        "why": "More accurate than search but too slow for the whole corpus: it only runs on the best candidates.",
+        "disabled": "Re-ranking disabled: the search order is kept."
+      },
+      "prompt": {
+        "name": "Prompt",
+        "what": "Assembles the instructions, the question and the retrieved passages (with their rank) into the message sent to the LLM.",
+        "why": "The prompt is what forces the model to answer only from the sources and to cite them [Rank X].",
+        "disabled": "No generation requested: no prompt is built."
+      },
+      "generation": {
+        "name": "LLM",
+        "what": "The local language model (Ollama) reads the prompt and writes the answer, token by token.",
+        "why": "Turn raw passages into a clear, sourced answer; it is the most expensive stage in time and GPU.",
+        "disabled": "No generation requested for this request."
+      },
+      "answer": {
+        "name": "Answer",
+        "what": "The answer shown in the Chat, with clickable citations to the sources.",
+        "why": "Every claim can be checked against the cited passage: that is what makes a RAG trustworthy.",
+        "disabled": ""
+      }
+    }
   }
 }

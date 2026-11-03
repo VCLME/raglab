@@ -511,7 +511,7 @@ def query(
             for event, data in service.stream_answer(outcome, llm_model=llm_model):
                 if event == "token":
                     typer.echo(data["text"], nl=False, err=True)
-                else:
+                elif event == "done":
                     final = data
             typer.echo("", err=True)
             typer.echo(json.dumps(final, indent=2, ensure_ascii=False))
