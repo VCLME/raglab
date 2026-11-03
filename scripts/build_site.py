@@ -278,11 +278,53 @@ def calibration_table() -> str:
     )
 
 
+def gpu_label(run: dict[str, Any] | None) -> str:
+    """'NVIDIA GeForce RTX 3070 Ti Laptop GPU, 8192 MiB, 595.79' -> 'RTX 3070 Ti Laptop GPU, 8 GB'."""
+    gpu = (run or {}).get("environment", {}).get("gpu")
+    if not gpu:
+        return "—"
+    parts = [p.strip() for p in gpu.split(",")]
+    name = parts[0].removeprefix("NVIDIA ").removeprefix("GeForce ")
+    mib = next((p for p in parts[1:] if p.endswith("MiB")), None)
+    return f"{name}, {int(mib.split()[0]) / 1024:.0f} GB" if mib else name
+
+
+def model_name(run: dict[str, Any] | None, key: str) -> str:
+    """'ollama:qwen2.5:7b (845dbda0ea48)' -> 'qwen2.5:7b'; 'BAAI/bge-reranker-v2-m3' -> 'bge-reranker-v2-m3'."""
+    value = (run or {}).get(key) or (run or {}).get("environment", {}).get(key)
+    if not value:
+        return "—"
+    value = value.split(" (")[0].removeprefix("ollama:")
+    return value.rsplit("/", 1)[-1]
+
+
 def headline(runs: dict[str, dict[str, Any]]) -> dict[str, str]:
     v0 = runs.get("baseline-v0")
     cache = runs.get("baseline-v0-cache")
+    v1 = runs.get("baseline-v1")
+    hybrid = runs.get("hybrid-v1")
+    cites = runs.get("citations-v1")
+    full = runs.get("full-v1")
     ref_cases = by_type(v0, "lexml_fulltext", "reference", "cases")
     return {
+        "piaf_r5_v1": fmt_ratio(metric(v1, "piaf", "recall@5")),
+        "piaf_r5_full": fmt_ratio(metric(full, "piaf", "recall@5")),
+        "lexml_r5_v1": fmt_ratio(metric(v1, "lexml_fulltext", "recall@5")),
+        "lexml_r5_full": fmt_ratio(metric(full, "lexml_fulltext", "recall@5")),
+        "ref_r5_v1": fmt_pct(by_type(v1, "lexml_fulltext", "reference", "recall@5")),
+        "ref_r5_hybrid": fmt_pct(by_type(hybrid, "lexml_fulltext", "reference", "recall@5")),
+        "ref_r5_cites": fmt_pct(by_type(cites, "lexml_fulltext", "reference", "recall@5")),
+        "ref_r5_full": fmt_pct(by_type(full, "lexml_fulltext", "reference", "recall@5")),
+        "correct_lexml_v1": fmt_ratio(metric(v1, "lexml_fulltext", "answer_correctness_mean")),
+        "correct_lexml_full": fmt_ratio(metric(full, "lexml_fulltext", "answer_correctness_mean")),
+        "faith_lexml_v1": fmt_ratio(metric(v1, "lexml_fulltext", "faithfulness_mean")),
+        "faith_lexml_full": fmt_ratio(metric(full, "lexml_fulltext", "faithfulness_mean")),
+        "latency_v1": fmt_ms(metric(v1, "piaf", "latency_query_p50_ms")),
+        "latency_full": fmt_ms(metric(full, "piaf", "latency_query_p50_ms")),
+        "latency_full_lexml": fmt_ms(metric(full, "lexml_fulltext", "latency_query_p50_ms")),
+        "gpu_full": gpu_label(full),
+        "generator_full": model_name(full, "generation_model"),
+        "reranker_full": model_name(full, "rerank_model"),
         "ref_r5_v0": fmt_pct(by_type(v0, "lexml_fulltext", "reference", "recall@5")),
         "ref_cases": "—" if ref_cases is None else str(int(ref_cases)),
         "entity_r5_v0": fmt_pct(by_type(v0, "lexml_fulltext", "entity", "recall@5")),

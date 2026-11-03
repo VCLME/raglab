@@ -150,6 +150,17 @@ nav a[aria-current="page"] { color: var(--ink); border-bottom-color: var(--signa
 .button.secondary { background: transparent; color: var(--ink); border-color: var(--line-strong); }
 .button.secondary:hover { color: var(--highlight); border-color: var(--highlight); }
 
+/* headline numbers: before → after, ruled like the tables */
+.headline {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  margin: clamp(2.75rem, 6vw, 4rem) 0 0; border-top: 1px solid var(--line-strong);
+}
+.headline > div { padding: 1rem 1.5rem 1rem 0; border-bottom: 1px solid var(--line); }
+.headline dt { color: var(--muted); font-size: 0.66rem; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; }
+.headline dd { margin: 0.4rem 0 0; font-size: clamp(1.15rem, 1vw + 0.9rem, 1.45rem); color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.headline dd strong { color: var(--ink); font-weight: 500; }
+.headline-note { margin: 0.9rem 0 0; color: var(--muted); font-size: 0.78rem; max-width: 72ch; }
+
 .page-head { padding-top: clamp(3rem, 8vw, 5.5rem); margin-bottom: clamp(2.5rem, 5vw, 4rem) !important; }
 .page-head h1 { font-size: clamp(2rem, 4.5vw + 0.4rem, 3.4rem); }
 

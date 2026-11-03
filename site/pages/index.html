@@ -11,6 +11,13 @@ nav: index
       <a class="button" href="results.html">See the results</a>
       <a class="button secondary" href="{{repo_url}}">Read the code</a>
     </p>
+    <dl class="headline" aria-label="Full pipeline against baseline v1">
+      <div><dt>LexML Recall@5</dt><dd>{{lexml_r5_v1}} → <strong>{{lexml_r5_full}}</strong></dd></div>
+      <div><dt>Article-number questions</dt><dd>{{ref_r5_v1}} → <strong>{{ref_r5_full}}</strong></dd></div>
+      <div><dt>PIAF Recall@5</dt><dd>{{piaf_r5_v1}} → <strong>{{piaf_r5_full}}</strong></dd></div>
+      <div><dt>Answer correctness, LexML</dt><dd>{{correct_lexml_v1}} → <strong>{{correct_lexml_full}}</strong></dd></div>
+    </dl>
+    <p class="headline-note">Full pipeline against baseline v1 on the same frozen questions; faithfulness holds ({{faith_lexml_v1}} → {{faith_lexml_full}} on LexML). <a href="results.html">Every run</a> · <a href="method.html">how it's measured</a></p>
   </div>
 </section>
 
@@ -45,7 +52,8 @@ nav: index
     <p class="big-number" aria-hidden="true">{{ref_r5_v0}}</p>
     <div>
       <p>Lawyers ask things like “what does art. 49 of Law 8.078 say?”. On 252 Brazilian federal laws, plain dense retrieval found the right passage in the top five only <strong>{{ref_r5_v0}}</strong> of the time for the {{ref_cases}} questions that cite an article number (baseline v0). The same system finds questions naming an acronym or entity {{entity_r5_v0}} of the time.</p>
-      <p>Embeddings capture meaning, not identifiers: “art. 49” and “art. 94” look almost the same to them. Hybrid search adds exact keyword matching (BM25) and fuses both rankings. Its effect is being measured on the same frozen questions and will appear in the table below, whatever it turns out to be.</p>
+      <p>Embeddings capture meaning, not identifiers: “art. 49” and “art. 94” look almost the same to them. Adding keyword search (BM25) did not help ({{ref_r5_hybrid}}): it finds the right law, but article chunks only say “Art. 49”, like every other law.</p>
+      <p>What fixed it is a <a href="{{repo_url}}/blob/main/docs/citations.md">citation resolver</a>: “art. N da Lei X” is parsed, the search is restricted to that law and the cited article is pinned first. Those questions went from {{ref_r5_v1}} to {{ref_r5_cites}} with the resolver alone, and {{ref_r5_full}} in the full pipeline.</p>
     </div>
   </div>
 </section>
@@ -80,21 +88,22 @@ nav: index
       <text x="610" y="45" class="sub left">Everything runs on your machines.</text>
       <text x="610" y="63" class="sub left">No external API call.</text>
     </svg>
-    <figcaption>Keyword search and re-ranking are in review (phases 9.2 and 9.3); the merged pipeline is dense search only.</figcaption>
+    <figcaption>The default pipeline: hybrid search, re-ranking with {{reranker_full}}, the citation resolver, and {{generator_full}} for generation.</figcaption>
   </figure>
   <ul class="bricks">
     <li><strong>Passage-level benchmarks</strong> (phase 9.1): frozen PIAF and LexML question sets; a hit counts only if the retrieved chunk overlaps the exact answer passage.</li>
     <li><strong>Embedder cache</strong>: model loaded once; search latency {{latency_v0}} → {{latency_cache}} p50.</li>
     <li><strong>Complete top-k</strong>: pgvector iterative scan so a filtered search always returns k chunks; effect measuring (baseline v1).</li>
-    <li><strong>Hybrid BM25 + RRF</strong> (9.2, in review): targets identifier questions; effect measuring.</li>
-    <li><strong>Cross-encoder re-ranking</strong> (9.3, in review): effect measuring.</li>
+    <li><strong>Hybrid BM25 + RRF</strong> (9.2): a better candidate pool for re-ranking; article-number questions unchanged ({{ref_r5_hybrid}}).</li>
+    <li><strong>Cross-encoder re-ranking</strong> (9.3): {{reranker_full}} re-reads the fused candidates; the largest single gain, and the largest cost (see <a href="#limits">limits</a>). <a href="{{repo_url}}/blob/main/docs/reranking.md">Details</a>.</li>
+    <li><strong>Citation resolver</strong> (9.3b): legal references parsed and resolved before search; article-number questions {{ref_r5_v1}} → {{ref_r5_cites}}. <a href="{{repo_url}}/blob/main/docs/citations.md">Details</a>.</li>
     <li><strong>Hardened API</strong> (9.5): streaming answers, per-stage timeouts, request ids, optional API key, readiness checks.</li>
   </ul>
 </section>
 
 <section class="wrap" aria-labelledby="try">
   <h2 id="try">Try it</h2>
-  <p>Needs Docker. A GPU is optional (an override file enables it for Ollama).</p>
+  <p>Needs Docker. A GPU is optional (an override file enables it for Ollama). Every number on this site was measured on one laptop ({{gpu_full}}): {{generator_full}} and {{reranker_full}} share that card, and the judge model only loads once Ollama has been unloaded.</p>
 <pre><code>git clone {{repo_url}}.git &amp;&amp; cd raglab
 docker compose up -d postgres ollama adminer neo4j
 docker compose --profile app up -d api frontend
@@ -110,13 +119,13 @@ docker compose exec ollama ollama pull qwen2.5:7b</code></pre>
       <li>LexML questions were written by a model, then filtered and spot-checked by hand.</li>
       <li>Judge calibration covers French only, with synthetic errors: an optimistic bound on its reliability.</li>
       <li>No OCR for scanned PDFs; ingestion and indexing run synchronously.</li>
-      <li>Measured on one laptop GPU (8 GB); latency will differ on your hardware.</li>
+      <li>Re-ranking is the price of the gains: search takes {{latency_full}} p50 on PIAF ({{latency_full_lexml}} on LexML), against {{latency_v1}} for dense search alone. Measured on one laptop GPU; latency will differ on your hardware.</li>
     </ul>
   </div>
   <div>
     <h2 id="next">What I'd do next</h2>
     <ul>
-      <li>Record baseline v1, hybrid and re-ranking runs and publish them here.</li>
+      <li>Cut re-ranking latency: candidate count, input length and batch size have not been swept yet.</li>
       <li>Query routing and calibrated abstention (phase 9.4), measured on 80 unanswerable questions.</li>
       <li>Observability: Prometheus metrics, Grafana dashboard, drift report (9.6).</li>
       <li>Weekly quality gate that fails when retrieval regresses (9.7).</li>
