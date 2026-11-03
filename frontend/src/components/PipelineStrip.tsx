@@ -1,11 +1,13 @@
 import { Fragment, useEffect, useLayoutEffect, useRef, useState } from "react";
+import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
-import type { CitationInfo, RetrievalMode } from "../api/types";
+import type { CitationInfo, RetrievalMode, VersionsInfo } from "../api/types";
 import { highlight } from "../edu/highlight";
 import { DIAGRAM_NODES, prefersReducedMotion, type NodeId, type NodeState, type PipelineState } from "../edu/pipeline";
 import { SNIPPETS, type StripNode } from "../edu/snippets";
 import { CloseIcon } from "./Icon";
 import { JsonViewer } from "./JsonViewer";
+import { VersionsSummary } from "./Versions";
 import {
   CitesSchematic,
   LexicalBars,
@@ -49,6 +51,9 @@ export interface RouteInfo {
   graphOn: boolean;
   graphNotice: string | null;
   graphStats: Record<string, number> | null;
+  /** Versions option (phase 9.10): the planned mode, then what the response applied. */
+  versionsMode: VersionsInfo["mode"];
+  versions: VersionsInfo | null;
 }
 
 type CitationBranch = "off" | "none" | "law" | "unknown_law";
@@ -157,6 +162,9 @@ export function PipelineStrip({ state, question, lexemes = [], rrfK, lexicalWeig
     if (id === "graph" && node.status === "done" && route.graphStats?.added != null) {
       return `+${route.graphStats.added} · ${formatMs(node.duration_ms)}`;
     }
+    if (id === "versions" && node.status === "done" && route.versions) {
+      return t(`edu.versions_meta_${route.versions.mode}`, { date: route.versions.date ?? "" });
+    }
     if (node.status === "disabled") return t("edu.status_disabled");
     if (node.status === "running") return t("edu.status_running");
     if (node.status === "error") return t("edu.status_error");
@@ -197,7 +205,10 @@ export function PipelineStrip({ state, question, lexemes = [], rrfK, lexicalWeig
 
   // The router is optional: drawn only when the request runs it.
   const withRouting = state.nodes.routing.status !== "disabled" && state.planned?.includes("routing");
-  const main: NodeId[] = ["fusion", "rerank", "prompt", "generation", "answer"];
+  // The versions step only exists on legal corpora (state and dates of articles).
+  const main: NodeId[] = route.legalCorpus
+    ? ["fusion", "rerank", "versions", "prompt", "generation", "answer"]
+    : ["fusion", "rerank", "prompt", "generation", "answer"];
   // Branches the retrieval mode leaves out are dimmed, not only greyed.
   const vectorOff = route.mode === "lexical";
   const lexicalOff = route.mode === "dense";
@@ -326,11 +337,16 @@ function RouteRow({ route, citation, rerank, graph }: RouteRowProps) {
       taken: rerank === "cpu" ? "on" : rerank,
       reason: t(`edu.route.rerank_${rerank}`, { count: route.rerankCandidates }),
     },
+    {
+      key: "versions",
+      options: ["in_force", "as_of", "all"],
+      taken: route.versions?.mode ?? route.versionsMode,
+      reason: versionsReason(route, t),
+    },
   ];
-  // A corpus without law articles has no citation or graph decision to show.
-  const decisions = route.legalCorpus
-    ? all
-    : all.filter((decision) => decision.key !== "citation" && decision.key !== "graph");
+  // A corpus without law articles has no citation, graph or versions decision to show.
+  const legalOnly = ["citation", "graph", "versions"];
+  const decisions = route.legalCorpus ? all : all.filter((decision) => !legalOnly.includes(decision.key));
   return (
     <div className={`edu-route${decisions.length < 3 ? " two" : ""}`} role="list" aria-label={t("edu.route.title")}>
       <span className="edu-route-title">{route.known ? t("edu.route.title") : t("edu.route.title_planned")}</span>
@@ -353,6 +369,28 @@ function RouteRow({ route, citation, rerank, graph }: RouteRowProps) {
       ))}
     </div>
   );
+}
+
+/** Why the versions decision went that way: the date and where it came from, and its effect. */
+function versionsReason(route: RouteInfo, t: TFunction): string {
+  const info = route.versions;
+  if (!route.known || !info) return t(`edu.route.versions_${route.versionsMode}_planned`);
+  const date = info.date ?? "";
+  const rule =
+    info.mode === "all"
+      ? t("edu.route.versions_all", { count: info.outdated })
+      : info.source === "question"
+        ? t("edu.route.versions_question", { phrase: info.phrase ?? "", date })
+        : t(`edu.route.versions_${info.mode}`, { date });
+  const effect =
+    info.mode === "all"
+      ? ""
+      : info.scope === "metadata"
+        ? t("edu.route.versions_effect_filtered")
+        : info.scope === "markers"
+          ? t("edu.route.versions_effect_markers", { count: info.demoted })
+          : t("edu.route.versions_effect_none");
+  return [rule, effect].filter(Boolean).join(" ");
 }
 
 interface LessonProps {
@@ -379,6 +417,7 @@ const RENDERED_KEYS = new Set([
   "provider",
   "links",
   "notice",
+  "policy",
 ]);
 
 function StageLesson({ sectionRef, id, node, question, lexemes, rrfK, lexicalWeight, graphWeight, onClose }: LessonProps) {
@@ -478,6 +517,8 @@ function StageLesson({ sectionRef, id, node, question, lexemes, rrfK, lexicalWei
             </p>
           ) : null}
 
+          {id === "versions" && data.policy ? <VersionsSummary info={data.policy as VersionsInfo} /> : null}
+
           {chunks.length > 0 && id !== "fusion" ? <TopChunks chunks={chunks} /> : null}
 
           {typeof data.system_prompt === "string" ? (
@@ -526,6 +567,18 @@ function scoreEntries(chunk: ChunkPreview): [string, number][] {
   return detailed.length > 0 ? detailed : scores;
 }
 
+/** State of a passage in the versions lesson: in force, outdated, repealed provisions, moved last. */
+function VersionTag({ version }: { version: NonNullable<ChunkPreview["version"]> }) {
+  const { t } = useTranslation();
+  const outdated = version.source === "metadata" ? version.in_force === false : !!version.revoked_only;
+  const key = version.demoted ? "demoted" : outdated ? "outdated" : "in_force";
+  return (
+    <span className={`edu-version ${key}`} title={[version.etat, version.date_debut, version.date_fin].filter(Boolean).join(" · ")}>
+      {t(`edu.version_tag_${key}`)}
+    </span>
+  );
+}
+
 function TopChunks({ chunks }: { chunks: ChunkPreview[] }) {
   const { t } = useTranslation();
   return (
@@ -537,6 +590,7 @@ function TopChunks({ chunks }: { chunks: ChunkPreview[] }) {
             <div className="edu-chunk-head">
               <span className="edu-rank">#{chunk.rank}</span>
               <span className="edu-file">{chunk.file_name}</span>
+              {chunk.version ? <VersionTag version={chunk.version} /> : null}
               <span className="edu-scores">
                 {scoreEntries(chunk).map(([key, value]) => (
                     <span key={key} className={`edu-score ${key}`}>

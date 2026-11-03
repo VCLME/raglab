@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { RetrievedChunk } from "../api/types";
+import { VersionBadge, VersionDetails } from "./Versions";
 
 interface Props {
   chunk: RetrievedChunk;
@@ -78,6 +79,7 @@ export function ChunkCard({ chunk, maxScore, showScores = false, anchorId, activ
                 : t("retrieval.graph_badge", { via: chunk.graph_via })}
             </span>
           ) : null}
+          <VersionBadge version={chunk.version} />
         </span>
         <span className="muted" title={chunk.source_path}>
           {chunk.source_path.split(/[\/]/).slice(-2).join("/")}
@@ -98,6 +100,7 @@ export function ChunkCard({ chunk, maxScore, showScores = false, anchorId, activ
           ) : null}
         </div>
       ) : null}
+      {showScores ? <VersionDetails version={chunk.version} /> : null}
       <div className={`score-bar ${scoreType}`} aria-hidden="true">
         <span style={{ width: `${scorePct}%` }} />
       </div>

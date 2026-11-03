@@ -16,6 +16,17 @@ export interface ChunkPreview {
   graph_score?: number;
   graph_rank?: number;
   graph_pinned?: boolean;
+  /** Version state (versions stage): source, etat, in_force, dates, revoked_only, demoted. */
+  version?: {
+    source: string;
+    etat?: string;
+    in_force?: boolean;
+    date_debut?: string;
+    date_fin?: string;
+    article?: string;
+    revoked_only?: boolean;
+    demoted?: boolean;
+  };
   [key: string]: unknown;
 }
 

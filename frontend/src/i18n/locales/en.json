@@ -551,7 +551,9 @@
       "seeds": "Seed passages",
       "articles": "Cited articles followed",
       "chunks": "Passages fetched",
-      "added": "New to the fusion"
+      "added": "New to the fusion",
+      "demoted": "Repealed passages moved",
+      "outdated": "Outdated passages left"
     },
     "scores": {
       "score": "score",
@@ -645,6 +647,13 @@
         "what": "Starts from the article the question cites and the articles of the best passages found, follows their references (\"nos termos do art. 12\") one hop in the Neo4j graph, and adds the passages of the cited articles that the searches did not find.",
         "why": "In a law, the answer is often in the article the found passage refers to: it looks like the question neither in meaning nor in words, so neither search brings it up.",
         "disabled": "Option off: the fusion only gets the vector and BM25 passages."
+      },
+      "versions": {
+        "name": "Article versions",
+        "short": "Versions",
+        "what": "Picks the reference date (today, or the one the question asks about: \"before 2016\"), leaves out before ranking the article versions that did not apply that day, moves to the end the passages whose provisions are all repealed, and tells the model the state of each passage.",
+        "why": "A code keeps its old wordings and reuses numbers: the old article L. 121-21 gave fourteen days to withdraw, today's is about debt-collection fees. Without this step, the model cites a repealed rule as if it were in force.",
+        "disabled": "Option \"all versions\": no version is left out, as in a naive RAG."
       }
     },
     "hint_selected": "Click the active stage again to close its explanation.",
@@ -719,7 +728,21 @@
       "graph_skipped": "Skipped: the branch could not run.",
       "graph_skipped_no_neo4j": "Skipped: Neo4j does not answer, the response says so.",
       "graph_skipped_no_graph": "Skipped: no graph for this index (Expert → Citation graph).",
-      "graph_failed": "Skipped: Neo4j error (see the logs)."
+      "graph_failed": "Skipped: Neo4j error (see the logs).",
+      "versions": "Versions",
+      "versions_opt_in_force": "in force",
+      "versions_opt_as_of": "on a date",
+      "versions_opt_all": "all",
+      "versions_in_force_planned": "In force today, or on the date the question asks about.",
+      "versions_as_of_planned": "The versions in force on the chosen date.",
+      "versions_all_planned": "Every version, repealed ones included.",
+      "versions_in_force": "Versions in force on {{date}}.",
+      "versions_as_of": "Versions in force on {{date}}.",
+      "versions_question": "\"{{phrase}}\": versions in force on {{date}}.",
+      "versions_all": "All: {{count}} passage(s) from an outdated version.",
+      "versions_effect_filtered": "The others are left out before ranking.",
+      "versions_effect_markers": "{{count}} repealed passage(s) moved last.",
+      "versions_effect_none": ""
     },
     "code": {
       "citation": {
@@ -786,9 +809,22 @@
         "cap": "at most 3 cited articles per seed, best ranked first",
         "chunks": "the first passages of each cited article",
         "fusion": "these passages join the RRF fusion as a third list"
+      },
+      "versions": {
+        "policy": "the request's rule: the option, else a date read in the question",
+        "date": "\"avant 2016\": the version in force on 31 December 2015",
+        "valid": "a version applies once started and until it ends",
+        "filter": "the SQL filter leaves the other versions out before ranking",
+        "markers": "compiled laws: fully \"Revogado\" passages go last"
       }
     },
-    "graph_skipped": "skipped"
+    "graph_skipped": "skipped",
+    "versions_meta_in_force": "in force",
+    "versions_meta_as_of": "on {{date}}",
+    "versions_meta_all": "all",
+    "version_tag_in_force": "in force",
+    "version_tag_outdated": "outdated",
+    "version_tag_demoted": "repealed, moved"
   },
   "retrieval": {
     "mode_label": "Search mode",
@@ -900,5 +936,41 @@
     "saved": "Key saved.",
     "cleared": "Key cleared.",
     "hint": "Stored in this browser only (localStorage), never sent anywhere but this API."
+  },
+  "versions": {
+    "label": "Article versions",
+    "date_label": "Reference date",
+    "field_hint": "In force: versions that apply today, or on the date the question asks about (\"before 2016\"). All: like a naive RAG, repealed ones included. On a date: versions that applied that day.",
+    "mode_in_force": "In force",
+    "mode_all": "All",
+    "mode_as_of": "On a date",
+    "short_in_force": "in force",
+    "short_all": "all versions",
+    "short_as_of": "on a date",
+    "hint_in_force": "Leaves out repealed or replaced versions; a question about the past (\"before 2016\") gets the version of that date.",
+    "hint_all": "Every version, repealed ones included, like a naive RAG: the answer may cite a text that no longer applies.",
+    "hint_as_of": "The versions that applied on the chosen date.",
+    "badge_in_force": "in force since {{date}}",
+    "badge_old": "old version ({{from}} → {{to}})",
+    "badge_repealed": "repealed on {{date}}",
+    "badge_revoked": "repealed provisions",
+    "badge_revoked_demoted": "repealed, moved last",
+    "badge_some_revoked": "{{count}} repealed provision(s)",
+    "badge_rewritten": "{{year}} wording",
+    "state": "State",
+    "valid_from": "in force since {{from}}",
+    "valid_from_to": "from {{from}} to {{to}}",
+    "created_by": "created by {{text}}",
+    "ended_by": "ended by {{text}}",
+    "replaced_by": "replaced by {{id}} (on {{date}})",
+    "count": "{{count}} versions of this article",
+    "summary_in_force": "Versions in force on {{date}}.",
+    "summary_as_of": "Versions in force on {{date}} (requested date).",
+    "summary_question": "The question asks about the past (\"{{phrase}}\"): versions in force on {{date}}.",
+    "summary_all": "Every version, like a naive RAG: {{count}} passage(s) from a version that no longer applies.",
+    "effect_filtered": "The other versions are left out before ranking.",
+    "effect_demoted": "{{count}} fully repealed passage(s) moved to the end of the list.",
+    "effect_markers": "Provisions marked \"Revogado\" are not shown to the model.",
+    "notice_markers_no_history": "This corpus only keeps the current wording: a past date cannot be honoured."
   }
 }

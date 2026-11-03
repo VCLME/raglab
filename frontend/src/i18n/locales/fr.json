@@ -551,7 +551,9 @@
       "seeds": "Passages de départ",
       "articles": "Articles cités suivis",
       "chunks": "Passages récupérés",
-      "added": "Nouveaux pour la fusion"
+      "added": "Nouveaux pour la fusion",
+      "demoted": "Passages abrogés déplacés",
+      "outdated": "Passages périmés restants"
     },
     "scores": {
       "score": "score",
@@ -645,6 +647,13 @@
         "what": "Part de l'article cité par la question et des articles des meilleurs passages trouvés, suit leurs renvois (« nos termos do art. 12 ») d'un saut dans le graphe Neo4j, et ajoute les passages des articles cités que les recherches n'avaient pas trouvés.",
         "why": "Dans une loi, la réponse est souvent dans l'article auquel le passage trouvé renvoie : il ne ressemble pas à la question, ni par le sens ni par les mots, et aucune des deux recherches ne le remonte.",
         "disabled": "Option désactivée : la fusion ne reçoit que les passages des recherches vectorielle et BM25."
+      },
+      "versions": {
+        "name": "Versions des articles",
+        "short": "Versions",
+        "what": "Choisit la date de référence (aujourd'hui, ou celle que la question demande : « avant 2016 »), écarte avant le classement les versions d'articles qui ne s'appliquaient pas ce jour-là, place en fin de liste les passages dont toutes les dispositions sont abrogées, et dit au modèle l'état de chaque passage.",
+        "why": "Un code garde ses anciennes rédactions et réutilise des numéros : l'ancien article L. 121-21 donnait quatorze jours pour se rétracter, l'actuel parle de frais de recouvrement. Sans cette étape, le modèle cite une règle abrogée comme si elle était en vigueur.",
+        "disabled": "Option « toutes les versions » : aucune version n'est écartée, comme dans un RAG classique."
       }
     },
     "hint_selected": "Reclique sur l'étape active pour refermer son explication.",
@@ -719,7 +728,21 @@
       "graph_skipped": "Sauté : la branche n'a pas pu tourner.",
       "graph_skipped_no_neo4j": "Sauté : Neo4j ne répond pas, la réponse le signale.",
       "graph_skipped_no_graph": "Sauté : pas de graphe pour cet index (Expert → Graphe des renvois).",
-      "graph_failed": "Sauté : erreur Neo4j (voir les logs)."
+      "graph_failed": "Sauté : erreur Neo4j (voir les logs).",
+      "versions": "Versions",
+      "versions_opt_in_force": "en vigueur",
+      "versions_opt_as_of": "à une date",
+      "versions_opt_all": "toutes",
+      "versions_in_force_planned": "En vigueur aujourd'hui, ou à la date que la question demande.",
+      "versions_as_of_planned": "Les versions en vigueur à la date choisie.",
+      "versions_all_planned": "Toutes les versions, abrogées comprises.",
+      "versions_in_force": "Versions en vigueur le {{date}}.",
+      "versions_as_of": "Versions en vigueur le {{date}}.",
+      "versions_question": "« {{phrase}} » : versions en vigueur le {{date}}.",
+      "versions_all": "Toutes : {{count}} passage(s) d'une version périmée.",
+      "versions_effect_filtered": "Les autres sont écartées avant le classement.",
+      "versions_effect_markers": "{{count}} passage(s) abrogé(s) placé(s) en fin de liste.",
+      "versions_effect_none": ""
     },
     "code": {
       "citation": {
@@ -786,9 +809,22 @@
         "cap": "au plus 3 articles cités par départ, les mieux classés d'abord",
         "chunks": "les premiers passages de chaque article cité",
         "fusion": "ces passages entrent dans la fusion RRF comme troisième liste"
+      },
+      "versions": {
+        "policy": "la règle de la requête : option, sinon date lue dans la question",
+        "date": "« avant 2016 » : la version en vigueur le 31 décembre 2015",
+        "valid": "une version s'applique si elle a commencé et n'a pas encore pris fin",
+        "filter": "le filtre SQL écarte les autres versions avant le classement",
+        "markers": "lois consolidées : passages entièrement « Revogado » en fin de liste"
       }
     },
-    "graph_skipped": "sautée"
+    "graph_skipped": "sautée",
+    "versions_meta_in_force": "en vigueur",
+    "versions_meta_as_of": "au {{date}}",
+    "versions_meta_all": "toutes",
+    "version_tag_in_force": "en vigueur",
+    "version_tag_outdated": "périmé",
+    "version_tag_demoted": "abrogé, déplacé"
   },
   "retrieval": {
     "mode_label": "Mode de recherche",
@@ -900,5 +936,41 @@
     "saved": "Clé enregistrée.",
     "cleared": "Clé effacée.",
     "hint": "Stockée dans ce navigateur uniquement (localStorage), jamais envoyée ailleurs qu'à cette API."
+  },
+  "versions": {
+    "label": "Versions des articles",
+    "date_label": "Date de référence",
+    "field_hint": "En vigueur : versions applicables aujourd'hui, ou à la date que la question demande (« avant 2016 »). Toutes : comme un RAG classique, abrogées comprises. À une date : versions applicables ce jour-là.",
+    "mode_in_force": "En vigueur",
+    "mode_all": "Toutes",
+    "mode_as_of": "À une date",
+    "short_in_force": "en vigueur",
+    "short_all": "toutes versions",
+    "short_as_of": "à une date",
+    "hint_in_force": "Écarte les versions abrogées ou remplacées ; une question sur le passé (« avant 2016 ») prend la version de cette date.",
+    "hint_all": "Toutes les versions, abrogées comprises, comme un RAG classique : la réponse peut citer un texte qui ne s'applique plus.",
+    "hint_as_of": "Les versions applicables à la date choisie.",
+    "badge_in_force": "en vigueur depuis le {{date}}",
+    "badge_old": "ancienne version ({{from}} → {{to}})",
+    "badge_repealed": "abrogé le {{date}}",
+    "badge_revoked": "dispositions abrogées",
+    "badge_revoked_demoted": "abrogé, placé en fin de liste",
+    "badge_some_revoked": "{{count}} disposition(s) abrogée(s)",
+    "badge_rewritten": "rédaction de {{year}}",
+    "state": "État",
+    "valid_from": "en vigueur depuis le {{from}}",
+    "valid_from_to": "du {{from}} au {{to}}",
+    "created_by": "créée par {{text}}",
+    "ended_by": "fin : {{text}}",
+    "replaced_by": "remplacée par {{id}} (le {{date}})",
+    "count": "{{count}} versions de cet article",
+    "summary_in_force": "Versions en vigueur le {{date}}.",
+    "summary_as_of": "Versions en vigueur le {{date}} (date demandée).",
+    "summary_question": "La question demande le passé (« {{phrase}} ») : versions en vigueur le {{date}}.",
+    "summary_all": "Toutes les versions, comme un RAG classique : {{count}} passage(s) d'une version qui ne s'applique plus.",
+    "effect_filtered": "Les autres versions sont écartées avant le classement.",
+    "effect_demoted": "{{count}} passage(s) entièrement abrogé(s) placé(s) en fin de liste.",
+    "effect_markers": "Les dispositions marquées « Revogado » ne sont pas montrées au modèle.",
+    "notice_markers_no_history": "Ce corpus ne garde que la rédaction actuelle : une date passée ne peut pas être respectée."
   }
 }

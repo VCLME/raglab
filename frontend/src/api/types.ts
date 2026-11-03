@@ -44,6 +44,8 @@ export interface ConfigResponse {
   graph_retrieval?: boolean;
   graph_weight?: number;
   citation_resolver?: boolean;
+  /** Default of the versions option: in_force, all or as_of=YYYY-MM-DD. */
+  versions_default?: string;
   llm_providers?: string[];
   default_llm_provider?: string;
 }
@@ -106,7 +108,7 @@ export interface CorpusSummary {
   documents_count: number;
   index_runs_count: number;
   /** legal_citations: the corpus holds law / code articles (article-reference option). */
-  features?: { legal_citations: boolean };
+  features?: { legal_citations: boolean; version_history?: boolean };
 }
 
 export interface CorpusDocument {
@@ -180,6 +182,49 @@ export interface RetrievedChunk {
   graph_reason?: string | null;
   graph_via?: string | null;
   graph_pinned?: boolean | null;
+  // Version state of the passage (versions option, phase 9.10).
+  version?: ChunkVersion | null;
+}
+
+/**
+ * Version state of a passage. `metadata`: one version of a code article
+ * (Légifrance: state, dates, amending texts); `markers`: a compiled law whose
+ * text marks repealed or rewritten provisions ("(Revogado)").
+ */
+export interface ChunkVersion {
+  source: "metadata" | "markers";
+  etat?: string | null;
+  in_force?: boolean | null;
+  reference_date?: string | null;
+  date_debut?: string | null;
+  date_fin?: string | null;
+  article?: string | null;
+  legi_id?: string | null;
+  amended_by?: string | null;
+  ended_by?: string | null;
+  replaced_by?: { legi_id?: string | null; date_debut?: string | null } | null;
+  in_force_version?: string | null;
+  version_count?: number | null;
+  revoked_lines?: number;
+  rewritten_lines?: number;
+  revoked_only?: boolean;
+  last_amended_year?: number | null;
+  markers?: string[];
+  demoted?: boolean;
+  in_prompt?: boolean;
+}
+
+/** Version policy of a request and what it did. */
+export interface VersionsInfo {
+  mode: "in_force" | "as_of" | "all";
+  date: string | null;
+  source: "default" | "request" | "question";
+  phrase: string | null;
+  scope: "metadata" | "markers" | "none";
+  filtered: boolean;
+  demoted: number;
+  outdated: number;
+  notice?: string | null;
 }
 
 /** Legal citation parsed from the question (citations option). */
@@ -213,6 +258,7 @@ export interface QueryResponse {
   graph?: boolean;
   graph_notice?: string | null;
   graph_stats?: Record<string, number>;
+  versions?: VersionsInfo | null;
   answer: string | null;
   elapsed_ms: number;
   filters: unknown;

@@ -17,6 +17,7 @@ import { JsonViewer } from "../components/JsonViewer";
 import { Spinner } from "../components/Spinner";
 import { StatusBadge } from "../components/StatusBadge";
 import { Select } from "../components/Select";
+import { VersionsField } from "../components/Versions";
 
 const MAX_COMPARED = 5;
 const STRATEGIES: ChunkingStrategy[] = ["traditional", "slide", "late"];
@@ -111,6 +112,8 @@ function LaunchTab({ onLaunched }: { onLaunched: () => void }) {
   const [rerank, setRerank] = useState(false);
   const [citations, setCitations] = useState(false);
   const [graph, setGraph] = useState(false);
+  // Versions option: "all" measures the naive baseline (9.10).
+  const [versions, setVersions] = useState("in_force");
 
   const action = useApiAction((body: unknown) =>
     post<{
@@ -168,6 +171,7 @@ function LaunchTab({ onLaunched }: { onLaunched: () => void }) {
         body.rerank = rerank;
         body.citations = citations;
         body.graph = graph;
+        body.versions = versions;
         if (retrievalMode === "hybrid") {
           if (lexicalWeight !== "") body.lexical_weight = Number(lexicalWeight);
           if (rrfK !== "") body.rrf_k = Number(rrfK);
@@ -241,6 +245,11 @@ function LaunchTab({ onLaunched }: { onLaunched: () => void }) {
             <input type="checkbox" checked={graph} onChange={(e) => setGraph(e.target.checked)} />
             {t("retrieval.graph_checkbox")}
           </label>
+        </FieldRow>
+      ) : null}
+      {backendChoice !== "neo4j" ? (
+        <FieldRow label={t("versions.label")} hint={t("versions.field_hint")}>
+          <VersionsField value={versions} onChange={setVersions} />
         </FieldRow>
       ) : null}
       {backendChoice !== "neo4j" && retrievalMode === "hybrid" ? (
