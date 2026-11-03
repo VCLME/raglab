@@ -140,4 +140,7 @@ def config(settings: Settings = Depends(get_current_settings)) -> ConfigResponse
         rrf_k=settings.rrf_k,
         bm25_k1=settings.bm25_k1,
         bm25_b=settings.bm25_b,
+        default_rerank=settings.default_rerank,
+        rerank_model_name=settings.rerank_model_name,
+        rerank_candidates=settings.rerank_candidates,
     )

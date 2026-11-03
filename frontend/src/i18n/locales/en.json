@@ -433,7 +433,8 @@
     "judge_llamacpp": "llama.cpp (Gemma 4, independent judge)",
     "ragas_limit_label": "Graded cases",
     "ragas_limit_hint": "Empty = all. Retrieval always covers every case.",
-    "table_relevancy": "Answer relevancy"
+    "table_relevancy": "Answer relevancy",
+    "rerank_hint": "Adds the cross-encoder stage (pgvector). Its VRAM is freed before the RAGAS judge pass."
   },
   "corpus_page": {
     "title": "Corpus",
@@ -610,6 +611,12 @@
     "scores_dense": "dense",
     "scores_lexical": "BM25",
     "scores_fused": "RRF",
-    "not_retrieved": "absent"
+    "not_retrieved": "absent",
+    "rerank_label": "Cross-encoder re-ranking",
+    "rerank_hint": "Retrieval returns {{candidates}} candidates; {{model}} reads each with the question and keeps the top-k.",
+    "rerank_on": "on",
+    "rerank_off": "off",
+    "rerank_stats": "Re-ranking: {{candidates}} candidates, {{scored}} pairs scored, {{hits}} read from the cache (cumulative hit rate {{rate}}%)",
+    "scores_rerank": "rerank"
   }
 }

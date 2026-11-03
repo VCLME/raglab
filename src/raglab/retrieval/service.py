@@ -22,6 +22,7 @@ from raglab.generation.prompts import build_prompt_bundle
 from raglab.generation.service import OllamaGenerator
 from raglab.logging_utils import log_event
 from raglab.retrieval.fusion import reciprocal_rank_fusion
+from raglab.retrieval.rerank import Reranker, get_reranker
 from raglab.retrieval.stages import planned_stages, prompt_details, retrieval_stage_events, stage_end, stage_start
 from raglab.stores.lexical.postgres import PostgresLexicalStore
 from raglab.stores.vector.postgres import PostgresVectorStore
@@ -50,6 +51,10 @@ class RetrievalOutcome:
     query_lexemes: list[str] = field(default_factory=list)
     lexical_weight: float | None = None
     rrf_k: int | None = None
+    rerank: bool = False
+    rerank_stats: dict[str, float] = field(default_factory=dict)
+    # First-stage chunks the cross-encoder read (0 without re-ranking).
+    rerank_candidates: int = 0
 
     def response(self, **extra: Any) -> QueryResponse:
         return QueryResponse(
@@ -59,6 +64,8 @@ class RetrievalOutcome:
             retrieved_chunks=self.retrieved,
             retrieval_mode=self.retrieval_mode,
             query_lexemes=self.query_lexemes,
+            rerank=self.rerank,
+            rerank_stats=dict(self.rerank_stats),
             filters=self.filters,
             timings_ms=dict(self.timings_ms),
             **extra,
@@ -75,6 +82,19 @@ class QueryService:
         )
         self.lexical_store = PostgresLexicalStore(k1=self.settings.bm25_k1, b=self.settings.bm25_b)
         self.generator = OllamaGenerator(self.settings)
+        self._reranker: Reranker | None = None
+
+    @property
+    def reranker(self) -> Reranker:
+        # Shared per configuration and loaded on first use, so a service that
+        # never reranks never touches torch or the GPU.
+        if self._reranker is None:
+            self._reranker = get_reranker(self.settings)
+        return self._reranker
+
+    @reranker.setter
+    def reranker(self, value: Reranker) -> None:
+        self._reranker = value
 
     def _resolve_index_run(
         self,
@@ -139,11 +159,14 @@ class QueryService:
         retrieval_mode: RetrievalMode | str | None = None,
         lexical_weight: float | None = None,
         rrf_k: int | None = None,
+        rerank: bool | None = None,
     ) -> RetrievalOutcome:
         """Search the index for the question, each stage under its budget.
 
         dense: embed + cosine KNN (as before). lexical: BM25, no embedder.
         hybrid: both, fused by Reciprocal Rank Fusion over deeper lists.
+        rerank: the chosen mode returns `rerank_candidates` chunks, a
+        cross-encoder re-scores them and the top_k best are kept.
         """
         mode = RetrievalMode(retrieval_mode or self.settings.default_retrieval_mode)
         index_run = self._resolve_index_run(
@@ -152,11 +175,13 @@ class QueryService:
             index_run_id=index_run_id,
         )
         effective_top_k = top_k or self.settings.default_top_k
+        do_rerank = self.settings.default_rerank if rerank is None else rerank
+        # The first stage returns more than top_k when the cross-encoder
+        # picks among its candidates.
+        stage_top_k = max(effective_top_k, self.settings.rerank_candidates) if do_rerank else effective_top_k
         # Hybrid fuses deeper lists than it returns: a chunk ranked 30th by
         # one retriever and 3rd by the other must still be seen by RRF.
-        candidate_k = (
-            max(effective_top_k, self.settings.hybrid_candidates) if mode == RetrievalMode.HYBRID else effective_top_k
-        )
+        candidate_k = max(stage_top_k, self.settings.hybrid_candidates) if mode == RetrievalMode.HYBRID else stage_top_k
         weight = self.settings.hybrid_lexical_weight if lexical_weight is None else lexical_weight
         fusion_k = self.settings.rrf_k if rrf_k is None else rrf_k
 
@@ -204,13 +229,13 @@ class QueryService:
                     lexical,
                     k=fusion_k,
                     lexical_weight=weight,
-                    top_k=effective_top_k,
+                    top_k=stage_top_k,
                 )
                 stage_ms["fusion"] = perf_counter() - fusion_started
             searched = perf_counter()
 
-        # `embed` + `retrieval` stay the two stages the recall benchmark sums
-        # into its query latency; lexical mode embeds nothing and has no
+        # `embed` + `retrieval` (+ `rerank` when on) are the stages the recall
+        # benchmark sums into its query latency; lexical mode embeds nothing and has no
         # `embed` stage. Lexical and hybrid add dense / lexical / fusion as a
         # breakdown of retrieval (the Chat's `stage` events are derived from
         # these keys); dense keeps exactly the 9.1 baseline keys. The
@@ -222,6 +247,17 @@ class QueryService:
         timings_ms["retrieval"] = round((searched - search_started) * 1000, 3)
         if mode != RetrievalMode.DENSE:
             timings_ms.update({stage: round(seconds * 1000, 3) for stage, seconds in stage_ms.items()})
+
+        rerank_stats: dict[str, float] = {}
+        if do_rerank:
+            first_stage = retrieved
+            rerank_started = perf_counter()
+            retrieved, rerank_stats = run_with_timeout(
+                "rerank",
+                self.settings.rerank_timeout_seconds,
+                lambda: self.reranker.rerank(question, first_stage, top_k=effective_top_k),
+            )
+            timings_ms["rerank"] = round((perf_counter() - rerank_started) * 1000, 3)
         hybrid = mode == RetrievalMode.HYBRID
         return RetrievalOutcome(
             question=question,
@@ -237,6 +273,9 @@ class QueryService:
             query_lexemes=query_lexemes,
             lexical_weight=weight if hybrid else None,
             rrf_k=fusion_k if hybrid else None,
+            rerank=do_rerank,
+            rerank_stats=rerank_stats,
+            rerank_candidates=int(rerank_stats.get("candidates", 0)),
         )
 
     def query(
@@ -254,6 +293,7 @@ class QueryService:
         retrieval_mode: RetrievalMode | str | None = None,
         lexical_weight: float | None = None,
         rrf_k: int | None = None,
+        rerank: bool | None = None,
     ) -> QueryResponse:
         """`generation_top_k` sends only the first N retrieved chunks to the
         LLM; the benchmark retrieves 10 (for Recall@10) but must generate from
@@ -268,6 +308,7 @@ class QueryService:
             retrieval_mode=retrieval_mode,
             lexical_weight=lexical_weight,
             rrf_k=rrf_k,
+            rerank=rerank,
         )
         answer = None
         if generate_answer:
@@ -382,6 +423,8 @@ class QueryService:
             retrieval_mode=outcome.retrieval_mode.value,
             lexical_weight=outcome.lexical_weight,
             rrf_k=outcome.rrf_k,
+            rerank=outcome.rerank,
+            rerank_stats=outcome.rerank_stats,
             generate_answer=generate_answer,
             streamed=streamed,
             retrieved_chunks=len(outcome.retrieved),

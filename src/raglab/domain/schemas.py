@@ -52,6 +52,11 @@ class RetrievedChunk(BaseModel):
     lexical_score: float | None = None
     lexical_rank: int | None = None
     fused_score: float | None = None
+    fused_rank: int | None = None
+    # Cross-encoder re-ranking (rerank=true). `score` / `rank` above are then
+    # these; the first-stage view stays in the fields above.
+    rerank_score: float | None = None
+    rerank_rank: int | None = None
 
 
 class RetrievalFilters(BaseModel):
@@ -75,6 +80,10 @@ class QueryResponse(BaseModel):
     retrieval_mode: RetrievalMode = RetrievalMode.DENSE
     # Lexemes the question was reduced to for BM25 (lexical / hybrid modes).
     query_lexemes: list[str] = Field(default_factory=list)
+    rerank: bool = False
+    # Re-ranking counters for this request: candidates, pairs actually
+    # scored, score-cache hits and hit rates (this request / since start).
+    rerank_stats: dict[str, float] = Field(default_factory=dict)
     filters: RetrievalFilters | None = None
     answer: str | None = None
     elapsed_ms: float = 0.0

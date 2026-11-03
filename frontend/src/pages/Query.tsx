@@ -20,6 +20,8 @@ import { useLocalHistory } from "../hooks/useLocalHistory";
 
 const STRATEGIES: ("" | ChunkingStrategy)[] = ["", "traditional", "slide", "late"];
 const RETRIEVAL_MODES: RetrievalMode[] = ["dense", "lexical", "hybrid"];
+// "" = server default (RAGLAB_DEFAULT_RERANK).
+type RerankChoice = "" | "on" | "off";
 
 interface HistoryEntry {
   question: string;
@@ -28,6 +30,7 @@ interface HistoryEntry {
   top_k: number | null;
   generate: boolean;
   retrieval_mode?: "" | RetrievalMode;
+  rerank?: RerankChoice;
   timestamp: number;
 }
 
@@ -43,6 +46,7 @@ export function Query() {
   const [retrievalMode, setRetrievalMode] = useState<"" | RetrievalMode>("");
   const [lexicalWeight, setLexicalWeight] = useState("");
   const [rrfK, setRrfK] = useState("");
+  const [rerank, setRerank] = useState<RerankChoice>("");
   const [question, setQuestion] = useState("");
 
   const [documentIdsRaw, setDocumentIdsRaw] = useState("");
@@ -89,6 +93,7 @@ export function Query() {
       retrieval_mode: retrievalMode || null,
       lexical_weight: retrievalMode === "hybrid" && lexicalWeight !== "" ? Number(lexicalWeight) : null,
       rrf_k: retrievalMode === "hybrid" && rrfK !== "" ? Number(rrfK) : null,
+      rerank: rerank === "" ? null : rerank === "on",
       filters: {
         document_ids: documentIdsRaw.split(",").map((s) => s.trim()).filter(Boolean),
         file_names: fileNamesRaw.split(",").map((s) => s.trim()).filter(Boolean),
@@ -105,6 +110,7 @@ export function Query() {
       top_k: topK ? Number(topK) : null,
       generate,
       retrieval_mode: retrievalMode,
+      rerank,
       timestamp: Date.now(),
     });
   };
@@ -116,14 +122,17 @@ export function Query() {
     setTopK(entry.top_k != null ? String(entry.top_k) : "");
     setGenerate(entry.generate);
     setRetrievalMode(entry.retrieval_mode ?? "");
+    setRerank(entry.rerank ?? "");
   };
 
   const maxScore = action.data
     ? Math.max(0, ...action.data.retrieved_chunks.map((c) => c.score))
     : 0;
-  // Cosine similarities keep their absolute [0, 1] bar; BM25 and RRF are
-  // drawn relative to the best chunk.
-  const barScale = action.data?.retrieval_mode && action.data.retrieval_mode !== "dense" ? maxScore : 1;
+  // Cosine similarities keep their absolute [0, 1] bar; BM25, RRF and
+  // cross-encoder scores are drawn relative to the best chunk.
+  const relativeBar = action.data?.rerank || (action.data?.retrieval_mode && action.data.retrieval_mode !== "dense");
+  const barScale = relativeBar ? maxScore : 1;
+  const rerankStats = action.data?.rerank ? action.data.rerank_stats : undefined;
 
   return (
     <div>
@@ -186,6 +195,24 @@ export function Query() {
                     {t(`retrieval.mode_${m}`)}
                   </option>
                 ))}
+              </select>
+            </FieldRow>
+            <FieldRow
+              label={t("retrieval.rerank_label")}
+              hint={t("retrieval.rerank_hint", {
+                candidates: config?.rerank_candidates ?? 40,
+                model: config?.rerank_model_name ?? "BAAI/bge-reranker-v2-m3",
+              })}
+            >
+              <select value={rerank} onChange={(e) => setRerank(e.target.value as RerankChoice)}>
+                <option value="">
+                  {t("retrieval.mode_default")}
+                  {config?.default_rerank != null
+                    ? ` (${config.default_rerank ? t("retrieval.rerank_on") : t("retrieval.rerank_off")})`
+                    : ""}
+                </option>
+                <option value="on">{t("retrieval.rerank_on")}</option>
+                <option value="off">{t("retrieval.rerank_off")}</option>
               </select>
             </FieldRow>
             {retrievalMode === "hybrid" ? (
@@ -301,6 +328,7 @@ export function Query() {
                       <td>
                         <span className="tag">{h.strategy || t("common.auto")}</span>
                         {h.retrieval_mode ? <span className="tag" style={{ marginLeft: 4 }}>{h.retrieval_mode}</span> : null}
+                        {h.rerank === "on" ? <span className="tag" style={{ marginLeft: 4 }}>rerank</span> : null}
                       </td>
                     </tr>
                   ))}
@@ -336,6 +364,11 @@ export function Query() {
                       <span className="tag">{action.data.retrieval_mode}</span>
                     </>
                   ) : null}
+                  {action.data.rerank ? (
+                    <span className="tag" style={{ marginLeft: 4 }}>
+                      rerank
+                    </span>
+                  ) : null}
                 </div>
                 {action.data.timings_ms && Object.keys(action.data.timings_ms).length ? (
                   <div className="muted" style={{ marginBottom: 8, fontSize: 12 }}>
@@ -343,6 +376,16 @@ export function Query() {
                     {Object.entries(action.data.timings_ms)
                       .map(([stage, ms]) => `${stage} ${ms.toFixed(1)} ms`)
                       .join(" · ")}
+                  </div>
+                ) : null}
+                {rerankStats && rerankStats.candidates != null ? (
+                  <div className="muted" style={{ marginBottom: 8, fontSize: 12 }}>
+                    {t("retrieval.rerank_stats", {
+                      candidates: rerankStats.candidates,
+                      scored: rerankStats.scored ?? 0,
+                      hits: rerankStats.cache_hits ?? 0,
+                      rate: Math.round((rerankStats.cache_hit_rate_total ?? 0) * 100),
+                    })}
                   </div>
                 ) : null}
                 {action.data.query_lexemes && action.data.query_lexemes.length ? (

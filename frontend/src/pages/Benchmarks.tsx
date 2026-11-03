@@ -32,6 +32,10 @@ function retrievalTitle(run: ExperimentRunSummary): string {
   return `lexical_weight ${run.lexical_weight ?? "?"} · rrf_k ${run.rrf_k ?? "?"}`;
 }
 
+function rerankTitle(run: ExperimentRunSummary): string {
+  return `${run.rerank_model ?? "?"} · ${run.rerank_candidates ?? "?"} candidats`;
+}
+
 interface BenchDatasetOnDisk {
   loader: string | null;
   dataset_dir: string;
@@ -103,6 +107,7 @@ function LaunchTab({ onLaunched }: { onLaunched: () => void }) {
   const [retrievalMode, setRetrievalMode] = useState<RetrievalMode>("dense");
   const [lexicalWeight, setLexicalWeight] = useState("");
   const [rrfK, setRrfK] = useState("");
+  const [rerank, setRerank] = useState(false);
 
   const action = useApiAction((body: unknown) =>
     post<{
@@ -157,6 +162,7 @@ function LaunchTab({ onLaunched }: { onLaunched: () => void }) {
       // "both" comparison stays dense.
       if (backend === "pgvector") {
         body.retrieval_mode = retrievalMode;
+        body.rerank = rerank;
         if (retrievalMode === "hybrid") {
           if (lexicalWeight !== "") body.lexical_weight = Number(lexicalWeight);
           if (rrfK !== "") body.rrf_k = Number(rrfK);
@@ -206,6 +212,14 @@ function LaunchTab({ onLaunched }: { onLaunched: () => void }) {
               </option>
             ))}
           </select>
+        </FieldRow>
+      ) : null}
+      {backendChoice !== "neo4j" ? (
+        <FieldRow label={t("retrieval.rerank_label")} hint={t("benchmarks.rerank_hint")}>
+          <label className="inline" style={{ gap: 4 }}>
+            <input type="checkbox" checked={rerank} onChange={(e) => setRerank(e.target.checked)} />
+            {t("retrieval.rerank_on")}
+          </label>
         </FieldRow>
       ) : null}
       {backendChoice !== "neo4j" && retrievalMode === "hybrid" ? (
@@ -750,6 +764,11 @@ function HistoryTab() {
                       {run.retrieval_mode && run.retrieval_mode !== "dense" ? (
                         <span className="tag" style={{ marginLeft: 4 }} title={retrievalTitle(run)}>
                           {run.retrieval_mode}
+                        </span>
+                      ) : null}
+                      {run.rerank ? (
+                        <span className="tag" style={{ marginLeft: 4 }} title={rerankTitle(run)}>
+                          rerank
                         </span>
                       ) : null}
                     </td>

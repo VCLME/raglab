@@ -6,7 +6,7 @@ from concurrent.futures import TimeoutError as FutureTimeoutError
 from contextvars import copy_context
 
 # Stages of the query pipeline, as named in `QueryResponse.timings_ms`.
-QUERY_STAGES = ("embed", "retrieval", "generation")
+QUERY_STAGES = ("embed", "retrieval", "rerank", "generation")
 
 # Shared pool for stages that cannot be cancelled natively (local embedding on
 # CPU/GPU). A timed-out call keeps running in its worker until it returns; the

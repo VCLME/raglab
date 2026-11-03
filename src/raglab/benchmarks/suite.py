@@ -235,6 +235,7 @@ def run_suite(
     retrieval_mode: RetrievalMode | str | None = None,
     lexical_weight: float | None = None,
     rrf_k: int | None = None,
+    rerank: bool | None = None,
 ) -> dict[str, Any]:
     from raglab.db import session_scope
     from raglab.experiments.recall import RecallBenchmarkService
@@ -291,6 +292,7 @@ def run_suite(
                 retrieval_mode=retrieval_mode,
                 lexical_weight=lexical_weight,
                 rrf_k=rrf_k,
+                rerank=rerank,
             )
         finally:
             service.close()
@@ -305,6 +307,7 @@ def run_suite(
         "retrieval_mode": report.get("retrieval_mode"),
         "lexical_weight": report.get("lexical_weight"),
         "rrf_k": report.get("rrf_k"),
+        "rerank": report.get("rerank"),
         "summary": report["summary"],
         "by_type": report.get("by_type") or {},
         "report_path": report["report_path"],
@@ -328,6 +331,7 @@ def run_all(
     retrieval_mode: RetrievalMode | str | None = None,
     lexical_weight: float | None = None,
     rrf_k: int | None = None,
+    rerank: bool | None = None,
 ) -> dict[str, Any]:
     from raglab.db import initialize_database, session_scope
 
@@ -339,6 +343,7 @@ def run_all(
         env = environment_report(settings, session, judge if ragas_limit else None)
     selected = [suite for suite in default_suites(settings, repo_root) if not suites or suite.name in suites]
     mode = RetrievalMode(retrieval_mode or settings.default_retrieval_mode)
+    do_rerank = settings.default_rerank if rerank is None else rerank
     results = [
         run_suite(
             suite,
@@ -350,6 +355,7 @@ def run_all(
             retrieval_mode=mode,
             lexical_weight=lexical_weight,
             rrf_k=rrf_k,
+            rerank=do_rerank,
         )
         for suite in selected
     ]
@@ -357,6 +363,12 @@ def run_all(
         "label": label,
         "strategy": strategy.value,
         "retrieval_mode": mode.value,
+        "rerank": do_rerank,
+        **(
+            {"rerank_model": settings.rerank_model_name, "rerank_candidates": settings.rerank_candidates}
+            if do_rerank
+            else {}
+        ),
         "top_k": top_k,
         "ragas_limit": ragas_limit,
         "environment": env,
@@ -389,9 +401,11 @@ def _with_ci(fmt: Any, summary: dict[str, Any], key: str) -> str:
 def _retrieval_label(run: dict[str, Any], suite: dict[str, Any] | None) -> str:
     # Results written before hybrid retrieval carry no mode: they were dense.
     mode = (suite or {}).get("retrieval_mode") or run.get("retrieval_mode") or "dense"
-    if mode != "hybrid" or not suite:
-        return mode
-    return f"hybrid (w={suite.get('lexical_weight')}, k={suite.get('rrf_k')})"
+    if mode == "hybrid" and suite:
+        mode = f"hybrid (w={suite.get('lexical_weight')}, k={suite.get('rrf_k')})"
+    if (suite or {}).get("rerank", run.get("rerank")):
+        mode += f" + rerank ({run.get('rerank_candidates', '?')})"
+    return mode
 
 
 def render_markdown(results: list[dict[str, Any]]) -> str:
@@ -404,7 +418,7 @@ def render_markdown(results: list[dict[str, Any]]) -> str:
         ("Recall@5", "recall@5", _fmt),
         ("Recall@10", "recall@10", _fmt),
         ("MRR", "mrr", _fmt),
-        ("Latence requête p50 (embed + recherche)", "latency_query_p50_ms", _ms),
+        ("Latence requête p50 (embed + recherche + re-ranking)", "latency_query_p50_ms", _ms),
         ("Latence requête p95", "latency_query_p95_ms", _ms),
         ("dont embedding p50", "latency_embed_p50_ms", _ms),
         ("dont recherche p50", "latency_retrieval_p50_ms", _ms),
@@ -412,6 +426,9 @@ def render_markdown(results: list[dict[str, Any]]) -> str:
         ("dont BM25 p50", "latency_lexical_p50_ms", _ms),
         ("dont BM25 p95", "latency_lexical_p95_ms", _ms),
         ("dont fusion RRF p50", "latency_fusion_p50_ms", _ms),
+        ("dont re-ranking p50", "latency_rerank_p50_ms", _ms),
+        ("dont re-ranking p95", "latency_rerank_p95_ms", _ms),
+        ("Cache des scores de re-ranking (taux de hit)", "rerank_cache_hit_rate", _fmt),
         ("Génération p50", "latency_generation_p50_ms", _ms),
         ("Génération p95", "latency_generation_p95_ms", _ms),
         ("Débit de génération p50 (tokens/s)", "generation_tokens_per_second_p50", lambda v: _fmt(v, 1)),
