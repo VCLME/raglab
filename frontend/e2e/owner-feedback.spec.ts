@@ -28,6 +28,10 @@ test("Focus: no ring after a mouse click, a thin one for the keyboard; active no
   expect(clicked.outline).toBe(0);
   expect(clicked.shadow).toBe("none");
 
+  // Close the lesson and go back to the top: the settings bar is then in view,
+  // between the sticky strip and the composer.
+  await node.click();
+  await page.evaluate(() => window.scrollTo(0, 0));
   const picker = page.getByRole("combobox", { name: /^Corpus/ });
   await picker.click();
   expect((await ring(picker)).outline).toBe(0);
@@ -128,8 +132,8 @@ test("Learning mode reads as the request's decisions: branch taken highlighted, 
   await expect(decision("Re-ranking").locator(".edu-option.taken")).toHaveText("sauté");
   await expect(decision("Re-ranking")).toContainText("pas de GPU");
 
-  // The BM25 lane is dimmed; the citation decision is a node with its own lesson.
-  await expect(page.locator(".edu-lane.off")).toContainText("BM25");
+  // The BM25 and graph lanes are dimmed; the citation decision is a node with its own lesson.
+  await expect(page.locator(".edu-lane.off")).toHaveText([/^BM25/, /^Graphe/]);
   await page.getByRole("button", { name: /^Citation juridique/ }).click();
   const lesson = page.getByRole("region", { name: "Citation juridique" });
   await expect(lesson.getByText("src/raglab/retrieval/citations.py")).toBeVisible();
