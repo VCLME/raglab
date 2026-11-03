@@ -89,7 +89,29 @@ Pour 40 candidats d'environ 900 caractères (~250 tokens avec la question) :
 | CPU, fp32 | plusieurs secondes | non mesuré ; utile pour les tests seulement |
 | premier appel du processus | + quelques secondes | ~8 s, chargement des poids (~2,2 Go sur disque) compris |
 
-Le budget visé était de 200 ms ajoutées au p50 sur GPU : **il est dépassé d'un facteur 2 à 3** (voir [Mesures](#mesures)). L'estimation sous-évaluait le coût d'XLM-R large sur un GPU portable. Le surcoût reste modeste à côté de la génération (2,2 s au p50 sur PIAF, 4,3 s sur LexML), mais il est dix fois la recherche elle-même. Les réglages qui pèsent sur la latence : `RAGLAB_RERANK_CANDIDATES` (linéaire), `RAGLAB_RERANK_MAX_LENGTH` (au plus linéaire) et `RAGLAB_RERANK_BATCH_SIZE` (moins de lots, plus de VRAM). Aucun n'a été balayé.
+Le budget visé était de 200 ms ajoutées au p50 sur GPU : **il est dépassé d'un facteur 2 à 3** (voir [Mesures](#mesures)). L'estimation sous-évaluait le coût d'XLM-R large sur un GPU portable. Le surcoût reste modeste à côté de la génération (2,2 s au p50 sur PIAF, 4,3 s sur LexML), mais il est dix fois la recherche elle-même. Les réglages qui pèsent sur la latence : `RAGLAB_RERANK_CANDIDATES` (linéaire), `RAGLAB_RERANK_MAX_LENGTH` (au plus linéaire) et `RAGLAB_RERANK_BATCH_SIZE` (moins de lots, plus de VRAM).
+
+### Balayage du 3 novembre 2026
+
+Un lot est complété (padding) jusqu'à sa paire la plus longue. Les chunks font ~180 tokens en médiane, mais un seul chunk long suffit à aligner tout un lot sur 512 tokens. Les passages sont donc maintenant **triés par longueur avant le découpage en lots**. Les scores sont identiques, et chaque score est remis à sa place. Les mesures ci-dessous portent sur la configuration complète (hybride + re-ranking + citations), recherche seule, sur le même GPU (`benchmarks/results/rerank-sorted-c{40,30,20}.json`, à comparer à `full-v1`) :
+
+| Candidats | Re-ranking p50 / p95 PIAF | Re-ranking p50 / p95 LexML | Recall@5 PIAF / LexML | MRR LexML |
+|---|---|---|---|---|
+| 40, non trié (`full-v1`) | 597 / 858 ms | 652 / 1 016 ms | 0,966 / 0,816 | 0,694 |
+| 40, trié | 484 / 631 ms | 635 / 919 ms | 0,966 / 0,816 | 0,694 |
+| 30, trié | 506 / 730 ms | 636 / 1 037 ms | 0,966 / 0,801 | 0,681 ✱ |
+| 20, trié | 393 / 468 ms | 466 / 743 ms | 0,964 / 0,805 | 0,679 ✱ |
+
+✱ : baisse significative contre `full-v1` (bootstrap apparié, sur les paraphrases surtout).
+
+Ce qu'il faut retenir :
+
+- le tri gagne 19 % au p50 et 26 % au p95 sur PIAF, sans aucun effet sur la qualité ;
+- sur LexML, le gain est faible, parce que les articles de loi sont longs et uniformes ;
+- passer à 20 candidats retire encore 100 à 170 ms, mais coûte un peu de MRR sur LexML ;
+- 40 candidats triés restent le défaut, et `RAGLAB_RERANK_CANDIDATES=20` est l'option rapide.
+
+Même à 20 candidats, le budget de 200 ms n'est pas tenu avec bge-reranker-v2-m3 (XLM-R large, 568 M de paramètres) sur ce GPU portable. Il faudrait un cross-encoder plus petit, ce qui est à mesurer : un nouveau modèle est une dépendance à valider par le propriétaire.
 
 ## Réglages
 
