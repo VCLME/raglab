@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from time import perf_counter
-from typing import Any
+from typing import Any, cast
 
 from sqlalchemy.orm import Session
 
@@ -540,7 +540,8 @@ class RecallBenchmarkService:
     ) -> None:
         """Generation pass for a provider other than Ollama: same prompt and
         same top-k context as the production path, after retrieval."""
-        answerer = self.query_service.generator_for(generator.provider)
+        # Deferred generation is pgvector-only (see `run`), so this is a QueryService.
+        answerer = cast(QueryService, self.query_service).generator_for(generator.provider)
         server: AbstractContextManager[Any] = (
             LocalLLMServer(self.settings, profile=generator.profile or self.settings.question_model_profile)
             if generator.provider == "llamacpp"
