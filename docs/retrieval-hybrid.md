@@ -101,19 +101,77 @@ La CLI et l'API passent les mêmes arguments à `QueryService` et renvoient le m
 
 Les temps par étape (`timings_ms`) gardent `embed` et `retrieval` : le benchmark les additionne pour sa latence de requête. S'y ajoutent `dense`, `lexical` et `fusion`. En mode `lexical`, `embed` vaut 0 : aucun modèle n'est chargé.
 
-## 5. Hypothèses à tester
+## 5. Résultats mesurés (`hybrid-v1`, `lexical-v1`)
 
-Rien n'est encore mesuré : les chiffres viendront après la baseline 9.1b, sur les mêmes jeux figés (PIAF 500 questions, LexML 277 questions typées), avec Recall@5/10, MRR et latence p50/p95.
+Mesures du 3 novembre 2026, faites selon [le protocole](benchmarks/protocole.md) sur les jeux figés (PIAF : 500 questions, LexML : 277 questions typées), avec les mêmes index_runs que `baseline-v1` (chunking `traditional`, multilingual-e5-small, recherche dense exacte). `lexical_weight = 0.5`, `rrf_k = 60`, 50 candidats par retriever. Les juges RAGAS (Gemma 4 26B-A4B via llama.cpp) portent sur les 100 premières questions de chaque jeu, générées depuis le top-5. `lexical-v1` ne mesure que le retrieval. Fichiers : `benchmarks/results/{baseline-v1,hybrid-v1,lexical-v1}.json`.
 
-1. **Références (numéros de loi, d'article).** Sur les questions LexML `reference`, le mode hybrid améliore le Recall@5 par rapport au dense. Les tokens `8.666`, `5º` ou `9.610` survivent tels quels au parseur, et leur IDF est élevée.
-2. **Entités et noms propres.** Sur les questions LexML `entity` et sur PIAF, BM25 seul est proche du dense, et l'hybride le dépasse. Les noms rares apparaissent dans peu de chunks, donc leur IDF est forte.
-3. **Acronymes.** `CNPJ`, `INSS`, `ANVISA` : même effet attendu que pour les noms propres. Attention : les acronymes en minuscules sont racinisés, et un sigle court peut tomber sur un mot vide.
-4. **Paraphrases.** Sur les questions `paraphrase`, le lexical seul est nettement en dessous du dense. L'hybride ne doit pas faire moins bien que le dense : si c'est le cas, baisser `lexical_weight`.
-5. **Latence.** BM25 reste sous le temps du chemin dense (embedding de la question + KNN) sur environ 10 000 chunks, et le mode `lexical` évite le chargement de l'embedder. À vérifier contre un embedder mis en cache sur GPU (9.1b) : le KNN seul prend environ 8 ms, et BM25 environ 20 ms sur LexML.
-6. **Réglages.** Balayer `lexical_weight` ∈ {0.25, 0.5, 0.75} et `rrf_k` ∈ {10, 60}. On s'attend à une zone plate autour des valeurs par défaut. Si ce n'est pas le cas, le gain vient d'un réglage fait sur le jeu de test : le signaler comme tel.
+### Vue d'ensemble
 
-Limites connues :
+| Métrique | baseline-v1 (dense) | lexical-v1 (BM25) | hybrid-v1 (RRF) |
+|---|---|---|---|
+| PIAF Recall@1 | 0.672 | 0.654 | 0.688 |
+| PIAF Recall@5 | 0.878 | 0.838 | 0.900 |
+| PIAF Recall@10 | 0.898 | 0.874 | 0.940 |
+| PIAF MRR | 0.758 | 0.730 | 0.778 |
+| LexML Recall@1 | 0.325 | 0.332 | 0.329 |
+| LexML Recall@5 | 0.466 | 0.477 | 0.498 |
+| LexML Recall@10 | 0.502 | 0.513 | 0.563 |
+| LexML MRR | 0.379 | 0.395 | 0.402 |
+| PIAF faithfulness / relevancy / correctness | 0.945 / 0.905 / 0.658 | non jugé | 0.915 / 0.870 / 0.643 |
+| LexML faithfulness / relevancy / correctness | 0.907 / 0.725 / 0.445 | non jugé | 0.888 / 0.735 / 0.435 |
+
+### Comparaison appariée (`raglab bench compare`)
+
+Recall@5 : test de McNemar question par question ; MRR : bootstrap apparié (IC 95 %). ✱ = significatif.
+
+| Jeu | Questions | baseline-v1 → hybrid-v1, Recall@5 | gagnées / perdues | p | MRR (IC 95 % de l'écart) |
+|---|---|---|---|---|---|
+| PIAF | 500 | 0.878 → 0.900 (+0.022) | +25 / −14 | 0.108 | 0.758 → 0.778 [−0.002 ; +0.041] |
+| LexML | 277 | 0.466 → 0.498 (+0.033) | +21 / −12 | 0.163 | 0.379 → 0.402 [−0.008 ; +0.051] |
+| LexML · entity | 87 | 0.793 → 0.839 (+0.046) | +6 / −2 | 0.289 | 0.679 → 0.723 [−0.010 ; +0.097] |
+| LexML · paraphrase | 93 | 0.548 → 0.602 (+0.054) | +12 / −7 | 0.359 | 0.432 → 0.445 [−0.045 ; +0.070] |
+| LexML · reference | 97 | 0.093 → 0.093 (+0.000) | +3 / −3 | 1.000 | 0.059 → 0.072 [−0.025 ; +0.056] |
+
+| Jeu | baseline-v1 → hybrid-v1, Recall@10 | gagnées / perdues | p |
+|---|---|---|---|
+| PIAF | 0.898 → 0.940 (+0.042) ✱ | +28 / −7 | 0.001 |
+| LexML | 0.502 → 0.563 (+0.061) ✱ | +21 / −4 | 0.001 |
+| LexML · entity | 0.793 → 0.919 (+0.126) ✱ | +11 / −0 | 0.001 |
+| LexML · paraphrase | 0.624 → 0.677 (+0.054) | +7 / −2 | 0.180 |
+| LexML · reference | 0.124 → 0.134 (+0.010) | +3 / −2 | 1.000 |
+
+| Jeu | baseline-v1 → lexical-v1, Recall@5 | gagnées / perdues | p |
+|---|---|---|---|
+| PIAF | 0.878 → 0.838 (−0.040) ✱ | +28 / −48 | 0.029 |
+| LexML | 0.466 → 0.476 (+0.011) | +24 / −21 | 0.766 |
+| LexML · entity | 0.793 → 0.874 (+0.081) | +11 / −4 | 0.118 |
+| LexML · paraphrase | 0.548 → 0.538 (−0.011) | +11 / −12 | 1.000 |
+| LexML · reference | 0.093 → 0.062 (−0.031) | +2 / −5 | 0.453 |
+
+### Latence (p50 / p95, embedding + recherche, génération exclue)
+
+| | baseline-v1 | lexical-v1 | hybrid-v1 | dont BM25 (hybrid-v1) |
+|---|---|---|---|---|
+| PIAF (833 chunks) | 60 / 86 ms | 6.6 / 10.7 ms | 43 / 61 ms | 10.9 / 19.5 ms |
+| LexML (6 075 chunks) | 79 / 111 ms | 19.0 / 33.8 ms | 88 / 126 ms | 25.0 / 44.1 ms |
+
+Les latences de deux runs différents ne sont comparables qu'à quelques dizaines de pourcents près : la recherche dense de `hybrid-v1` sur PIAF (16 ms au p50 pour 50 candidats) est plus rapide que celle de `baseline-v1` (46 ms pour 10), ce qui tient à l'état de la machine et de la base au moment du run, pas au code. La mesure fiable est la décomposition à l'intérieur d'un même run : sur LexML, BM25 ajoute 25 ms au p50 au chemin dense, la fusion moins de 1 ms. Seul, BM25 répond en 7 ms (PIAF) et 19 ms (LexML), sans charger d'embedder.
+
+### Ce que disent les chiffres
+
+1. **L'hybride gagne surtout en profondeur.** Le Recall@10 progresse significativement sur les deux jeux (+0.042 sur PIAF, +0.061 sur LexML, +0.126 sur les questions `entity`). Au Recall@5 et au MRR, les écarts vont dans le bon sens partout sauf `reference`, mais aucun n'est significatif à 500 / 277 questions. Le gain est donc réel pour un étage qui reclasse un top-10 ou plus (re-ranking 9.3), plus mince pour un top-5 envoyé directement au LLM.
+2. **L'hypothèse principale est réfutée : les questions `reference` ne bougent pas** (Recall@5 0.093 → 0.093). L'analyse des 97 questions montre pourquoi. Elles ont la forme « Que dispõe o art. 2 da Lei nº 7.689 ? ». Le numéro de loi n'apparaît que dans le premier chunk du document (son titre), et les chunks des articles ne disent que « Art. 2º », comme toutes les autres lois. BM25 retrouve bien la loi : la bonne loi est dans le top-5 pour 91 questions sur 97, dans le top-10 pour 95. Mais il ne retrouve pas l'article, parce que `art` et `2` sont des termes présents partout. Le problème n'est pas le score lexical, c'est que le passage visé ne contient aucun terme qui le distingue sans le contexte du document. Pistes, hors 9.2 :
+   - comprendre la requête (9.4) : extraire « loi X, article N », filtrer sur le document de la loi X puis chercher l'article N dans ses chunks ;
+   - indexer avec chaque chunk le titre de son document, dans le `tsvector` seulement, sans toucher au texte ni aux chunkers.
+3. **Entités : le lexical fait mieux que le dense, l'hybride encore mieux.** Sur `entity`, BM25 seul passe de 0.793 à 0.874 au Recall@5 et l'hybride atteint 0.919 au Recall@10 sans perdre une seule question (+11 / −0) : les noms propres rares sont bien servis par l'IDF.
+4. **BM25 seul perd en français.** Sur PIAF, le lexical seul perd significativement (Recall@5 −0.040, 48 questions perdues contre 28 gagnées) : les questions PIAF reformulent le paragraphe, ce que le dense capte mieux. L'hybride ne perd pas cet avantage (+0.022).
+5. **Juges RAGAS légèrement en baisse.** Faithfulness −0.030 (PIAF) et −0.019 (LexML), answer relevancy −0.035 (PIAF) et +0.010 (LexML), correctness −0.015 et −0.010. Ces écarts portent sur 100 réponses par jeu et n'ont pas d'intervalle de confiance ; ils restent à surveiller, mais ne permettent pas de conclure à une dégradation.
+6. **Hypothèses non testées.** Pas de type de question « acronyme » dans les jeux, et pas de balayage de `lexical_weight` / `rrf_k` : les deux runs utilisent les valeurs par défaut, qui n'ont donc pas été réglées sur le jeu de test.
+
+**Recommandation.** Garder `RAGLAB_DEFAULT_RETRIEVAL_MODE=dense` par défaut tant que le gain au top-5 n'est pas significatif, et utiliser `hybrid` comme générateur de candidats pour le re-ranking (9.3), là où le gain au top-10 compte. Le mode `lexical` seul n'est pas recommandé. La décision revient au propriétaire.
+
+### Limites connues
 
 - la racinisation Snowball est approximative : en portugais, « são » est un mot vide, donc « São Paulo » devient `paul` ;
 - un mot rare mal orthographié dans la question n'a aucun candidat, et BM25 ne trouve alors rien ;
-- les statistiques sont figées par run : ré-indexer après une ingestion importante.
+- les statistiques sont figées par run : ré-indexer (ou `raglab db refresh-lexical`) après une ingestion importante.
