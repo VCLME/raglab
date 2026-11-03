@@ -27,3 +27,24 @@ def _isolated_reports_dir(tmp_path, monkeypatch):
     get_settings.cache_clear()
     yield
     get_settings.cache_clear()
+
+
+class NoVersionLookup:
+    """A corpus without version metadata: services built on mock sessions
+    skip the versions option's two reads (tests/test_versions.py fakes them)."""
+
+    def __init__(self, session=None):
+        self.session = session
+
+    def has_history(self, index_run):
+        return False
+
+    def metadata(self, document_ids):
+        return {}
+
+
+@pytest.fixture(autouse=True)
+def _no_version_lookup(monkeypatch):
+    import raglab.retrieval.service as service_module
+
+    monkeypatch.setattr(service_module, "VersionLookup", NoVersionLookup)

@@ -99,6 +99,11 @@ class Settings(BaseSettings):
     # raglab.retrieval.citations). Measured in citations-v1: LexML questions
     # citing an article 0.093 -> 0.753 Recall@5 (+64/-0), no other change.
     citation_resolver: bool = True
+    # Article versions retrieval may use (phase 9.10, docs/versions.md):
+    # in_force (today, or the date the question asks about), all, or
+    # as_of=YYYY-MM-DD. Acts only on corpora with version metadata
+    # (Légifrance) or repeal markers (LexML).
+    versions_default: str = "in_force"
     default_language: str = "fr"
     bm25_k1: float = 1.2
     bm25_b: float = 0.75

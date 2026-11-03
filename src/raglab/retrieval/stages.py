@@ -2,7 +2,8 @@
 
 The stage list is derived from what the request actually ran: the stage keys
 of `RetrievalOutcome.timings_ms` (`embed`, `retrieval`, and `dense`,
-`lexical`, `fusion`, `rerank` when hybrid retrieval or re-ranking ran), the
+`lexical`, `fusion`, `rerank` when hybrid retrieval or re-ranking ran,
+`versions` when a passage carries version information), the
 router decision when one is attached, then `prompt` and `generation` when an
 answer is generated. A stage the pipeline did not run is simply absent.
 
@@ -17,7 +18,7 @@ import math
 from typing import Any
 
 # Order of the retrieval-side stages, as drawn in the UI diagram.
-RETRIEVAL_STAGES = ("routing", "embed", "retrieval", "lexical", "graph", "fusion", "rerank")
+RETRIEVAL_STAGES = ("routing", "embed", "retrieval", "lexical", "graph", "fusion", "rerank", "versions")
 GENERATION_STAGES = ("prompt", "generation")
 
 VECTOR_PREVIEW = 8
@@ -66,7 +67,7 @@ def _retrieval_durations(timings_ms: dict[str, float]) -> dict[str, float]:
         durations["retrieval"] = timings_ms["dense"]
     elif "retrieval" in timings_ms and "lexical" not in timings_ms:
         durations["retrieval"] = timings_ms["retrieval"]
-    for key in ("lexical", "graph", "fusion", "rerank"):
+    for key in ("lexical", "graph", "fusion", "rerank", "versions"):
         if key in timings_ms:
             durations[key] = timings_ms[key]
     return durations
@@ -90,6 +91,15 @@ def _chunk_preview(chunk: Any) -> dict[str, Any]:
     for key in ("citation_match", "graph_pinned"):
         if payload.get(key):
             preview[key] = True
+    version = payload.get("version")
+    if version:
+        # Version state of the passage (versions option): the learning mode
+        # shows which version it is and whether it applies.
+        preview["version"] = {
+            key: version[key]
+            for key in ("source", "etat", "in_force", "date_debut", "date_fin", "article", "revoked_only", "demoted")
+            if version.get(key) is not None
+        }
     return preview
 
 
@@ -134,6 +144,14 @@ def _stage_details(stage: str, outcome: Any) -> tuple[dict[str, Any], dict[str, 
         if notice:
             data["notice"] = notice
         return dict(getattr(outcome, "graph_stats", {}) or {}), data
+    if stage == "versions":
+        # The rule applied (mode, reference date and where it came from) and
+        # what it did: versions filtered before ranking, repealed-only
+        # passages moved last, outdated passages still in the list.
+        info = dict(getattr(outcome, "versions", None) or {})
+        version_counts: dict[str, Any] = {key: info[key] for key in ("demoted", "outdated") if key in info}
+        version_counts["chunks_out"] = len(retrieved)
+        return version_counts, {"policy": info, "top_chunks": _top_chunks(retrieved)}
     counts: dict[str, Any] = {"chunks_out": len(retrieved)}
     if stage == "retrieval":
         counts["top_k"] = outcome.top_k

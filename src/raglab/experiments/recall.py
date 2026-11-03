@@ -7,7 +7,7 @@ import random
 from collections import Counter
 from contextlib import AbstractContextManager, nullcontext
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 from time import perf_counter
 from typing import Any, cast
@@ -21,7 +21,16 @@ from raglab.db.crud import (
     store_experiment_result,
 )
 from raglab.domain.enums import ChunkingStrategy, ExperimentStatus, RetrievalMode
-from raglab.experiments.metrics import first_relevant_rank, hit_at_k, precision_at_k, reciprocal_rank, relevance_flags
+from raglab.domain.versions import is_outdated
+from raglab.experiments.metrics import (
+    answer_cites_outdated,
+    first_relevant_rank,
+    hit_at_k,
+    outdated_hit_at_k,
+    precision_at_k,
+    reciprocal_rank,
+    relevance_flags,
+)
 from raglab.experiments.ragas import (
     AnswerCorrectnessJudge,
     AnswerRelevancyJudge,
@@ -80,6 +89,24 @@ class RecallBenchmarkCase:
     question_type: str | None = None
     # "dev" (looked at while tuning) or "heldout" (never looked at), for sets that have one.
     split: str | None = None
+    # Versions set (phase 9.10): the outdated version that would mislead
+    # ({kind, file_names, article, answer, ...}) and facts about the case
+    # (`as_of`: the date the question asks about, `article`).
+    trap: dict[str, Any] | None = None
+    context: dict[str, Any] | None = None
+
+    def reference_date(self) -> date:
+        """The date the answer must be valid on: the one the question asks
+        about, else today."""
+        as_of = (self.context or {}).get("as_of")
+        return date.fromisoformat(as_of) if as_of else date.today()
+
+    def is_outdated(self, chunk: dict[str, Any]) -> bool:
+        """The chunk comes from the trap version, or (sets without a trap)
+        from a version that does not apply on the reference date."""
+        if self.trap and self.trap.get("file_names"):
+            return chunk["file_name"] in self.trap["file_names"]
+        return is_outdated(chunk, self.reference_date())
 
 
 class RecallBenchmarkService:
@@ -115,6 +142,7 @@ class RecallBenchmarkService:
         rerank: bool | None = None,
         citations: bool | None = None,
         graph: bool | None = None,
+        versions: str | None = None,
     ) -> dict[str, Any]:
         """Resolved retrieval parameters, recorded with the run and passed to each query."""
         mode = RetrievalMode(retrieval_mode or self.settings.default_retrieval_mode)
@@ -133,6 +161,8 @@ class RecallBenchmarkService:
             config["citations"] = citations
         if graph is not None:
             config["graph"] = graph
+        if versions is not None:
+            config["versions"] = versions
         return config
 
     def _rerank_record(self, retrieval: dict[str, Any]) -> dict[str, Any]:
@@ -176,6 +206,8 @@ class RecallBenchmarkService:
                         expected_spans=payload.get("expected_spans", []),
                         question_type=payload.get("question_type"),
                         split=payload.get("split"),
+                        trap=payload.get("trap"),
+                        context=payload.get("context"),
                     )
                 )
         if not cases:
@@ -283,6 +315,7 @@ class RecallBenchmarkService:
         rerank: bool | None = None,
         citations: bool | None = None,
         graph: bool | None = None,
+        versions: str | None = None,
         generator: GeneratorConfig | None = None,
     ) -> dict[str, Any]:
         """Run retrieval on every case, then (optionally) grade answers.
@@ -306,7 +339,13 @@ class RecallBenchmarkService:
         generator = generator or GeneratorConfig()
         deferred = compute_ragas and generator.deferred and self.backend == "pgvector"
         retrieval = self._retrieval_config(
-            retrieval_mode, lexical_weight, rrf_k, rerank=rerank, citations=citations, graph=graph
+            retrieval_mode,
+            lexical_weight,
+            rrf_k,
+            rerank=rerank,
+            citations=citations,
+            graph=graph,
+            versions=versions,
         )
         rerank_record = self._rerank_record(retrieval)
         benchmark_label = benchmark_name or _infer_benchmark_name(dataset_path)
@@ -402,6 +441,12 @@ class RecallBenchmarkService:
                     precision_sums[k] += precision
                     metrics_for_case[f"recall@{k}"] = hit
                     metrics_for_case[f"precision@{k}"] = precision
+                # Versions failure mode: an outdated version ranked above the
+                # one that answers, where a version can be outdated at all.
+                if case.trap or any(chunk.get("version") for chunk in retrieved):
+                    outdated = [case.is_outdated(chunk) for chunk in retrieved]
+                    for k in k_values:
+                        metrics_for_case[f"outdated_hit@{k}"] = outdated_hit_at_k(flags, outdated, k)
 
                 reciprocal_rank_sum += case_reciprocal_rank
                 if first_rank is not None:
@@ -438,6 +483,11 @@ class RecallBenchmarkService:
                 self._release_reranker()
             if pending:
                 self._generate_deferred(pending, details, generator, generation_top_k)
+            for case, detail in zip(cases, details, strict=True):
+                if case.trap and detail.get("answer"):
+                    detail["metrics"]["outdated_answer"] = answer_cites_outdated(
+                        detail["answer"], case.trap, (case.context or {}).get("article")
+                    )
             ragas_scores = self._grade(cases, details, judge) if compute_ragas else {}
 
             for case, detail, run_id in zip(cases, details, index_run_ids, strict=True):
@@ -471,6 +521,7 @@ class RecallBenchmarkService:
             summary.update(_confidence_intervals(details, k_values))
             summary.update(_latency_summary(details))
             summary.update(_rerank_cache_summary(details))
+            summary.update(_outdated_summary(details, k_values))
             for metric, scores in ragas_scores.items():
                 summary[f"{metric}_mean"] = sum(scores) / len(scores) if scores else None
                 summary[f"{metric}_judged"] = len(scores)
@@ -710,7 +761,24 @@ def _summarise_by_type(
         for k in k_values:
             row[f"recall@{k}"] = sum(int(m[f"recall@{k}"]) for m in metrics) / count
         row["mrr"] = sum(m["reciprocal_rank"] for m in metrics) / count
+        row.update(_outdated_summary([{"metrics": m} for m in metrics], k_values))
         summary[question_type] = row
+    return summary
+
+
+def _outdated_summary(details: list[dict[str, Any]], k_values: tuple[int, ...]) -> dict[str, float]:
+    """Share of cases with an outdated version above the one that answers
+    (`outdated_hit@k`, over the cases where a version can be outdated) and of
+    generated answers citing the outdated version (`outdated_answer_rate`)."""
+    summary: dict[str, float] = {}
+    for k in k_values:
+        values = [d["metrics"][f"outdated_hit@{k}"] for d in details if f"outdated_hit@{k}" in d["metrics"]]
+        if values:
+            summary[f"outdated_hit@{k}"] = sum(int(value) for value in values) / len(values)
+    answers = [d["metrics"]["outdated_answer"] for d in details if "outdated_answer" in d["metrics"]]
+    if answers:
+        summary["outdated_answer_rate"] = sum(int(value) for value in answers) / len(answers)
+        summary["outdated_answer_judged"] = len(answers)
     return summary
 
 

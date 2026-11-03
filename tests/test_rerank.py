@@ -323,7 +323,7 @@ def test_a_cited_french_article_is_pinned_and_the_search_restricted_to_its_code(
     monkeypatch.setattr(
         service_module,
         "find_code_article",
-        lambda session, run, citation: CodeArticle("article-doc", "consommation", "VIGUEUR"),
+        lambda session, run, citation, on=None: CodeArticle("article-doc", "consommation", "VIGUEUR"),
     )
     monkeypatch.setattr(service_module, "document_chunks", lambda session, run, doc: [pinned_chunk])
     monkeypatch.setattr(service_module, "find_law_document", Mock(side_effect=AssertionError("Brazilian path")))

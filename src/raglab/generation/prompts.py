@@ -4,6 +4,7 @@ import textwrap
 from dataclasses import dataclass
 
 from raglab.domain.schemas import RetrievedChunk
+from raglab.domain.versions import prompt_line, strip_revoked
 
 
 @dataclass(slots=True)
@@ -21,6 +22,14 @@ class PromptBundle:
 def build_context(chunks: list[RetrievedChunk]) -> str:
     blocks: list[str] = []
     for chunk in chunks:
+        # Version state of the passage (versions option, phase 9.10): the
+        # model is told which article version it reads, and does not read
+        # the wording of provisions marked repealed.
+        status = prompt_line(chunk.version)
+        text = chunk.chunk_text
+        version = chunk.version
+        if version is not None and version.in_prompt and version.source == "markers" and version.revoked_lines:
+            text = strip_revoked(text)
         blocks.append(
             "\n".join(
                 [
@@ -28,8 +37,9 @@ def build_context(chunks: list[RetrievedChunk]) -> str:
                     f"Fichier: {chunk.file_name}",
                     f"Chemin: {chunk.source_path}",
                     f"Score: {chunk.score:.4f}",
+                    *([status] if status else []),
                     "Extrait:",
-                    chunk.chunk_text,
+                    text,
                 ]
             )
         )
@@ -45,6 +55,9 @@ def build_prompt_bundle(question: str, chunks: list[RetrievedChunk], *, no_conte
         Si le contexte est insuffisant, réponds exactement :
         "{no_context_answer}"
         Si plusieurs sources se contredisent, signale l'incertitude.
+        Quand un extrait porte un « Statut », tiens-en compte : appuie-toi sur
+        la version en vigueur et, si tu cites une version abrogée ou ancienne,
+        dis-le avec sa date.
         Quand tu affirmes un fait issu du contexte, cite-le inline en placant
         [Rank X] immédiatement après l'affirmation (X = le rank du chunk utilisé).
         N'ajoute jamais de ligne `Sources:` séparée à la fin : les citations inline suffisent.

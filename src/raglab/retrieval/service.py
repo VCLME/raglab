@@ -43,6 +43,7 @@ from raglab.retrieval.graph_branch import (
 )
 from raglab.retrieval.rerank import Reranker, get_reranker, rerank_gpu_available
 from raglab.retrieval.stages import planned_stages, prompt_details, retrieval_stage_events, stage_end, stage_start
+from raglab.retrieval.versions import VersionLookup, annotate, demote_revoked, is_outdated, resolve_policy
 from raglab.stores.lexical.postgres import PostgresLexicalStore
 from raglab.stores.vector.postgres import PostgresVectorStore
 
@@ -90,6 +91,8 @@ class RetrievalOutcome:
     # branch's own ranked list.
     graph_links: list[dict[str, Any]] = field(default_factory=list)
     graph_chunks: list[RetrievedChunk] = field(default_factory=list)
+    # Version policy (versions option) and what it did; see QueryResponse.
+    versions: dict[str, Any] | None = None
 
     def response(self, **extra: Any) -> QueryResponse:
         return QueryResponse(
@@ -108,6 +111,7 @@ class RetrievalOutcome:
             graph=self.graph,
             graph_notice=self.graph_notice,
             graph_stats=dict(self.graph_stats),
+            versions=dict(self.versions) if self.versions is not None else None,
             **extra,
         )
 
@@ -125,6 +129,7 @@ class QueryService:
         self._generators: dict[str, AnswerGenerator] = {}
         self._reranker: Reranker | None = None
         self._graph_store: StructuredGraphStore | None = None
+        self.version_lookup = VersionLookup(session)
 
     @property
     def graph_store(self) -> StructuredGraphStore:
@@ -236,6 +241,7 @@ class QueryService:
         rerank: bool | None = None,
         citations: bool | None = None,
         graph: bool | None = None,
+        versions: str | None = None,
     ) -> RetrievalOutcome:
         """Search the index for the question, each stage under its budget.
 
@@ -254,6 +260,14 @@ class QueryService:
         hybrid: both, fused by Reciprocal Rank Fusion over deeper lists.
         rerank: the chosen mode returns `rerank_candidates` chunks, a
         cross-encoder re-scores them and the top_k best are kept.
+
+        versions: which article versions may be used (see
+        `raglab.retrieval.versions`): `in_force` (default) keeps the versions
+        in force today, or on the date the question asks about ("avant
+        2016"); `as_of=YYYY-MM-DD` on that date; `all` every version. On a
+        corpus with version metadata the others are filtered out before
+        ranking; on compiled laws, chunks that only hold repealed provisions
+        are moved last. Every chunk carries its version state.
         """
         mode = RetrievalMode(retrieval_mode or self.settings.default_retrieval_mode)
         index_run = self._resolve_index_run(
@@ -286,6 +300,12 @@ class QueryService:
         # The citation restricts the search to the cited law; the graph
         # branch follows references out of it, under the caller's filters only.
         user_filters = filters
+        versions_started = perf_counter()
+        policy = resolve_policy(versions, question, default_mode=self.settings.versions_default)
+        has_history = self.version_lookup.has_history(index_run)
+        if policy.filters and has_history and policy.on is not None:
+            filters = (filters or RetrievalFilters()).model_copy(update={"valid_at": policy.on.isoformat()})
+        versions_seconds = perf_counter() - versions_started
         citation_started = perf_counter()
         use_citations = self.settings.citation_resolver if citations is None else citations
         parsed = parse_citation(question) if use_citations or use_graph else None
@@ -304,7 +324,9 @@ class QueryService:
         elif citation is not None:
             # An article of a French code is a document of its own: pin it
             # and search the rest of the cited code.
-            code_article = find_code_article(self.session, index_run, citation)
+            code_article = find_code_article(
+                self.session, index_run, citation, on=policy.on if policy.mode == "as_of" else None
+            )
             if code_article is not None:
                 law_document_id = code_article.document_id
                 cited_code = code_article.code
@@ -448,6 +470,32 @@ class QueryService:
             retrieved = group_references(
                 retrieved, branch.hits, pool, top_k=effective_top_k, max_groups=self.settings.graph_group_max
             )
+        versions_started = perf_counter()
+        retrieved = annotate(
+            retrieved, policy, self.version_lookup.metadata(sorted({chunk.document_id for chunk in retrieved}))
+        )
+        demoted = 0
+        if policy.mode == "in_force":
+            retrieved, demoted = demote_revoked(retrieved)
+        has_markers = any(chunk.version is not None and chunk.version.source == "markers" for chunk in retrieved)
+        versions_seconds += perf_counter() - versions_started
+        # Part of retrieval (the benchmark's query latency includes it), shown apart.
+        timings_ms["retrieval"] = round(timings_ms["retrieval"] + versions_seconds * 1000, 3)
+        versions_info = {
+            **policy.as_dict(),
+            "scope": "metadata" if has_history else "markers" if has_markers else "none",
+            "filtered": bool(policy.filters and has_history),
+            "demoted": demoted,
+            "outdated": sum(1 for chunk in retrieved if is_outdated(chunk)),
+        }
+        if versions_info["scope"] != "none":
+            # The learning mode's `versions` stage; absent where no chunk
+            # carries version information (PIAF, uploads).
+            timings_ms["versions"] = round(versions_seconds * 1000, 3)
+        if policy.mode == "as_of" and not has_history and has_markers:
+            # Compiled laws keep only the wording in force: a past date
+            # cannot be honoured there.
+            versions_info["notice"] = "markers_no_history"
         hybrid = mode == RetrievalMode.HYBRID
         return RetrievalOutcome(
             question=question,
@@ -484,6 +532,7 @@ class QueryService:
             graph_stats=dict(branch.stats),
             graph_links=graph_links(branch, graph_list),
             graph_chunks=list(branch.chunks),
+            versions=versions_info,
         )
 
     def query(
@@ -504,6 +553,7 @@ class QueryService:
         rerank: bool | None = None,
         citations: bool | None = None,
         graph: bool | None = None,
+        versions: str | None = None,
         llm_provider: str | None = None,
     ) -> QueryResponse:
         """`generation_top_k` sends only the first N retrieved chunks to the
@@ -526,6 +576,7 @@ class QueryService:
             rerank=rerank,
             citations=citations,
             graph=graph,
+            versions=versions,
         )
         answer = None
         stats: dict[str, float] = {}
@@ -662,6 +713,7 @@ class QueryService:
             graph=outcome.graph,
             graph_notice=outcome.graph_notice,
             graph_stats=outcome.graph_stats,
+            versions=outcome.versions,
             generate_answer=generate_answer,
             llm_provider=llm_provider,
             streamed=streamed,

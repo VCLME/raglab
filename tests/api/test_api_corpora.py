@@ -46,11 +46,13 @@ def test_list_corpora_flags_legal_corpora(client, mock_session):
     def scalar(value):
         return SimpleNamespace(scalar_one=MagicMock(return_value=value))
 
-    # Per corpus: COUNT docs, COUNT runs, EXISTS legal document.
+    # Per corpus: COUNT docs, COUNT runs, EXISTS legal document, then for a
+    # legal corpus only EXISTS version metadata.
     mock_session.execute.side_effect = [
         corpora,
         scalar(120),
         scalar(1),
+        scalar(True),
         scalar(True),
         scalar(1522),
         scalar(2),
@@ -61,7 +63,10 @@ def test_list_corpora_flags_legal_corpora(client, mock_session):
 
     assert response.status_code == 200
     body = response.json()
-    assert [c["features"] for c in body] == [{"legal_citations": True}, {"legal_citations": False}]
+    assert [c["features"] for c in body] == [
+        {"legal_citations": True, "version_history": True},
+        {"legal_citations": False, "version_history": False},
+    ]
     assert body[0]["documents_count"] == 120
 
 

@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from raglab.api.deps import get_db
 from raglab.api.schemas import CorpusDeleteResponse, CorpusDocument, CorpusFeatures, CorpusSummary, IndexRunSummary
 from raglab.db.models import Chunk, Corpus, Document, EmbeddingSpace, IndexRun
+from raglab.retrieval.versions import corpus_has_versions
 
 router = APIRouter(tags=["corpora"])
 
@@ -41,6 +42,7 @@ def list_corpora(session: Session = Depends(get_db)) -> list[CorpusSummary]:
             select(func.count()).select_from(IndexRun).where(IndexRun.corpus_id == corpus.id)
         ).scalar_one()
         legal = bool(session.execute(legal_articles_query(corpus.id)).scalar_one())
+        history = legal and corpus_has_versions(session, corpus.id)
         summaries.append(
             CorpusSummary(
                 id=corpus.id,
@@ -48,7 +50,7 @@ def list_corpora(session: Session = Depends(get_db)) -> list[CorpusSummary]:
                 description=corpus.description,
                 documents_count=docs_count or 0,
                 index_runs_count=runs_count or 0,
-                features=CorpusFeatures(legal_citations=legal),
+                features=CorpusFeatures(legal_citations=legal, version_history=history),
             )
         )
     return summaries

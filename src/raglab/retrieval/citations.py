@@ -20,7 +20,8 @@ document, with the code and the article number in the metadata (`code`,
 `article_number`). A question citing "article L. 221-18 du code de la
 consommation", "art. R. 212-1" or "l'article 1240 du code civil" resolves to
 the version of that article in force (the latest one for a repealed
-article), whose chunks are pinned first; the search is restricted to the
+article; the one in force on the reference date of the `versions` option
+when the question asks about the past), whose chunks are pinned first; the search is restricted to the
 cited code, the analogue of restricting to the cited Brazilian law.
 
 When the question cites no law, or a law absent from the index, retrieval is
@@ -31,6 +32,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from datetime import date
 from typing import Any
 
 from sqlalchemy import select
@@ -38,6 +40,7 @@ from sqlalchemy.orm import Session
 
 from raglab.db.models import Chunk, Document, IndexRun
 from raglab.domain.schemas import RetrievedChunk
+from raglab.domain.versions import valid_at
 from raglab.legifrance.codes import CODES, find_code_mentions
 from raglab.legifrance.references import article_label, find_plain_article, find_prefixed_article
 
@@ -135,7 +138,12 @@ class CodeArticle:
     etat: str | None
 
 
-def _version_rank(metadata: dict) -> tuple[int, str]:
+def _version_rank(metadata: dict, on: date | None = None) -> tuple[int, str]:
+    if on is not None:
+        # The version that applied on that day first, then the latest one
+        # that had started by then, then the rest.
+        started = str(metadata.get("date_debut") or "") <= on.isoformat()
+        return (2 if valid_at(metadata, on) else 1 if started else 0, str(metadata.get("date_debut") or ""))
     etat = metadata.get("etat")
     return (
         2 if etat in _IN_FORCE_STATES else 1 if etat == "VIGUEUR_DIFF" else 0,
@@ -143,9 +151,14 @@ def _version_rank(metadata: dict) -> tuple[int, str]:
     )
 
 
-def find_code_article(session: Session, index_run: IndexRun, citation: Citation) -> CodeArticle | None:
+def find_code_article(
+    session: Session, index_run: IndexRun, citation: Citation, *, on: date | None = None
+) -> CodeArticle | None:
     """The document of the cited article in this index run's corpus: the
-    version in force, otherwise the most recent one."""
+    version in force, otherwise the most recent one. With `on` (a question
+    about the past, `versions=as_of=...`), the version that applied that day:
+    "l'article L. 121-21 dans sa rédaction de 2014" is the 14-day withdrawal
+    right, not the debt-collection article that reuses the number since 2016."""
     stmt = select(Document.id, Document.metadata_json).where(
         Document.corpus_id == index_run.corpus_id,
         Document.metadata_json["article_number"].astext == citation.article,
@@ -155,7 +168,7 @@ def find_code_article(session: Session, index_run: IndexRun, citation: Citation)
     rows = session.execute(stmt).all()
     if not rows:
         return None
-    document_id, metadata = max(rows, key=lambda row: _version_rank(row[1] or {}))
+    document_id, metadata = max(rows, key=lambda row: _version_rank(row[1] or {}, on))
     metadata = metadata or {}
     return CodeArticle(document_id=str(document_id), code=metadata.get("code"), etat=metadata.get("etat"))
 
