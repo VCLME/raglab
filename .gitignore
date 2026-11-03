@@ -25,3 +25,5 @@ frontend/.vite/
 node_modules/
 .claude/
 data/lexml/fulltext/
+
+_site/
