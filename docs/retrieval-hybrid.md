@@ -117,8 +117,8 @@ Mesures du 3 novembre 2026, faites selon [le protocole](benchmarks/protocole.md)
 | LexML Recall@5 | 0.466 | 0.477 | 0.498 |
 | LexML Recall@10 | 0.502 | 0.513 | 0.563 |
 | LexML MRR | 0.379 | 0.395 | 0.402 |
-| PIAF faithfulness / relevancy / correctness | 0.945 / 0.905 / 0.658 | non jugé | 0.915 / 0.870 / 0.643 |
-| LexML faithfulness / relevancy / correctness | 0.907 / 0.725 / 0.445 | non jugé | 0.888 / 0.735 / 0.435 |
+| PIAF faithfulness / relevancy / correctness | 0.930 / 0.900 / 0.658 | non jugé | 0.915 / 0.870 / 0.643 |
+| LexML faithfulness / relevancy / correctness | 0.903 / 0.725 / 0.451 | non jugé | 0.888 / 0.735 / 0.435 |
 
 ### Comparaison appariée (`raglab bench compare`)
 
@@ -150,12 +150,24 @@ Recall@5 : test de McNemar question par question ; MRR : bootstrap apparié (IC 
 
 ### Latence (p50 / p95, embedding + recherche, génération exclue)
 
-| | baseline-v1 | lexical-v1 | hybrid-v1 | dont BM25 (hybrid-v1) |
-|---|---|---|---|---|
-| PIAF (833 chunks) | 60 / 86 ms | 6.6 / 10.7 ms | 43 / 61 ms | 10.9 / 19.5 ms |
-| LexML (6 075 chunks) | 79 / 111 ms | 19.0 / 33.8 ms | 88 / 126 ms | 25.0 / 44.1 ms |
+| | baseline-v1 | lexical-v1 | hybrid-v1 |
+|---|---|---|---|
+| PIAF (833 chunks) | 23 / 28 ms | 6.6 / 10.7 ms | 43 / 61 ms |
+| LexML (6 075 chunks) | 41 / 68 ms | 19 / 34 ms | 88 / 126 ms |
 
-Les latences de deux runs différents ne sont comparables qu'à quelques dizaines de pourcents près : la recherche dense de `hybrid-v1` sur PIAF (16 ms au p50 pour 50 candidats) est plus rapide que celle de `baseline-v1` (46 ms pour 10), ce qui tient à l'état de la machine et de la base au moment du run, pas au code. La mesure fiable est la décomposition à l'intérieur d'un même run : sur LexML, BM25 ajoute 25 ms au p50 au chemin dense, la fusion moins de 1 ms. Seul, BM25 répond en 7 ms (PIAF) et 19 ms (LexML), sans charger d'embedder.
+| Décomposition du p50 | embedding | recherche dense | BM25 | fusion |
+|---|---|---|---|---|
+| PIAF, baseline-v1 (10 candidats) | 12.6 ms | 10.9 ms | — | — |
+| PIAF, hybrid-v1 (50 candidats) | 15.2 ms | 15.9 ms | 10.9 ms | 0.6 ms |
+| LexML, baseline-v1 (10 candidats) | 15.8 ms | 24.7 ms | — | — |
+| LexML, hybrid-v1 (50 candidats) | 18.0 ms | 41.7 ms | 25.0 ms | 0.5 ms |
+
+**L'hybride double la latence de recherche** (+20 ms au p50 sur PIAF, +47 ms sur LexML). Deux causes, à peu près à parts égales sur LexML :
+
+- BM25 lui-même : 11 ms (PIAF) et 25 ms (LexML) au p50 ;
+- la profondeur des candidats : la recherche dense rend 50 chunks au lieu de 10. Le calcul des distances ne change pas, mais `PostgresVectorStore.search` charge chaque document entier, y compris `documents.content` (le texte complet de la loi pour LexML), pour chaque candidat. À code égal, passer de 10 à 50 candidats coûte environ 13 ms sur LexML (22 → 35 ms au p50, mesuré à part).
+
+Le second point se corrige sans toucher aux résultats : ne charger que les colonnes utiles du document dans la recherche dense, comme le fait déjà BM25. On peut aussi réduire `RAGLAB_HYBRID_CANDIDATES`. Seul, BM25 répond en 7 ms (PIAF) et 19 ms (LexML), sans charger d'embedder.
 
 ### Ce que disent les chiffres
 
@@ -165,10 +177,10 @@ Les latences de deux runs différents ne sont comparables qu'à quelques dizaine
    - indexer avec chaque chunk le titre de son document, dans le `tsvector` seulement, sans toucher au texte ni aux chunkers.
 3. **Entités : le lexical fait mieux que le dense, l'hybride encore mieux.** Sur `entity`, BM25 seul passe de 0.793 à 0.874 au Recall@5 et l'hybride atteint 0.919 au Recall@10 sans perdre une seule question (+11 / −0) : les noms propres rares sont bien servis par l'IDF.
 4. **BM25 seul perd en français.** Sur PIAF, le lexical seul perd significativement (Recall@5 −0.040, 48 questions perdues contre 28 gagnées) : les questions PIAF reformulent le paragraphe, ce que le dense capte mieux. L'hybride ne perd pas cet avantage (+0.022).
-5. **Juges RAGAS légèrement en baisse.** Faithfulness −0.030 (PIAF) et −0.019 (LexML), answer relevancy −0.035 (PIAF) et +0.010 (LexML), correctness −0.015 et −0.010. Ces écarts portent sur 100 réponses par jeu et n'ont pas d'intervalle de confiance ; ils restent à surveiller, mais ne permettent pas de conclure à une dégradation.
+5. **Juges RAGAS légèrement en baisse.** Faithfulness −0.015 sur les deux jeux, answer relevancy −0.030 (PIAF) et +0.010 (LexML), correctness −0.015 (PIAF) et −0.016 (LexML). Ces écarts portent sur 100 réponses par jeu et n'ont pas d'intervalle de confiance ; ils restent à surveiller, mais ne permettent pas de conclure à une dégradation.
 6. **Hypothèses non testées.** Pas de type de question « acronyme » dans les jeux, et pas de balayage de `lexical_weight` / `rrf_k` : les deux runs utilisent les valeurs par défaut, qui n'ont donc pas été réglées sur le jeu de test.
 
-**Recommandation.** Garder `RAGLAB_DEFAULT_RETRIEVAL_MODE=dense` par défaut tant que le gain au top-5 n'est pas significatif, et utiliser `hybrid` comme générateur de candidats pour le re-ranking (9.3), là où le gain au top-10 compte. Le mode `lexical` seul n'est pas recommandé. La décision revient au propriétaire.
+**Recommandation.** Garder `RAGLAB_DEFAULT_RETRIEVAL_MODE=dense` par défaut tant que le gain au top-5 n'est pas significatif et que la latence double, et utiliser `hybrid` comme générateur de candidats pour le re-ranking (9.3), là où le gain au top-10 compte. Le mode `lexical` seul n'est pas recommandé. La décision revient au propriétaire.
 
 ### Limites connues
 

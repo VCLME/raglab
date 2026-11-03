@@ -8,13 +8,13 @@
   {
     "label": "baseline-v0-cache",
     "name": "Embedder cache",
-    "change": "+ embedding model loaded once instead of per question (retrieval only, not judged)",
+    "change": "+ embedding model loaded once instead of per question (retrieval only, not judged; still approximate HNSW search)",
     "status": ""
   },
   {
     "label": "baseline-v1",
     "name": "Baseline v1",
-    "change": "+ top-k always filled when several indexes share the database (official baseline)",
+    "change": "+ exact vector search per index (the shared HNSW index made recall depend on what else was in the database); answers generated from the top 5 and judged on full chunks (official baseline)",
     "status": ""
   },
   {
