@@ -511,3 +511,12 @@ def test_paired_comparison_of_outdated_hits():
     text = render({"a": "legi-naive", "b": "legi-versions", "suites": {"legi_versions": entry}})
     assert "Version périmée classée avant la bonne" in text
     assert "1.000 → 0.000" in text
+
+
+def test_system_prompt_mentions_versions_only_when_a_passage_has_a_status():
+    from raglab.generation.prompts import build_prompt_bundle
+
+    plain = build_prompt_bundle("q", [_chunk("piaf", 1, "Paris.")], no_context_answer="X").system_prompt
+    assert "Statut" not in plain
+    tagged = annotate([_chunk("new", 1)], resolve_policy(None, "q", today=TODAY), {"doc-new": _l121_21(4)})
+    assert "Statut" in build_prompt_bundle("q", tagged, no_context_answer="X").system_prompt

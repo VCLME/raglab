@@ -46,6 +46,15 @@ def build_context(chunks: list[RetrievedChunk]) -> str:
     return "\n\n".join(blocks)
 
 
+# Told only when a passage carries a version status (versions option): the
+# prompt of a corpus without versions is unchanged.
+VERSION_RULE = (
+    "Quand un extrait porte un « Statut », tiens-en compte : appuie-toi sur la version en vigueur"
+    " et, si tu cites une version abrogée ou ancienne, dis-le avec sa date."
+)
+_CONFLICT_RULE = "Si plusieurs sources se contredisent, signale l'incertitude."
+
+
 def build_prompt_bundle(question: str, chunks: list[RetrievedChunk], *, no_context_answer: str) -> PromptBundle:
     system_prompt = textwrap.dedent(
         f"""
@@ -55,15 +64,14 @@ def build_prompt_bundle(question: str, chunks: list[RetrievedChunk], *, no_conte
         Si le contexte est insuffisant, réponds exactement :
         "{no_context_answer}"
         Si plusieurs sources se contredisent, signale l'incertitude.
-        Quand un extrait porte un « Statut », tiens-en compte : appuie-toi sur
-        la version en vigueur et, si tu cites une version abrogée ou ancienne,
-        dis-le avec sa date.
         Quand tu affirmes un fait issu du contexte, cite-le inline en placant
         [Rank X] immédiatement après l'affirmation (X = le rank du chunk utilisé).
         N'ajoute jamais de ligne `Sources:` séparée à la fin : les citations inline suffisent.
         Garde une réponse concise, factuelle et directement exploitable.
         """
     ).strip()
+    if any(prompt_line(chunk.version) for chunk in chunks):
+        system_prompt = system_prompt.replace(_CONFLICT_RULE, f"{_CONFLICT_RULE}\n{VERSION_RULE}")
 
     context = build_context(chunks)
     user_prompt = textwrap.dedent(
