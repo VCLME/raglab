@@ -82,7 +82,8 @@ class QueryResponse(BaseModel):
     retrieved_chunks: list[RetrievedChunk]
     retrieval_mode: RetrievalMode = RetrievalMode.DENSE
     # Legal citation parsed from the question when the citations option is
-    # on: label, law_number, article, law_found, article_found.
+    # on: label, law_number (None for a French code), article, code,
+    # law_found, article_found.
     citation: dict[str, Any] | None = None
     # Lexemes the question was reduced to for BM25 (lexical / hybrid modes).
     query_lexemes: list[str] = Field(default_factory=list)

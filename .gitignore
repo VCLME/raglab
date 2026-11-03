@@ -27,3 +27,5 @@ node_modules/
 data/lexml/fulltext/
 
 _site/
+
+data/legifrance/

@@ -40,6 +40,19 @@ Limites connues :
 - les lois qui en modifient d'autres recopient des articles entiers : un « Art. 2º » cité à l'intérieur d'un article modificatif peut être pris pour le début de l'article 2 ;
 - seules les lois fédérales numérotées sont reconnues ; décrets, portarias et lois d'État ne le sont pas.
 
+## Profil français (codes)
+
+Les codes français collectés par `raglab legifrance fetch` sont rangés à raison d'un document par version d'article, avec le code et le numéro d'article dans les métadonnées (voir [corpus-legi.md](corpus-legi.md)). Quand la question ne cite pas de loi brésilienne, le résolveur cherche une citation d'article de code :
+
+| Question | Citation lue |
+|---|---|
+| « Que prévoit l'article L. 221-18 du Code de la consommation ? » | art. L. 221-18, Code de la consommation |
+| « Que dit l'art. R. 212-1 ? » | art. R. 212-1, code non précisé |
+| « Que dispose l'article 1240 du code civil ? » | art. 1240, Code civil |
+| « Que dit l'article 4 de la loi n° 89-462 ? » | rien |
+
+Un numéro avec une lettre de partie (L, R, D, A, LO) suffit ; un numéro sans lettre n'est retenu que si un code est nommé juste après, car lois et décrets numérotent leurs articles de la même façon. Une trentaine de codes sont reconnus par leur nom ou leur abréviation (« C. consom. », « C. civ. »). L'article est retrouvé par `article_number` (et `code` s'il est nommé) : la version en vigueur, sinon la plus récente ; ses chunks sont épinglés en tête et la recherche est restreinte au code (`metadata_equals` sur `code`). La réponse de l'API porte `law_number: null` et `code`. Les citations brésiliennes sont lues en premier, inchangées.
+
 ## Résultats
 
 Recall@5 sur les 97 questions `reference` de LexML (comparaison appariée, McNemar exact) :

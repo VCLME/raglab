@@ -309,3 +309,40 @@ def test_gpu_available_needs_a_cuda_device_name():
     from raglab.retrieval.rerank import rerank_gpu_available
 
     assert rerank_gpu_available("cpu") is False
+
+
+def test_a_cited_french_article_is_pinned_and_the_search_restricted_to_its_code(monkeypatch):
+    import raglab.retrieval.service as service_module
+    from raglab.retrieval.citations import Citation, CodeArticle
+
+    service, _ = _service()
+    pinned_chunk = _chunk("a", 1, 1.0).model_copy(update={"citation_match": True})
+    monkeypatch.setattr(
+        service_module, "parse_citation", lambda question: Citation(None, "L221-18", code="consommation")
+    )
+    monkeypatch.setattr(
+        service_module,
+        "find_code_article",
+        lambda session, run, citation: CodeArticle("article-doc", "consommation", "VIGUEUR"),
+    )
+    monkeypatch.setattr(service_module, "document_chunks", lambda session, run, doc: [pinned_chunk])
+    monkeypatch.setattr(service_module, "find_law_document", Mock(side_effect=AssertionError("Brazilian path")))
+
+    response = service.query(
+        question="article L. 221-18 du code de la consommation",
+        corpus_name="c",
+        top_k=2,
+        generate_answer=False,
+        rerank=True,
+        citations=True,
+    )
+
+    assert response.retrieved_chunks[0].chunk_id == "a"
+    assert response.retrieved_chunks[0].citation_match
+    filters = service.vector_store.search.call_args.kwargs["filters"]
+    assert filters.metadata_equals == {"code": "consommation"}
+    assert filters.document_ids == []
+    assert response.citation is not None
+    assert response.citation["label"] == "art. L. 221-18 — Code de la consommation"
+    assert (response.citation["law_number"], response.citation["code"]) == (None, "consommation")
+    assert response.citation["law_found"] and response.citation["article_found"]

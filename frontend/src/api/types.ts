@@ -171,8 +171,11 @@ export interface RetrievedChunk {
 /** Legal citation parsed from the question (citations option). */
 export interface CitationInfo {
   label: string;
-  law_number: string;
+  /** Brazilian law number; null when the question cites a French code. */
+  law_number: string | null;
   article: string | null;
+  /** French code slug ("consommation", "civil"), when one is cited. */
+  code?: string | null;
   law_found: boolean;
   article_found: boolean;
 }

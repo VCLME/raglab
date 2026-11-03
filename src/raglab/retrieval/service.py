@@ -23,7 +23,14 @@ from raglab.generation.service import AnswerGenerator, OllamaGenerator, OpenAICo
 from raglab.llm.providers import resolve_llm_provider
 from raglab.logging_utils import log_event
 from raglab.observability.metrics import observe_query
-from raglab.retrieval.citations import article_chunks, find_law_document, merge_with_citation, parse_citation
+from raglab.retrieval.citations import (
+    article_chunks,
+    document_chunks,
+    find_code_article,
+    find_law_document,
+    merge_with_citation,
+    parse_citation,
+)
 from raglab.retrieval.fusion import reciprocal_rank_fusion
 from raglab.retrieval.rerank import Reranker, get_reranker, rerank_gpu_available
 from raglab.retrieval.stages import planned_stages, prompt_details, retrieval_stage_events, stage_end, stage_start
@@ -200,7 +207,9 @@ class QueryService:
 
         With `citations` on, a question citing a law ("art. 49 da Lei nº
         8.078") is restricted to that law and the cited article is pinned
-        first (see `raglab.retrieval.citations`).
+        first; one citing an article of a French code ("article L. 221-18 du
+        code de la consommation") pins that article's document and is
+        restricted to the code (see `raglab.retrieval.citations`).
 
         dense: embed + cosine KNN (as before). lexical: BM25, no embedder.
         hybrid: both, fused by Reciprocal Rank Fusion over deeper lists.
@@ -239,12 +248,24 @@ class QueryService:
         citation = parse_citation(question) if use_citations else None
         law_document_id: str | None = None
         pinned: list[RetrievedChunk] = []
-        if citation is not None:
+        cited_code: str | None = None
+        if citation is not None and citation.law_number is not None:
             law_document_id = find_law_document(self.session, index_run, citation)
             if law_document_id is not None:
                 if citation.article:
                     pinned = article_chunks(self.session, index_run, law_document_id, citation.article)
                 filters = (filters or RetrievalFilters()).model_copy(update={"document_ids": [law_document_id]})
+        elif citation is not None:
+            # An article of a French code is a document of its own: pin it
+            # and search the rest of the cited code.
+            code_article = find_code_article(self.session, index_run, citation)
+            if code_article is not None:
+                law_document_id = code_article.document_id
+                cited_code = code_article.code
+                pinned = document_chunks(self.session, index_run, code_article.document_id)
+                if cited_code:
+                    base = filters or RetrievalFilters()
+                    filters = base.model_copy(update={"metadata_equals": {**base.metadata_equals, "code": cited_code}})
         citation_seconds = perf_counter() - citation_started if citation is not None else 0.0
         started = perf_counter()
         query_embedding: list[float] | None = None
@@ -355,6 +376,7 @@ class QueryService:
                     "label": citation.label(),
                     "law_number": citation.law_number,
                     "article": citation.article,
+                    "code": cited_code or citation.code,
                     "law_found": law_document_id is not None,
                     "article_found": bool(pinned),
                 }

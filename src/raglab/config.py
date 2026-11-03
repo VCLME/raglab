@@ -99,6 +99,8 @@ class Settings(BaseSettings):
     lexml_documents_dir: Path = Field(default_factory=lambda: Path("data/lexml/documents"))
     lexml_benchmark_dir: Path = Field(default_factory=lambda: Path("data/lexml/benchmark"))
     lexml_fulltext_dir: Path = Field(default_factory=lambda: Path("data/lexml/fulltext"))
+    # French codes with their version history (`raglab legifrance fetch`).
+    legifrance_dir: Path = Field(default_factory=lambda: Path("data/legifrance"))
 
     generation_model: str = "qwen2.5:7b"
     generation_temperature: float = 0.1
