@@ -29,7 +29,7 @@ raglab bench download piaf --limit 500 --seed 42
 ```
 
 - Corpus : tous les paragraphes du split `train` d'`etalab-ia/piaf`, soit 761 paragraphes (≈ 540 Ko de texte), un fichier par paragraphe, texte déjà normalisé.
-- Questions : 500 tirées avec la graine ; les 500 réponses ont été relocalisées dans le texte normalisé. La réponse annotée (`answer_start`) est relocalisée dans le texte normalisé : le passage attendu est la réponse elle-même.
+- Questions : 500 tirées avec la graine. La réponse annotée (`answer_start`) est relocalisée dans le texte normalisé (les 500 l'ont été) : le passage attendu est la réponse elle-même.
 - `--sample-corpus` restaure l'ancien comportement (corpus réduit aux paragraphes des questions tirées), utile seulement pour un test rapide.
 - Licence : CC-BY-SA (Wikipédia). Le jeu dérivé n'est pas versionné dans le dépôt ; la commande le régénère.
 
@@ -46,19 +46,27 @@ Run de référence (graine 42, 1988-2024) : **252 lois, 4,6 millions de caractè
 
 Le moteur de recherche LexML est derrière une vérification anti-robot : il n'est pas utilisé. La législation brésilienne est dans le domaine public (Lei 9.610/1998, art. 8º, IV).
 
-**Questions.** Des passages d'environ 700 caractères sont tirés dans le corps des lois (un par loi d'abord, puis à tour de rôle). Pour chacun, qwen2.5:7b (température 0) écrit une question d'un des trois types :
+**Questions.** Des passages d'environ 700 caractères sont tirés dans le corps des lois, à partir du premier article (l'en-tête, l'ementa et la formule de promulgation sont identiques d'une loi à l'autre), un par loi d'abord puis à tour de rôle. Les lois qui ouvrent des crédits budgétaires restent dans le corpus comme distracteurs, mais on n'y tire pas de passages : ce sont des tableaux de chiffres. Pour chaque passage, un modèle rédacteur reçoit l'ementa de la loi et écrit une question d'un des trois types :
 
 | Type | Ce que la question contient | Ce qu'elle teste |
 |---|---|---|
-| `paraphrase` | aucun mot du passage, ni numéro d'article ou de loi | la recherche sémantique |
+| `paraphrase` | les idées du passage avec d'autres mots, sans numéro d'article ni de loi | la recherche sémantique |
 | `reference` | le numéro de l'article et de la loi (« art. 49 da Lei nº 8.078 ») | les identifiants exacts, que les embeddings brouillent |
 | `entity` | un sigle ou un nom propre du passage (FGTS, INSS…) | les termes rares |
 
+On demande à chaque fois le type le moins représenté, pour équilibrer le jeu. Un type que le modèle rate trop souvent n'est plus demandé, plutôt que de bloquer la génération.
+
+**Modèle rédacteur.** Par défaut, Qwen3.6-35B-A3B (MoE, ~3 B paramètres actifs) servi par llama.cpp, en mode JSON contraint par grammaire, température 0. Un premier essai avec qwen2.5:7b a été abandonné : sur 30 questions relues, environ un tiers étaient vagues (« Qual lei é alterada por esta Lei? »), contenaient « neste trecho » malgré la consigne, ou ne citaient pas l'article demandé (187 rejets pour 147 questions gardées). `--backend ollama` reste disponible.
+
+La commande gère le serveur elle-même : elle décharge les modèles Ollama (`keep_alive: 0`) pour libérer le GPU, lance `RAGLAB_LLAMACPP_START_COMMAND` si `/health` ne répond pas, puis `RAGLAB_LLAMACPP_STOP_COMMAND` à la fin, mais seulement si c'est elle qui l'a démarré (voir `.env.example`).
+
 Le modèle doit aussi rendre une **réponse copiée mot pour mot** du passage. Une question est rejetée si :
 
-- la réponse n'est pas du JSON valide ;
 - la citation est introuvable dans le passage (c'est ce filtre qui écarte les questions inventées) ;
-- une `paraphrase` cite un article ou une loi.
+- la réponse dépasse 40 mots, ou n'est que du remplissage (lignes de points) ou la formule de promulgation ;
+- la question ne se comprend qu'à côté du passage (« neste trecho », « esta Lei », « em análise »…) : dans un corpus de 252 lois, elle n'a pas de réponse unique ;
+- une `paraphrase` ou une `entity` cite un article ou une loi ;
+- une `reference` ne cite pas à la fois l'article et le numéro de la loi.
 
 Chaque cas enregistre `lexical_overlap` : la part des mots de la question (plus de 3 lettres) présents dans le passage. Les questions générées par un LLM reprennent souvent les mots du texte, ce qui favorise la recherche lexicale ; ce chiffre permet de le vérifier au lieu de le supposer.
 
@@ -66,6 +74,6 @@ Chaque cas enregistre `lexical_overlap` : la part des mots de la question (plus 
 
 ## Limites connues
 
-- Les questions LexML sont écrites et, avec RAGAS, jugées par le même modèle (qwen2.5:7b) que celui qui génère les réponses. Le biais est documenté, pas corrigé.
+- Les questions LexML sont écrites par un modèle (Qwen3.6 MoE). Elles servent à évaluer le retrieval, pas les réponses : elles ne favorisent pas un générateur, mais elles héritent des tournures du rédacteur. Le juge RAGAS (phase 9.1b) sera un modèle d'une autre famille, Gemma 4, pour éviter qu'un modèle note ses propres réponses.
 - Une seule réponse attendue par question : un autre passage qui répond aussi bien compte comme non pertinent. Recall et MRR sont donc des bornes basses.
 - PIAF a été écrit par des annotateurs qui lisaient le paragraphe : beaucoup de questions reprennent ses mots. Il favorise la recherche lexicale par construction.
