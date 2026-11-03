@@ -159,4 +159,11 @@ Objectif : passer du laboratoire à un pipeline RAG prêt pour la production, ch
 - mesuré sans GPU (`scripts/bench_api_hardening.py`) : sources affichées après ~65 ms au lieu de ~3,4 s, premier token à 366 ms (préremplissage simulé 300 ms) ; middlewares +0,16 ms par requête ; TTFT réel sur GPU à mesurer
 - migrations Alembic : introduites avec 9.2 (`feature/hybrid-retrieval`), aucune migration dans cette PR
 
-**À venir** : 9.2 retrieval hybride BM25 + RRF · 9.3 re-ranking cross-encoder · 9.4 compréhension de la requête et abstention · 9.6 observabilité (Prometheus, Grafana, dérive) · 9.7 portes de qualité · 9.8 vitrine
+**9.6 — Observabilité 🚧 (PR ouverte, empilée sur 9.1b)** : voir [observabilite.md](observabilite.md)
+
+- `GET /metrics` (Prometheus) : latence par étape (embed, retrieval, rerank, generation), tokens/s, score top-1, requêtes par route et statut, compteurs génériques de cache (`embedder`, `reranker`) et d'abstention que 9.3 et 9.4 incrémentent ; labels à faible cardinalité (gabarits de route)
+- profil Compose `obs` : Prometheus v3.5.0 et Grafana 12.1.1, ports sur 127.0.0.1, source de données et tableau de bord versionnés, lecture anonyme
+- `raglab experiment drift` et `POST /api/experiments/drift` : test KS sur les distributions de scores et de rangs, écarts des moyennes RAGAS / MRR / recall entre deux index runs, experiment runs ou fenêtres de dates ; Markdown ou JSON, `--fail-on-drift` ; scores désormais stockés dans `metrics_json.retrieved_scores`
+- coût mesuré sans GPU (`scripts/bench_observability.py`) : +105 µs sur une requête simulée de 60 ms (+0,17 %, objectif < 1 %) ; capture Grafana sur trafic réel à faire
+
+**À venir** : 9.2 retrieval hybride BM25 + RRF · 9.3 re-ranking cross-encoder · 9.4 compréhension de la requête et abstention · 9.7 portes de qualité · 9.8 vitrine

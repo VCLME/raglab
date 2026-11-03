@@ -77,6 +77,15 @@ La page Benchmarks a trois onglets pour le cycle complet évaluer → mesurer �
 
 ---
 
+## Observabilité
+
+`/metrics` expose les latences par étape, le score top-1, le débit de génération, les taux de hit des caches et d'abstention ; `docker compose --profile obs up -d` lance Prometheus et Grafana (tableau de bord versionné, lecture anonyme sur http://127.0.0.1:3000). `raglab experiment drift` compare deux index ou deux périodes (test KS sur les scores, écarts RAGAS). Détails : [docs/observabilite.md](docs/observabilite.md).
+
+<!-- Capture Grafana à prendre avec la stack lancée sur des requêtes réelles : docs/images/grafana-overview.png -->
+> *Capture du tableau de bord Grafana à venir.*
+
+---
+
 ## Démarrage rapide (Docker)
 
 ```bash
@@ -181,6 +190,7 @@ ruff check . && ruff format --check . && mypy && pytest
 - [docs/roadmap.md](docs/roadmap.md) — ce qui est livré, ce qui vient
 - [docs/frontend-ui.md](docs/frontend-ui.md) — détail des pages React
 - [docs/run-and-test.md](docs/run-and-test.md) — commandes pour lancer / tester / rejouer
+- [docs/observabilite.md](docs/observabilite.md) — métriques Prometheus, Grafana, rapport de dérive
 
 ---
 
