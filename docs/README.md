@@ -12,6 +12,7 @@ Par où commencer selon ce que vous voulez faire. Le [README du dépôt](../READ
 | [data-model.md](data-model.md) | le schéma PostgreSQL (corpus, documents, index runs, espaces d'embedding) |
 | [modes-de-recherche.md](modes-de-recherche.md) | les modes de recherche (vectoriel, mots-clés, hybride, graphe), le re-ranking, les références d'articles : chaque option, son défaut et son effet mesuré |
 | [graphe.md](graphe.md) | le graphe des renvois dans Neo4j : lois, articles, `CITES`, `AMENDS`, `REVOKES`, précision mesurée |
+| [versions.md](versions.md) | les versions des textes : articles abrogés, réécrits, numéros réutilisés ; l'option `versions`, le jeu « versions » et sa métrique |
 | [roadmap.md](roadmap.md) | ce qui est livré, phase par phase, et ce qui vient |
 
 ## Le faire tourner

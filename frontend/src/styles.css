@@ -3515,3 +3515,40 @@ button.icon-only {
     display: none;
   }
 }
+
+/* Versions option (phase 9.10): state of a passage, choice of versions. */
+.version-badge {
+  margin-left: 8px;
+}
+.version-details {
+  font-size: 12px;
+  margin: 4px 0 6px;
+}
+.versions-field {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.versions-field input[type="date"] {
+  width: auto;
+}
+.versions-summary {
+  display: inline-flex;
+  margin-bottom: 8px;
+  white-space: normal;
+}
+.edu-version {
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  white-space: nowrap;
+}
+.edu-version.in_force {
+  color: var(--ok);
+}
+.edu-version.outdated,
+.edu-version.demoted {
+  color: var(--err);
+}

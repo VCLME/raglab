@@ -149,6 +149,7 @@ def test_api_and_cli_send_the_same_retrieval_parameters(client):
         "rerank": None,
         "citations": None,
         "graph": None,
+        "versions": "as_of=2015-06-01",
     }
 
     with patch("raglab.api.routers.query.QueryService") as api_cls:
@@ -164,6 +165,7 @@ def test_api_and_cli_send_the_same_retrieval_parameters(client):
                 "retrieval_mode": "hybrid",
                 "lexical_weight": 0.3,
                 "rrf_k": 20,
+                "versions": "as_of=2015-06-01",
             },
         )
     assert api_response.status_code == 200
@@ -190,6 +192,8 @@ def test_api_and_cli_send_the_same_retrieval_parameters(client):
                 "0.3",
                 "--rrf-k",
                 "20",
+                "--versions",
+                "as_of=2015-06-01",
             ],
         )
     assert result.exit_code == 0, result.output

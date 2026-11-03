@@ -4,6 +4,7 @@ import re
 from dataclasses import dataclass
 
 from raglab.domain.schemas import RetrievedChunk
+from raglab.domain.versions import prompt_line, strip_revoked
 
 
 @dataclass(slots=True)
@@ -170,6 +171,14 @@ def build_context(chunks: list[RetrievedChunk]) -> str:
     # instructions follow the question's language.
     blocks: list[str] = []
     for chunk in chunks:
+        # Version state of the passage (versions option, phase 9.10): the
+        # model is told which article version it reads, and does not read
+        # the wording of provisions marked repealed.
+        status = prompt_line(chunk.version)
+        text = chunk.chunk_text
+        version = chunk.version
+        if version is not None and version.in_prompt and version.source == "markers" and version.revoked_lines:
+            text = strip_revoked(text)
         blocks.append(
             "\n".join(
                 [
@@ -177,8 +186,9 @@ def build_context(chunks: list[RetrievedChunk]) -> str:
                     f"Fichier: {chunk.file_name}",
                     f"Chemin: {chunk.source_path}",
                     f"Score: {chunk.score:.4f}",
+                    *([status] if status else []),
                     "Extrait:",
-                    chunk.chunk_text,
+                    text,
                 ]
             )
         )

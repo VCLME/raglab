@@ -108,6 +108,24 @@ MATCH (ch:Chunk)-[:PART_OF]->(b)
 RETURN a.number, b.number, collect(ch.id)[..2] AS chunk_ids
 // @@fusion@@`,
   },
+  versions: {
+    source: "src/raglab/domain/versions.py",
+    language: "python",
+    code: `# @@policy@@
+policy = resolve_policy(versions, question)  # in_force | as_of | all
+# @@date@@
+parse_question_date("avant 2016 ?")  # -> 2015-12-31
+
+# @@valid@@
+def valid_at(metadata, on):
+    start, end = metadata["date_debut"], metadata["date_fin"]
+    return (not start or start <= on) and (not end or end > on)
+
+# @@filter@@
+filters.valid_at = policy.on.isoformat()
+# @@markers@@
+retrieved, demoted = demote_revoked(retrieved)  # "(Revogado)"`,
+  },
   fusion: {
     source: "src/raglab/retrieval/fusion.py",
     language: "python",

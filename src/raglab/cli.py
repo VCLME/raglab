@@ -27,6 +27,17 @@ from raglab.ollama import OllamaService
 from raglab.retrieval.filters import build_retrieval_filters
 from raglab.retrieval.service import QueryService
 
+
+def _check_versions_option(value: str | None) -> str | None:
+    from raglab.domain.versions import parse_versions_option
+
+    try:
+        parse_versions_option(value)
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc)) from exc
+    return value
+
+
 app = typer.Typer(no_args_is_help=True, help="RAG local oriente experimentation.")
 db_app = typer.Typer(no_args_is_help=True, help="Commandes base de donnees.")
 experiment_app = typer.Typer(no_args_is_help=True, help="Commandes d'experimentation.")
@@ -138,7 +149,7 @@ def bench_all(
         None,
         "--suite",
         help=(
-            "piaf, lexml_fulltext, legi_consommation, eurlex_compliance ou lexml_references (renvois, 9.9b) "
+            "piaf, lexml_fulltext, legi_consommation, eurlex_compliance, lexml_references (renvois, 9.9b) ou legi_versions (versions, 9.10) "
             "(defaut: piaf + lexml_fulltext)."
         ),
     ),
@@ -173,6 +184,12 @@ def bench_all(
         "--graph/--no-graph",
         help="Branche graphe : suivre les renvois (CITES) des articles trouves dans Neo4j, fusion RRF a trois sources. Defaut: RAGLAB_GRAPH_RETRIEVAL.",
     ),
+    versions: str | None = typer.Option(
+        None,
+        "--versions",
+        callback=_check_versions_option,
+        help="Versions d'articles utilisables : in_force (en vigueur aujourd'hui, ou a la date demandee par la question), all (toutes, comme un RAG classique), as_of=AAAA-MM-JJ. Defaut: RAGLAB_VERSIONS_DEFAULT.",
+    ),
     generator_provider: str | None = typer.Option(
         None,
         "--generator-provider",
@@ -202,6 +219,7 @@ def bench_all(
         rerank=rerank,
         citations=citations,
         graph=graph,
+        versions=versions,
         generator=GeneratorConfig(provider=generator_provider, model=generator_model, profile=generator_profile),
     )
     output = Path("benchmarks/results") / f"{label}.json"
@@ -652,6 +670,46 @@ def legifrance_questions(
     typer.echo(json.dumps(result, indent=2, ensure_ascii=False))
 
 
+@legifrance_app.command("version-questions")
+def legifrance_version_questions(
+    corpus_dir: Path = typer.Option(
+        get_settings().legifrance_dir / "consommation" / "corpus",
+        "--corpus-dir",
+        help="Corpus produit par `raglab legifrance fetch` (toutes les versions).",
+    ),
+    output_dir: Path = typer.Option(
+        Path("benchmarks") / "legi_versions",
+        "--output-dir",
+        help="Dossier du jeu fige (ground_truth.jsonl + metadata.json).",
+    ),
+    count: int = typer.Option(100, "--count", min=1, help="Nombre de questions a garder."),
+    seed: int = typer.Option(42, "--seed", help="Graine du tirage des pieges et du partage dev / heldout."),
+    backend: str = typer.Option(
+        "llamacpp",
+        "--backend",
+        help="llamacpp (serveur compatible OpenAI, demarre si besoin) ou ollama.",
+    ),
+    model: str | None = typer.Option(None, "--model", help="Modele (defaut: question_model ou generation_model)."),
+    profile: str | None = typer.Option(
+        None, "--profile", help="Profil llama.cpp a demarrer (defaut: question_model_profile)."
+    ),
+) -> None:
+    """Generer le jeu « versions » : questions dont la reponse naive vient d'une version abrogee ou reecrite (9.10)."""
+    from raglab.benchmarks.legi_versions import generate_version_questions
+
+    result = generate_version_questions(
+        get_settings(),
+        backend=backend,
+        corpus_dir=corpus_dir,
+        output_dir=output_dir,
+        count=count,
+        seed=seed,
+        model=model,
+        profile=profile,
+    )
+    typer.echo(json.dumps(result, indent=2, ensure_ascii=False))
+
+
 @legifrance_app.command("review-questions")
 def legifrance_review_questions(
     ground_truth: Path = typer.Option(
@@ -942,6 +1000,12 @@ def query(
         "--graph/--no-graph",
         help="Branche graphe : suivre les renvois (CITES) des articles trouves dans Neo4j, fusion RRF a trois sources. Defaut: RAGLAB_GRAPH_RETRIEVAL.",
     ),
+    versions: str | None = typer.Option(
+        None,
+        "--versions",
+        callback=_check_versions_option,
+        help="Versions d'articles utilisables : in_force (en vigueur aujourd'hui, ou a la date demandee par la question), all (toutes, comme un RAG classique), as_of=AAAA-MM-JJ. Defaut: RAGLAB_VERSIONS_DEFAULT.",
+    ),
     stream: bool = typer.Option(
         False,
         "--stream",
@@ -985,6 +1049,7 @@ def query(
                 rerank=rerank,
                 citations=citations,
                 graph=graph,
+                versions=versions,
             )
             final: dict = {}
             for event, data in service.stream_answer(outcome, llm_model=llm_model, llm_provider=provider):
@@ -1009,6 +1074,7 @@ def query(
             rerank=rerank,
             citations=citations,
             graph=graph,
+            versions=versions,
             llm_model=llm_model,
             llm_provider=provider,
         )
@@ -1168,6 +1234,12 @@ def experiment_recall(
         "--graph/--no-graph",
         help="Branche graphe : suivre les renvois (CITES) des articles trouves dans Neo4j, fusion RRF a trois sources. Defaut: RAGLAB_GRAPH_RETRIEVAL.",
     ),
+    versions: str | None = typer.Option(
+        None,
+        "--versions",
+        callback=_check_versions_option,
+        help="Versions d'articles utilisables : in_force (en vigueur aujourd'hui, ou a la date demandee par la question), all (toutes, comme un RAG classique), as_of=AAAA-MM-JJ. Defaut: RAGLAB_VERSIONS_DEFAULT.",
+    ),
 ) -> None:
     with session_scope() as session:
         service = RecallBenchmarkService(session)
@@ -1183,6 +1255,7 @@ def experiment_recall(
             rerank=rerank,
             citations=citations,
             graph=graph,
+            versions=versions,
             compute_ragas=ragas,
             ragas_case_limit=ragas_limit,
             judge=JudgeConfig(backend=judge_backend, model=judge_model),

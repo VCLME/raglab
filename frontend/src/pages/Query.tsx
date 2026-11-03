@@ -21,6 +21,7 @@ import { Spinner } from "../components/Spinner";
 import { useConfig } from "../hooks/useConfig";
 import { useLocalHistory } from "../hooks/useLocalHistory";
 import { Select } from "../components/Select";
+import { VersionsField, VersionsSummary } from "../components/Versions";
 
 const STRATEGIES: ("" | ChunkingStrategy)[] = ["", "traditional", "slide", "late"];
 const RETRIEVAL_MODES: RetrievalMode[] = ["dense", "lexical", "hybrid"];
@@ -63,6 +64,8 @@ export function Query() {
   const [citations, setCitations] = useState(true);
   // Graph branch: off by default until measured (RAGLAB_GRAPH_RETRIEVAL).
   const [graph, setGraph] = useState(false);
+  // Versions option: "" = server default (RAGLAB_VERSIONS_DEFAULT).
+  const [versions, setVersions] = useState("");
   const [question, setQuestion] = useState("");
 
   const [documentIdsRaw, setDocumentIdsRaw] = useState("");
@@ -112,6 +115,7 @@ export function Query() {
       rerank: rerank === "" ? null : rerank === "on",
       citations,
       graph,
+      versions: versions || null,
       filters: {
         document_ids: documentIdsRaw.split(",").map((s) => s.trim()).filter(Boolean),
         file_names: fileNamesRaw.split(",").map((s) => s.trim()).filter(Boolean),
@@ -244,6 +248,9 @@ export function Query() {
                 <input type="checkbox" checked={graph} onChange={(e) => setGraph(e.target.checked)} />
                 {t("retrieval.graph_checkbox")}
               </label>
+            </FieldRow>
+            <FieldRow label={t("versions.label")} hint={t("versions.field_hint")}>
+              <VersionsField value={versions || config?.versions_default || "all"} onChange={setVersions} />
             </FieldRow>
             {retrievalMode === "hybrid" ? (
               <>
@@ -436,6 +443,7 @@ export function Query() {
                     })}
                   </div>
                 ) : null}
+                <VersionsSummary info={action.data.versions} />
                 {action.data.citation ? (
                   <div className={`badge ${action.data.citation.law_found ? "ok" : "warn"}`} style={{ marginBottom: 8 }}>
                     {action.data.citation.law_found

@@ -178,6 +178,7 @@ Le cœur experimental. Deux colonnes :
 
 - Colonne gauche : parametres (question, corpus, strategie, index_run_id explicite, top_k, toggle generation) et filtres de retrieval (`document_ids`, `file_names`, `source_path_contains`, `tags`, `metadata_equals` au format `cle=valeur` par ligne).
 - Colonne droite : reponse LLM (si generation activee) avec ses citations `[Rank N]` rendues en pastilles comme dans le Chat (clic : la carte du chunk cite est mise en evidence et amenee a l'ecran), liste des `ChunkCard` avec score, rank, file_name, source_path et apercu du texte, temps d'execution, reponse brute (JSON). La barre de score d'une carte montre le score final et prend la couleur de l'etape qui l'a produit (rerank, RRF, BM25 ou dense), nommee a cote du score. Meme rendu des citations sur Retrieval graphe.
+- Versions des articles (9.10, [versions.md](versions.md)) : choix « En vigueur / Toutes / À une date » (avec la date) ; chaque carte porte un badge d'état (« en vigueur depuis le … », « ancienne version (… → …) », « abrogé le … », « dispositions abrogées ») et, sous les scores, l'état, les dates, les textes qui ont créé et clos la version et la version suivante ; une ligne dit quelle date a été utilisée et d'où elle vient (option, ou lue dans la question). Le même choix est dans les options du Chat (corpus de lois seulement) et au lancement des benchmarks ; le mode pédagogique a une étape « Versions ».
 - Historique local (localStorage, 20 dernieres requetes) avec bouton « Rejouer ».
 
 ### Prompt Playground (`/expert/playground`)

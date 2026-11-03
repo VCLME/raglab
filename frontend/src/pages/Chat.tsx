@@ -9,8 +9,16 @@ import type {
   QueryResponse,
   RetrievalMode,
   RetrievedChunk,
+  VersionsInfo,
 } from "../api/types";
-import { ChatOptions, NO_OVERRIDES, effectiveOptions, type RetrievalOverrides } from "../components/ChatOptions";
+import {
+  ChatOptions,
+  LEGAL_OPTIONS,
+  NO_OVERRIDES,
+  effectiveOptions,
+  type RetrievalOverrides,
+} from "../components/ChatOptions";
+import { parseVersionsValue } from "../components/Versions";
 import { ChunkCard } from "../components/ChunkCard";
 import { extractCitedRanks, renderAnswer } from "../components/AnswerText";
 import { SendIcon, StopIcon } from "../components/Icon";
@@ -61,6 +69,8 @@ interface ChatTurn {
   graph?: boolean | null;
   graph_notice?: string | null;
   graph_stats?: Record<string, number> | null;
+  // Version policy applied (versions option).
+  versions?: VersionsInfo | null;
 }
 
 function newTurnId(): string {
@@ -189,9 +199,9 @@ export function Chat() {
       body.llm_model = picked.model;
     }
     // Only the options changed in the popover: the rest keeps the server defaults.
-    // Article references and the graph are not sent for a corpus without law articles.
+    // Article references, the graph and versions are not sent for a corpus without law articles.
     (Object.keys(options) as (keyof RetrievalOverrides)[]).forEach((key) => {
-      if (options[key] !== null && ((key !== "citations" && key !== "graph") || legalCorpus)) body[key] = options[key];
+      if (options[key] !== null && (!LEGAL_OPTIONS.includes(key) || legalCorpus)) body[key] = options[key];
     });
     const patchTurn = (update: (tn: ChatTurn) => Partial<ChatTurn>) =>
       setTurns((prev) => prev.map((tn) => (tn.id === id ? { ...tn, ...update(tn) } : tn)));
@@ -216,6 +226,7 @@ export function Chat() {
       graph: r.graph ?? null,
       graph_notice: r.graph_notice ?? null,
       graph_stats: r.graph_stats ?? null,
+      versions: r.versions ?? null,
     });
     try {
       // Sources show up as soon as retrieval is done, then the answer grows
@@ -478,6 +489,8 @@ export function Chat() {
     graphOn: (answered ? lastTurn?.graph : null) ?? planned.graph,
     graphNotice: answered ? lastTurn?.graph_notice ?? null : null,
     graphStats: answered ? lastTurn?.graph_stats ?? null : null,
+    versionsMode: parseVersionsValue(planned.versions).mode,
+    versions: answered ? lastTurn?.versions ?? null : null,
   };
   return (
     <div className="edu-shell">

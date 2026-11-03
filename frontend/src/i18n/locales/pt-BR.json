@@ -557,7 +557,9 @@
       "seeds": "Trechos de partida",
       "articles": "Artigos citados seguidos",
       "chunks": "Trechos obtidos",
-      "added": "Novos para a fusão"
+      "added": "Novos para a fusão",
+      "demoted": "Trechos revogados movidos",
+      "outdated": "Trechos desatualizados restantes"
     },
     "scores": {
       "score": "score",
@@ -651,6 +653,13 @@
         "what": "Parte do artigo citado pela pergunta e dos artigos dos melhores trechos encontrados, segue suas remissões (\"nos termos do art. 12\") por um salto no grafo Neo4j e adiciona os trechos dos artigos citados que as buscas não encontraram.",
         "why": "Numa lei, a resposta costuma estar no artigo ao qual o trecho encontrado remete: ele não se parece com a pergunta, nem no sentido nem nas palavras, e nenhuma das duas buscas o traz.",
         "disabled": "Opção desativada: a fusão recebe só os trechos das buscas vetorial e BM25."
+      },
+      "versions": {
+        "name": "Versões dos artigos",
+        "short": "Versões",
+        "what": "Escolhe a data de referência (hoje, ou a que a pergunta pede: \"antes de 2016\"), descarta antes da classificação as versões de artigos que não se aplicavam naquele dia, move para o fim os trechos cujos dispositivos estão todos revogados e informa ao modelo o estado de cada trecho.",
+        "why": "Um código guarda suas redações antigas e reutiliza números: o antigo artigo L. 121-21 dava catorze dias para desistir, o atual trata de custos de cobrança. Sem esta etapa, o modelo cita uma regra revogada como se estivesse em vigor.",
+        "disabled": "Opção \"todas as versões\": nenhuma versão é descartada, como em um RAG clássico."
       }
     },
     "hint_selected": "Clique de novo na etapa ativa para fechar a explicação.",
@@ -723,7 +732,21 @@
       "graph_skipped_no_neo4j": "Indisponível: o Neo4j não responde, a resposta informa.",
       "graph_skipped_no_graph": "Indisponível: sem grafo para este índice (Expert → Grafo de remissões).",
       "graph_failed": "Indisponível: erro do Neo4j (ver os logs).",
-      "rerank_off_no_gpu": "Desativado (sem GPU): na CPU levaria vários segundos; a opção do Chat pode forçá-lo."
+      "rerank_off_no_gpu": "Desativado (sem GPU): na CPU levaria vários segundos; a opção do Chat pode forçá-lo.",
+      "versions": "Versões",
+      "versions_opt_in_force": "em vigor",
+      "versions_opt_as_of": "em uma data",
+      "versions_opt_all": "todas",
+      "versions_in_force_planned": "Em vigor hoje, ou na data que a pergunta pede.",
+      "versions_as_of_planned": "As versões em vigor na data escolhida.",
+      "versions_all_planned": "Todas as versões, revogadas incluídas.",
+      "versions_in_force": "Versões em vigor em {{date}}.",
+      "versions_as_of": "Versões em vigor em {{date}}.",
+      "versions_question": "\"{{phrase}}\": versões em vigor em {{date}}.",
+      "versions_all": "Todas: {{count}} trecho(s) de uma versão desatualizada.",
+      "versions_effect_filtered": "As outras são descartadas antes da classificação.",
+      "versions_effect_markers": "{{count}} trecho(s) revogado(s) movido(s) para o fim.",
+      "versions_effect_none": ""
     },
     "code": {
       "citation": {
@@ -790,10 +813,23 @@
         "cap": "no máximo 3 artigos citados por partida, os mais bem classificados primeiro",
         "chunks": "os primeiros trechos de cada artigo citado",
         "fusion": "esses trechos entram na fusão RRF como terceira lista"
+      },
+      "versions": {
+        "policy": "a regra da requisição: a opção, senão uma data lida na pergunta",
+        "date": "\"avant 2016\": a versão em vigor em 31 de dezembro de 2015",
+        "valid": "uma versão se aplica depois de começar e até terminar",
+        "filter": "o filtro SQL descarta as outras versões antes da classificação",
+        "markers": "leis compiladas: trechos totalmente \"Revogado\" vão para o fim"
       }
     },
     "graph_skipped": "indisponível",
-    "rerank_off_no_gpu": "desativado (sem GPU)"
+    "rerank_off_no_gpu": "desativado (sem GPU)",
+    "versions_meta_in_force": "em vigor",
+    "versions_meta_as_of": "em {{date}}",
+    "versions_meta_all": "todas",
+    "version_tag_in_force": "em vigor",
+    "version_tag_outdated": "desatualizado",
+    "version_tag_demoted": "revogado, movido"
   },
   "retrieval": {
     "mode_label": "Modo de busca",
@@ -905,5 +941,41 @@
     "saved": "Chave salva.",
     "cleared": "Chave apagada.",
     "hint": "Guardada apenas neste navegador (localStorage), nunca enviada a outro lugar além desta API."
+  },
+  "versions": {
+    "label": "Versões dos artigos",
+    "date_label": "Data de referência",
+    "field_hint": "Em vigor: versões aplicáveis hoje, ou na data que a pergunta pede (\"antes de 2016\"). Todas: como um RAG clássico, revogadas incluídas. Em uma data: versões aplicáveis naquele dia.",
+    "mode_in_force": "Em vigor",
+    "mode_all": "Todas",
+    "mode_as_of": "Em uma data",
+    "short_in_force": "em vigor",
+    "short_all": "todas as versões",
+    "short_as_of": "em uma data",
+    "hint_in_force": "Descarta as versões revogadas ou substituídas; uma pergunta sobre o passado (\"antes de 2016\") usa a versão dessa data.",
+    "hint_all": "Todas as versões, revogadas incluídas, como um RAG clássico: a resposta pode citar um texto que não se aplica mais.",
+    "hint_as_of": "As versões aplicáveis na data escolhida.",
+    "badge_in_force": "em vigor desde {{date}}",
+    "badge_old": "versão antiga ({{from}} → {{to}})",
+    "badge_repealed": "revogado em {{date}}",
+    "badge_revoked": "dispositivos revogados",
+    "badge_revoked_demoted": "revogado, movido para o fim",
+    "badge_some_revoked": "{{count}} dispositivo(s) revogado(s)",
+    "badge_rewritten": "redação de {{year}}",
+    "state": "Estado",
+    "valid_from": "em vigor desde {{from}}",
+    "valid_from_to": "de {{from}} a {{to}}",
+    "created_by": "criada por {{text}}",
+    "ended_by": "fim: {{text}}",
+    "replaced_by": "substituída por {{id}} (em {{date}})",
+    "count": "{{count}} versões deste artigo",
+    "summary_in_force": "Versões em vigor em {{date}}.",
+    "summary_as_of": "Versões em vigor em {{date}} (data pedida).",
+    "summary_question": "A pergunta é sobre o passado (\"{{phrase}}\"): versões em vigor em {{date}}.",
+    "summary_all": "Todas as versões, como um RAG clássico: {{count}} trecho(s) de uma versão que não se aplica mais.",
+    "effect_filtered": "As outras versões são descartadas antes da classificação.",
+    "effect_demoted": "{{count}} trecho(s) totalmente revogado(s) movido(s) para o fim da lista.",
+    "effect_markers": "Os dispositivos marcados \"Revogado\" não são mostrados ao modelo.",
+    "notice_markers_no_history": "Este corpus só guarda a redação atual: uma data passada não pode ser respeitada."
   }
 }

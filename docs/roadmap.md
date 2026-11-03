@@ -143,7 +143,7 @@ Objectif : passer du laboratoire à un pipeline RAG prêt pour la production, ch
 |---|---|---|
 | Identifiants (« art. 49 da Lei 8.078 ») | résolveur de citations (9.3b) | ✅ 9 % → 72 % |
 | Renvois (la réponse est dans l'article cité) | graphe des citations dans Neo4j (9.9) | à mesurer |
-| Versions (article abrogé ou réécrit cité comme en vigueur) | statut de version par chunk (9.10) | à mesurer |
+| Versions (article abrogé ou réécrit cité comme en vigueur) | option `versions` : filtre par date, statut de version par chunk (9.10) | code en revue, à mesurer |
 | Hors périmètre | routeur et abstention (9.4) | mesuré sur l'ancien pipeline, à refaire |
 
 Toute nouvelle brique doit servir l'un de ces modes d'échec ou l'expérience de démonstration (mode Démo : comparer RAG classique et raglab sur des questions pièges).
@@ -205,10 +205,11 @@ Toute nouvelle brique doit servir l'un de ces modes d'échec ou l'expérience de
 - 9.9b 🚧 (code en revue, mesure à faire) : troisième branche de recherche en parallèle de la recherche dense et de BM25 (départs : l'article cité par la question et ceux des meilleurs passages ; `CITES` un saut), fusion RRF à trois sources, puis re-ranking ; un passage trouvé par renvoi reste groupé avec celui qui le cite. Sans Neo4j, la branche est sautée et la réponse le dit (`graph_notice`). Option `graph` sur la CLI, l'API et l'UI, désactivée par défaut tant qu'elle n'est pas mesurée. Générateur du jeu figé d'environ 100 questions « à renvoi » (`raglab lexml reference-questions`, partage `dev` / `heldout`) ; génération et comparaison appariée sur PIAF, LexML et le jeu « renvois » à lancer sur GPU.
 - 9.9c (plus tard) : profils markdown / documentation et articles de recherche (`Section`, `Topic`, `Source`, `Author`, `Reference`), avec un corpus de test dédié.
 
-**9.10 — Versions des textes 📋 (planifié)** : mode d'échec « versions »
+**9.10 — Versions des textes 🚧 (code en revue, mesure à faire)** : mode d'échec « versions », voir [versions.md](versions.md)
 
-- corpus LexML : 70 lois sur 252 ont des articles réécrits (863 « Redação dada pela »), 79 ont des articles abrogés (1 084 « (Revogado) »), 1 239 articles insérés
-- jeu figé d'environ 100 questions pièges, mesure RAG classique contre pipeline complet, puis statut de version par chunk (en vigueur, abrogé, réécrit par), filtre et consigne au modèle, remesure
+- corpus : Code de la consommation avec tout son historique (1 352 articles réécrits, 1 586 versions abrogées, 321 numéros réutilisés en 2016) ; LexML : 70 lois sur 252 ont des articles réécrits (863 « Redação dada pela »), 79 ont des articles abrogés (1 084 « (Revogado) »), 1 239 articles insérés
+- option `versions` sur la CLI, l'API et l'UI, défaut livré `all` (toutes les versions, comme avant) tant que la mesure n'est pas faite : `in_force` (versions en vigueur aujourd'hui, ou à la date que demande la question, « avant 2016 », lue en français, portugais et anglais), `as_of=AAAA-MM-JJ`, `all` (comme un RAG classique) ; filtre SQL avant le classement sur les métadonnées de Légifrance, version de la date pour l'article cité, passages entièrement « (Revogado) » en fin de liste et dispositions abrogées masquées au modèle sur LexML ; état de chaque passage dans la réponse, le prompt, l'interface et une étape « Versions » du mode pédagogique
+- générateur du jeu figé d'environ 100 questions pièges (`raglab legifrance version-questions`, suite `legi_versions` : réécrit, numéro réutilisé, article déplacé, question sur le passé ; `trap` et partie `dev` / `heldout`) ; métriques `outdated_hit@k` et `outdated_answer_rate`, comparées question par question par `raglab bench compare` ; génération et mesures à lancer sur GPU
 
 **Corpus français 🚧 (bloc C1 de l'audit)** : voir [corpus-legi.md](corpus-legi.md)
 

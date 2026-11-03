@@ -52,6 +52,9 @@ class GroundTruthCase:
     #: Facts about the gold passage used to break results down (cited
     #: article, number of versions of that article...).
     context: dict | None = None
+    #: Versions set (phase 9.10): the outdated version(s) that would mislead
+    #: (`kind`, `file_names`, `article`, outdated `answer`).
+    trap: dict | None = None
 
     def to_jsonl_line(self) -> str:
         payload = {key: value for key, value in asdict(self).items() if value is not None}

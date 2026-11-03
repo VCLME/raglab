@@ -5,6 +5,7 @@ import { SlidersIcon } from "./Icon";
 import { SlideIndicator } from "./SlideIndicator";
 import { HelpTip } from "./HelpTip";
 import { Switch } from "./Switch";
+import { VersionsField, parseVersionsValue } from "./Versions";
 
 /** Retrieval options of a Chat request; `null` = the server default. */
 export interface RetrievalOverrides {
@@ -12,9 +13,20 @@ export interface RetrievalOverrides {
   rerank: boolean | null;
   citations: boolean | null;
   graph: boolean | null;
+  /** in_force, all or as_of=YYYY-MM-DD (phase 9.10). */
+  versions: string | null;
 }
 
-export const NO_OVERRIDES: RetrievalOverrides = { retrieval_mode: null, rerank: null, citations: null, graph: null };
+export const NO_OVERRIDES: RetrievalOverrides = {
+  retrieval_mode: null,
+  rerank: null,
+  citations: null,
+  graph: null,
+  versions: null,
+};
+
+/** Options that only apply to a corpus of law / code articles. */
+export const LEGAL_OPTIONS: (keyof RetrievalOverrides)[] = ["citations", "graph", "versions"];
 
 const MODES: RetrievalMode[] = ["dense", "lexical", "hybrid"];
 
@@ -30,6 +42,7 @@ export function effectiveOptions(value: RetrievalOverrides, config: ConfigRespon
     rerank: value.rerank ?? ((config?.default_rerank ?? false) && config?.rerank_gpu !== false),
     citations: legalCorpus && (value.citations ?? config?.citation_resolver ?? true),
     graph: legalCorpus && (value.graph ?? config?.graph_retrieval ?? false),
+    versions: legalCorpus ? (value.versions ?? config?.versions_default ?? "all") : "all",
   };
 }
 
@@ -56,7 +69,7 @@ export function ChatOptions({ value, onChange, config, legalCorpus }: Props) {
   const overridden =
     value.retrieval_mode !== null ||
     value.rerank !== null ||
-    (legalCorpus && (value.citations !== null || value.graph !== null));
+    (legalCorpus && (value.citations !== null || value.graph !== null || value.versions !== null));
   const noGpu = config?.rerank_gpu === false;
 
   useEffect(() => {
@@ -81,7 +94,8 @@ export function ChatOptions({ value, onChange, config, legalCorpus }: Props) {
   // A choice equal to the server default goes back to "default".
   const set = <K extends keyof RetrievalOverrides>(key: K, next: NonNullable<RetrievalOverrides[K]>) => {
     const defaults = effectiveOptions(NO_OVERRIDES, config, legalCorpus);
-    const defaultValue = key === "retrieval_mode" ? defaults.mode : defaults[key as "rerank" | "citations" | "graph"];
+    const defaultValue =
+      key === "retrieval_mode" ? defaults.mode : defaults[key as "rerank" | "citations" | "graph" | "versions"];
     onChange({ ...value, [key]: next === defaultValue ? null : next });
   };
 
@@ -90,6 +104,9 @@ export function ChatOptions({ value, onChange, config, legalCorpus }: Props) {
     current.rerank ? t("chat.options_rerank_short") : null,
     current.citations ? t("chat.options_citations_short") : null,
     current.graph ? t("chat.options_graph_short") : null,
+    legalCorpus && current.versions !== (config?.versions_default ?? "all")
+      ? t(`versions.short_${parseVersionsValue(current.versions).mode}`)
+      : null,
   ]
     .filter(Boolean)
     .join(" · ");
@@ -166,6 +183,11 @@ export function ChatOptions({ value, onChange, config, legalCorpus }: Props) {
                 onChange={(on) => set("graph", on)}
                 help={{ text: t("chat.help_graph"), label: t("chat.help_label", { option: t("retrieval.graph_label") }) }}
               />
+              <fieldset className="options-group">
+                <legend>{t("versions.label")}</legend>
+                <VersionsField value={current.versions} onChange={(next) => set("versions", next)} />
+                <p className="options-hint">{t(`versions.hint_${parseVersionsValue(current.versions).mode}`)}</p>
+              </fieldset>
             </>
           ) : null}
 

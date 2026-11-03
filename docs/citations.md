@@ -51,7 +51,7 @@ Les codes français collectés par `raglab legifrance fetch` sont rangés à rai
 | « Que dispose l'article 1240 du code civil ? » | art. 1240, Code civil |
 | « Que dit l'article 4 de la loi n° 89-462 ? » | rien |
 
-Un numéro avec une lettre de partie (L, R, D, A, LO) suffit ; un numéro sans lettre n'est retenu que si un code est nommé juste après, car lois et décrets numérotent leurs articles de la même façon. Une trentaine de codes sont reconnus par leur nom ou leur abréviation (« C. consom. », « C. civ. »). L'article est retrouvé par `article_number` (et `code` s'il est nommé) : la version en vigueur, sinon la plus récente ; ses chunks sont épinglés en tête et la recherche est restreinte au code (`metadata_equals` sur `code`). La réponse de l'API porte `law_number: null` et `code`. Les citations brésiliennes sont lues en premier, inchangées.
+Un numéro avec une lettre de partie (L, R, D, A, LO) suffit ; un numéro sans lettre n'est retenu que si un code est nommé juste après, car lois et décrets numérotent leurs articles de la même façon. Une trentaine de codes sont reconnus par leur nom ou leur abréviation (« C. consom. », « C. civ. »). L'article est retrouvé par `article_number` (et `code` s'il est nommé) : la version en vigueur, sinon la plus récente, ou celle en vigueur à la date de référence de l'option `versions` quand la question porte sur le passé (« l'article L. 121-21 avant 2016 », voir [versions.md](versions.md)) ; ses chunks sont épinglés en tête et la recherche est restreinte au code (`metadata_equals` sur `code`). La réponse de l'API porte `law_number: null` et `code`. Les citations brésiliennes sont lues en premier, inchangées.
 
 ## Profil UE (actes européens)
 

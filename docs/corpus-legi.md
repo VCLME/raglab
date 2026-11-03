@@ -99,7 +99,7 @@ Le générateur suit le protocole LexML ([protocole.md](benchmarks/protocole.md#
 raglab legifrance fetch --code consommation
 raglab legifrance questions --count 300 --seed 42 --output-dir benchmarks/legi_consommation
 raglab legifrance review-questions --ground-truth benchmarks/legi_consommation/ground_truth.jsonl
-raglab bench all --suite legi_consommation --label legi-baseline-v1 --retrieval-mode dense --no-rerank --no-citations
+raglab bench all --suite legi_consommation --label legi-baseline-v1 --retrieval-mode dense --no-rerank --no-citations --versions all
 raglab bench all --suite legi_consommation --label legi-full-v1
 ```
 
@@ -111,4 +111,4 @@ La suite `legi_consommation` (corpus `bench_legi_consommation_fr`) n'est lancée
 - **Renvois par règles.** Seuls les numéros avec une lettre (L., R., D.) sont lus dans les textes ; « l'article 4 de la loi du 6 juillet 1989 » ne l'est pas. Un renvoi « du même code » reprend le dernier code nommé.
 - **Hiérarchie.** Les titres de Partie, Livre, Titre… sont ceux du jour où la version est entrée en vigueur.
 - **Dates LEGI.** 21 versions ont une date de fin antérieure à leur date de début dans les données d'origine ; elles sont gardées telles quelles.
-- **Numéros réutilisés.** Le résolveur choisit la version en vigueur ; une question qui vise l'ancien article de même numéro (« l'article L. 121-21 dans sa rédaction de 2014 ») est donc mal résolue. C'est le mode d'échec « versions », à traiter en 9.10.
+- **Numéros réutilisés.** Le résolveur choisit la version en vigueur, ou, avec l'option `versions` (9.10), celle de la date que demande la question : « l'article L. 121-21 dans sa rédaction de 2014 » est résolu vers la version de 2014. Voir [versions.md](versions.md).

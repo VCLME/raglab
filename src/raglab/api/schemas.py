@@ -3,9 +3,16 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from raglab.domain.enums import ChunkingStrategy, RetrievalMode
+from raglab.domain.versions import parse_versions_option
+
+
+def _check_versions(value: str | None) -> str | None:
+    """`versions`: in_force, all or as_of=YYYY-MM-DD (422 otherwise)."""
+    parse_versions_option(value)
+    return value.strip() if isinstance(value, str) else value
 
 
 class HealthResponse(BaseModel):
@@ -62,6 +69,8 @@ class ConfigResponse(BaseModel):
     graph_retrieval: bool = False
     graph_weight: float = 0.5
     citation_resolver: bool = True
+    # Default of the versions option (phase 9.10).
+    versions_default: str = "all"
     # Enabled generation providers (RAGLAB_LLM_PROVIDERS) and the default one.
     llm_providers: list[str] = Field(default_factory=lambda: ["ollama"])
     default_llm_provider: str = "ollama"
@@ -169,6 +178,9 @@ class QueryRequest(BaseModel):
     # Graph branch: follow the legal references of the found articles
     # (Neo4j); None = RAGLAB_GRAPH_RETRIEVAL.
     graph: bool | None = None
+    # Article versions retrieval may use: in_force (today, or the date the
+    # question asks about), all, as_of=YYYY-MM-DD; None = RAGLAB_VERSIONS_DEFAULT.
+    versions: str | None = None
     lexical_weight: float | None = Field(None, ge=0.0, le=1.0)
     rrf_k: int | None = Field(None, ge=0)
     # Cross-encoder re-ranking of rerank_candidates first-stage chunks.
@@ -186,12 +198,21 @@ class QueryRequest(BaseModel):
     seed_top_n: int = 3
     entity_weight: float = 0.3
 
+    @field_validator("versions")
+    @classmethod
+    def check_versions(cls, value: str | None) -> str | None:
+        return _check_versions(value)
+
 
 class CorpusFeatures(BaseModel):
     # The corpus holds law or code articles (LexML `number`, Légifrance
     # `article_number`, EU acts `celex` metadata): the Chat offers the article-reference
     # option (citation resolver) only then.
     legal_citations: bool = False
+    # Documents carry version metadata (Légifrance `etat`, dates): the
+    # versions option can pick the version of a date, not only demote
+    # repealed provisions.
+    version_history: bool = False
 
 
 class CorpusSummary(BaseModel):
@@ -478,6 +499,7 @@ class RecallRequest(BaseModel):
     rerank: bool | None = None
     citations: bool | None = None
     graph: bool | None = None
+    versions: str | None = None
     compute_ragas: bool = False
     # Grade only the first N cases (retrieval still runs on all of them).
     ragas_case_limit: int | None = Field(None, ge=1)
@@ -486,6 +508,11 @@ class RecallRequest(BaseModel):
     # RAGLAB_LLAMACPP_BASE_URL; the API container cannot start it).
     judge_backend: str = "ollama"
     judge_model: str | None = None
+
+    @field_validator("versions")
+    @classmethod
+    def check_versions(cls, value: str | None) -> str | None:
+        return _check_versions(value)
 
 
 class DriftSelection(BaseModel):

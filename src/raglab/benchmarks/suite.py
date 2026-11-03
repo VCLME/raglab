@@ -87,6 +87,18 @@ def default_suites(settings: Settings, repo_root: Path) -> list[Suite]:
             manifest_path=repo_root / "benchmarks" / "legi_consommation" / "corpus_manifest.json",
             default=False,
         ),
+        # Version traps on the Code de la consommation (9.10): questions whose
+        # naive answer comes from a repealed or rewritten version; run when
+        # named, `--suite legi_versions`.
+        Suite(
+            name="legi_versions",
+            language="fr",
+            corpus_name="bench_legi_consommation_fr",
+            corpus_dir=settings.legifrance_dir / "consommation" / "corpus",
+            dataset_path=repo_root / "benchmarks" / "legi_versions" / "ground_truth.jsonl",
+            manifest_path=repo_root / "benchmarks" / "legi_consommation" / "corpus_manifest.json",
+            default=False,
+        ),
         # EU compliance acts (GDPR, AI Act, DORA, NIS 2 and the acts that
         # complete them) in French, English and Portuguese: run when named,
         # `--suite eurlex_compliance`.
@@ -141,7 +153,7 @@ def _ensure_corpus(suite: Suite, settings: Settings) -> None:
         FullTextCollector(settings).collect(
             output_dir=suite.corpus_dir.parent, years=range(1988, 2025), per_year=7, seed=42
         )
-    elif suite.name == "legi_consommation":
+    elif suite.name in ("legi_consommation", "legi_versions"):
         from raglab.legifrance.collector import CodeCollector
 
         CodeCollector(settings).collect(code="consommation", output_dir=suite.corpus_dir.parent)
@@ -288,6 +300,7 @@ def run_suite(
     rerank: bool | None = None,
     citations: bool | None = None,
     graph: bool | None = None,
+    versions: str | None = None,
     generator: GeneratorConfig | None = None,
 ) -> dict[str, Any]:
     from raglab.db import session_scope
@@ -361,6 +374,7 @@ def run_suite(
                 rerank=rerank,
                 citations=citations,
                 graph=graph,
+                versions=versions,
                 generator=generator,
             )
         finally:
@@ -380,6 +394,7 @@ def run_suite(
         "citations": report.get("citations"),
         "graph": report.get("graph"),
         "graph_notices": report.get("graph_notices"),
+        "versions": report.get("versions"),
         **({"graph_build": graph_build.get("status")} if graph_build else {}),
         "summary": report["summary"],
         "by_type": report.get("by_type") or {},
@@ -409,6 +424,7 @@ def run_all(
     rerank: bool | None = None,
     citations: bool | None = None,
     graph: bool | None = None,
+    versions: str | None = None,
     generator: GeneratorConfig | None = None,
 ) -> dict[str, Any]:
     from raglab.db import initialize_database, session_scope
@@ -440,6 +456,7 @@ def run_all(
             rerank=do_rerank,
             citations=citations,
             graph=graph,
+            versions=versions,
             generator=generator,
         )
         for suite in selected
@@ -450,6 +467,7 @@ def run_all(
         "retrieval_mode": mode.value,
         "rerank": do_rerank,
         "graph": settings.graph_retrieval if graph is None else graph,
+        "versions": settings.versions_default if versions is None else versions,
         **({"generator": generator.label(settings)} if generator and generator.deferred else {}),
         **(
             {"rerank_model": settings.rerank_model_name, "rerank_candidates": settings.rerank_candidates}
@@ -494,6 +512,9 @@ def _retrieval_label(run: dict[str, Any], suite: dict[str, Any] | None) -> str:
         mode += f" + rerank ({run.get('rerank_candidates', '?')})"
     if (suite or {}).get("graph", run.get("graph")):
         mode += " + graph"
+    versions = (suite or {}).get("versions") or run.get("versions")
+    if versions and versions != "all":
+        mode += f" + versions={versions}"
     return mode
 
 
