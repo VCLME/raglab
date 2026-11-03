@@ -199,9 +199,9 @@ Toute nouvelle brique doit servir l'un de ces modes d'échec ou l'expérience de
 
 **9.6 — Observabilité ✅ (PR #34)** : voir [observabilite.md](observabilite.md)
 
-**9.9 — Graphe des citations 📋 (planifié)** : mode d'échec « renvois »
+**9.9 — Graphe des citations 🚧 (9.9a en revue)** : mode d'échec « renvois », voir [graphe.md](graphe.md)
 
-- 9.9a : graphe structuré dans Neo4j, construit à l'indexation à partir des chunks PostgreSQL. Socle commun `Document → Section → Chunk` (`PART_OF`, `NEXT`) et profil « lois » : `Law`, `Article`, `CITES`, `AMENDS`, `REVOKES`, extraits par règles (mêmes motifs que le résolveur de citations), sans LLM. Corpus LexML : 4 055 articles, 1 420 renvoient à un autre article (3 015 renvois), 115 liens entre lois. Le store Neo4j à entités extraites par LLM (phase 8) passe derrière un drapeau Expert.
+- 9.9a 🚧 (en revue) : graphe structuré dans Neo4j, construit à l'indexation à partir des chunks PostgreSQL (et par `raglab graph build`, `POST /api/graph/build`, la page Expert « Graphe des renvois »). Socle commun `Document → Section → Chunk` (`PART_OF`, `NEXT`) et profil « lois » : `Law`, `Article`, `CITES`, `AMENDS`, `REVOKES`, extraits par règles, sans LLM. Mesuré sur LexML : 3 984 articles, 1 078 renvois article → article (98 entre lois du corpus), 1 054 `AMENDS`, 274 `REVOKES`, build en 6 s ; précision vérifiée à la main sur un tirage jamais regardé (graine 43) : 0,983 sur `CITES`, 0,900 sur `AMENDS` / `REVOKES` ; 97 des 100 questions LexML qui citent un article tombent sur un nœud `Article` (90 avec la réponse dans l'article). Le store Neo4j à entités extraites par LLM (phase 8) passe derrière `RAGLAB_ENTITY_GRAPH_ENABLED`.
 - 9.9b : troisième branche de recherche en parallèle de la recherche dense et de BM25, fusion RRF à trois sources, puis re-ranking ; un passage trouvé par renvoi reste groupé avec celui qui le cite. Sans Neo4j, la branche est sautée et la réponse le dit. Jeu figé d'environ 100 questions « à renvoi » (une partie jamais regardée pendant la mise au point), comparaison appariée sans régression sur PIAF et LexML.
 - 9.9c (plus tard) : profils markdown / documentation et articles de recherche (`Section`, `Topic`, `Source`, `Author`, `Reference`), avec un corpus de test dédié.
 
