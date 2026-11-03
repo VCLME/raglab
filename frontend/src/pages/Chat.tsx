@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ApiError, extractErrorDetail, get, post } from "../api/client";
+import { ApiError, extractErrorDetail, get, queryWithStreaming } from "../api/client";
 import type {
   CorpusSummary,
   IndexRunSummary,
   OllamaModelsResponse,
-  QueryResponse,
   RetrievedChunk,
 } from "../api/types";
 import { ChunkCard } from "../components/ChunkCard";
@@ -24,6 +23,9 @@ interface ChatTurn {
   index_run_id: string | null;
   strategy: string | null;
   elapsed_ms: number | null;
+  // Time from the start of generation to the first streamed token.
+  first_token_ms?: number | null;
+  streaming?: boolean;
   error?: { message: string; detail: string | null };
 }
 
@@ -142,9 +144,7 @@ export function Chat() {
   const resolvedRun =
     runsForCorpus.find((r) => r.id === indexRunId) ?? runsForCorpus[0] ?? null;
 
-  const action = useApiAction((body: unknown) =>
-    post<QueryResponse>("/api/query", body)
-  );
+  const action = useApiAction(queryWithStreaming);
 
   const suggestionsLoad = useApiLoad<string[]>(
     () =>
@@ -181,22 +181,30 @@ export function Chat() {
       generate: true,
     };
     if (llmModel) body.llm_model = llmModel;
+    const patchTurn = (update: (tn: ChatTurn) => Partial<ChatTurn>) =>
+      setTurns((prev) => prev.map((tn) => (tn.id === id ? { ...tn, ...update(tn) } : tn)));
     try {
-      const result = await action.run(body);
-      setTurns((prev) =>
-        prev.map((tn) =>
-          tn.id === id
-            ? {
-                ...tn,
-                answer: result.answer ?? t("chat.no_answer_generated"),
-                chunks: result.retrieved_chunks,
-                index_run_id: result.index_run_id,
-                strategy: result.strategy,
-                elapsed_ms: result.elapsed_ms,
-              }
-            : tn
-        )
-      );
+      // Sources show up as soon as retrieval is done, then the answer grows
+      // token by token (falls back to a single response without streaming).
+      const result = await action.run(body, {
+        onRetrieval: (partial) =>
+          patchTurn(() => ({
+            chunks: partial.retrieved_chunks,
+            index_run_id: partial.index_run_id,
+            strategy: partial.strategy,
+          })),
+        onToken: (text) =>
+          patchTurn((tn) => ({ answer: (tn.answer ?? "") + text, streaming: true })),
+      });
+      patchTurn(() => ({
+        answer: result.answer ?? t("chat.no_answer_generated"),
+        chunks: result.retrieved_chunks,
+        index_run_id: result.index_run_id,
+        strategy: result.strategy,
+        elapsed_ms: result.elapsed_ms,
+        first_token_ms: result.first_token_ms ?? null,
+        streaming: false,
+      }));
     } catch (e) {
       const message =
         e instanceof ApiError
@@ -205,9 +213,8 @@ export function Chat() {
           ? e.message
           : "Erreur inconnue";
       const detail = e instanceof ApiError ? extractErrorDetail(e) : null;
-      setTurns((prev) =>
-        prev.map((tn) => (tn.id === id ? { ...tn, error: { message, detail } } : tn))
-      );
+      // A partial streamed answer stays visible above the error.
+      patchTurn(() => ({ streaming: false, error: { message, detail } }));
     }
   };
 
@@ -396,7 +403,7 @@ function ChatTurnView({
         {turn.question}
       </div>
 
-      {turn.answer === null && !turn.error ? (
+      {(turn.answer === null || turn.answer === "") && !turn.error ? (
         <div className="inline-status" role="status">
           <span className="dots">
             <span />
@@ -427,11 +434,12 @@ function ChatTurnView({
         </>
       ) : null}
 
-      {turn.answer !== null ? (
-        <div className="bubble assistant">
+      {turn.answer ? (
+        <div className="bubble assistant" aria-busy={turn.streaming ? true : undefined}>
           <div className="role">{t("chat.assistant_role")}</div>
           <div style={{ whiteSpace: "pre-wrap" }}>
             {renderAnswer(turn.answer, turn.chunks, highlight, onSelectSource)}
+            {turn.streaming ? <span className="stream-caret" aria-hidden="true" /> : null}
           </div>
           {turn.chunks.length > 0 ? (
             <div className="sources">
@@ -476,6 +484,11 @@ function ChatTurnView({
               <span title={turn.index_run_id}>
                 {t("chat.meta_index_run")}{" "}
                 <code>{turn.index_run_id.slice(0, 8)}</code>
+              </span>
+            ) : null}
+            {turn.first_token_ms != null ? (
+              <span title={t("chat.meta_first_token_title")}>
+                {t("chat.meta_first_token", { ms: turn.first_token_ms.toFixed(0) })}
               </span>
             ) : null}
             {turn.elapsed_ms != null ? (

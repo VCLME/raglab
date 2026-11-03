@@ -5,9 +5,10 @@ from unittest.mock import patch
 
 def test_health_reports_ok_when_all_services_reachable(client, mock_session):
     mock_session.execute.return_value = None
-    with patch("raglab.api.routers.health.OllamaService") as ollama_cls, patch(
-        "raglab.api.routers.health.Neo4jGraphStore"
-    ) as neo4j_cls:
+    with (
+        patch("raglab.api.routers.health.OllamaService") as ollama_cls,
+        patch("raglab.api.routers.health.Neo4jGraphStore") as neo4j_cls,
+    ):
         ollama_cls.return_value.status.return_value = {
             "base_url": "http://ollama:11434",
             "reachable": True,
@@ -31,9 +32,10 @@ def test_health_reports_ok_when_all_services_reachable(client, mock_session):
 
 def test_health_marks_degraded_when_ollama_unreachable(client, mock_session):
     mock_session.execute.return_value = None
-    with patch("raglab.api.routers.health.OllamaService") as ollama_cls, patch(
-        "raglab.api.routers.health.Neo4jGraphStore"
-    ) as neo4j_cls:
+    with (
+        patch("raglab.api.routers.health.OllamaService") as ollama_cls,
+        patch("raglab.api.routers.health.Neo4jGraphStore") as neo4j_cls,
+    ):
         ollama_cls.return_value.status.side_effect = RuntimeError("connection refused")
         neo4j_cls.return_value.ping.return_value = True
         response = client.get("/api/health")
@@ -48,9 +50,10 @@ def test_health_marks_degraded_when_ollama_unreachable(client, mock_session):
 
 def test_health_marks_degraded_when_neo4j_unreachable(client, mock_session):
     mock_session.execute.return_value = None
-    with patch("raglab.api.routers.health.OllamaService") as ollama_cls, patch(
-        "raglab.api.routers.health.Neo4jGraphStore"
-    ) as neo4j_cls:
+    with (
+        patch("raglab.api.routers.health.OllamaService") as ollama_cls,
+        patch("raglab.api.routers.health.Neo4jGraphStore") as neo4j_cls,
+    ):
         ollama_cls.return_value.status.return_value = {
             "base_url": "http://ollama:11434",
             "reachable": True,

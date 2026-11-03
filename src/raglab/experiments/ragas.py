@@ -141,9 +141,7 @@ class _BaseJudge:
 class FaithfulnessJudge(_BaseJudge):
     """Rate how well the answer stays grounded in the retrieved context."""
 
-    def score(
-        self, *, question: str, answer: str, retrieved_texts: list[str]
-    ) -> RagasScore:
+    def score(self, *, question: str, answer: str, retrieved_texts: list[str]) -> RagasScore:
         if not answer or not answer.strip():
             return RagasScore(score=None, reason="empty answer")
         if not retrieved_texts:
@@ -152,31 +150,19 @@ class FaithfulnessJudge(_BaseJudge):
         # Each chunk capped at ~600 chars preserves enough signal for
         # grounding checks without blowing past num_ctx on small models.
         joined = "\n---\n".join(t.strip()[:600] for t in retrieved_texts if t.strip())
-        user = (
-            f"QUESTION:\n{question}\n\n"
-            f"CONTEXT:\n{joined}\n\n"
-            f"ANSWER:\n{answer}\n\n"
-            "Return JSON only."
-        )
+        user = f"QUESTION:\n{question}\n\nCONTEXT:\n{joined}\n\nANSWER:\n{answer}\n\nReturn JSON only."
         return self._chat(system=_FAITHFULNESS_PROMPT, user=user)
 
 
 class AnswerCorrectnessJudge(_BaseJudge):
     """Rate how well the answer matches the ground-truth answer."""
 
-    def score(
-        self, *, question: str, answer: str, ground_truth: str
-    ) -> RagasScore:
+    def score(self, *, question: str, answer: str, ground_truth: str) -> RagasScore:
         if not answer or not answer.strip():
             return RagasScore(score=None, reason="empty answer")
         if not ground_truth or not ground_truth.strip():
             return RagasScore(score=None, reason="no ground truth")
-        user = (
-            f"QUESTION:\n{question}\n\n"
-            f"GROUND TRUTH:\n{ground_truth}\n\n"
-            f"ANSWER:\n{answer}\n\n"
-            "Return JSON only."
-        )
+        user = f"QUESTION:\n{question}\n\nGROUND TRUTH:\n{ground_truth}\n\nANSWER:\n{answer}\n\nReturn JSON only."
         return self._chat(system=_ANSWER_CORRECTNESS_PROMPT, user=user)
 
 
@@ -226,4 +212,3 @@ class JudgeConfig:
         if self.backend == "llamacpp":
             return f"llamacpp:{self.model or settings.judge_model}"
         return f"ollama:{self.model or settings.generation_model}"
-

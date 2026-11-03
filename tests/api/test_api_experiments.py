@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
@@ -12,8 +12,8 @@ def _run(**overrides):
         "dataset_path": "/workspace/data/benchmarks/piaf/ground_truth.jsonl",
         "strategies": ["traditional"],
         "status": "completed",
-        "started_at": datetime(2026, 4, 19, 11, 0, tzinfo=timezone.utc),
-        "completed_at": datetime(2026, 4, 19, 11, 0, 30, tzinfo=timezone.utc),
+        "started_at": datetime(2026, 4, 19, 11, 0, tzinfo=UTC),
+        "completed_at": datetime(2026, 4, 19, 11, 0, 30, tzinfo=UTC),
         "config_json": {
             "kind": "recall",
             "benchmark": "piaf",
@@ -68,8 +68,10 @@ def test_history_endpoint_returns_runs_with_summary_and_embedding(client, mock_s
 
 
 def test_history_endpoint_filters_by_corpus(client, mock_session):
-    runs = [_run(id="a", config_json={**_run().config_json, "corpus_name": "piaf_fr"}),
-            _run(id="b", config_json={**_run().config_json, "corpus_name": "lexml_real"})]
+    runs = [
+        _run(id="a", config_json={**_run().config_json, "corpus_name": "piaf_fr"}),
+        _run(id="b", config_json={**_run().config_json, "corpus_name": "lexml_real"}),
+    ]
     scalars_result = MagicMock()
     scalars_result.scalars.return_value.all.return_value = runs
     # One _resolve_embedding_space call per run (after the initial SELECT)
@@ -108,7 +110,7 @@ def test_detail_endpoint_returns_run_plus_cases(client, mock_session):
         retrieved_chunk_ids=["c1", "c2"],
         answer=None,
         metrics_json={"recall@1": True, "reciprocal_rank": 1.0},
-        created_at=datetime(2026, 4, 19, 11, 0, 5, tzinfo=timezone.utc),
+        created_at=datetime(2026, 4, 19, 11, 0, 5, tzinfo=UTC),
     )
     cases_result = MagicMock()
     cases_result.scalars.return_value.all.return_value = [case]

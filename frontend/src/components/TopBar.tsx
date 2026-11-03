@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { get } from "../api/client";
 import type { HealthResponse } from "../api/types";
 import { ChatIcon, FlaskIcon } from "./Icon";
+import { ApiKeyControl } from "./ApiKeyControl";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 
 export function TopBar() {
@@ -54,6 +55,7 @@ export function TopBar() {
         {t("topbar.brand")}
       </div>
       <div className="inline" style={{ gap: 10 }}>
+        <ApiKeyControl />
         <LanguageSwitcher />
         <div className="mode-switch" role="tablist" aria-label="Mode">
           <button

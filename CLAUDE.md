@@ -55,3 +55,19 @@ Rules for that work:
   starts/stops llama-server via `RAGLAB_LLAMACPP_START_COMMAND` /
   `RAGLAB_LLAMACPP_STOP_COMMAND`; the owner does not want to start servers by
   hand.
+
+## API conventions (phase 9.5)
+
+- Keep `POST /api/query` backward compatible; streaming lives in
+  `POST /api/query/stream` (SSE: `retrieval`, `token`, `done` | `error`).
+- Map failures through `src/raglab/api/errors.py` (`describe_error`), used by
+  both the exception handlers and the SSE `error` event. Ollama failures are
+  typed in `src/raglab/ollama/errors.py`; a timeout must name its stage
+  (`embed`, `retrieval`, `generation`).
+- Limits and budgets are settings (`RAGLAB_*_TIMEOUT_SECONDS`,
+  `RAGLAB_API_RATE_LIMIT_*`), never constants in routes. `RAGLAB_API_KEY`
+  empty means auth off; never log the key.
+- Middlewares are plain ASGI (no `BaseHTTPMiddleware`): it must not buffer
+  streamed responses. Log through `log_event` so lines carry `request_id`.
+- `/health` touches no dependency; `/ready` checks Postgres + Ollama + the
+  default model; `/api/health` stays for the Dashboard.

@@ -21,8 +21,7 @@ def build_entity_extractor(
     """
     if engine not in SUPPORTED_ENGINES:
         raise UnsupportedExtractionEngineError(
-            f"Moteur d'extraction inconnu: {engine!r}. "
-            f"Valeurs supportées: {SUPPORTED_ENGINES}"
+            f"Moteur d'extraction inconnu: {engine!r}. Valeurs supportées: {SUPPORTED_ENGINES}"
         )
     cfg = settings or get_settings()
 

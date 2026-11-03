@@ -146,5 +146,17 @@ Objectif : passer du laboratoire à un pipeline RAG prêt pour la production, ch
   - 277 questions LexML typées (`paraphrase`, `reference`, `entity`) écrites par Qwen3.6-35B-A3B via llama.cpp, réponse citée et retrouvée dans le texte, filtrées puis relues sur échantillon
   - client compatible OpenAI et `LocalLLMServer` : raglab décharge Ollama, démarre et arrête llama-server tout seul
 - **9.1b — Mesure (à venir)** : timing par étape, cache de l'embedder, `raglab bench all`, `docs/benchmarks/baseline.md`, juge answer_relevancy, juge RAGAS Gemma 4 via llama.cpp (calibré contre qwen2.5), CI GitHub Actions
+  - CI GitHub Actions : ruff (lint + format), mypy (mode par défaut, `src/`), pytest, `tsc` + `vite build`, build des deux images Docker
 
-**À venir** : 9.2 retrieval hybride BM25 + RRF · 9.3 re-ranking cross-encoder · 9.4 compréhension de la requête et abstention · 9.5 durcissement API (SSE, timeouts, clé d'API, /ready, migrations Alembic) · 9.6 observabilité (Prometheus, Grafana, dérive) · 9.7 portes de qualité · 9.8 vitrine
+**9.5 — Durcissement API 🚧 (PR ouverte, empilée sur 9.1b)** : voir [api-production.md](api-production.md)
+
+- `POST /api/query/stream` en SSE : événement `retrieval` (chunks, scores, timings) avant la génération, puis `token` au fil d'Ollama (`stream: true`), puis `done` (QueryResponse complète + `first_token_ms`) ou `error` ; `/api/query` inchangé ; page Chat en streaming avec repli automatique sur `/api/query` ; `raglab query --stream`
+- budgets par étape (`RAGLAB_EMBED_TIMEOUT_SECONDS`, `RAGLAB_RETRIEVAL_TIMEOUT_SECONDS` via `statement_timeout` Postgres, `RAGLAB_GENERATION_TIMEOUT_SECONDS` total en streaming), 504 qui nomme l'étape
+- `X-Request-ID` accepté ou généré, renvoyé, présent dans chaque ligne de log de la requête (ContextVar) ; ligne d'accès `http.request`
+- clé d'API optionnelle (`RAGLAB_API_KEY`, en-tête `X-API-Key` ou Bearer, bouton dans l'interface) ; rate limit en mémoire par clé ou IP, 429 + `Retry-After`
+- `/health` (liveness, sans dépendance) et `/ready` (Postgres, Ollama, modèle par défaut installé) ; `/api/health` conservé pour le Dashboard
+- erreurs Ollama typées : modèle absent 424 (message actionnable), mémoire saturée 503 + `Retry-After`, injoignable 502, timeout 504
+- mesuré sans GPU (`scripts/bench_api_hardening.py`) : sources affichées après ~65 ms au lieu de ~3,4 s, premier token à 366 ms (préremplissage simulé 300 ms) ; middlewares +0,16 ms par requête ; TTFT réel sur GPU à mesurer
+- migrations Alembic : introduites avec 9.2 (`feature/hybrid-retrieval`), aucune migration dans cette PR
+
+**À venir** : 9.2 retrieval hybride BM25 + RRF · 9.3 re-ranking cross-encoder · 9.4 compréhension de la requête et abstention · 9.6 observabilité (Prometheus, Grafana, dérive) · 9.7 portes de qualité · 9.8 vitrine

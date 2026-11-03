@@ -9,9 +9,7 @@ from raglab.graph.query import GraphQueryService
 
 @patch("raglab.graph.query.build_embedding_provider")
 @patch("raglab.graph.query.resolve_latest_index_run")
-def test_hybrid_mode_rejects_run_without_entity_extraction(
-    resolve_run, embed_provider
-):
+def test_hybrid_mode_rejects_run_without_entity_extraction(resolve_run, embed_provider):
     index_run = MagicMock()
     index_run.config_json = {"backend": "neo4j", "entity_extraction": False}
     resolve_run.return_value = index_run
@@ -28,9 +26,7 @@ def test_hybrid_mode_rejects_run_without_entity_extraction(
 
 @patch("raglab.graph.query.build_embedding_provider")
 @patch("raglab.graph.query.resolve_latest_index_run")
-def test_vector_mode_works_without_entity_extraction(
-    resolve_run, embed_provider
-):
+def test_vector_mode_works_without_entity_extraction(resolve_run, embed_provider):
     index_run = MagicMock()
     index_run.id = "run-1"
     index_run.strategy = "traditional"

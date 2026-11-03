@@ -504,8 +504,18 @@ pre {
   .topbar {
     padding: 0 12px;
   }
+  .topbar .inline {
+    flex-wrap: nowrap;
+    gap: 6px !important;
+  }
+  /* Icons only: the label stays in the accessibility tree. */
   .mode-switch button {
-    padding: 5px 9px;
+    padding: 5px 8px;
+    font-size: 0;
+    gap: 0;
+  }
+  .lang-current {
+    padding: 6px 8px;
   }
   .card {
     padding: 16px;
@@ -1627,4 +1637,61 @@ button.sm {
 
 * {
   scrollbar-color: var(--border-strong) transparent;
+}
+
+/* Caret shown at the end of an answer while it is being streamed. */
+.stream-caret {
+  display: inline-block;
+  width: 0.5em;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  background: var(--accent);
+  animation: caret-blink 1s steps(1) infinite;
+}
+@keyframes caret-blink {
+  50% {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .stream-caret {
+    animation: none;
+    opacity: 0.6;
+  }
+}
+
+.api-key-control {
+  position: relative;
+}
+.api-key-pop {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 260px;
+  padding: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-raised);
+}
+.api-key-pop input {
+  width: 100%;
+}
+.api-key-pop p {
+  margin: 0;
+  font-size: 12px;
+}
+@media (max-width: 560px) {
+  .api-key-pop {
+    position: fixed;
+    top: 62px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+  }
 }

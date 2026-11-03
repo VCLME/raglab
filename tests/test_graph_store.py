@@ -98,6 +98,7 @@ def test_upsert_chunks_runs_merge_cypher(driver_factory, ensure_idx):
     assert row["tags"] == ["a", "b"]
     # Neo4j can't store nested maps; metadata is serialised as JSON.
     import json
+
     assert json.loads(row["metadata_json"]) == {"authority": "X"}
 
 
@@ -164,8 +165,8 @@ def test_hybrid_search_reranks_with_entity_overlap(driver_factory):
         query_embedding=[0.0] * 384,
         top_k=3,
         filters=None,
-        seed_top_n=1,      # only c1 seeds entities
-        entity_weight=0.5, # bridge weight = vector weight
+        seed_top_n=1,  # only c1 seeds entities
+        entity_weight=0.5,  # bridge weight = vector weight
     )
 
     assert [r.chunk_id for r in results] == ["c1", "c2", "c3"]
@@ -185,13 +186,9 @@ def test_hybrid_search_rejects_invalid_weights():
     index_run.embedding_space.dimension = 3
 
     with pytest.raises(ValueError, match="entity_weight"):
-        store.hybrid_search(
-            index_run=index_run, query_embedding=[0.0], top_k=1, entity_weight=1.5
-        )
+        store.hybrid_search(index_run=index_run, query_embedding=[0.0], top_k=1, entity_weight=1.5)
     with pytest.raises(ValueError, match="seed_top_n"):
-        store.hybrid_search(
-            index_run=index_run, query_embedding=[0.0], top_k=1, seed_top_n=0
-        )
+        store.hybrid_search(index_run=index_run, query_embedding=[0.0], top_k=1, seed_top_n=0)
 
 
 @patch("raglab.graph.neo4j.GraphDatabase.driver")
@@ -245,9 +242,7 @@ def test_subgraph_for_chunks_aggregates_deduplicates(driver_factory):
     assert sorted(d["id"] for d in payload["documents"]) == ["d1", "d2"]
     entity_ids = sorted(e["id"] for e in payload["entities"])
     assert entity_ids == ["macron|PERSON", "paris|LOCATION"]
-    mention_pairs = sorted(
-        (m["chunk_id"], m["entity_id"]) for m in payload["mentions"]
-    )
+    mention_pairs = sorted((m["chunk_id"], m["entity_id"]) for m in payload["mentions"])
     assert mention_pairs == [
         ("a", "macron|PERSON"),
         ("a", "paris|LOCATION"),

@@ -3,11 +3,12 @@ from __future__ import annotations
 import logging
 
 from fastapi import APIRouter, Depends
+from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from raglab.api.deps import get_current_settings, get_db
-from raglab.api.schemas import ConfigResponse, HealthResponse
+from raglab.api.schemas import ConfigResponse, HealthResponse, LivenessResponse, ReadinessResponse
 from raglab.config import Settings
 from raglab.graph import Neo4jGraphStore
 from raglab.ollama.service import OllamaService
@@ -15,6 +16,56 @@ from raglab.ollama.service import OllamaService
 LOGGER = logging.getLogger(__name__)
 
 router = APIRouter(tags=["health"])
+
+
+@router.get("/health", response_model=LivenessResponse)
+def liveness() -> LivenessResponse:
+    """Process is up and serving requests. Touches no dependency on purpose:
+    an orchestrator restarting the API because Postgres is down would not help."""
+    return LivenessResponse(status="ok")
+
+
+@router.get(
+    "/ready",
+    response_model=ReadinessResponse,
+    responses={503: {"model": ReadinessResponse, "description": "Une dependance n'est pas prete."}},
+)
+def readiness(
+    session: Session = Depends(get_db),
+    settings: Settings = Depends(get_current_settings),
+):
+    """Ready to answer queries: Postgres answers, Ollama answers and the
+    default generation model is installed. Neo4j is optional (graph pages
+    only) and is not checked here; see /api/health for the full picture."""
+    checks: dict[str, str] = {}
+    try:
+        session.execute(text("SELECT 1"))
+        checks["postgres"] = "ok"
+    except Exception as exc:
+        LOGGER.warning("ready.postgres_unreachable", extra={"error": str(exc)})
+        checks["postgres"] = "unreachable"
+        # Leave the session clean so get_db's commit does not turn the 503 into a 500.
+        try:
+            session.rollback()
+        except Exception:
+            pass
+
+    try:
+        status = OllamaService(settings).status(timeout=settings.ready_timeout_seconds)
+        checks["ollama"] = "ok"
+        checks["default_generation_model"] = "ok" if status.get("default_generation_model_installed") else "missing"
+    except Exception as exc:
+        LOGGER.warning("ready.ollama_unreachable", extra={"error": str(exc)})
+        checks["ollama"] = "unreachable"
+        checks["default_generation_model"] = "unknown"
+
+    ready = all(value == "ok" for value in checks.values())
+    body = ReadinessResponse(
+        status="ready" if ready else "not_ready",
+        checks=checks,
+        default_generation_model=settings.generation_model,
+    )
+    return JSONResponse(status_code=200 if ready else 503, content=body.model_dump())
 
 
 @router.get("/api/health", response_model=HealthResponse)
@@ -51,11 +102,7 @@ def health(
     finally:
         store.close()
 
-    overall = (
-        "ok"
-        if postgres_state == "ok" and ollama_state == "ok" and neo4j_state == "ok"
-        else "degraded"
-    )
+    overall = "ok" if postgres_state == "ok" and ollama_state == "ok" and neo4j_state == "ok" else "degraded"
     return HealthResponse(
         status=overall,
         api="ok",
