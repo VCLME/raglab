@@ -146,5 +146,6 @@ Objectif : passer du laboratoire à un pipeline RAG prêt pour la production, ch
   - 277 questions LexML typées (`paraphrase`, `reference`, `entity`) écrites par Qwen3.6-35B-A3B via llama.cpp, réponse citée et retrouvée dans le texte, filtrées puis relues sur échantillon
   - client compatible OpenAI et `LocalLLMServer` : raglab décharge Ollama, démarre et arrête llama-server tout seul
 - **9.1b — Mesure (à venir)** : timing par étape, cache de l'embedder, `raglab bench all`, `docs/benchmarks/baseline.md`, juge answer_relevancy, juge RAGAS Gemma 4 via llama.cpp (calibré contre qwen2.5), CI GitHub Actions
+  - CI GitHub Actions : ruff (lint + format), mypy (mode par défaut, `src/`), pytest, `tsc` + `vite build`, build des deux images Docker
 
 **À venir** : 9.2 retrieval hybride BM25 + RRF · 9.3 re-ranking cross-encoder · 9.4 compréhension de la requête et abstention · 9.5 durcissement API (SSE, timeouts, clé d'API, /ready, migrations Alembic) · 9.6 observabilité (Prometheus, Grafana, dérive) · 9.7 portes de qualité · 9.8 vitrine

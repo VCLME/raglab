@@ -68,9 +68,7 @@ def test_fquad_loader_download_writes_corpus_ground_truth_and_metadata(tmp_path:
     # Ground truth: 3 cases, each with exactly one expected file name that
     # matches one of the corpus files.
     cases = [
-        json.loads(line)
-        for line in result.ground_truth_path.read_text(encoding="utf-8").splitlines()
-        if line.strip()
+        json.loads(line) for line in result.ground_truth_path.read_text(encoding="utf-8").splitlines() if line.strip()
     ]
     assert len(cases) == 3
     corpus_names = {p.name for p in article_files}
@@ -102,9 +100,7 @@ def test_fquad_loader_respects_limit(tmp_path: Path):
     with patch("datasets.load_dataset", return_value=_fake_dataset_rows()):
         result = loader.download(tmp_path, limit=2)
     cases = [
-        json.loads(line)
-        for line in result.ground_truth_path.read_text(encoding="utf-8").splitlines()
-        if line.strip()
+        json.loads(line) for line in result.ground_truth_path.read_text(encoding="utf-8").splitlines() if line.strip()
     ]
     assert len(cases) == 2
     assert result.case_count == 2
@@ -119,9 +115,7 @@ def test_fquad_loader_skips_rows_with_empty_context_or_question(tmp_path: Path):
     with patch("datasets.load_dataset", return_value=rows):
         result = loader.download(tmp_path)
     cases = [
-        json.loads(line)
-        for line in result.ground_truth_path.read_text(encoding="utf-8").splitlines()
-        if line.strip()
+        json.loads(line) for line in result.ground_truth_path.read_text(encoding="utf-8").splitlines() if line.strip()
     ]
     assert len(cases) == 3  # only the three valid rows from _fake_dataset_rows
 

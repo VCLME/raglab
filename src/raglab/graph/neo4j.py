@@ -18,10 +18,7 @@ from raglab.graph.indexes import (
 
 logger = logging.getLogger(__name__)
 
-_KG_NOT_IMPLEMENTED = (
-    "expand_neighbors belongs to the knowledge-graph phase — "
-    "see docs/roadmap.md Phase 8.2."
-)
+_KG_NOT_IMPLEMENTED = "expand_neighbors belongs to the knowledge-graph phase — see docs/roadmap.md Phase 8.2."
 
 
 class Neo4jGraphStore:
@@ -53,9 +50,7 @@ class Neo4jGraphStore:
 
     def _get_driver(self):
         if self._driver is None:
-            self._driver = GraphDatabase.driver(
-                self._uri, auth=(self._user, self._password)
-            )
+            self._driver = GraphDatabase.driver(self._uri, auth=(self._user, self._password))
         return self._driver
 
     def close(self) -> None:
@@ -83,14 +78,9 @@ class Neo4jGraphStore:
         entities_per_chunk: list[list[dict[str, Any]]] | None = None,
     ) -> None:
         if len(chunks) != len(embeddings):
-            raise ValueError(
-                f"chunks and embeddings must align, got {len(chunks)} and {len(embeddings)}"
-            )
+            raise ValueError(f"chunks and embeddings must align, got {len(chunks)} and {len(embeddings)}")
         if entities_per_chunk is not None and len(entities_per_chunk) != len(chunks):
-            raise ValueError(
-                "entities_per_chunk must align with chunks "
-                f"({len(entities_per_chunk)} vs {len(chunks)})"
-            )
+            raise ValueError(f"entities_per_chunk must align with chunks ({len(entities_per_chunk)} vs {len(chunks)})")
         if not chunks:
             return
 
@@ -100,18 +90,14 @@ class Neo4jGraphStore:
         ensure_vector_index(driver, dim)
 
         payload: list[dict[str, Any]] = []
-        for i, (chunk, embedding) in enumerate(zip(chunks, embeddings)):
+        for i, (chunk, embedding) in enumerate(zip(chunks, embeddings, strict=False)):
             document = documents.get(chunk.document_id)
             if document is None:
-                raise ValueError(
-                    f"Document {chunk.document_id} not in the documents map"
-                )
+                raise ValueError(f"Document {chunk.document_id} not in the documents map")
             metadata = dict(document.metadata_json or {})
             raw_tags = metadata.pop("tags", None)
             tags = list(raw_tags) if isinstance(raw_tags, list) else []
-            chunk_entities = (
-                entities_per_chunk[i] if entities_per_chunk is not None else []
-            )
+            chunk_entities = entities_per_chunk[i] if entities_per_chunk is not None else []
             payload.append(
                 {
                     "chunk_id": chunk.id,
@@ -458,9 +444,7 @@ class Neo4jGraphStore:
             "chunks": list(chunks.values()),
             "documents": list(documents.values()),
             "entities": list(entities.values()),
-            "mentions": [
-                {"chunk_id": c, "entity_id": e} for c, e in sorted(mentions)
-            ],
+            "mentions": [{"chunk_id": c, "entity_id": e} for c, e in sorted(mentions)],
         }
 
     def delete_index_run(self, index_run_id: str) -> None:

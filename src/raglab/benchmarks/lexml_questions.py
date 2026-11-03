@@ -408,9 +408,9 @@ class LexMLQuestionGenerator:
             # even when one type gets rejected more often.
             # A type the model keeps failing on is no longer asked for: better
             # a slightly unbalanced set than one that never reaches `count`.
-            available = [
-                kind for kind in QUESTION_TYPES if failed_by_type[kind] < 3 * kept_by_type[kind] + 10
-            ] or ["paraphrase"]
+            available = [kind for kind in QUESTION_TYPES if failed_by_type[kind] < 3 * kept_by_type[kind] + 10] or [
+                "paraphrase"
+            ]
             wanted = min(available, key=lambda kind: kept_by_type[kind])
             question_type = pick_question_type(passage, wanted)
             generated = self._ask(passage, question_type)

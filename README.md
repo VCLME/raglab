@@ -1,5 +1,7 @@
 # raglab
 
+[![CI](https://github.com/VCLME/raglab/actions/workflows/ci.yml/badge.svg)](https://github.com/VCLME/raglab/actions/workflows/ci.yml)
+
 **Un banc d'essai RAG local pour comparer stratégies de chunking, modèles d'embedding et stratégies de retrieval sur tes propres documents.**
 
 PostgreSQL + pgvector pour le stockage. Ollama pour la génération locale. React + FastAPI pour l'UI. Tout tourne sur ta machine, sans appel externe.
@@ -150,6 +152,22 @@ Gain observé sur RTX 3070 Ti Laptop avec `qwen2.5:7b` Q4 : **~10.7 tok/s CPU �
 - embeddings : `intfloat/multilingual-e5-small` (384d)
 - top-K : 5
 - chunking : voir tableau ci-dessus
+
+---
+
+## Qualité du code
+
+Chaque push et chaque pull request passent par la CI GitHub Actions ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) :
+
+- Python : `ruff check` (règles E, F, I, B, UP), `ruff format --check`, `mypy` sur `src/` et `pytest` (base de données et Ollama simulés, torch CPU)
+- frontend : `tsc --noEmit` puis `vite build`
+- build des images Docker de l'API et du frontend, sans push
+
+En local, après `pip install -e .[dev]` :
+
+```bash
+ruff check . && ruff format --check . && mypy && pytest
+```
 
 ---
 

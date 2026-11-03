@@ -31,7 +31,7 @@ import re
 import time
 from collections.abc import Callable, Iterable
 from dataclasses import asdict, dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from html import unescape
 from html.parser import HTMLParser
 from pathlib import Path
@@ -180,14 +180,12 @@ class FullTextCollector:
     def list_laws(self, year: int) -> list[FederalLaw]:
         response = self.session.get(
             SENADO_LIST_URL,
-            params={"tipo": "LEI", "ano": year},
+            params={"tipo": "LEI", "ano": str(year)},
             headers={"Accept": "application/json"},
             timeout=REQUEST_TIMEOUT_SECONDS,
         )
         response.raise_for_status()
-        documents = (
-            response.json().get("ListaDocumento", {}).get("documentos", {}).get("documento", [])
-        )
+        documents = response.json().get("ListaDocumento", {}).get("documentos", {}).get("documento", [])
         if isinstance(documents, dict):
             documents = [documents]
         laws: list[FederalLaw] = []
@@ -302,7 +300,7 @@ class FullTextCollector:
             log_event(LOGGER, logging.INFO, "lexml.fulltext.year_done", year=year, kept=kept_this_year)
 
         manifest = {
-            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
             "seed": seed,
             "per_year": per_year,
             "min_chars": min_chars,
