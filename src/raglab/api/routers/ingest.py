@@ -27,5 +27,6 @@ def ingest(body: IngestRequest, session: Session = Depends(get_db)) -> IngestRes
         corpus_name=body.corpus,
         description=body.description,
         tags=body.tags,
+        language=body.language,
     )
     return IngestResponse(corpus=body.corpus, **summary)

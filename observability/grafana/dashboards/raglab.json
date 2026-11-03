@@ -358,6 +358,40 @@
         "overrides": []
       },
       "options": {}
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "Re-ranking sans GPU (sauté ou sur CPU) / s",
+      "description": "Requêtes dont le re-ranking n'a pas trouvé de GPU : sauté (skipped_no_gpu) ou exécuté sur CPU (cpu).",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 33,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "A",
+          "expr": "sum by (notice) (rate(raglab_rerank_notices_total[$__rate_interval]))",
+          "legendFormat": "{{notice}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "options": {}
     }
   ],
   "templating": {

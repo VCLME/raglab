@@ -1,0 +1,8 @@
+#!/usr/bin/env sh
+# Build the showcase site into _site/ and refresh the README results table.
+# Preview: python -m http.server 8090 --directory _site
+set -e
+cd "$(dirname "$0")/.."
+PYTHON="${PYTHON:-python3}"
+command -v "$PYTHON" >/dev/null 2>&1 || PYTHON=python
+exec "$PYTHON" scripts/build_site.py --readme "$@"

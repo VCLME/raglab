@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+import re
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
+import pytest
+
+from raglab.domain.schemas import RetrievalFilters
 from raglab.stores.vector.postgres import PostgresVectorStore
 
 
@@ -14,20 +18,75 @@ def _statements(session: MagicMock) -> list[str]:
     return [str(call.args[0]) for call in session.execute.call_args_list]
 
 
-def test_iterative_scan_is_enabled_before_the_knn_query():
+def _search(store: PostgresVectorStore, top_k: int) -> list[str]:
     session = MagicMock()
     session.execute.return_value.all.return_value = []
-    PostgresVectorStore().search(session, index_run=_index_run(), query_embedding=[0.0] * 384, top_k=50)
-    statements = _statements(session)
+    store.search(session, index_run=_index_run(), query_embedding=[0.0] * 384, top_k=top_k)
+    return _statements(session)
+
+
+def test_exact_mode_is_the_default_and_bypasses_the_hnsw_index():
+    statements = _search(PostgresVectorStore(), 5)
+    assert len(statements) == 1  # no hnsw SET LOCAL
+    # The partial HNSW index is on `embedding::vector(384)`: exact mode must
+    # not use that expression, so the planner cannot pick the index.
+    assert "VECTOR(384)" not in statements[0].upper()
+    assert "ORDER BY" in statements[0]
+
+
+def test_hnsw_mode_enables_the_iterative_scan_before_the_knn_query():
+    statements = _search(PostgresVectorStore(search_mode="hnsw"), 50)
     assert statements[0] == "SET LOCAL hnsw.iterative_scan = strict_order"
     assert statements[1] == "SET LOCAL hnsw.ef_search = 50"
-    assert "ORDER BY" in statements[2]
+    assert "VECTOR(384)" in statements[2].upper()
 
 
-def test_iterative_scan_can_be_disabled_to_reproduce_v0():
+def test_hnsw_without_iterative_scan_reproduces_v0():
+    statements = _search(PostgresVectorStore(search_mode="hnsw", iterative_scan=False), 5)
+    assert not any("hnsw" in statement for statement in statements)
+
+
+def test_unknown_mode_is_rejected():
+    with pytest.raises(ValueError):
+        PostgresVectorStore(search_mode="ivf")
+
+
+@pytest.mark.parametrize("mode", ["exact", "hnsw"])
+def test_search_does_not_load_document_content(mode):
+    # documents.content is the full text of a law for LexML: loading it for
+    # each of the 50 candidates of a hybrid query cost ~13 ms per query.
+    filters = RetrievalFilters(file_names=["a.txt"], tags=["droit"], metadata_equals={"lang": "fr"})
     session = MagicMock()
     session.execute.return_value.all.return_value = []
-    PostgresVectorStore(iterative_scan=False).search(
-        session, index_run=_index_run(), query_embedding=[0.0] * 384, top_k=5
+    PostgresVectorStore(search_mode=mode).search(
+        session, index_run=_index_run(), query_embedding=[0.0] * 384, top_k=50, filters=filters
     )
-    assert not any("hnsw" in statement for statement in _statements(session))
+    knn = _statements(session)[-1]
+    selected = re.split(r"\sFROM\s", knn, maxsplit=1)[0]
+    assert "documents.content" not in selected
+    assert "documents.metadata_json" not in selected
+    assert "documents.file_name" in selected
+    assert "documents.metadata_json" in knn  # still used by the filters
+
+
+def test_search_maps_selected_columns_to_ranked_results():
+    row = SimpleNamespace(
+        id="c1",
+        text="Art. 1",
+        char_start=0,
+        char_end=6,
+        document_id="d1",
+        file_name="loi.txt",
+        source_path="/corpus/loi.txt",
+        distance=0.25,
+    )
+    session = MagicMock()
+    session.execute.return_value.all.return_value = [row, SimpleNamespace(**{**vars(row), "id": "c2", "distance": 1.5})]
+    results = PostgresVectorStore().search(session, index_run=_index_run(), query_embedding=[0.0] * 384, top_k=2)
+    assert [(r.chunk_id, r.rank, r.score) for r in results] == [("c1", 1, 0.75), ("c2", 2, 0.0)]
+    assert (results[0].document_id, results[0].file_name, results[0].source_path) == (
+        "d1",
+        "loi.txt",
+        "/corpus/loi.txt",
+    )
+    assert (results[0].chunk_text, results[0].char_start, results[0].char_end) == ("Art. 1", 0, 6)

@@ -4,16 +4,24 @@
   "seed": 7,
   "results": [
     {
+      "threshold": 0.75,
       "accuracy_by_variant": {
         "embellished": 1.0,
         "fabricated": 1.0,
-        "faithful": 0.8,
+        "faithful": 0.833,
         "off_topic": 0.933,
         "on_topic": 0.4
       },
       "accuracy_by_metric": {
-        "faithfulness": 0.933,
+        "faithfulness": 0.944,
         "answer_relevancy": 0.667
+      },
+      "mean_score_by_variant": {
+        "embellished": 0.383,
+        "fabricated": 0.017,
+        "faithful": 0.883,
+        "off_topic": 0.133,
+        "on_topic": 0.567
       },
       "unparsed": 0,
       "judge": "ollama:qwen2.5:7b",
@@ -171,6 +179,181 @@
         {
           "variant": "faithful",
           "expected": true,
+          "score": 1.0
+        },
+        {
+          "variant": "fabricated",
+          "expected": false,
+          "score": 0.0
+        },
+        {
+          "variant": "embellished",
+          "expected": false,
+          "score": 0.5
+        },
+        {
+          "variant": "on_topic",
+          "expected": true,
+          "score": 1.0
+        },
+        {
+          "variant": "off_topic",
+          "expected": false,
+          "score": 0.0
+        },
+        {
+          "variant": "faithful",
+          "expected": true,
+          "score": 1.0
+        },
+        {
+          "variant": "fabricated",
+          "expected": false,
+          "score": 0.0
+        },
+        {
+          "variant": "embellished",
+          "expected": false,
+          "score": 0.5
+        },
+        {
+          "variant": "on_topic",
+          "expected": true,
+          "score": 0.5
+        },
+        {
+          "variant": "off_topic",
+          "expected": false,
+          "score": 0.0
+        },
+        {
+          "variant": "faithful",
+          "expected": true,
+          "score": 1.0
+        },
+        {
+          "variant": "fabricated",
+          "expected": false,
+          "score": 0.0
+        },
+        {
+          "variant": "embellished",
+          "expected": false,
+          "score": 0.5
+        },
+        {
+          "variant": "on_topic",
+          "expected": true,
+          "score": 0.5
+        },
+        {
+          "variant": "off_topic",
+          "expected": false,
+          "score": 0.0
+        },
+        {
+          "variant": "faithful",
+          "expected": true,
+          "score": 1.0
+        },
+        {
+          "variant": "fabricated",
+          "expected": false,
+          "score": 0.0
+        },
+        {
+          "variant": "embellished",
+          "expected": false,
+          "score": 0.5
+        },
+        {
+          "variant": "on_topic",
+          "expected": true,
+          "score": 1.0
+        },
+        {
+          "variant": "off_topic",
+          "expected": false,
+          "score": 0.0
+        },
+        {
+          "variant": "faithful",
+          "expected": true,
+          "score": 1.0
+        },
+        {
+          "variant": "fabricated",
+          "expected": false,
+          "score": 0.0
+        },
+        {
+          "variant": "embellished",
+          "expected": false,
+          "score": 0.5
+        },
+        {
+          "variant": "on_topic",
+          "expected": true,
+          "score": 1.0
+        },
+        {
+          "variant": "off_topic",
+          "expected": false,
+          "score": 0.0
+        },
+        {
+          "variant": "faithful",
+          "expected": true,
+          "score": 0.5
+        },
+        {
+          "variant": "fabricated",
+          "expected": false,
+          "score": 0.0
+        },
+        {
+          "variant": "embellished",
+          "expected": false,
+          "score": 0.5
+        },
+        {
+          "variant": "on_topic",
+          "expected": true,
+          "score": 1.0
+        },
+        {
+          "variant": "off_topic",
+          "expected": false,
+          "score": 0.0
+        },
+        {
+          "variant": "faithful",
+          "expected": true,
+          "score": 1.0
+        },
+        {
+          "variant": "fabricated",
+          "expected": false,
+          "score": 0.0
+        },
+        {
+          "variant": "embellished",
+          "expected": false,
+          "score": 0.5
+        },
+        {
+          "variant": "on_topic",
+          "expected": true,
+          "score": 0.5
+        },
+        {
+          "variant": "off_topic",
+          "expected": false,
+          "score": 0.5
+        },
+        {
+          "variant": "faithful",
+          "expected": true,
           "score": 0.0
         },
         {
@@ -182,6 +365,156 @@
           "variant": "embellished",
           "expected": false,
           "score": 0.0
+        },
+        {
+          "variant": "on_topic",
+          "expected": true,
+          "score": 0.0
+        },
+        {
+          "variant": "off_topic",
+          "expected": false,
+          "score": 0.0
+        },
+        {
+          "variant": "faithful",
+          "expected": true,
+          "score": 0.5
+        },
+        {
+          "variant": "fabricated",
+          "expected": false,
+          "score": 0.0
+        },
+        {
+          "variant": "embellished",
+          "expected": false,
+          "score": 0.5
+        },
+        {
+          "variant": "on_topic",
+          "expected": true,
+          "score": 1.0
+        },
+        {
+          "variant": "off_topic",
+          "expected": false,
+          "score": 0.0
+        },
+        {
+          "variant": "faithful",
+          "expected": true,
+          "score": 1.0
+        },
+        {
+          "variant": "fabricated",
+          "expected": false,
+          "score": 0.0
+        },
+        {
+          "variant": "embellished",
+          "expected": false,
+          "score": 0.5
+        },
+        {
+          "variant": "on_topic",
+          "expected": true,
+          "score": 1.0
+        },
+        {
+          "variant": "off_topic",
+          "expected": false,
+          "score": 0.0
+        },
+        {
+          "variant": "faithful",
+          "expected": true,
+          "score": 1.0
+        },
+        {
+          "variant": "fabricated",
+          "expected": false,
+          "score": 0.0
+        },
+        {
+          "variant": "embellished",
+          "expected": false,
+          "score": 0.5
+        },
+        {
+          "variant": "on_topic",
+          "expected": true,
+          "score": 0.0
+        },
+        {
+          "variant": "off_topic",
+          "expected": false,
+          "score": 1.0
+        },
+        {
+          "variant": "faithful",
+          "expected": true,
+          "score": 1.0
+        },
+        {
+          "variant": "fabricated",
+          "expected": false,
+          "score": 0.0
+        },
+        {
+          "variant": "embellished",
+          "expected": false,
+          "score": 0.5
+        },
+        {
+          "variant": "on_topic",
+          "expected": true,
+          "score": 0.0
+        },
+        {
+          "variant": "off_topic",
+          "expected": false,
+          "score": 0.0
+        },
+        {
+          "variant": "faithful",
+          "expected": true,
+          "score": 1.0
+        },
+        {
+          "variant": "fabricated",
+          "expected": false,
+          "score": 0.0
+        },
+        {
+          "variant": "embellished",
+          "expected": false,
+          "score": 0.0
+        },
+        {
+          "variant": "on_topic",
+          "expected": true,
+          "score": 0.0
+        },
+        {
+          "variant": "off_topic",
+          "expected": false,
+          "score": 0.0
+        },
+        {
+          "variant": "faithful",
+          "expected": true,
+          "score": 1.0
+        },
+        {
+          "variant": "fabricated",
+          "expected": false,
+          "score": 0.0
+        },
+        {
+          "variant": "embellished",
+          "expected": false,
+          "score": 0.5
         },
         {
           "variant": "on_topic",
@@ -241,331 +574,6 @@
         {
           "variant": "off_topic",
           "expected": false,
-          "score": 0.0
-        },
-        {
-          "variant": "faithful",
-          "expected": true,
-          "score": 1.0
-        },
-        {
-          "variant": "fabricated",
-          "expected": false,
-          "score": 0.0
-        },
-        {
-          "variant": "embellished",
-          "expected": false,
-          "score": 0.5
-        },
-        {
-          "variant": "on_topic",
-          "expected": true,
-          "score": 1.0
-        },
-        {
-          "variant": "off_topic",
-          "expected": false,
-          "score": 0.0
-        },
-        {
-          "variant": "faithful",
-          "expected": true,
-          "score": 1.0
-        },
-        {
-          "variant": "fabricated",
-          "expected": false,
-          "score": 0.5
-        },
-        {
-          "variant": "embellished",
-          "expected": false,
-          "score": 0.5
-        },
-        {
-          "variant": "on_topic",
-          "expected": true,
-          "score": 1.0
-        },
-        {
-          "variant": "off_topic",
-          "expected": false,
-          "score": 0.0
-        },
-        {
-          "variant": "faithful",
-          "expected": true,
-          "score": 0.5
-        },
-        {
-          "variant": "fabricated",
-          "expected": false,
-          "score": 0.0
-        },
-        {
-          "variant": "embellished",
-          "expected": false,
-          "score": 0.5
-        },
-        {
-          "variant": "on_topic",
-          "expected": true,
-          "score": 1.0
-        },
-        {
-          "variant": "off_topic",
-          "expected": false,
-          "score": 0.0
-        },
-        {
-          "variant": "faithful",
-          "expected": true,
-          "score": 1.0
-        },
-        {
-          "variant": "fabricated",
-          "expected": false,
-          "score": 0.5
-        },
-        {
-          "variant": "embellished",
-          "expected": false,
-          "score": 0.5
-        },
-        {
-          "variant": "on_topic",
-          "expected": true,
-          "score": 0.5
-        },
-        {
-          "variant": "off_topic",
-          "expected": false,
-          "score": 0.5
-        },
-        {
-          "variant": "faithful",
-          "expected": true,
-          "score": 0.0
-        },
-        {
-          "variant": "fabricated",
-          "expected": false,
-          "score": 0.0
-        },
-        {
-          "variant": "embellished",
-          "expected": false,
-          "score": 0.0
-        },
-        {
-          "variant": "on_topic",
-          "expected": true,
-          "score": 0.0
-        },
-        {
-          "variant": "off_topic",
-          "expected": false,
-          "score": 0.0
-        },
-        {
-          "variant": "faithful",
-          "expected": true,
-          "score": 0.5
-        },
-        {
-          "variant": "fabricated",
-          "expected": false,
-          "score": 0.0
-        },
-        {
-          "variant": "embellished",
-          "expected": false,
-          "score": 0.5
-        },
-        {
-          "variant": "on_topic",
-          "expected": true,
-          "score": 1.0
-        },
-        {
-          "variant": "off_topic",
-          "expected": false,
-          "score": 0.0
-        },
-        {
-          "variant": "faithful",
-          "expected": true,
-          "score": 1.0
-        },
-        {
-          "variant": "fabricated",
-          "expected": false,
-          "score": 0.0
-        },
-        {
-          "variant": "embellished",
-          "expected": false,
-          "score": 0.0
-        },
-        {
-          "variant": "on_topic",
-          "expected": true,
-          "score": 1.0
-        },
-        {
-          "variant": "off_topic",
-          "expected": false,
-          "score": 0.0
-        },
-        {
-          "variant": "faithful",
-          "expected": true,
-          "score": 1.0
-        },
-        {
-          "variant": "fabricated",
-          "expected": false,
-          "score": 0.0
-        },
-        {
-          "variant": "embellished",
-          "expected": false,
-          "score": 0.5
-        },
-        {
-          "variant": "on_topic",
-          "expected": true,
-          "score": 0.0
-        },
-        {
-          "variant": "off_topic",
-          "expected": false,
-          "score": 1.0
-        },
-        {
-          "variant": "faithful",
-          "expected": true,
-          "score": 1.0
-        },
-        {
-          "variant": "fabricated",
-          "expected": false,
-          "score": 0.0
-        },
-        {
-          "variant": "embellished",
-          "expected": false,
-          "score": 0.5
-        },
-        {
-          "variant": "on_topic",
-          "expected": true,
-          "score": 0.0
-        },
-        {
-          "variant": "off_topic",
-          "expected": false,
-          "score": 0.0
-        },
-        {
-          "variant": "faithful",
-          "expected": true,
-          "score": 1.0
-        },
-        {
-          "variant": "fabricated",
-          "expected": false,
-          "score": 0.0
-        },
-        {
-          "variant": "embellished",
-          "expected": false,
-          "score": 0.0
-        },
-        {
-          "variant": "on_topic",
-          "expected": true,
-          "score": 0.0
-        },
-        {
-          "variant": "off_topic",
-          "expected": false,
-          "score": 0.0
-        },
-        {
-          "variant": "faithful",
-          "expected": true,
-          "score": 1.0
-        },
-        {
-          "variant": "fabricated",
-          "expected": false,
-          "score": 0.0
-        },
-        {
-          "variant": "embellished",
-          "expected": false,
-          "score": 0.5
-        },
-        {
-          "variant": "on_topic",
-          "expected": true,
-          "score": 1.0
-        },
-        {
-          "variant": "off_topic",
-          "expected": false,
-          "score": 0.0
-        },
-        {
-          "variant": "faithful",
-          "expected": true,
-          "score": 1.0
-        },
-        {
-          "variant": "fabricated",
-          "expected": false,
-          "score": 0.0
-        },
-        {
-          "variant": "embellished",
-          "expected": false,
-          "score": 0.0
-        },
-        {
-          "variant": "on_topic",
-          "expected": true,
-          "score": 0.5
-        },
-        {
-          "variant": "off_topic",
-          "expected": false,
-          "score": 0.0
-        },
-        {
-          "variant": "faithful",
-          "expected": true,
-          "score": 1.0
-        },
-        {
-          "variant": "fabricated",
-          "expected": false,
-          "score": 0.0
-        },
-        {
-          "variant": "embellished",
-          "expected": false,
-          "score": 0.5
-        },
-        {
-          "variant": "on_topic",
-          "expected": true,
-          "score": 0.5
-        },
-        {
-          "variant": "off_topic",
-          "expected": false,
           "score": 0.5
         },
         {
@@ -696,7 +704,7 @@
         {
           "variant": "faithful",
           "expected": true,
-          "score": 0.5
+          "score": 1.0
         },
         {
           "variant": "fabricated",
@@ -721,7 +729,7 @@
         {
           "variant": "faithful",
           "expected": true,
-          "score": 1.0
+          "score": 0.0
         },
         {
           "variant": "fabricated",
@@ -768,27 +776,27 @@
           "expected": false,
           "score": 0.0
         }
-      ],
-      "threshold": 0.75,
-      "mean_score_by_variant": {
-        "embellished": 0.333,
-        "fabricated": 0.05,
-        "faithful": 0.867,
-        "off_topic": 0.133,
-        "on_topic": 0.567
-      }
+      ]
     },
     {
+      "threshold": 0.75,
       "accuracy_by_variant": {
-        "embellished": 0.967,
-        "fabricated": 0.967,
-        "faithful": 0.9,
+        "embellished": 1.0,
+        "fabricated": 1.0,
+        "faithful": 0.933,
         "off_topic": 0.7,
         "on_topic": 0.967
       },
       "accuracy_by_metric": {
-        "faithfulness": 0.944,
+        "faithfulness": 0.978,
         "answer_relevancy": 0.833
+      },
+      "mean_score_by_variant": {
+        "embellished": 0.467,
+        "fabricated": 0.0,
+        "faithful": 0.95,
+        "off_topic": 0.3,
+        "on_topic": 0.983
       },
       "unparsed": 0,
       "judge": "llamacpp:gemma4-26b-a4b",
@@ -831,31 +839,6 @@
         {
           "variant": "embellished",
           "expected": false,
-          "score": 0.0
-        },
-        {
-          "variant": "on_topic",
-          "expected": true,
-          "score": 1.0
-        },
-        {
-          "variant": "off_topic",
-          "expected": false,
-          "score": 0.0
-        },
-        {
-          "variant": "faithful",
-          "expected": true,
-          "score": 1.0
-        },
-        {
-          "variant": "fabricated",
-          "expected": false,
-          "score": 0.0
-        },
-        {
-          "variant": "embellished",
-          "expected": false,
           "score": 0.5
         },
         {
@@ -867,356 +850,6 @@
           "variant": "off_topic",
           "expected": false,
           "score": 0.0
-        },
-        {
-          "variant": "faithful",
-          "expected": true,
-          "score": 1.0
-        },
-        {
-          "variant": "fabricated",
-          "expected": false,
-          "score": 0.0
-        },
-        {
-          "variant": "embellished",
-          "expected": false,
-          "score": 0.5
-        },
-        {
-          "variant": "on_topic",
-          "expected": true,
-          "score": 1.0
-        },
-        {
-          "variant": "off_topic",
-          "expected": false,
-          "score": 0.0
-        },
-        {
-          "variant": "faithful",
-          "expected": true,
-          "score": 1.0
-        },
-        {
-          "variant": "fabricated",
-          "expected": false,
-          "score": 0.0
-        },
-        {
-          "variant": "embellished",
-          "expected": false,
-          "score": 0.5
-        },
-        {
-          "variant": "on_topic",
-          "expected": true,
-          "score": 1.0
-        },
-        {
-          "variant": "off_topic",
-          "expected": false,
-          "score": 0.0
-        },
-        {
-          "variant": "faithful",
-          "expected": true,
-          "score": 1.0
-        },
-        {
-          "variant": "fabricated",
-          "expected": false,
-          "score": 0.0
-        },
-        {
-          "variant": "embellished",
-          "expected": false,
-          "score": 0.5
-        },
-        {
-          "variant": "on_topic",
-          "expected": true,
-          "score": 1.0
-        },
-        {
-          "variant": "off_topic",
-          "expected": false,
-          "score": 0.0
-        },
-        {
-          "variant": "faithful",
-          "expected": true,
-          "score": 0.0
-        },
-        {
-          "variant": "fabricated",
-          "expected": false,
-          "score": 0.0
-        },
-        {
-          "variant": "embellished",
-          "expected": false,
-          "score": 0.0
-        },
-        {
-          "variant": "on_topic",
-          "expected": true,
-          "score": 1.0
-        },
-        {
-          "variant": "off_topic",
-          "expected": false,
-          "score": 1.0
-        },
-        {
-          "variant": "faithful",
-          "expected": true,
-          "score": 1.0
-        },
-        {
-          "variant": "fabricated",
-          "expected": false,
-          "score": 0.0
-        },
-        {
-          "variant": "embellished",
-          "expected": false,
-          "score": 0.5
-        },
-        {
-          "variant": "on_topic",
-          "expected": true,
-          "score": 1.0
-        },
-        {
-          "variant": "off_topic",
-          "expected": false,
-          "score": 1.0
-        },
-        {
-          "variant": "faithful",
-          "expected": true,
-          "score": 1.0
-        },
-        {
-          "variant": "fabricated",
-          "expected": false,
-          "score": 0.0
-        },
-        {
-          "variant": "embellished",
-          "expected": false,
-          "score": 0.5
-        },
-        {
-          "variant": "on_topic",
-          "expected": true,
-          "score": 1.0
-        },
-        {
-          "variant": "off_topic",
-          "expected": false,
-          "score": 0.0
-        },
-        {
-          "variant": "faithful",
-          "expected": true,
-          "score": 1.0
-        },
-        {
-          "variant": "fabricated",
-          "expected": false,
-          "score": 0.0
-        },
-        {
-          "variant": "embellished",
-          "expected": false,
-          "score": 0.5
-        },
-        {
-          "variant": "on_topic",
-          "expected": true,
-          "score": 1.0
-        },
-        {
-          "variant": "off_topic",
-          "expected": false,
-          "score": 0.0
-        },
-        {
-          "variant": "faithful",
-          "expected": true,
-          "score": 1.0
-        },
-        {
-          "variant": "fabricated",
-          "expected": false,
-          "score": 0.0
-        },
-        {
-          "variant": "embellished",
-          "expected": false,
-          "score": 0.5
-        },
-        {
-          "variant": "on_topic",
-          "expected": true,
-          "score": 1.0
-        },
-        {
-          "variant": "off_topic",
-          "expected": false,
-          "score": 0.0
-        },
-        {
-          "variant": "faithful",
-          "expected": true,
-          "score": 1.0
-        },
-        {
-          "variant": "fabricated",
-          "expected": false,
-          "score": 0.0
-        },
-        {
-          "variant": "embellished",
-          "expected": false,
-          "score": 0.5
-        },
-        {
-          "variant": "on_topic",
-          "expected": true,
-          "score": 1.0
-        },
-        {
-          "variant": "off_topic",
-          "expected": false,
-          "score": 1.0
-        },
-        {
-          "variant": "faithful",
-          "expected": true,
-          "score": 1.0
-        },
-        {
-          "variant": "fabricated",
-          "expected": false,
-          "score": 0.0
-        },
-        {
-          "variant": "embellished",
-          "expected": false,
-          "score": 0.5
-        },
-        {
-          "variant": "on_topic",
-          "expected": true,
-          "score": 1.0
-        },
-        {
-          "variant": "off_topic",
-          "expected": false,
-          "score": 0.0
-        },
-        {
-          "variant": "faithful",
-          "expected": true,
-          "score": 0.0
-        },
-        {
-          "variant": "fabricated",
-          "expected": false,
-          "score": 0.0
-        },
-        {
-          "variant": "embellished",
-          "expected": false,
-          "score": 0.0
-        },
-        {
-          "variant": "on_topic",
-          "expected": true,
-          "score": 1.0
-        },
-        {
-          "variant": "off_topic",
-          "expected": false,
-          "score": 0.0
-        },
-        {
-          "variant": "faithful",
-          "expected": true,
-          "score": 0.0
-        },
-        {
-          "variant": "fabricated",
-          "expected": false,
-          "score": 0.0
-        },
-        {
-          "variant": "embellished",
-          "expected": false,
-          "score": 0.5
-        },
-        {
-          "variant": "on_topic",
-          "expected": true,
-          "score": 1.0
-        },
-        {
-          "variant": "off_topic",
-          "expected": false,
-          "score": 0.0
-        },
-        {
-          "variant": "faithful",
-          "expected": true,
-          "score": 1.0
-        },
-        {
-          "variant": "fabricated",
-          "expected": false,
-          "score": 0.0
-        },
-        {
-          "variant": "embellished",
-          "expected": false,
-          "score": 0.5
-        },
-        {
-          "variant": "on_topic",
-          "expected": true,
-          "score": 1.0
-        },
-        {
-          "variant": "off_topic",
-          "expected": false,
-          "score": 0.0
-        },
-        {
-          "variant": "faithful",
-          "expected": true,
-          "score": 1.0
-        },
-        {
-          "variant": "fabricated",
-          "expected": false,
-          "score": 0.0
-        },
-        {
-          "variant": "embellished",
-          "expected": false,
-          "score": 0.5
-        },
-        {
-          "variant": "on_topic",
-          "expected": true,
-          "score": 1.0
-        },
-        {
-          "variant": "off_topic",
-          "expected": false,
-          "score": 1.0
         },
         {
           "variant": "faithful",
@@ -1376,12 +1009,87 @@
         {
           "variant": "fabricated",
           "expected": false,
-          "score": 1.0
+          "score": 0.0
         },
         {
           "variant": "embellished",
           "expected": false,
+          "score": 0.5
+        },
+        {
+          "variant": "on_topic",
+          "expected": true,
           "score": 1.0
+        },
+        {
+          "variant": "off_topic",
+          "expected": false,
+          "score": 0.0
+        },
+        {
+          "variant": "faithful",
+          "expected": true,
+          "score": 1.0
+        },
+        {
+          "variant": "fabricated",
+          "expected": false,
+          "score": 0.0
+        },
+        {
+          "variant": "embellished",
+          "expected": false,
+          "score": 0.5
+        },
+        {
+          "variant": "on_topic",
+          "expected": true,
+          "score": 1.0
+        },
+        {
+          "variant": "off_topic",
+          "expected": false,
+          "score": 0.0
+        },
+        {
+          "variant": "faithful",
+          "expected": true,
+          "score": 1.0
+        },
+        {
+          "variant": "fabricated",
+          "expected": false,
+          "score": 0.0
+        },
+        {
+          "variant": "embellished",
+          "expected": false,
+          "score": 0.5
+        },
+        {
+          "variant": "on_topic",
+          "expected": true,
+          "score": 1.0
+        },
+        {
+          "variant": "off_topic",
+          "expected": false,
+          "score": 0.0
+        },
+        {
+          "variant": "faithful",
+          "expected": true,
+          "score": 1.0
+        },
+        {
+          "variant": "fabricated",
+          "expected": false,
+          "score": 0.0
+        },
+        {
+          "variant": "embellished",
+          "expected": false,
+          "score": 0.5
         },
         {
           "variant": "on_topic",
@@ -1392,6 +1100,106 @@
           "variant": "off_topic",
           "expected": false,
           "score": 1.0
+        },
+        {
+          "variant": "faithful",
+          "expected": true,
+          "score": 1.0
+        },
+        {
+          "variant": "fabricated",
+          "expected": false,
+          "score": 0.0
+        },
+        {
+          "variant": "embellished",
+          "expected": false,
+          "score": 0.5
+        },
+        {
+          "variant": "on_topic",
+          "expected": true,
+          "score": 1.0
+        },
+        {
+          "variant": "off_topic",
+          "expected": false,
+          "score": 0.0
+        },
+        {
+          "variant": "faithful",
+          "expected": true,
+          "score": 1.0
+        },
+        {
+          "variant": "fabricated",
+          "expected": false,
+          "score": 0.0
+        },
+        {
+          "variant": "embellished",
+          "expected": false,
+          "score": 0.0
+        },
+        {
+          "variant": "on_topic",
+          "expected": true,
+          "score": 1.0
+        },
+        {
+          "variant": "off_topic",
+          "expected": false,
+          "score": 0.0
+        },
+        {
+          "variant": "faithful",
+          "expected": true,
+          "score": 0.5
+        },
+        {
+          "variant": "fabricated",
+          "expected": false,
+          "score": 0.0
+        },
+        {
+          "variant": "embellished",
+          "expected": false,
+          "score": 0.5
+        },
+        {
+          "variant": "on_topic",
+          "expected": true,
+          "score": 1.0
+        },
+        {
+          "variant": "off_topic",
+          "expected": false,
+          "score": 0.0
+        },
+        {
+          "variant": "faithful",
+          "expected": true,
+          "score": 1.0
+        },
+        {
+          "variant": "fabricated",
+          "expected": false,
+          "score": 0.0
+        },
+        {
+          "variant": "embellished",
+          "expected": false,
+          "score": 0.5
+        },
+        {
+          "variant": "on_topic",
+          "expected": true,
+          "score": 1.0
+        },
+        {
+          "variant": "off_topic",
+          "expected": false,
+          "score": 0.0
         },
         {
           "variant": "faithful",
@@ -1486,7 +1294,7 @@
         {
           "variant": "on_topic",
           "expected": true,
-          "score": 0.5
+          "score": 1.0
         },
         {
           "variant": "off_topic",
@@ -1497,6 +1305,206 @@
           "variant": "faithful",
           "expected": true,
           "score": 1.0
+        },
+        {
+          "variant": "fabricated",
+          "expected": false,
+          "score": 0.0
+        },
+        {
+          "variant": "embellished",
+          "expected": false,
+          "score": 0.5
+        },
+        {
+          "variant": "on_topic",
+          "expected": true,
+          "score": 1.0
+        },
+        {
+          "variant": "off_topic",
+          "expected": false,
+          "score": 0.0
+        },
+        {
+          "variant": "faithful",
+          "expected": true,
+          "score": 1.0
+        },
+        {
+          "variant": "fabricated",
+          "expected": false,
+          "score": 0.0
+        },
+        {
+          "variant": "embellished",
+          "expected": false,
+          "score": 0.5
+        },
+        {
+          "variant": "on_topic",
+          "expected": true,
+          "score": 1.0
+        },
+        {
+          "variant": "off_topic",
+          "expected": false,
+          "score": 1.0
+        },
+        {
+          "variant": "faithful",
+          "expected": true,
+          "score": 1.0
+        },
+        {
+          "variant": "fabricated",
+          "expected": false,
+          "score": 0.0
+        },
+        {
+          "variant": "embellished",
+          "expected": false,
+          "score": 0.5
+        },
+        {
+          "variant": "on_topic",
+          "expected": true,
+          "score": 1.0
+        },
+        {
+          "variant": "off_topic",
+          "expected": false,
+          "score": 1.0
+        },
+        {
+          "variant": "faithful",
+          "expected": true,
+          "score": 1.0
+        },
+        {
+          "variant": "fabricated",
+          "expected": false,
+          "score": 0.0
+        },
+        {
+          "variant": "embellished",
+          "expected": false,
+          "score": 0.5
+        },
+        {
+          "variant": "on_topic",
+          "expected": true,
+          "score": 1.0
+        },
+        {
+          "variant": "off_topic",
+          "expected": false,
+          "score": 1.0
+        },
+        {
+          "variant": "faithful",
+          "expected": true,
+          "score": 1.0
+        },
+        {
+          "variant": "fabricated",
+          "expected": false,
+          "score": 0.0
+        },
+        {
+          "variant": "embellished",
+          "expected": false,
+          "score": 0.5
+        },
+        {
+          "variant": "on_topic",
+          "expected": true,
+          "score": 1.0
+        },
+        {
+          "variant": "off_topic",
+          "expected": false,
+          "score": 1.0
+        },
+        {
+          "variant": "faithful",
+          "expected": true,
+          "score": 1.0
+        },
+        {
+          "variant": "fabricated",
+          "expected": false,
+          "score": 0.0
+        },
+        {
+          "variant": "embellished",
+          "expected": false,
+          "score": 0.5
+        },
+        {
+          "variant": "on_topic",
+          "expected": true,
+          "score": 1.0
+        },
+        {
+          "variant": "off_topic",
+          "expected": false,
+          "score": 0.0
+        },
+        {
+          "variant": "faithful",
+          "expected": true,
+          "score": 1.0
+        },
+        {
+          "variant": "fabricated",
+          "expected": false,
+          "score": 0.0
+        },
+        {
+          "variant": "embellished",
+          "expected": false,
+          "score": 0.5
+        },
+        {
+          "variant": "on_topic",
+          "expected": true,
+          "score": 1.0
+        },
+        {
+          "variant": "off_topic",
+          "expected": false,
+          "score": 0.0
+        },
+        {
+          "variant": "faithful",
+          "expected": true,
+          "score": 1.0
+        },
+        {
+          "variant": "fabricated",
+          "expected": false,
+          "score": 0.0
+        },
+        {
+          "variant": "embellished",
+          "expected": false,
+          "score": 0.5
+        },
+        {
+          "variant": "on_topic",
+          "expected": true,
+          "score": 0.5
+        },
+        {
+          "variant": "off_topic",
+          "expected": false,
+          "score": 0.0
+        },
+        {
+          "variant": "faithful",
+          "expected": true,
+          "score": 0.0
         },
         {
           "variant": "fabricated",
@@ -1543,15 +1551,7 @@
           "expected": false,
           "score": 0.0
         }
-      ],
-      "threshold": 0.75,
-      "mean_score_by_variant": {
-        "embellished": 0.45,
-        "fabricated": 0.033,
-        "faithful": 0.9,
-        "off_topic": 0.3,
-        "on_topic": 0.983
-      }
+      ]
     }
   ]
 }

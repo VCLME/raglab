@@ -8,6 +8,7 @@ import type {
   CorpusSummary,
   ExperimentRunDetail,
   ExperimentRunSummary,
+  RetrievalMode,
 } from "../api/types";
 import { ErrorBanner } from "../components/ErrorBanner";
 import { ExplainBanner } from "../components/ExplainBanner";
@@ -18,6 +19,22 @@ import { StatusBadge } from "../components/StatusBadge";
 
 const MAX_COMPARED = 5;
 const STRATEGIES: ChunkingStrategy[] = ["traditional", "slide", "late"];
+const RETRIEVAL_MODES: RetrievalMode[] = ["dense", "lexical", "hybrid"];
+
+// Runs recorded before hybrid retrieval carry no mode: they were dense.
+function backendLabel(run: ExperimentRunSummary): string {
+  const backend = run.backend ?? "pgvector";
+  return run.retrieval_mode && run.retrieval_mode !== "dense" ? `${backend}/${run.retrieval_mode}` : backend;
+}
+
+function retrievalTitle(run: ExperimentRunSummary): string {
+  if (run.retrieval_mode !== "hybrid") return run.retrieval_mode ?? "";
+  return `lexical_weight ${run.lexical_weight ?? "?"} · rrf_k ${run.rrf_k ?? "?"}`;
+}
+
+function rerankTitle(run: ExperimentRunSummary): string {
+  return `${run.rerank_model ?? "?"} · ${run.rerank_candidates ?? "?"} candidats`;
+}
 
 interface BenchDatasetOnDisk {
   loader: string | null;
@@ -87,6 +104,11 @@ function LaunchTab({ onLaunched }: { onLaunched: () => void }) {
   const [computeRagas, setComputeRagas] = useState(false);
   const [ragasLimit, setRagasLimit] = useState("");
   const [judgeBackend, setJudgeBackend] = useState<"ollama" | "llamacpp">("ollama");
+  const [retrievalMode, setRetrievalMode] = useState<RetrievalMode>("dense");
+  const [lexicalWeight, setLexicalWeight] = useState("");
+  const [rrfK, setRrfK] = useState("");
+  const [rerank, setRerank] = useState(false);
+  const [citations, setCitations] = useState(false);
 
   const action = useApiAction((body: unknown) =>
     post<{
@@ -137,6 +159,17 @@ function LaunchTab({ onLaunched }: { onLaunched: () => void }) {
         ragas_case_limit: computeRagas && ragasLimit ? Number(ragasLimit) : null,
         judge_backend: judgeBackend,
       };
+      // Lexical and hybrid modes only exist on pgvector; the graph run of a
+      // "both" comparison stays dense.
+      if (backend === "pgvector") {
+        body.retrieval_mode = retrievalMode;
+        body.rerank = rerank;
+        body.citations = citations;
+        if (retrievalMode === "hybrid") {
+          if (lexicalWeight !== "") body.lexical_weight = Number(lexicalWeight);
+          if (rrfK !== "") body.rrf_k = Number(rrfK);
+        }
+      }
       if (resolvedPath) body.dataset_path = resolvedPath;
       await action.run(body);
     }
@@ -172,6 +205,51 @@ function LaunchTab({ onLaunched }: { onLaunched: () => void }) {
           <option value="both">{t("benchmarks.backend_both")}</option>
         </select>
       </FieldRow>
+      {backendChoice !== "neo4j" ? (
+        <FieldRow label={t("retrieval.mode_label")} hint={t("retrieval.mode_hint")}>
+          <select value={retrievalMode} onChange={(e) => setRetrievalMode(e.target.value as RetrievalMode)}>
+            {RETRIEVAL_MODES.map((m) => (
+              <option key={m} value={m}>
+                {t(`retrieval.mode_${m}`)}
+              </option>
+            ))}
+          </select>
+        </FieldRow>
+      ) : null}
+      {backendChoice !== "neo4j" ? (
+        <FieldRow label={t("retrieval.rerank_label")} hint={t("benchmarks.rerank_hint")}>
+          <label className="inline" style={{ gap: 4 }}>
+            <input type="checkbox" checked={rerank} onChange={(e) => setRerank(e.target.checked)} />
+            {t("retrieval.rerank_on")}
+          </label>
+        </FieldRow>
+      ) : null}
+      {backendChoice !== "neo4j" ? (
+        <FieldRow label={t("retrieval.citations_label")} hint={t("retrieval.citations_hint")}>
+          <label className="inline" style={{ gap: 4 }}>
+            <input type="checkbox" checked={citations} onChange={(e) => setCitations(e.target.checked)} />
+            {t("retrieval.citations_checkbox")}
+          </label>
+        </FieldRow>
+      ) : null}
+      {backendChoice !== "neo4j" && retrievalMode === "hybrid" ? (
+        <>
+          <FieldRow label={t("retrieval.lexical_weight_label")} hint={t("retrieval.lexical_weight_hint")}>
+            <input
+              type="number"
+              value={lexicalWeight}
+              onChange={(e) => setLexicalWeight(e.target.value)}
+              min={0}
+              max={1}
+              step={0.05}
+              placeholder="0.5"
+            />
+          </FieldRow>
+          <FieldRow label={t("retrieval.rrf_k_label")} hint={t("retrieval.rrf_k_hint")}>
+            <input type="number" value={rrfK} onChange={(e) => setRrfK(e.target.value)} min={0} placeholder="60" />
+          </FieldRow>
+        </>
+      ) : null}
       <FieldRow
         label={t("benchmarks.dataset_label")}
         hint={
@@ -521,7 +599,7 @@ function ComparisonChart({ runs }: { runs: ExperimentRunSummary[] }) {
         <div key={g.key} className="bench-chart-group">
           <div className="bench-chart-group-label">{t(g.labelKey)}</div>
           {runs.map((run) => {
-            const label = `${run.benchmark ?? run.corpus_name ?? "?"} · ${run.strategy ?? "?"} · ${run.backend ?? "pgvector"} · ${run.embedding_dimension ?? "?"}d`;
+            const label = `${run.benchmark ?? run.corpus_name ?? "?"} · ${run.strategy ?? "?"} · ${backendLabel(run)} · ${run.embedding_dimension ?? "?"}d`;
             return (
               <BenchBarRow key={`${run.id}-${g.key}`} className={g.rowClass} label={label} value={metric(run, g.key)} />
             );
@@ -693,6 +771,16 @@ function HistoryTab() {
                       <span className={`tag backend-${run.backend ?? "pgvector"}`}>
                         {run.backend ?? "pgvector"}
                       </span>
+                      {run.retrieval_mode && run.retrieval_mode !== "dense" ? (
+                        <span className="tag" style={{ marginLeft: 4 }} title={retrievalTitle(run)}>
+                          {run.retrieval_mode}
+                        </span>
+                      ) : null}
+                      {run.rerank ? (
+                        <span className="tag" style={{ marginLeft: 4 }} title={rerankTitle(run)}>
+                          rerank
+                        </span>
+                      ) : null}
                     </td>
                     <td className="muted" style={{ fontSize: 11 }}>
                       {run.embedding_model_name ?? "—"}{run.embedding_dimension ? ` · ${run.embedding_dimension}d` : ""}

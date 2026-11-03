@@ -50,6 +50,31 @@ def test_observe_query_ignores_missing_or_odd_values():
     assert sample("raglab_stage_duration_seconds_count", stage="Bad Stage!") == 0.0
 
 
+def test_observe_query_counts_reranker_cache_and_no_gpu_notice():
+    hits = sample("raglab_cache_lookups_total", cache="reranker", result="hit")
+    misses = sample("raglab_cache_lookups_total", cache="reranker", result="miss")
+    skipped = sample("raglab_rerank_notices_total", notice="skipped_no_gpu")
+    observe_query(
+        timings_ms={"lexical": 9.0, "fusion": 0.4, "rerank": 410.0, "citation": 1.2},
+        scores=[0.97],
+        strategy="traditional",
+        generated=False,
+        rerank_stats={"candidates": 40.0, "scored": 30.0, "cache_hits": 10.0},
+    )
+    observe_query(
+        timings_ms={"retrieval": 20.0},
+        scores=[0.8],
+        strategy="traditional",
+        generated=False,
+        rerank_notice="skipped_no_gpu",
+    )
+    assert sample("raglab_cache_lookups_total", cache="reranker", result="hit") == hits + 10
+    assert sample("raglab_cache_lookups_total", cache="reranker", result="miss") == misses + 30
+    assert sample("raglab_rerank_notices_total", notice="skipped_no_gpu") == skipped + 1
+    for stage in ("lexical", "fusion", "citation"):
+        assert sample("raglab_stage_duration_seconds_count", stage=stage) >= 1
+
+
 def test_cache_lookups_are_counted_by_result():
     hits = sample("raglab_cache_lookups_total", cache="reranker", result="hit")
     record_cache_lookup("reranker", hit=True)

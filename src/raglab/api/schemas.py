@@ -5,7 +5,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from raglab.domain.enums import ChunkingStrategy
+from raglab.domain.enums import ChunkingStrategy, RetrievalMode
 
 
 class HealthResponse(BaseModel):
@@ -47,6 +47,15 @@ class ConfigResponse(BaseModel):
     slide_stride: int
     late_chunk_size: int
     late_context_chars: int
+    default_retrieval_mode: str
+    hybrid_lexical_weight: float
+    rrf_k: int
+    bm25_k1: float
+    bm25_b: float
+    default_rerank: bool = False
+    rerank_gpu: bool = False
+    rerank_model_name: str = ""
+    rerank_candidates: int = 0
 
 
 class OllamaPullRequest(BaseModel):
@@ -82,6 +91,9 @@ class IngestRequest(BaseModel):
     corpus: str
     description: str | None = None
     tags: list[str] | None = None
+    # Corpus language for lexical search ("fr", "pt"); detected from a
+    # benchmark loader's metadata.json when omitted.
+    language: str | None = None
 
 
 class IngestResponse(BaseModel):
@@ -120,6 +132,16 @@ class QueryRequest(BaseModel):
     top_k: int | None = None
     generate: bool = True
     filters: QueryFilters | None = None
+    # pgvector only: dense (cosine KNN), lexical (BM25) or hybrid (RRF of
+    # both). Distinct from the graph store's `mode` below. None = settings.
+    retrieval_mode: RetrievalMode | None = None
+    # Resolve legal citations ("art. 49 da Lei nº 8.078"); None = server default.
+    citations: bool | None = None
+    lexical_weight: float | None = Field(None, ge=0.0, le=1.0)
+    rrf_k: int | None = Field(None, ge=0)
+    # Cross-encoder re-ranking of rerank_candidates first-stage chunks.
+    # None = RAGLAB_DEFAULT_RERANK.
+    rerank: bool | None = None
     # Ollama model for the answer; None = RAGLAB_GENERATION_MODEL.
     # Ignored by /api/graph/query.
     llm_model: str | None = None
@@ -224,6 +246,13 @@ class ExperimentRunSummary(BaseModel):
     summary: dict[str, float | None] | None = None
     duration_ms: float | None = None
     backend: str | None = None
+    # Runs recorded before hybrid retrieval have no mode: they were dense.
+    retrieval_mode: str | None = None
+    lexical_weight: float | None = None
+    rrf_k: int | None = None
+    rerank: bool | None = None
+    rerank_model: str | None = None
+    rerank_candidates: int | None = None
 
 
 class ExperimentResultCase(BaseModel):
@@ -338,6 +367,13 @@ class RecallRequest(BaseModel):
     lexml_documents_dir: str | None = None
     case_limit: int = 10
     backend: str = "pgvector"
+    # pgvector only: dense (cosine KNN), lexical (BM25) or hybrid (RRF of
+    # both). Distinct from the graph store's `mode` below. None = settings.
+    retrieval_mode: RetrievalMode | None = None
+    lexical_weight: float | None = Field(None, ge=0.0, le=1.0)
+    rrf_k: int | None = Field(None, ge=0)
+    rerank: bool | None = None
+    citations: bool | None = None
     compute_ragas: bool = False
     # Grade only the first N cases (retrieval still runs on all of them).
     ragas_case_limit: int | None = Field(None, ge=1)

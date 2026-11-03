@@ -20,11 +20,12 @@ et le middleware de comptage.
 |---|---|---|---|
 | `raglab_http_requests_total` | compteur | `route`, `method`, `status` | requêtes HTTP ; `route` est le gabarit (`/api/experiments/{run_id}`), `unmatched` si aucune route ne correspond (404, 401/429 renvoyés par le middleware) |
 | `raglab_http_request_duration_seconds` | histogramme | `route`, `method` | durée jusqu'au dernier octet, flux SSE compris |
-| `raglab_stage_duration_seconds` | histogramme | `stage` | une observation par clé de `timings_ms` : `embed`, `retrieval`, `generation`, et `rerank` dès que 9.3 l'ajoute |
+| `raglab_stage_duration_seconds` | histogramme | `stage` | une observation par clé de `timings_ms` : `embed`, `retrieval` (recherche complète, citation comprise), `citation`, puis en mode lexical ou hybride `dense`, `lexical`, `fusion`, enfin `rerank` et `generation` |
 | `raglab_queries_total` | compteur | `strategy`, `generated` | requêtes terminées (dénominateur du taux d'abstention) |
 | `raglab_retrieval_top1_score` | histogramme | `strategy` | score du premier chunk (seaux de 0,05 entre 0 et 1) |
 | `raglab_generation_tokens_per_second` | histogramme | — | débit rapporté par Ollama (`eval_count / eval_duration`) |
 | `raglab_cache_lookups_total` | compteur | `cache` (`embedder`, `reranker`), `result` (`hit`, `miss`) | consultations de cache |
+| `raglab_rerank_notices_total` | compteur | `notice` (`skipped_no_gpu`, `cpu`) | requêtes dont le re-ranking n'a pas trouvé de GPU : sauté (re-ranking par défaut) ou exécuté sur CPU (demande explicite), comme `rerank_notice` dans la réponse |
 | `raglab_abstentions_total` | compteur | `reason` | refus de répondre du routeur (9.4) |
 
 Plus les métriques de processus fournies par `prometheus_client`
@@ -41,16 +42,17 @@ Le module `raglab.observability.metrics` expose des fonctions plutôt que les
 objets Prometheus :
 
 ```python
-from raglab.observability.metrics import record_abstention, record_cache_lookup
+from raglab.observability.metrics import record_abstention
 
-record_cache_lookup("reranker", hit=score_in_cache)  # cache de scores 9.3
 record_abstention("low_score")  # routeur 9.4, raisons en nombre fini
 ```
 
 Les durées d'étape n'ont besoin d'aucun appel : `QueryService` transmet tout
 `timings_ms` à `observe_query` à la fin de chaque requête (`/api/query`,
-`/api/query/stream`, CLI, benchmarks). Une étape `rerank` ajoutée à
-`timings_ms` apparaît donc toute seule dans Grafana.
+`/api/query/stream`, CLI, benchmarks). Toute nouvelle clé de `timings_ms`
+apparaît donc toute seule dans Grafana. `observe_query` reçoit aussi
+`rerank_stats` (le cache de scores du cross-encoder compte un *hit* ou un
+*miss* par candidat) et `rerank_notice`.
 
 Le cache `embedder` compte aujourd'hui la réutilisation du modèle d'embedding
 résident (`build_embedding_provider`) : un *miss* veut dire chargement du
@@ -88,7 +90,8 @@ docker compose --profile obs up -d
 
 Panneaux : requêtes/s par route, taux de 5xx, taux d'abstention, latence p50 et
 p95 par étape, débit de génération, taux de hit des caches, latence HTTP p95
-par route, carte de chaleur du score top-1 et score top-1 médian par stratégie.
+par route, carte de chaleur du score top-1, score top-1 médian par stratégie et
+re-ranking sans GPU (sauté ou sur CPU).
 
 Vérifié en local (sans GPU) : `promtool check config` valide, cible
 `host.docker.internal:8000` *up*, tableau de bord provisionné et lisible sans

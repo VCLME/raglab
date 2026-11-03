@@ -8,8 +8,11 @@ templates (never raw paths), status codes, cache names and strategies.
 Later bricks plug in through the small `record_*` helpers instead of touching
 the metric objects:
 
-- the 9.3 re-ranker reports its stage as `timings_ms["rerank"]` (picked up by
-  `observe_query`) and calls `record_cache_lookup("reranker", hit)`;
+- every `timings_ms` key becomes a `stage` label (embed, lexical, fusion,
+  retrieval, rerank, citation, generation...);
+- the re-ranker's per-request `rerank_stats` feed the `reranker` cache
+  counters, and `rerank_notice` (`skipped_no_gpu`, `cpu`) feeds
+  `raglab_rerank_notices_total`;
 - the 9.4 router calls `record_abstention(reason)` when it declines to answer.
 
 With several uvicorn workers each process keeps its own counters (no
@@ -72,6 +75,11 @@ CACHE_LOOKUPS = Counter(
     "Cache lookups by cache (embedder, reranker) and result (hit, miss).",
     ["cache", "result"],
 )
+RERANK_NOTICES = Counter(
+    "raglab_rerank_notices_total",
+    "Queries whose re-ranking ran without a GPU: skipped (skipped_no_gpu) or on CPU (cpu).",
+    ["notice"],
+)
 ABSTENTIONS = Counter(
     "raglab_abstentions_total",
     "Queries the router declined to answer, by reason.",
@@ -86,8 +94,11 @@ def observe_query(
     strategy: str,
     generated: bool,
     generation_stats: Mapping[str, float] | None = None,
+    rerank_stats: Mapping[str, float] | None = None,
+    rerank_notice: str | None = None,
 ) -> None:
-    """Record one completed query: stage timings, top-1 score, throughput."""
+    """Record one completed query: stage timings, top-1 score, throughput,
+    re-ranker cache lookups and the no-GPU notice."""
     for stage, value in timings_ms.items():
         if _STAGE_NAME.match(stage):
             STAGE_DURATION.labels(stage=stage).observe(value / 1000.0)
@@ -98,6 +109,15 @@ def observe_query(
     tokens_per_second = generation_stats.get("tokens_per_second") if isinstance(generation_stats, Mapping) else None
     if isinstance(tokens_per_second, int | float) and tokens_per_second > 0:
         GENERATION_TOKENS_PER_SECOND.observe(tokens_per_second)
+    if isinstance(rerank_stats, Mapping):
+        candidates = int(rerank_stats.get("candidates", 0))
+        hits = min(int(rerank_stats.get("cache_hits", 0)), candidates)
+        if hits:
+            CACHE_LOOKUPS.labels(cache="reranker", result="hit").inc(hits)
+        if candidates - hits:
+            CACHE_LOOKUPS.labels(cache="reranker", result="miss").inc(candidates - hits)
+    if rerank_notice:
+        RERANK_NOTICES.labels(notice=rerank_notice if _STAGE_NAME.match(rerank_notice) else "other").inc()
 
 
 def record_cache_lookup(cache: str, hit: bool) -> None:
