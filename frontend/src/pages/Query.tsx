@@ -132,7 +132,7 @@ export function Query() {
             <FieldRow label={t("query.question")}>
               <textarea value={question} onChange={(e) => setQuestion(e.target.value)} rows={3} />
             </FieldRow>
-            <FieldRow label={t("common.corpus")} hint={t("query.corpus_hint")}>
+            <FieldRow label={t("common.corpus")} hint={routing ? t("query.routing_hint") : t("query.corpus_hint")}>
               <select value={corpus} onChange={(e) => setCorpus(e.target.value)}>
                 <option value="">
                   {routing ? t("query.corpus_auto") : t("common.selected_placeholder")}

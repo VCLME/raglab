@@ -383,6 +383,8 @@ export function Chat() {
                   })
                 : corpus
                 ? t("chat.composer_no_index")
+                : routing
+                ? t("chat.corpus_auto")
                 : t("chat.composer_no_corpus")}
             </span>
           </div>
