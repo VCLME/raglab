@@ -42,4 +42,18 @@ Limites connues :
 
 ## Résultats
 
-*(mesure en attente : elle passe après le re-ranking sur le GPU)*
+Recall@5 sur les 97 questions `reference` de LexML (comparaison appariée, McNemar exact) :
+
+| Run | Configuration | 25 de mise au point | 72 jamais regardées | Total |
+|---|---|---|---|---|
+| `baseline-v1` | dense | 0,120 | 0,083 | 0,093 |
+| `citations-v1` | dense + citations | 0,840 | 0,722 | 0,753 (+64 / −0, p < 0,001) |
+| `full-v1` | hybride + re-ranking + citations | 0,720 | 0,722 | 0,722 (+61 / −0 contre `baseline-v1`) |
+
+Sur l'ensemble de LexML (277 questions), la configuration complète `full-v1` passe de **0,466 à 0,816** en Recall@5 et de 0,379 à 0,694 en MRR par rapport à `baseline-v1`. Côté génération, la justesse des réponses passe de 0,451 à 0,598 et la pertinence de 0,725 à 0,865, pour une fidélité stable (0,903 → 0,895). Le juge est Gemma 4, sur les 100 premières questions.
+
+Ce qu'il faut en retenir honnêtement :
+
+- sur les 72 questions jamais regardées, le gain est le même avec ou sans re-ranking (0,722) : la méthode ne sur-apprend pas les 25 questions de mise au point ;
+- le re-ranking fait perdre 3 des 25 questions de mise au point (0,840 → 0,720, écart non significatif : +1 / −4, p = 0,375). Il réordonne les chunks à l'intérieur de l'article épinglé, et un article long peut repousser le bon passage au-delà du top 5 ;
+- seul, le résolveur de citations coûte de la fidélité (0,903 → 0,842 sur LexML, `citations-v1`). Combiné au re-ranking (`full-v1`), on retrouve 0,895.

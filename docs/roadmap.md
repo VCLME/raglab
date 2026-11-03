@@ -148,7 +148,7 @@ Objectif : passer du laboratoire à un pipeline RAG prêt pour la production, ch
 - **9.1b — Mesure 🚧 (code livré, mesures en cours)** : timing par étape, cache de l'embedder, `raglab bench all`, `docs/benchmarks/baseline.md`, juge answer_relevancy, juge RAGAS Gemma 4 via llama.cpp (calibré contre qwen2.5), CI GitHub Actions
   - CI GitHub Actions : ruff (lint + format), mypy (mode par défaut, `src/`), pytest, `tsc` + `vite build`, build des deux images Docker
 
-**9.2 — Retrieval hybride BM25 + RRF 🚧 (mesuré, PR #31 en revue)** : voir [retrieval-hybrid.md](retrieval-hybrid.md)
+**9.2 — Retrieval hybride BM25 + RRF ✅ (PR #31)** : voir [retrieval-hybrid.md](retrieval-hybrid.md)
 
 - Alembic : révision de base identique au schéma `create_all` d'avant, puis `0002_hybrid_lexical` ; `raglab db init` exécute les migrations et adopte les bases existantes (estampille + mise à niveau)
 - `tsvector` par chunk + index GIN, configuration choisie selon la langue du document ou du corpus (`raglab_french`, `raglab_portuguese`, avec `unaccent`)
@@ -156,14 +156,20 @@ Objectif : passer du laboratoire à un pipeline RAG prêt pour la production, ch
 - fusion RRF (k = 60) avec un poids lexical réglable ; `retrieval_mode = dense | lexical | hybrid` sur l'API (y compris `/api/query/stream` et ses événements `stage` lexical / fusion), la CLI, le benchmark de recall (`raglab experiment recall`, `raglab bench all --retrieval-mode`) et l'UI, avec les scores dense / BM25 / RRF de chaque chunk
 - mesuré (`hybrid-v1`, `lexical-v1` contre `baseline-v1`) : Recall@10 +0.042 sur PIAF et +0.061 sur LexML (significatifs, McNemar), +0.126 sur les questions `entity` ; Recall@5 +0.022 / +0.033 (non significatifs) ; questions `reference` inchangées (0.093) : la bonne loi est trouvée (91/97 dans le top-5), pas le bon article, à traiter en 9.4 ; BM25 seul perd sur PIAF (−0.040) ; latence de recherche doublée (p50 23 → 43 ms sur PIAF, 41 → 88 ms sur LexML : BM25 plus 50 candidats denses au lieu de 10). Mode `dense` conservé par défaut, `hybrid` recommandé comme générateur de candidats pour 9.3
 
-**9.3 — Re-ranking cross-encoder 🚧 (mesuré, PR #32 en revue)** : voir [reranking.md](reranking.md)
+**9.3 — Re-ranking cross-encoder ✅ (PR #32, garde-fou GPU #41)** : voir [reranking.md](reranking.md)
 
 - `BAAI/bge-reranker-v2-m3` (Apache-2.0, 568 M de paramètres) via `transformers`, fp16 sur CUDA (~1,1 Go de VRAM), chargé une fois et partagé, scoring par lots
 - le premier niveau (dense, lexical ou hybride) renvoie 40 candidats, le cross-encoder garde le top-k ; `rerank` activable à chaque requête sur l'API (y compris `/api/query/stream`), la CLI, le benchmark de recall, `raglab bench all --rerank` et l'UI
 - chaque chunk porte ses scores et rangs dense, BM25, RRF et rerank ; étape `rerank` dans `timings_ms` et dans la latence de requête du benchmark
 - cache LRU des scores par (modèle, question, chunk), taux de hit dans `rerank_stats`
 - VRAM du cross-encoder libérée (`release()`) avant la passe du juge llama.cpp
-- mesuré (`rerank-v1` = hybride + rerank, `rerank-dense-v1` = dense + rerank) : contre `hybrid-v1`, MRR +0.122 sur PIAF et +0.137 sur LexML, Recall@5 +0.066 / +0.098, tous significatifs, 0 et 2 questions perdues ; paraphrases LexML Recall@5 0.602 → 0.796 ; questions `reference` toujours à 0.093 (9.4) ; l'hybride reste le meilleur générateur de candidats ; correctness RAGAS +0.05 / +0.10, faithfulness LexML −0.035 ; latence ajoutée p50 423 / 612 ms (p95 544 / 844 ms), au-delà du budget de 200 ms ; pic de VRAM 7,6 Go sur 8 avec qwen2.5:7b ; cache à ~0 % de hit sur un premier passage. `RAGLAB_DEFAULT_RERANK=false` conservé, bascule à décider par le propriétaire
+- mesuré (`rerank-v1` = hybride + rerank, `rerank-dense-v1` = dense + rerank) : contre `hybrid-v1`, MRR +0.122 sur PIAF et +0.137 sur LexML, Recall@5 +0.066 / +0.098, tous significatifs, 0 et 2 questions perdues ; paraphrases LexML Recall@5 0.602 → 0.796 ; questions `reference` toujours à 0.093 (9.4) ; l'hybride reste le meilleur générateur de candidats ; correctness RAGAS +0.05 / +0.10, faithfulness LexML −0.035 ; latence ajoutée p50 423 / 612 ms (p95 544 / 844 ms), au-delà du budget de 200 ms ; pic de VRAM 7,6 Go sur 8 avec qwen2.5:7b ; cache à ~0 % de hit sur un premier passage. activé par défaut à la demande du propriétaire (`RAGLAB_DEFAULT_RERANK=true`, mode `hybrid` par défaut) ; sans GPU utilisable, le re-ranking par défaut est sauté et la réponse l'indique (`rerank_notice`, `RAGLAB_RERANK_WITHOUT_GPU=skip|cpu`) ; une demande explicite tourne sur CPU
+
+**9.3b — Résolveur de citations juridiques ✅ (PR #39)** : voir [citations.md](citations.md)
+
+- lecture de « art. N da Lei nº X » dans la question, recherche restreinte à cette loi (métadonnée `number` du document), article cité épinglé en tête, y compris après le re-ranking ; activé par défaut (`RAGLAB_CITATION_RESOLVER=true`), option `citations` sur l'API, la CLI, le benchmark et l'UI (badge « article cité »)
+- mesuré : questions `reference` Recall@5 0.093 → 0.753 (`citations-v1`, dense) et 0.722 (`full-v1`, hybride + rerank + citations), +61 / −0, p < 0,001 ; 0.083 → 0.722 sur les 72 questions jamais regardées pendant la mise au point
+- configuration complète `full-v1` contre `baseline-v1` : LexML Recall@5 0.466 → 0.816, MRR 0.379 → 0.694 ; PIAF Recall@5 0.878 → 0.966 ; correctness LexML 0.451 → 0.598, faithfulness 0.903 → 0.895 ; latence de recherche p50 635 / 728 ms (re-ranking ~600 ms)
 
 **9.5 — Durcissement API ✅ (fusionnée dans la branche 9.1b, PR #28 et #29)** : voir [api-production.md](api-production.md)
 
