@@ -231,6 +231,14 @@ Note : `load` est tres long. Le spinner indique simplement que l'appel est en co
 - Tableau des modeles installes avec nom, taille, date, digest tronque. `qwen2.5:7b` est mis en valeur par la ligne surlignee « defaut ». Bouton `Supprimer` par ligne (avec confirmation ; avertissement special si c'est le modele de generation par defaut).
 - Formulaire pour `pull` d'un modele arbitraire.
 
+### Graphe des renvois (`/expert/graph`)
+
+- Choix du corpus et de l'index run ; état du graphe dans Neo4j (construit ou non, profil, date, comptes par type de nœud et de relation) et bouton « Construire / Reconstruire le graphe » (`POST /api/graph/build`).
+- Liste des lois du graphe, les plus reliées d'abord, avec recherche par numéro ou mot du titre.
+- Voisinage de la loi choisie (Cytoscape) : la loi, ses articles qui renvoient ou sont cités, les articles cibles (autres lois du corpus en orange), les lois hors corpus, et les liens `CITES`, `AMENDS`, `REVOKES`. Les étiquettes apparaissent au zoom ; les articles sont aussi des boutons sous le graphe (accessibles au clavier). Un article sélectionné montre ses renvois avec la phrase qui les porte, et « Voir les renvois de cet article » recentre le graphe sur lui.
+- La requête Cypher équivalente, à coller dans Neo4j Browser. Voir [graphe.md](graphe.md).
+- Les anciennes pages du store à entités (phase 8) n'apparaissent qu'avec `RAGLAB_ENTITY_GRAPH_ENABLED=true`.
+
 ### Experiments (`/expert/experiments`)
 
 - Exposition du benchmark Recall existant. Parametres corpus, strategie, `dataset_path` optionnel, `case_limit`.
@@ -268,6 +276,10 @@ Tous prefixes par `/api`. Swagger disponible sur http://localhost:8000/docs.
 | POST | `/api/lexml/get-data` | `getDataFromLexML(...)` |
 | POST | `/api/lexml/load` | `LexMLLoadService.run(...)` |
 | POST | `/api/experiments/recall` | `RecallBenchmarkService.run(...)` |
+| POST | `/api/graph/build` | Construit le graphe des renvois d'un index run dans Neo4j (503 sans Neo4j) |
+| GET | `/api/graph/status?corpus=…` | État du graphe d'un index run et comptes relus dans Neo4j |
+| GET | `/api/graph/laws?index_run_id=…` | Lois du graphe, les plus reliées d'abord |
+| GET | `/api/graph/neighbourhood?index_run_id=…&law=…` | Loi → articles → renvois, pour Cytoscape |
 
 ## Tests
 

@@ -1533,6 +1533,91 @@ button.sm {
   max-width: 520px;
 }
 
+.subgraph-legend .legend-line {
+  display: inline-block;
+  width: 14px;
+  height: 3px;
+  border-radius: 2px;
+}
+
+/* ——— citation graph (Graph page) ——— */
+
+.graph-law-list {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  max-height: 340px;
+  overflow-y: auto;
+}
+.graph-law {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  text-align: left;
+  margin-bottom: 6px;
+  background: var(--surface);
+  color: inherit;
+  border: 1px solid var(--border);
+}
+.graph-law.active {
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+}
+.graph-law .muted {
+  font-size: 12px;
+}
+.graph-selection {
+  max-width: none;
+}
+.graph-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.graph-chip {
+  padding: 3px 9px;
+  font-size: 12px;
+  background: var(--surface);
+  color: inherit;
+  border: 1px solid var(--border);
+}
+.graph-chip.active {
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+}
+.graph-counts {
+  margin-top: 12px;
+  font-size: 13px;
+}
+.graph-counts summary {
+  cursor: pointer;
+  color: var(--muted);
+}
+.graph-edge-list {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  font-size: 13px;
+}
+.graph-edge-list li {
+  margin-bottom: 6px;
+}
+.graph-snippet {
+  font-size: 12px;
+  margin-top: 2px;
+}
+.graph-cypher {
+  white-space: pre-wrap;
+  font-size: 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  margin: 0;
+}
+
 /* ——— explain banner ——— */
 
 .explain-banner {

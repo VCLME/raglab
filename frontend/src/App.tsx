@@ -4,7 +4,9 @@ import { TopBar } from "./components/TopBar";
 import { Chat } from "./pages/Chat";
 import { CorpusPage } from "./pages/CorpusPage";
 import { Dashboard } from "./pages/Dashboard";
+import { EntityGraphGate } from "./components/EntityGraphGate";
 import { GraphIndex } from "./pages/GraphIndex";
+import { GraphPage } from "./pages/GraphPage";
 import { GraphQuery } from "./pages/GraphQuery";
 import { IndexPage } from "./pages/Index";
 import { Query } from "./pages/Query";
@@ -25,8 +27,9 @@ function ExpertLayout() {
           <Route path="playground" element={<Playground />} />
           <Route path="benchmarks" element={<Benchmarks />} />
           <Route path="ollama" element={<OllamaPage />} />
-          <Route path="graph/index" element={<GraphIndex />} />
-          <Route path="graph/query" element={<GraphQuery />} />
+          <Route path="graph" element={<GraphPage />} />
+          <Route path="graph/index" element={<EntityGraphGate><GraphIndex /></EntityGraphGate>} />
+          <Route path="graph/query" element={<EntityGraphGate><GraphQuery /></EntityGraphGate>} />
           <Route path="ingest" element={<Navigate to="/expert/corpus" replace />} />
           <Route path="lexml" element={<Navigate to="/expert/corpus" replace />} />
           <Route path="manage" element={<Navigate to="/expert/corpus" replace />} />
