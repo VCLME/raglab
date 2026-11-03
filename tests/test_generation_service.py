@@ -27,7 +27,7 @@ def test_build_prompt_bundle_includes_grounding_and_sources_instruction():
         no_context_answer="Pas assez de contexte.",
     )
 
-    assert "Réponds uniquement à partir du contexte fourni." in bundle.system_prompt
+    assert "Réponds uniquement à partir du contexte fourni" in bundle.system_prompt
     assert '"Pas assez de contexte."' in bundle.system_prompt
     assert "[Rank X]" in bundle.system_prompt
     assert "inline" in bundle.system_prompt
@@ -120,3 +120,20 @@ def test_typed_errors_name_the_requested_model():
             assert "raglab ollama pull --model ghost:1b" in str(exc)
         else:
             raise AssertionError("Expected RuntimeError when the requested model is missing")
+
+
+def test_prompt_gives_the_fallback_in_each_language_and_allows_partial_answers():
+    bundle = build_prompt_bundle("O que dispõe o art. 1?", [_chunk()], no_context_answer="Pas assez de contexte.")
+
+    assert "dans la langue de la question" in bundle.system_prompt
+    assert '"Pas assez de contexte."' in bundle.system_prompt
+    assert '"Não posso responder com segurança com o contexto recuperado."' in bundle.system_prompt
+    assert "répond en partie" in bundle.system_prompt
+
+
+def test_generation_caps_output_tokens_unless_disabled():
+    payload = OllamaGenerator(Settings(generation_max_tokens=300))._chat_payload([], model="m", stream=False)
+    assert payload["options"]["num_predict"] == 300
+
+    payload = OllamaGenerator(Settings(generation_max_tokens=0))._chat_payload([], model="m", stream=False)
+    assert "num_predict" not in payload["options"]

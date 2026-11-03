@@ -87,6 +87,9 @@ class Settings(BaseSettings):
 
     generation_model: str = "qwen2.5:7b"
     generation_temperature: float = 0.1
+    # Ollama num_predict: a runaway answer cannot hold the GPU. full-v1 answers:
+    # p95 404 tokens, max 676 (LexML lists); 0 disables the cap.
+    generation_max_tokens: int = 768
     generation_timeout_seconds: int = 120
     # Per-stage budgets of /api/query and /api/query/stream; a stage that
     # overruns returns a 504 naming the stage.

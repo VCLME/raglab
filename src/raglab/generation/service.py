@@ -167,8 +167,14 @@ class OllamaGenerator:
             "model": model,
             "messages": messages,
             "stream": stream,
-            "options": {"temperature": self.settings.generation_temperature},
+            "options": self._options(),
         }
+
+    def _options(self) -> dict[str, float | int]:
+        options: dict[str, float | int] = {"temperature": self.settings.generation_temperature}
+        if self.settings.generation_max_tokens > 0:
+            options["num_predict"] = self.settings.generation_max_tokens
+        return options
 
     def _transport_errors(self, model: str | None = None):
         return translate_transport_errors(
