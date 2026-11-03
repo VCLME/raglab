@@ -101,6 +101,34 @@ class ConfigResponse(BaseModel):
     default_llm_provider: str = "ollama"
 
 
+class GenerationSettings(BaseModel):
+    """Settings an answer is generated with; None = the server's own default,
+    unknown to raglab."""
+
+    temperature: float | None = None
+    top_p: float | None = None
+    max_tokens: int | None = None
+    # Context window in tokens.
+    context: int | None = None
+    # Fields raglab sets in each request (the rest are server defaults).
+    sent_by_raglab: list[str] = Field(default_factory=list)
+    # "raglab" (only what raglab sends is known) or "server" (llama-server /props).
+    source: str = "raglab"
+
+
+class LlamaCppServerInfo(BaseModel):
+    """Writer profile and lifecycle switches (the commands are never exposed)."""
+
+    writer_profile: str
+    # Model id the writer server must list in /v1/models (its --alias).
+    writer_model: str
+    start_command_configured: bool
+    stop_command_configured: bool
+    autostart: bool
+    # RAGLAB_LLAMACPP_PROFILE_OPTIONS: {profile: {ctx_size, n_cpu_moe}}.
+    profile_options: dict[str, dict[str, int]] = Field(default_factory=dict)
+
+
 class LLMProviderInfo(BaseModel):
     name: str
     label: str
@@ -113,6 +141,9 @@ class LLMProviderInfo(BaseModel):
     models: list[str] = Field(default_factory=list)
     # Model used when a request names none (None = the server's choice).
     default_model: str | None = None
+    generation: GenerationSettings | None = None
+    # llama.cpp only.
+    llamacpp: LlamaCppServerInfo | None = None
 
 
 class LLMModelsResponse(BaseModel):

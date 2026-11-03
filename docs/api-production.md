@@ -304,6 +304,18 @@ courte (`unreachable`, `timeout`, `http 401`...).
 }
 ```
 
+Chaque fournisseur porte aussi `generation`, les réglages avec lesquels une
+réponse est écrite : `temperature` (la seule valeur que raglab envoie,
+`sent_by_raglab: ["temperature"]`), `top_p`, `max_tokens` et `context`
+(fenêtre en tokens). `null` = défaut du serveur, inconnu de raglab
+(`source: "raglab"`) ; pour llama.cpp, ces défauts sont lus dans
+`GET /props` de llama-server quand il répond (`source: "server"`,
+`max_tokens: null` = jusqu'à la fin de la réponse). L'entrée llama.cpp a en
+plus un bloc `llamacpp` : `writer_profile`, `writer_model` (alias attendu
+dans `/v1/models`), `start_command_configured`, `stop_command_configured`
+(booléens, jamais les commandes), `autostart` et `profile_options`
+(`RAGLAB_LLAMACPP_PROFILE_OPTIONS`).
+
 `GET /api/config` expose aussi `llm_providers`, `default_llm_provider` et
 `citation_resolver`.
 

@@ -372,8 +372,61 @@ def test_describe_provider_lists_openai_models():
         "error": None,
         "models": ["a", "b"],
         "default_model": "a",
+        "generation": {
+            "temperature": 0.1,
+            "top_p": None,
+            "max_tokens": None,
+            "context": None,
+            "sent_by_raglab": ["temperature"],
+            "source": "raglab",
+        },
+        "llamacpp": None,
     }
     assert get.call_args.kwargs["timeout"] == 2.5
+
+
+def test_describe_llamacpp_reads_the_server_generation_defaults():
+    models = MagicMock()
+    models.json.return_value = {"data": [{"id": "qwen3.6-35b-a3b"}]}
+    props = MagicMock()
+    props.json.return_value = {
+        "default_generation_settings": {"n_ctx": 16384, "params": {"top_p": 0.95, "n_predict": -1}},
+    }
+
+    def fake_get(url, **kwargs):
+        return props if url.endswith("/props") else models
+
+    settings = _settings(llamacpp_start_command="Start-LocalLLM.ps1 {profile}", llamacpp_api_key="secret")
+    with (
+        patch("raglab.llm.openai_compat.requests.get", side_effect=fake_get),
+        patch("raglab.llm.providers.requests.get", side_effect=fake_get) as get,
+    ):
+        entry = describe_provider(settings, "llamacpp", timeout=2)
+    assert get.call_args.args[0] == "http://127.0.0.1:8080/props"
+    assert entry["generation"] == {
+        "temperature": 0.1,
+        "top_p": 0.95,
+        "max_tokens": None,
+        "context": 16384,
+        "sent_by_raglab": ["temperature"],
+        "source": "server",
+    }
+    info = entry["llamacpp"]
+    assert info["writer_profile"] == "qwen35b-moe"
+    assert info["writer_model"] == "qwen3.6-35b-a3b"
+    assert info["start_command_configured"] is True
+    assert info["stop_command_configured"] is False
+    assert info["profile_options"]["qwen35b-moe"] == {"ctx_size": 16384, "n_cpu_moe": 32}
+    # Booleans only: neither the commands nor the key leak.
+    assert "Start-LocalLLM" not in repr(entry) and "secret" not in repr(entry)
+
+
+def test_describe_llamacpp_without_props_keeps_server_defaults_unknown():
+    with patch("raglab.llm.openai_compat.requests.get", side_effect=requests.ConnectionError("refused")):
+        entry = describe_provider(_settings(), "llamacpp", timeout=2)
+    assert entry["generation"]["source"] == "raglab"
+    assert entry["generation"]["context"] is None
+    assert entry["llamacpp"]["start_command_configured"] is False
 
 
 def test_describe_provider_reports_an_unreachable_server():
