@@ -624,6 +624,8 @@
     "citation_badge": "article cité",
     "citation_badge_title": "Épinglé : la question cite la loi et l'article de ce passage.",
     "citation_resolved": "Citation reconnue : {{label}}",
-    "citation_unresolved": "Citation reconnue ({{label}}) mais loi absente de l'index : recherche normale."
+    "citation_unresolved": "Citation reconnue ({{label}}) mais loi absente de l'index : recherche normale.",
+    "rerank_notice_skipped_no_gpu": "Re-ranking ignoré : aucun GPU disponible (il prendrait plusieurs secondes sur CPU). Forcez-le avec « activé » si besoin.",
+    "rerank_notice_cpu": "Re-ranking exécuté sur CPU, sans GPU : comptez plusieurs secondes par requête."
   }
 }

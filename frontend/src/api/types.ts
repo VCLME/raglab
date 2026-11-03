@@ -35,6 +35,7 @@ export interface ConfigResponse {
   bm25_k1: number;
   bm25_b: number;
   default_rerank?: boolean;
+  rerank_gpu?: boolean;
   rerank_model_name?: string;
   rerank_candidates?: number;
 }
@@ -168,6 +169,8 @@ export interface QueryResponse {
   // candidates, scored, cache_hits, cache_hit_rate, cache_size, cache_hit_rate_total
   rerank_stats?: Record<string, number>;
   citation?: CitationInfo | null;
+  // "skipped_no_gpu" or "cpu" when re-ranking could not use a GPU.
+  rerank_notice?: string | null;
   answer: string | null;
   elapsed_ms: number;
   filters: unknown;

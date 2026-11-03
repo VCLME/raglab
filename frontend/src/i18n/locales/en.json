@@ -624,6 +624,8 @@
     "citation_badge": "cited article",
     "citation_badge_title": "Pinned: the question cites this passage's law and article.",
     "citation_resolved": "Citation recognised: {{label}}",
-    "citation_unresolved": "Citation recognised ({{label}}) but the law is not in the index: normal search."
+    "citation_unresolved": "Citation recognised ({{label}}) but the law is not in the index: normal search.",
+    "rerank_notice_skipped_no_gpu": "Re-ranking skipped: no GPU available (it would take several seconds on CPU). Force it with “on” if needed.",
+    "rerank_notice_cpu": "Re-ranking ran on CPU, without a GPU: expect several seconds per query."
   }
 }

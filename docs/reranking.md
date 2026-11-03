@@ -201,3 +201,12 @@ Le cross-encoder tient à côté de qwen2.5:7b, avec ~550 Mio de marge seulement
 6. **La latence dépasse le budget.** +420 ms (PIAF) et +610 ms (LexML) au p50, contre 200 ms visés. Rapporté à la réponse complète (génération 2 à 4 s au p50), c'est +15 à 20 %.
 
 **Recommandation.** Le gain justifie la brique : la proposer comme configuration recommandée (`RAGLAB_DEFAULT_RETRIEVAL_MODE=hybrid`, `RAGLAB_DEFAULT_RERANK=true`) pour un usage où la qualité prime sur la latence de recherche. Décision du propriétaire après la mesure : hybride + re-ranking devient la configuration par défaut. Avant de le faire, deux réglages non mesurés pourraient ramener la latence près du budget : 20 candidats au lieu de 40 (le Recall@10 de l'hybride, 0.94 / 0.56, laisse penser que l'essentiel est dans le top-20) et `RAGLAB_RERANK_MAX_LENGTH=256`.
+
+## Sans GPU
+
+bge-reranker-v2-m3 classe 40 candidats en 0,4 à 0,6 s sur le GPU d'un portable, mais en plusieurs secondes sur CPU. Avant de re-classer, raglab vérifie que `RAGLAB_RERANK_DEVICE` désigne un GPU CUDA réellement utilisable par torch :
+
+- **re-ranking par défaut** (la requête ne précise rien) sans GPU : il est **sauté** (`RAGLAB_RERANK_WITHOUT_GPU=skip`, défaut), un avertissement est journalisé (`rerank.no_gpu`) et la réponse porte `rerank_notice: "skipped_no_gpu"`, affiché dans la page Retrieval. `RAGLAB_RERANK_WITHOUT_GPU=cpu` le fait tourner quand même ;
+- **re-ranking demandé explicitement** (`rerank=true`, case « activé ») : il tourne, sur CPU si besoin, et la réponse porte `rerank_notice: "cpu"`.
+
+`/api/config` expose `rerank_gpu` pour que l'interface sache si le GPU est là. Cas typiques : le conteneur `api` (image torch CPU) et un `.venv` installé sans la version CUDA de torch (`pip install torch --index-url https://download.pytorch.org/whl/cu128`). Ce garde-fou vient d'un benchmark lancé depuis un `.venv` CPU : le re-ranking y tournait sur le processeur sans rien signaler.
