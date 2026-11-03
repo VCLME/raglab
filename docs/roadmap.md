@@ -210,6 +210,11 @@ Toute nouvelle brique doit servir l'un de ces modes d'échec ou l'expérience de
 - corpus LexML : 70 lois sur 252 ont des articles réécrits (863 « Redação dada pela »), 79 ont des articles abrogés (1 084 « (Revogado) »), 1 239 articles insérés
 - jeu figé d'environ 100 questions pièges, mesure RAG classique contre pipeline complet, puis statut de version par chunk (en vigueur, abrogé, réécrit par), filtre et consigne au modèle, remesure
 
+**Corpus français 🚧 (bloc C1 de l'audit)** : voir [corpus-legi.md](corpus-legi.md)
+
+- `raglab legifrance fetch --code consommation` : Code de la consommation avec tout son historique (données LEGI de la DILA via le dépôt git tricoteuses du code, figé sur un commit), un document par version d'article, état, dates, textes modificatifs et renvois dans les métadonnées ; 5 998 versions de 3 391 articles (2 106 en vigueur), 3 593 renvois internes, 1 352 articles réécrits, 321 numéros réutilisés par la recodification de 2016
+- résolveur de citations, profil français (« article L. 221-18 du code de la consommation », « l'article 1240 du code civil »), suite `legi_consommation` (sur demande), générateur de questions avec partie `dev` / `heldout` ; questions et mesures à lancer
+
 **Mode Démo 📋 (planifié)** : questions pièges pré-remplies (une par mode d'échec), bouton « Comparer : RAG classique / raglab » qui affiche les deux réponses et leurs passages côte à côte, description de chaque corpus dans le sélecteur, pages Expert secondaires rangées dans une section « Outils ».
 
 - `GET /metrics` (Prometheus) : latence par étape (embed, retrieval, citation, dense, lexical, fusion, rerank, generation : chaque clé de `timings_ms`), tokens/s, score top-1, requêtes par route et statut, compteurs de cache (`embedder`, `reranker` depuis `rerank_stats`), re-ranking sans GPU (`raglab_rerank_notices_total`) et abstention (9.4) ; labels à faible cardinalité (gabarits de route)

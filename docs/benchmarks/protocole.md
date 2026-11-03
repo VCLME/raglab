@@ -72,6 +72,27 @@ Chaque cas enregistre `lexical_overlap` : la part des mots de la question (plus 
 
 **Relecture.** 40 questions ont été relues à la main. Les défauts trouvés (réponses sans contenu comme « (VETADO) » ou « Esta Lei entra em vigor… », renvois vagues comme « conforme o inciso VI ») sont devenus des règles automatiques, appliquées après coup par `raglab lexml review-questions` : 23 cas sur 300 sont marqués `review_status: "rejected"` avec leur `rejection_reason`. Ils restent dans le fichier pour l'audit, le benchmark les ignore. Résultat : **277 questions utilisables** (93 paraphrases, 97 références, 87 entités) sur 168 lois. Le jeu est figé dans `benchmarks/lexml_fulltext/`.
 
+## Code de la consommation (français)
+
+```bash
+raglab legifrance fetch --code consommation
+raglab legifrance questions --count 300 --seed 42 --output-dir benchmarks/legi_consommation
+raglab legifrance review-questions --ground-truth benchmarks/legi_consommation/ground_truth.jsonl
+```
+
+**Corpus.** Le Code de la consommation avec tout son historique (1993 à octobre 2026), un document par version d'article : 5 998 versions de 3 391 articles, dont 2 106 en vigueur, 5,6 millions de caractères. Source : données LEGI de la DILA (Licence Ouverte 2.0) via le dépôt git du code publié par tricoteuses, figé sur un commit ; `benchmarks/legi_consommation/corpus_manifest.json` donne l'empreinte de chaque texte. Le choix de la source et le format sont détaillés dans [corpus-legi.md](../corpus-legi.md).
+
+**Questions.** Même méthode que LexML, avec ces différences :
+
+- les passages sont tirés dans les versions **en vigueur** des articles numérotés (L., R., D. ; pas les annexes, qui sont des formulaires), un par article d'abord ; un article plus court que 700 caractères est pris en entier s'il en fait au moins 200 ;
+- le rédacteur reçoit la place de l'article dans le code (Partie > Livre > Titre…) au lieu de l'ementa ;
+- une question `reference` doit citer l'article sous une forme que lit le résolveur de citations (« article L. 221-18 du code de la consommation ») ; une `paraphrase` ou une `entity` ne doit citer ni article ni numéro de loi, décret ou ordonnance ;
+- les filtres de formulation sont en français : « cet article », « le présent code », « mentionné », « ci-dessus » rendent une question vague ; « (Abrogé) », « entrent en vigueur… » ou « par décret en Conseil d'État » seuls ne sont pas des réponses ;
+- chaque cas porte une partie `split` tirée avec la graine, par type : un quart `dev` (qu'on peut regarder pendant la mise au point d'une méthode), trois quarts `heldout` (jamais regardés). Le rapport donne Recall@k et MRR par partie (`by_split`), pour vérifier qu'un gain tient sur les questions jamais vues, comme pour le résolveur de citations sur LexML ;
+- `context` note l'article, le nombre de versions de même numéro et si la réponse figure aussi dans une autre version (`answer_in_other_version`) : retrouver une version ancienne compte comme un échec (mauvais fichier), et ce champ permet de mesurer ce piège à part.
+
+La suite `legi_consommation` ne tourne que sur demande (`raglab bench all --suite legi_consommation`).
+
 ## Limites connues
 
 - Les questions LexML sont écrites par un modèle (Qwen3.6 MoE). Elles servent à évaluer le retrieval, pas les réponses : elles ne favorisent pas un générateur, mais elles héritent des tournures du rédacteur. Le juge RAGAS (phase 9.1b) sera un modèle d'une autre famille, Gemma 4, pour éviter qu'un modèle note ses propres réponses.

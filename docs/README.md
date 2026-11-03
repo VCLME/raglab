@@ -25,6 +25,8 @@ Par où commencer selon ce que vous voulez faire. Le [README du dépôt](../READ
 | Document | Pour savoir |
 |---|---|
 | [benchmarks/protocole.md](benchmarks/protocole.md) | comment raglab mesure : jeux figés, corpus complet, pertinence au niveau du passage, questions LexML typées |
+| [corpus-legi.md](corpus-legi.md) | le corpus français : Code de la consommation avec son historique de versions, source, chiffres, questions |
+| [citations.md](citations.md) | le résolveur de citations juridiques (lois brésiliennes, codes français) |
 | [benchmarks/juges.md](benchmarks/juges.md) | les juges RAGAS (Gemma 4 via llama.cpp), la notation en deux passes, la calibration |
 | [benchmarks/baseline.md](benchmarks/baseline.md) | la configuration de référence et ses chiffres |
 | [../benchmarks/README.md](../benchmarks/README.md) | le contenu des jeux figés versionnés |

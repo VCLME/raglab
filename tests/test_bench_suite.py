@@ -82,3 +82,34 @@ def test_total_ram_is_reported():
     from raglab.benchmarks.suite import _total_ram
 
     assert _total_ram().endswith("GiB")
+
+
+def test_the_french_code_suite_is_registered_but_opt_in(tmp_path: Path):
+    from raglab.benchmarks.suite import default_suites
+    from raglab.config import Settings
+
+    suites = {suite.name: suite for suite in default_suites(Settings(data_dir=tmp_path), tmp_path)}
+    legi = suites["legi_consommation"]
+    assert (legi.corpus_name, legi.language, legi.default) == ("bench_legi_consommation_fr", "fr", False)
+    assert legi.manifest_path == tmp_path / "benchmarks" / "legi_consommation" / "corpus_manifest.json"
+    assert [name for name, suite in suites.items() if suite.default] == ["piaf", "lexml_fulltext"]
+
+
+def test_a_suite_without_questions_says_so(tmp_path: Path):
+    import pytest
+
+    from raglab.benchmarks.suite import Suite, run_suite
+    from raglab.config import Settings
+    from raglab.domain.enums import ChunkingStrategy
+
+    suite = Suite("legi_consommation", "fr", "bench", tmp_path / "corpus", tmp_path / "absent.jsonl")
+    with pytest.raises(RuntimeError, match="Pas de jeu de questions"):
+        run_suite(suite, settings=Settings(), strategy=ChunkingStrategy.TRADITIONAL, top_k=5, ragas_limit=0, judge=None)
+
+
+def test_report_breaks_down_by_split_when_the_set_has_one():
+    run = _run("v1", 0.7, 10.0, True)
+    run["suites"][0]["by_split"] = {"dev": {"cases": 25, "recall@5": 0.8, "mrr": 0.6}}
+    text = render_markdown([run])
+    assert "| Recall@5 / MRR par partie du jeu | v1 |" in text
+    assert "| dev | 0.800 / 0.600 (25) |" in text
