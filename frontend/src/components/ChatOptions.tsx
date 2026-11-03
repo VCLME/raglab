@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { ConfigResponse, RetrievalMode } from "../api/types";
 import { SlidersIcon } from "./Icon";
+import { SlideIndicator } from "./SlideIndicator";
 import { Switch } from "./Switch";
 
 /** Retrieval options of a Chat request; `null` = the server default. */
@@ -111,8 +112,9 @@ export function ChatOptions({ value, onChange, config, legalCorpus }: Props) {
           <fieldset className="options-group">
             <legend>{t("retrieval.mode_label")}</legend>
             <div className="segmented">
+              <SlideIndicator activeKey={current.mode} variant="pill" />
               {MODES.map((mode) => (
-                <label key={mode} className={current.mode === mode ? "on" : ""}>
+                <label key={mode} className={current.mode === mode ? "on" : ""} data-active={current.mode === mode}>
                   <input
                     type="radio"
                     name={`${panelId}-mode`}

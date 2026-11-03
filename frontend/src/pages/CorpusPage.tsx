@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { SlideIndicator } from "../components/SlideIndicator";
 import { Link } from "react-router-dom";
 import { apiFetch, get, post } from "../api/client";
 import { useApiAction, useApiLoad } from "../hooks/useApi";
@@ -217,10 +218,12 @@ export function CorpusPage() {
         storageKey="raglab.explain.corpus"
       />
       <div className="tabs">
+        <SlideIndicator activeKey={tab} variant="underline" />
         {tabs.map((tb) => (
           <button
             key={tb.key}
             className={tab === tb.key ? "active" : ""}
+            data-active={tab === tb.key}
             onClick={() => setTab(tb.key)}
           >
             {tb.label}
