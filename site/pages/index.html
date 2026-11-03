@@ -17,7 +17,7 @@ nav: index
       <div><dt>PIAF Recall@5</dt><dd>{{piaf_r5_v1}} → <strong>{{piaf_r5_full}}</strong></dd></div>
       <div><dt>Answer correctness, LexML</dt><dd>{{correct_lexml_v1}} → <strong>{{correct_lexml_full}}</strong></dd></div>
     </dl>
-    <p class="headline-note">Full pipeline against baseline v1 on the same frozen questions; faithfulness holds ({{faith_lexml_v1}} → {{faith_lexml_full}} on LexML). <a href="results.html#runs">Every run</a> · <a href="method.html">how it's measured</a></p>
+    <p class="headline-note">Full pipeline against baseline v1 on the same frozen questions; faithfulness holds ({{faith_lexml_v1}} → {{faith_lexml_full}} on LexML). <a href="results.html#runs">Every run</a> · <a href="#method">how it's measured</a></p>
     </div>
   </div>
 </section>
@@ -100,18 +100,25 @@ nav: index
   <p class="note">The embedder cache cut search latency from {{latency_v0}} to {{latency_cache}} per question (the model was being reloaded from disk for every question). Every run, with all its metrics and the exact command, is on the <a href="results.html">results page</a>.</p>
 </section>
 
+<section class="wrap" aria-labelledby="method">
+  <h2 id="method">How it's measured</h2>
+  <p class="section-lead">A RAG demo always looks good on the questions its author picked. Every number on this site follows five rules.</p>
+  <ol class="rules">
+    <li><strong>Frozen questions.</strong> 500 French questions (PIAF) and 277 on Brazilian federal law, committed and sampled with a fixed seed.</li>
+    <li><strong>Full haystack.</strong> The whole corpus is indexed, so the right passage has to be found among thousands of chunks.</li>
+    <li><strong>Passage-level relevance.</strong> A retrieved chunk counts only if it overlaps the answer's span: the right law but the wrong article is a miss.</li>
+    <li><strong>Independent judge.</strong> Answers are scored by a model from another family, whose reliability was itself measured.</li>
+    <li><strong>One change per run.</strong> Each run records its command, commit, models and hardware, and changes one thing.</li>
+  </ol>
+  <p><a href="method.html">The full protocol</a>: the three kinds of legal questions, how the judge was checked, and how to reproduce a run.</p>
+</section>
+
 <section class="wrap" aria-labelledby="built">
   <h2 id="built">How a question flows</h2>
   <p class="section-lead">The default pipeline, stage by stage. Pick a stage to see what it does, why it is there and what it measurably changed. The wording follows the app's learning mode.</p>
   {{pipeline}}
-  <h3 class="sub-title">Bricks, in the order they shipped</h3>
+  <h3 class="sub-title">Around the pipeline, for production</h3>
   <ul class="bricks">
-    <li><strong>Passage-level benchmarks</strong> (phase 9.1): frozen PIAF and LexML question sets; a hit counts only if the retrieved chunk overlaps the exact answer passage.</li>
-    <li><strong>Embedder cache</strong>: model loaded once; search latency {{latency_v0}} → {{latency_cache}} p50.</li>
-    <li><strong>Complete top-k</strong>: pgvector iterative scan so a filtered search always returns k chunks; effect measuring (baseline v1).</li>
-    <li><strong>Hybrid BM25 + RRF</strong> (9.2): a better candidate pool for re-ranking; article-number questions unchanged ({{ref_r5_hybrid}}).</li>
-    <li><strong>Cross-encoder re-ranking</strong> (9.3): {{reranker_full}} re-reads the fused candidates; the largest single gain, and the largest cost (see <a href="#limits">limits</a>). <a href="{{repo_url}}/blob/main/docs/reranking.md">Details</a>.</li>
-    <li><strong>Citation resolver</strong> (9.3b): legal references parsed and resolved before search; article-number questions {{ref_r5_v1}} → {{ref_r5_cites}}. <a href="{{repo_url}}/blob/main/docs/citations.md">Details</a>.</li>
     <li><strong>Hardened API</strong> (9.5): streaming answers, per-stage timeouts, request ids, optional API key, readiness checks.</li>
     <li><strong>Quality gate</strong> (9.7): a weekly CI job re-runs retrieval on the frozen PIAF and LexML sets and fails when Recall@5 or MRR regresses; answer quality is gated locally, where the judge model runs.</li>
     <li><strong>Observability</strong> (9.6): Prometheus metrics per stage, a versioned Grafana dashboard and a drift report between two sets of results. <a href="{{repo_url}}/blob/main/docs/observabilite.md">Details</a>.</li>

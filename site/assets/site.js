@@ -246,27 +246,64 @@
 
   // ── Cost chart: the path drawn as arrows in pixels (a stretched SVG would bend the heads) ──
   document.querySelectorAll('figure[data-chart="cost"]').forEach(function (fig) {
-    function arrows() {
+    // One arrow per step, always (a step too short for a head is drawn empty and invisible), so
+    // the arrows of two question sets pair up by index and can morph into each other.
+    function geometry(area) {
+      var w = area.clientWidth, h = area.clientHeight, gap = 9, out = [];
+      var pts = area.dataset.path.split(" ").map(function (p) {
+        var xy = p.split(",");
+        return [(parseFloat(xy[0]) / 100) * w, (parseFloat(xy[1]) / 100) * h];
+      });
+      for (var i = 1; i < pts.length; i++) {
+        var dx = pts[i][0] - pts[i - 1][0], dy = pts[i][1] - pts[i - 1][1];
+        var len = Math.sqrt(dx * dx + dy * dy) || 1;
+        var ux = dx / len, uy = dy / len, show = len >= gap * 2 + 4;
+        out.push({
+          x: pts[i - 1][0] + ux * gap, y: pts[i - 1][1] + uy * gap,
+          w: show ? len - gap * 2 : 0, a: Math.atan2(dy, dx), o: show ? 1 : 0
+        });
+      }
+      return out;
+    }
+    function place(el, g, dx, dy) {
+      el.style.left = g.x + (dx || 0) + "px";
+      el.style.top = g.y + (dy || 0) + "px";
+      el.style.width = g.w + "px";
+      el.style.transform = "rotate(" + g.a + "rad)";
+      el.style.opacity = g.o;
+    }
+    // prev: the arrows on screen before a switch, in page coordinates, to morph from.
+    function arrows(prev) {
       fig.querySelectorAll(".chart-panel:not([hidden]) .plot-area[data-path]").forEach(function (area) {
         area.querySelectorAll(".arrow").forEach(function (a) { a.remove(); });
-        var w = area.clientWidth, h = area.clientHeight;
-        var pts = area.dataset.path.split(" ").map(function (p) {
-          var xy = p.split(",");
-          return [(parseFloat(xy[0]) / 100) * w, (parseFloat(xy[1]) / 100) * h];
-        });
-        for (var i = 1; i < pts.length; i++) {
-          var dx = pts[i][0] - pts[i - 1][0], dy = pts[i][1] - pts[i - 1][1];
-          var len = Math.sqrt(dx * dx + dy * dy), gap = 9;
-          if (len < gap * 2 + 4) continue; // too short to carry a head: the two dots touch
-          var ux = dx / len, uy = dy / len;
+        var box = area.getBoundingClientRect(), made = [];
+        geometry(area).forEach(function (g, i) {
           var a = document.createElement("span");
           a.className = "arrow";
-          a.style.left = pts[i - 1][0] + ux * gap + "px";
-          a.style.top = pts[i - 1][1] + uy * gap + "px";
-          a.style.width = len - gap * 2 + "px";
-          a.style.transform = "rotate(" + Math.atan2(dy, dx) + "rad)";
+          var p = prev && prev[i];
+          if (p) place(a, p, -box.left, -box.top);
+          else place(a, g);
+          if (prev && !p) { a.style.opacity = 0; a.classList.add("is-arriving"); }
           area.insertBefore(a, area.querySelector("svg").nextSibling);
-        }
+          made.push([a, g, !!p]);
+        });
+        if (!prev) return;
+        void area.offsetWidth; // commit the old shapes, then let them travel to the new ones
+        made.forEach(function (m) {
+          if (m[2]) m[0].classList.add("is-morphing");
+          place(m[0], m[1]);
+        });
+      });
+    }
+    function onScreen(panel) {
+      var area = panel.querySelector(".plot-area[data-path]");
+      if (!area) return null;
+      var box = area.getBoundingClientRect();
+      return Array.prototype.map.call(area.querySelectorAll(".arrow"), function (a) {
+        return {
+          x: box.left + parseFloat(a.style.left), y: box.top + parseFloat(a.style.top),
+          w: parseFloat(a.style.width), a: parseFloat(a.style.transform.slice(7)), o: parseFloat(a.style.opacity)
+        };
       });
     }
     var sw = fig.querySelector('[data-switch="corpus"]');
@@ -279,12 +316,12 @@
       sw.querySelectorAll("button").forEach(function (b) { b.setAttribute("aria-pressed", String(b === btn)); });
       // FLIP: note where each run sits now, swap the panels, then glide every point from its old
       // place to its new one; arrows and labels, which belong to the new layout, fade in after.
-      var before = {};
+      var before = {}, shapes = onScreen(from);
       from.querySelectorAll(".dot[data-run]").forEach(function (d) { before[d.dataset.run] = d.getBoundingClientRect(); });
       from.hidden = true;
       to.hidden = false;
-      arrows();
-      if (reduce.matches) return;
+      if (reduce.matches) { arrows(); return; }
+      arrows(shapes);
       to.classList.remove("is-settling");
       to.querySelectorAll(".dot[data-run]").forEach(function (d) {
         var b = before[d.dataset.run];
@@ -301,7 +338,7 @@
       });
     });
     arrows();
-    window.addEventListener("resize", arrows);
+    window.addEventListener("resize", function () { arrows(); });
   });
 
   // ── Cost chart: one shared tooltip for every data mark (hover and focus) ──
@@ -378,7 +415,14 @@
     return a.getAttribute("href").charAt(0) === "#";
   });
   if (links.length && "IntersectionObserver" in window) {
-    var targets = links.map(function (a) { return document.querySelector(a.getAttribute("href")); }).filter(Boolean);
+    // Watch the whole section, not the heading the link points to: a long section must stay
+    // active while its body crosses the middle of the viewport.
+    var targets = links.map(function (a) {
+      var el = document.querySelector(a.getAttribute("href"));
+      var section = el && (el.closest("section") || el);
+      if (section) section.dataset.navId = el.id;
+      return section;
+    }).filter(Boolean);
     function setActive(id) {
       links.forEach(function (a) {
         if (a.getAttribute("href") === "#" + id) a.setAttribute("aria-current", "page");
@@ -387,7 +431,7 @@
     }
     var obs = new IntersectionObserver(function (entries) {
       entries.forEach(function (e) {
-        if (e.isIntersecting) setActive(e.target.id);
+        if (e.isIntersecting) setActive(e.target.dataset.navId);
       });
     }, { rootMargin: "-45% 0px -50% 0px" });
     targets.forEach(function (t) { obs.observe(t); });

@@ -403,9 +403,11 @@ def build_site(out: Path, site_url: str) -> None:
         page_values["content"] = render(body, page_values)
         html_out = render(layout, page_values)
         if page.stem == "index":
-            # On the overview, Overview and Results scroll within the page (smoothly, see style.css).
+            # The nav names sections of the overview: there they scroll in place (smoothly, see
+            # style.css); from the detail pages they lead back to the section and glide to it.
             html_out = html_out.replace('href="./" data-nav="index"', 'href="#top" data-nav="index"')
-            html_out = html_out.replace('href="results.html" data-nav="results"', 'href="#results" data-nav="results"')
+            for nav in ("results", "method"):
+                html_out = html_out.replace(f'href="./#{nav}" data-nav="{nav}"', f'href="#{nav}" data-nav="{nav}"')
         for nav in ("index", "results", "method"):
             current = ' aria-current="page"' if fields.get("nav") == nav else ""
             html_out = html_out.replace(f'data-nav="{nav}"', f'data-nav="{nav}"{current}')
