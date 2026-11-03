@@ -92,7 +92,7 @@ Ce que ça coûte :
 - **chargement** : le premier appel démarre llama-server (quelques dizaines de secondes) ; le serveur reste ensuite chargé ;
 - **mémoire** : environ 16 Go de RAM pour les experts, et un budget VRAM serré à côté du cross-encoder ([run-and-test.md](run-and-test.md#rédacteur-qwen36-sur-llamacpp)).
 
-Le repli reste Ollama `qwen2.5:7b` : si llama.cpp ne répond pas et ne peut pas être démarré, s'il charge encore ou s'il sert un autre modèle (le juge d'un benchmark), la requête part sur Ollama et la réponse le dit (`generator_notice`). Une requête n'échoue jamais parce que llama.cpp est arrêté. Docker garde Ollama par défaut (pas de service llama.cpp dans Compose).
+Le repli reste Ollama `qwen2.5:7b` : si llama.cpp ne répond pas et ne peut pas être démarré, s'il charge encore ou s'il sert un autre modèle (le juge d'un benchmark), la requête part sur Ollama et la réponse le dit (`generator_notice`). Une requête n'échoue jamais parce que llama.cpp est arrêté. Docker garde Ollama par défaut ; l'override `docker-compose.llamacpp.yml` ajoute le rédacteur dans son propre conteneur ([run-and-test.md](run-and-test.md#rédacteur-qwen36-sur-llamacpp)).
 
 ## 4. Réflexion pragmatique sur les embeddings
 

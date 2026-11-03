@@ -168,7 +168,30 @@ Invoke-RestMethod http://localhost:8000/ready | ConvertTo-Json -Depth 4
 
 **Benchmarks.** `LocalLLMServer` vérifie le modèle servi : avant la passe du juge, un rédacteur resté chargé est arrêté et Gemma est démarré, puis arrêté à la fin ; la question suivante du Chat relance le rédacteur. Pendant la notation, le Chat répond avec Ollama (`llamacpp_busy`) et partage le GPU avec le juge : évite de l'utiliser pendant un benchmark.
 
-**Docker.** Compose n'a pas de service llama.cpp : les services `api` et `app` fixent `RAGLAB_LLM_PROVIDERS=ollama` et `RAGLAB_DEFAULT_LLM_PROVIDER=ollama`, et répondent avec `qwen2.5:7b` comme avant.
+**Docker.** Par défaut, les services `api` et `app` fixent `RAGLAB_LLM_PROVIDERS=ollama` et `RAGLAB_DEFAULT_LLM_PROVIDER=ollama`, et répondent avec `qwen2.5:7b` comme avant. L'override `docker-compose.llamacpp.yml` ajoute le rédacteur dans son propre conteneur (`raglab-llamacpp`, image `ghcr.io/ggml-org/llama.cpp:server-cuda13-b11429`, la même build qu'en natif) et bascule l'API dessus, Ollama restant le repli.
+
+Prérequis : le GPU visible par Docker (comme pour `docker-compose.gpu.yml`) et environ 17 Go de RAM pour le conteneur, les experts du MoE restant en RAM. Sous Docker Desktop, WSL2 ne reçoit par défaut que la moitié de la RAM : dans `%USERPROFILE%\.wslconfig`, mettre `[wsl2]` puis `memory=26GB`, et lancer `wsl --shutdown`.
+
+Une seule fois, télécharger le modèle (16,8 Go) dans le volume nommé `raglab_llamacpp_models` (un dossier Windows monté serait lent pour le `mmap`) :
+
+```powershell
+docker compose -f docker-compose.yml -f docker-compose.llamacpp.yml run --rm llamacpp-model
+```
+
+Si le GGUF est déjà sur le disque, le copier plutôt que le retélécharger :
+
+```powershell
+docker run --rm -v raglab_llamacpp_models:/models -v "C:/chemin/models:/src:ro" alpine cp /src/Qwen3.6-35B-A3B-UD-Q3_K_XL.gguf /models/
+```
+
+Puis démarrer la pile :
+
+```powershell
+docker compose -f docker-compose.yml -f docker-compose.gpu.yml -f docker-compose.llamacpp.yml --profile app up -d
+docker logs -f raglab-llamacpp   # attendre « server is listening »
+```
+
+Dans ce mode, l'API ne démarre ni n'arrête llama-server (`RAGLAB_LLAMACPP_AUTOSTART=false`) : c'est Compose qui le fait. Pendant le chargement (quelques minutes depuis le volume), les réponses viennent d'Ollama avec `generator_notice: "llamacpp_unavailable"`. Le serveur est publié sur `127.0.0.1:8090` seulement (8080 est pris par Adminer) ; l'API le joint par le réseau Compose. Réglages, à mettre dans l'environnement ou le `.env` de Compose : `RAGLAB_WRITER_CTX_SIZE` (16 384), `RAGLAB_WRITER_N_CPU_MOE` (32, passer à 33 si la mémoire GPU partagée grimpe), `RAGLAB_WRITER_GGUF`, `RAGLAB_LLAMACPP_IMAGE_TAG` (`server-cuda12-b11429` pour un pilote CUDA 12). L'image `api` embarque torch sans CUDA : le re-ranking par défaut y est sauté, le rédacteur n'a donc pas à partager le GPU avec le cross-encoder ; il le partage avec Ollama, que l'API décharge avant chaque réponse llama.cpp. Rien de ce mode n'a encore été mesuré (VRAM, débit, temps de chargement sous WSL2).
 
 ## 5. Initialiser la base
 
