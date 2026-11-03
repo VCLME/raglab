@@ -281,6 +281,26 @@ Smoke test manuel :
 4. Aller dans Prompt Playground, envoyer « Bonjour » → reponse attendue d'Ollama.
 5. Apres une ingestion et une indexation, aller dans RAG Query, poser une question et verifier les chunks + reponse.
 
+### Tests de bout en bout
+
+Une petite suite Playwright (Chromium) protege la demo sans backend : toutes les requetes `/api/*` sont interceptees par `page.route` et servies depuis `frontend/e2e/fixtures/` (formes calquees sur les schemas FastAPI, typees avec `src/api/types.ts`). Le flux SSE du Chat est rejoue avec les vrais evenements (`pipeline`, `stage`, `retrieval`, `token`, `done`). Un appel API sans mock fait echouer le test.
+
+```bash
+cd frontend
+npx playwright install chromium   # une seule fois
+npm run test:e2e
+```
+
+La configuration (`frontend/playwright.config.ts`) construit le bundle de production puis le sert avec `vite preview` sur le port 5179. Scenarios couverts :
+
+- Chat : reponse streamee, citation `[Rank N]` cliquable qui filtre ses passages, erreur affichee quand l'API repond 503, absence de debordement horizontal a 375 px.
+- Mode pedagogique : schema visible, etapes allumees avec leurs durees, etat conserve apres rechargement.
+- Retrieval (expert) : cartes de chunks avec nom de fichier et score.
+- Benchmarks : tableau d'historique rempli depuis `/api/experiments/history`.
+- Langue : le passage a l'anglais change les libelles.
+
+En CI, le job `e2e` lance la suite et publie le rapport HTML en artefact en cas d'echec.
+
 ## Exemple de session
 
 1. Collecter LexML et indexer en une commande via l'UI : `LexML → load` avec `corpus=lexml_real`, `strategy=traditional`, `page_limit=1`.
