@@ -12,6 +12,9 @@
   \usepackage{fontspec}
 \fi
 \usepackage[french]{babel}
+% Espaces avant « : ; ! ? » seulement là où elles sont tapées : sinon
+% « qwen2.5:7b » devient « qwen2.5 :7b ».
+\frenchsetup{AutoSpacePunctuation=false}
 \usepackage[a4paper,margin=2.3cm,headheight=14pt]{geometry}
 \usepackage{microtype}
 
@@ -26,6 +29,8 @@
 \usepackage{titlesec}
 \usepackage{amsmath}
 \usepackage{listings}
+\usepackage[section]{placeins} % les flottants restent dans leur section
+\usepackage{float} % [H] : tableaux de résultats à leur place
 \usepackage{tikz}
 \usetikzlibrary{positioning,arrows.meta,fit,backgrounds,babel}
 \usepackage[hidelinks]{hyperref}
@@ -81,6 +86,8 @@
 \begin{document}
 
 % --- Page de titre ------------------------------------------------------------
+% Sans ancre de page sur la couverture : elle porte aussi le numéro 1.
+\hypersetup{pageanchor=false}
 \begin{titlepage}
   \thispagestyle{empty}
   \vspace*{3cm}
@@ -101,6 +108,7 @@
   \vspace{0.6cm}
   {\small\color{gris} Code : \url{https://github.com/VCLME/raglab} --- licence MIT\par}
 \end{titlepage}
+\hypersetup{pageanchor=true}
 
 \section*{Résumé}
 \addcontentsline{toc}{section}{Résumé}
@@ -433,13 +441,13 @@ Chaque push et chaque pull request passent par \code{ruff} (lint et format), \co
 
 \begin{center}
 \fcolorbox{orange}{orangeclair}{\begin{minipage}{0.92\linewidth}
-\small Les valeurs \aMesurer{} ne sont pas encore mesurées. Elles seront reprises de \code{benchmarks/results/<label>.json} (\code{raglab bench report}) ; aucune n'est estimée.
+\small\raggedright Les valeurs \aMesurer{} ne sont pas encore mesurées. Elles seront reprises de \code{benchmarks/results/<label>.json} (\code{raglab bench report}) ; aucune n'est estimée.
 \end{minipage}}
 \end{center}
 
 \subsection{Baseline et briques de retrieval}
 
-\begin{table}[ht]
+\begin{table}[H]
 \centering
 \small
 \begin{tabularx}{\linewidth}{@{}L c c c c c c@{}}
@@ -459,7 +467,7 @@ Chaque push et chaque pull request passent par \code{ruff} (lint et format), \co
 \label{tab:resultats}
 \end{table}
 
-\begin{table}[ht]
+\begin{table}[H]
 \centering
 \small
 \begin{tabular}{@{}l c c c@{}}
@@ -478,7 +486,7 @@ hybride & \aMesurer & \aMesurer & \aMesurer \\
 
 Le streaming a été mesuré sans GPU, sur un serveur uvicorn réel dont la recherche et Ollama sont remplacés par des faux de vitesse connue (recherche 60\,ms, préremplissage 300\,ms, 120 tokens à 40 tokens/s, médiane de 10 exécutions) :
 
-\begin{table}[ht]
+\begin{table}[H]
 \centering
 \small
 \begin{tabular}{@{}l r@{}}
@@ -501,6 +509,7 @@ L'utilisateur voit les sources environ 52 fois plus tôt et le début de la rép
 Avec qwen2.5:7b en Q4 sur une RTX 3070 Ti Laptop (8 Go), la génération passe d'environ 10,7 tokens/s sur CPU à 38 tokens/s sur GPU ($\times$\,3,6), pour environ 4,7 Gio de VRAM.
 
 % =============================================================================
+\clearpage
 \section{Limites et suite}
 
 \subsection{Limites connues}
@@ -551,6 +560,13 @@ raglab gate --results benchmarks/results/baseline-v1.json
 raglab experiment calibrate-judges --output benchmarks/judge_calibration.json
 \end{lstlisting}
 
-Le juge llama.cpp est démarré et arrêté automatiquement si \code{RAGLAB_LLAMACPP_START_COMMAND} et \code{RAGLAB_LLAMACPP_STOP_COMMAND} sont définies ; sinon, un serveur déjà lancé sur \code{RAGLAB_LLAMACPP_BASE_URL} est utilisé.
+Le juge llama.cpp est démarré et arrêté automatiquement quand ces deux variables sont définies :
+
+\begin{lstlisting}
+RAGLAB_LLAMACPP_START_COMMAND   # {profile} remplacé par le profil du juge
+RAGLAB_LLAMACPP_STOP_COMMAND
+\end{lstlisting}
+
+Sinon, raglab utilise un serveur déjà lancé à l'adresse \code{RAGLAB_LLAMACPP_BASE_URL}.
 
 \end{document}

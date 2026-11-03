@@ -1,6 +1,6 @@
 # Documentation de raglab
 
-Par où commencer selon ce que vous voulez faire. Le [README du dépôt](../README.md) donne la présentation et les résultats mesurés ; le [rapport technique](rapport/raglab-rapport.tex) (LaTeX, PDF à construire, voir [rapport/README.md](rapport/README.md)) rassemble le tout en un document.
+Par où commencer selon ce que vous voulez faire. Le [README du dépôt](../README.md) donne la présentation et les résultats mesurés ; le [rapport technique](rapport/raglab-rapport.pdf) (PDF construit depuis [LaTeX](rapport/raglab-rapport.tex), voir [rapport/README.md](rapport/README.md)) rassemble le tout en un document.
 
 ## Comprendre le projet
 

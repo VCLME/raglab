@@ -8,7 +8,7 @@ Une seule des chaînes suivantes suffit. Le document compile avec pdfLaTeX, XeLa
 
 | Outil | Installation (Windows) | Commande |
 |---|---|---|
-| [tectonic](https://tectonic-typesetting.github.io/) (recommandé : un seul binaire, télécharge les paquets nécessaires au premier build) | `winget install TectonicTypesetting.Tectonic` | `tectonic raglab-rapport.tex` |
+| [tectonic](https://tectonic-typesetting.github.io/) (recommandé : un seul binaire, télécharge les paquets nécessaires au premier build) | binaire `x86_64-pc-windows-msvc` des [releases GitHub](https://github.com/tectonic-typesetting/tectonic/releases) (winget ne le propose pas, Chocolatey n'a qu'une version de 2020), à décompresser dans un dossier du `PATH` | `tectonic raglab-rapport.tex` |
 | MiKTeX ou TeX Live | installateur officiel | `latexmk -pdf raglab-rapport.tex` |
 
 Depuis la racine du dépôt :
@@ -23,7 +23,7 @@ Ou, là où `make` existe :
 make -C docs/rapport
 ```
 
-Le PDF est écrit à côté du `.tex` (`docs/rapport/raglab-rapport.pdf`).
+Le PDF est écrit à côté du `.tex` (`docs/rapport/raglab-rapport.pdf`) et versionné, pour être lisible sans chaîne LaTeX : le reconstruire et le committer avec chaque modification du `.tex`. Construit et vérifié avec tectonic 0.17.0 (moteur XeTeX).
 
 ## Mettre à jour les résultats
 
