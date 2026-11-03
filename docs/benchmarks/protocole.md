@@ -93,6 +93,16 @@ raglab legifrance review-questions --ground-truth benchmarks/legi_consommation/g
 
 La suite `legi_consommation` ne tourne que sur demande (`raglab bench all --suite legi_consommation`).
 
+## Changer de générateur
+
+Par défaut, les réponses notées sont écrites par le générateur de production (Ollama, `qwen2.5:7b`) pendant la boucle de recherche. Pour mesurer un autre modèle sans changer la production :
+
+```bash
+raglab bench all --label gen-qwen36-v1 --generator-provider llamacpp --generator-profile qwen35b-moe
+```
+
+Avec un autre fournisseur qu'Ollama, la génération devient une passe à part : la recherche tourne d'abord sur toutes les questions, le cross-encoder est libéré, llama-server démarre avec le profil demandé, écrit les réponses (même prompt, mêmes 5 passages qu'en production), puis s'arrête avant que le juge démarre le sien. Les deux modèles ne sont jamais chargés ensemble. Le fichier de résultat note le générateur (`generator`) ; le juge reste Gemma 4, d'une autre famille.
+
 ## Limites connues
 
 - Les questions LexML sont écrites par un modèle (Qwen3.6 MoE). Elles servent à évaluer le retrieval, pas les réponses : elles ne favorisent pas un générateur, mais elles héritent des tournures du rédacteur. Le juge RAGAS (phase 9.1b) sera un modèle d'une autre famille, Gemma 4, pour éviter qu'un modèle note ses propres réponses.
