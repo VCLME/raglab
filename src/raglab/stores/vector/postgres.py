@@ -81,9 +81,13 @@ class PostgresVectorStore:
             .where(
                 Chunk.index_run_id == index_run.id,
                 ChunkEmbedding.embedding_space_id == index_run.embedding_space_id,
-                func.vector_dims(ChunkEmbedding.embedding) == dim,
             )
         )
+        if self.search_mode == "hnsw":
+            # Matches the partial index predicate so the planner can use it.
+            # Exact mode leaves it out: it would force evaluating every
+            # embedding of the table instead of starting from the run's chunks.
+            stmt = stmt.where(func.vector_dims(ChunkEmbedding.embedding) == dim)
         stmt = self._apply_filters(stmt, filters)
         stmt = stmt.order_by(distance).limit(top_k)
 

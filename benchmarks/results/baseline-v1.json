@@ -4,8 +4,8 @@
   "top_k": 5,
   "ragas_limit": 100,
   "environment": {
-    "date": "2026-11-03T03:40:01+00:00",
-    "git_commit": "bd3a231",
+    "date": "2026-11-03T04:43:47+00:00",
+    "git_commit": "c99c270",
     "git_dirty": true,
     "os": "Windows-11-10.0.26300-SP0",
     "cpu": "Intel64 Family 6 Model 154 Stepping 3, GenuineIntel",
@@ -33,41 +33,41 @@
       "documents": 761,
       "total_cases": 500,
       "summary": {
-        "recall@1": 0.478,
-        "recall@5": 0.592,
-        "recall@10": 0.606,
-        "precision@1": 0.478,
-        "precision@5": 0.11880000000000063,
-        "precision@10": 0.06080000000000033,
-        "mrr": 0.5299436507936509,
-        "mean_first_relevant_rank": 1.4257425742574257,
-        "recall@1_ci_low": 0.434,
-        "recall@1_ci_high": 0.522,
-        "recall@5_ci_low": 0.546,
-        "recall@5_ci_high": 0.634,
-        "recall@10_ci_low": 0.562,
-        "recall@10_ci_high": 0.648,
-        "mrr_ci_low": 0.4872,
-        "mrr_ci_high": 0.5698,
-        "latency_embed_p50_ms": 13.607,
-        "latency_embed_p95_ms": 21.883,
-        "latency_generation_p50_ms": 2711.776,
-        "latency_generation_p95_ms": 7318.471,
-        "latency_query_p50_ms": 20.626,
-        "latency_query_p95_ms": 36.985,
-        "latency_retrieval_p50_ms": 6.611,
-        "latency_retrieval_p95_ms": 17.109,
-        "generation_tokens_per_second_p50": 30.44,
-        "faithfulness_mean": 0.95,
+        "recall@1": 0.672,
+        "recall@5": 0.878,
+        "recall@10": 0.898,
+        "precision@1": 0.672,
+        "precision@5": 0.17600000000000143,
+        "precision@10": 0.09000000000000073,
+        "mrr": 0.7583492063492059,
+        "mean_first_relevant_rank": 1.5367483296213809,
+        "recall@1_ci_low": 0.632,
+        "recall@1_ci_high": 0.714,
+        "recall@5_ci_low": 0.85,
+        "recall@5_ci_high": 0.906,
+        "recall@10_ci_low": 0.87,
+        "recall@10_ci_high": 0.922,
+        "mrr_ci_low": 0.7274,
+        "mrr_ci_high": 0.793,
+        "latency_embed_p50_ms": 13.866,
+        "latency_embed_p95_ms": 19.909,
+        "latency_generation_p50_ms": 1850.796,
+        "latency_generation_p95_ms": 5940.614,
+        "latency_query_p50_ms": 60.218,
+        "latency_query_p95_ms": 86.036,
+        "latency_retrieval_p50_ms": 46.325,
+        "latency_retrieval_p95_ms": 66.741,
+        "generation_tokens_per_second_p50": 63.96,
+        "faithfulness_mean": 0.945,
         "faithfulness_judged": 100,
-        "answer_relevancy_mean": 0.845,
+        "answer_relevancy_mean": 0.905,
         "answer_relevancy_judged": 100,
-        "answer_correctness_mean": 0.518,
+        "answer_correctness_mean": 0.6579999999999999,
         "answer_correctness_judged": 100
       },
       "by_type": {},
-      "report_path": "data\\reports\\recall-piaf-20261103-040535.json",
-      "experiment_run_id": "3c95fe98-1c4e-4ce3-ad21-dc50be5c6d12",
+      "report_path": "data\\reports\\recall-piaf-20261103-050725.json",
+      "experiment_run_id": "62d60ae8-4268-4c2f-91f1-bd6ddd07c1d7",
       "cases": [
         {
           "id": "piaf-p140295201616448",
@@ -113,10 +113,10 @@
         },
         {
           "id": "piaf-p140295201639160",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295201866952",
@@ -134,24 +134,24 @@
         },
         {
           "id": "piaf-p140295201888800",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295201890096",
           "recall@1": 0,
           "recall@5": 1,
           "recall@10": 1,
-          "reciprocal_rank": 0.5
+          "reciprocal_rank": 0.3333333333333333
         },
         {
           "id": "piaf-p140295201909352",
-          "recall@1": 1,
+          "recall@1": 0,
           "recall@5": 1,
           "recall@10": 1,
-          "reciprocal_rank": 1.0
+          "reciprocal_rank": 0.5
         },
         {
           "id": "piaf-p140295201910432",
@@ -162,10 +162,10 @@
         },
         {
           "id": "piaf-p140295201925088",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295201926024",
@@ -204,10 +204,10 @@
         },
         {
           "id": "piaf-p140295201997880",
-          "recall@1": 1,
+          "recall@1": 0,
           "recall@5": 1,
           "recall@10": 1,
-          "reciprocal_rank": 1.0
+          "reciprocal_rank": 0.5
         },
         {
           "id": "piaf-p140295201998816",
@@ -225,17 +225,17 @@
         },
         {
           "id": "piaf-p140295202030000",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295202030144",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295202032232",
@@ -246,17 +246,17 @@
         },
         {
           "id": "piaf-p140295202033600",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295202050552",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295202051056",
@@ -302,10 +302,10 @@
         },
         {
           "id": "piaf-p140295202053792",
-          "recall@1": 1,
+          "recall@1": 0,
           "recall@5": 1,
           "recall@10": 1,
-          "reciprocal_rank": 1.0
+          "reciprocal_rank": 0.5
         },
         {
           "id": "piaf-p140295202067872",
@@ -324,9 +324,9 @@
         {
           "id": "piaf-p140295202069672",
           "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
         },
         {
           "id": "piaf-p140295202091080",
@@ -353,36 +353,36 @@
           "id": "piaf-p140295202092016",
           "recall@1": 0,
           "recall@5": 0,
-          "recall@10": 1,
-          "reciprocal_rank": 0.1
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
         },
         {
           "id": "piaf-p140295202092304",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295202092520",
           "recall@1": 0,
           "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@10": 1,
+          "reciprocal_rank": 0.125
         },
         {
           "id": "piaf-p140295202093600",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295202093888",
           "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.25
         },
         {
           "id": "piaf-p140295202094680",
@@ -394,9 +394,9 @@
         {
           "id": "piaf-p140295202115728",
           "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333
         },
         {
           "id": "piaf-p140295202117168",
@@ -414,17 +414,17 @@
         },
         {
           "id": "piaf-p140295202128304",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295202128592",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295202129744",
@@ -456,24 +456,24 @@
         },
         {
           "id": "piaf-p140295202169840",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295202169984",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295202170632",
           "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333
         },
         {
           "id": "piaf-p140295202170776",
@@ -534,9 +534,9 @@
         {
           "id": "piaf-p140295202209864",
           "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
         },
         {
           "id": "piaf-p140295202210080",
@@ -547,17 +547,17 @@
         },
         {
           "id": "piaf-p140295202211016",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295202213104",
           "recall@1": 0,
           "recall@5": 1,
           "recall@10": 1,
-          "reciprocal_rank": 0.25
+          "reciprocal_rank": 0.2
         },
         {
           "id": "piaf-p140295202213536",
@@ -618,9 +618,9 @@
         {
           "id": "piaf-p140295202289056",
           "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333
         },
         {
           "id": "piaf-p140295202308240",
@@ -641,7 +641,7 @@
           "recall@1": 0,
           "recall@5": 1,
           "recall@10": 1,
-          "reciprocal_rank": 0.5
+          "reciprocal_rank": 0.3333333333333333
         },
         {
           "id": "piaf-p140295202337272",
@@ -655,14 +655,14 @@
           "recall@1": 0,
           "recall@5": 1,
           "recall@10": 1,
-          "reciprocal_rank": 0.5
+          "reciprocal_rank": 0.3333333333333333
         },
         {
           "id": "piaf-p140295202338424",
           "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
         },
         {
           "id": "piaf-p140295202339648",
@@ -708,17 +708,17 @@
         },
         {
           "id": "piaf-p140295202440824",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295202441112",
           "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
         },
         {
           "id": "piaf-p140295202442552",
@@ -732,7 +732,7 @@
           "recall@1": 0,
           "recall@5": 1,
           "recall@10": 1,
-          "reciprocal_rank": 0.25
+          "reciprocal_rank": 0.2
         },
         {
           "id": "piaf-p140295202443128",
@@ -743,24 +743,24 @@
         },
         {
           "id": "piaf-p140295202468776",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295202469064",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295202470000",
           "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
         },
         {
           "id": "piaf-p140295202470792",
@@ -793,16 +793,16 @@
         {
           "id": "piaf-p140295202498168",
           "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333
         },
         {
           "id": "piaf-p140295202509952",
           "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
         },
         {
           "id": "piaf-p140295202527488",
@@ -813,10 +813,10 @@
         },
         {
           "id": "piaf-p140295202567728",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295202569456",
@@ -848,17 +848,17 @@
         },
         {
           "id": "piaf-p140295202590440",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295202636280",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295202637720",
@@ -876,10 +876,10 @@
         },
         {
           "id": "piaf-p140295202652232",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295202655976",
@@ -891,9 +891,9 @@
         {
           "id": "piaf-p140295202677312",
           "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.25
         },
         {
           "id": "piaf-p140295202677816",
@@ -939,10 +939,10 @@
         },
         {
           "id": "piaf-p140295202680696",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295202702968",
@@ -974,10 +974,10 @@
         },
         {
           "id": "piaf-p140295202704840",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295202723304",
@@ -991,14 +991,14 @@
           "recall@1": 0,
           "recall@5": 1,
           "recall@10": 1,
-          "reciprocal_rank": 0.3333333333333333
+          "reciprocal_rank": 0.25
         },
         {
           "id": "piaf-p140295202746944",
           "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
         },
         {
           "id": "piaf-p140295202747664",
@@ -1051,17 +1051,17 @@
         },
         {
           "id": "piaf-p140295202774400",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295202803784",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295202804288",
@@ -1079,31 +1079,31 @@
         },
         {
           "id": "piaf-p140295202806880",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295202807672",
           "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
         },
         {
           "id": "piaf-p140295202824480",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295202824624",
           "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
         },
         {
           "id": "piaf-p140295202825488",
@@ -1121,17 +1121,17 @@
         },
         {
           "id": "piaf-p140295202826712",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295202827216",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295202828008",
@@ -1149,17 +1149,17 @@
         },
         {
           "id": "piaf-p140295202861992",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295202881040",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295202890592",
@@ -1191,10 +1191,10 @@
         },
         {
           "id": "piaf-p140295202891888",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295202892104",
@@ -1205,24 +1205,24 @@
         },
         {
           "id": "piaf-p140295202892248",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295202892392",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295202893328",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295202893472",
@@ -1247,10 +1247,10 @@
         },
         {
           "id": "piaf-p140295202921640",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295202944056",
@@ -1317,17 +1317,17 @@
         },
         {
           "id": "piaf-p140295203009952",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295203010384",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295203012472",
@@ -1338,10 +1338,10 @@
         },
         {
           "id": "piaf-p140295203046672",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295203047320",
@@ -1464,10 +1464,10 @@
         },
         {
           "id": "piaf-p140295203200672",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295203225960",
@@ -1479,23 +1479,23 @@
         {
           "id": "piaf-p140295203229560",
           "recall@1": 0,
-          "recall@5": 1,
-          "recall@10": 1,
-          "reciprocal_rank": 0.2
-        },
-        {
-          "id": "piaf-p140295203258160",
-          "recall@1": 0,
           "recall@5": 0,
           "recall@10": 0,
           "reciprocal_rank": 0.0
+        },
+        {
+          "id": "piaf-p140295203258160",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295203266992",
           "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.25
         },
         {
           "id": "piaf-p140295203269656",
@@ -1528,9 +1528,9 @@
         {
           "id": "piaf-p140295203290568",
           "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.25
         },
         {
           "id": "piaf-p140295203314208",
@@ -1542,9 +1542,9 @@
         {
           "id": "piaf-p140295203314712",
           "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333
         },
         {
           "id": "piaf-p140295203337344",
@@ -1604,17 +1604,17 @@
         },
         {
           "id": "piaf-p140295203402952",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295203423000",
           "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333
         },
         {
           "id": "piaf-p140295203423216",
@@ -1639,10 +1639,10 @@
         },
         {
           "id": "piaf-p140295203463384",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295203463600",
@@ -1661,16 +1661,16 @@
         {
           "id": "piaf-p140295203465256",
           "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
         },
         {
           "id": "piaf-p140295203467056",
-          "recall@1": 1,
+          "recall@1": 0,
           "recall@5": 1,
           "recall@10": 1,
-          "reciprocal_rank": 1.0
+          "reciprocal_rank": 0.5
         },
         {
           "id": "piaf-p140295203488104",
@@ -1695,10 +1695,10 @@
         },
         {
           "id": "piaf-p140295203538048",
-          "recall@1": 1,
+          "recall@1": 0,
           "recall@5": 1,
           "recall@10": 1,
-          "reciprocal_rank": 1.0
+          "reciprocal_rank": 0.5
         },
         {
           "id": "piaf-p140295203539704",
@@ -1751,17 +1751,17 @@
         },
         {
           "id": "piaf-p140295203583104",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.25
+        },
+        {
+          "id": "piaf-p140295203585696",
           "recall@1": 1,
           "recall@5": 1,
           "recall@10": 1,
           "reciprocal_rank": 1.0
-        },
-        {
-          "id": "piaf-p140295203585696",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
         },
         {
           "id": "piaf-p140295203612640",
@@ -1796,21 +1796,21 @@
           "recall@1": 0,
           "recall@5": 0,
           "recall@10": 1,
-          "reciprocal_rank": 0.125
+          "reciprocal_rank": 0.1
         },
         {
           "id": "piaf-p140295203676592",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295203676808",
           "recall@1": 0,
           "recall@5": 0,
-          "recall@10": 1,
-          "reciprocal_rank": 0.1111111111111111
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
         },
         {
           "id": "piaf-p140295203677600",
@@ -1838,14 +1838,14 @@
           "recall@1": 0,
           "recall@5": 1,
           "recall@10": 1,
-          "reciprocal_rank": 0.3333333333333333
+          "reciprocal_rank": 0.25
         },
         {
           "id": "piaf-p140295203705192",
           "recall@1": 0,
           "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@10": 1,
+          "reciprocal_rank": 0.1111111111111111
         },
         {
           "id": "piaf-p140295203707352",
@@ -1898,17 +1898,17 @@
         },
         {
           "id": "piaf-p140295203783304",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295203786400",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295203813704",
@@ -1933,17 +1933,17 @@
         },
         {
           "id": "piaf-p140295203814496",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295203840504",
           "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
         },
         {
           "id": "piaf-p140295203843888",
@@ -1954,10 +1954,10 @@
         },
         {
           "id": "piaf-p140295203860272",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295203877728",
@@ -1975,24 +1975,24 @@
         },
         {
           "id": "piaf-p140295203880896",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295203897488",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295203897848",
           "recall@1": 0,
-          "recall@5": 1,
+          "recall@5": 0,
           "recall@10": 1,
-          "reciprocal_rank": 0.2
+          "reciprocal_rank": 0.16666666666666666
         },
         {
           "id": "piaf-p140295203899072",
@@ -2031,10 +2031,10 @@
         },
         {
           "id": "piaf-p140295203951456",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295218123256",
@@ -2047,8 +2047,8 @@
           "id": "piaf-p140295218124048",
           "recall@1": 0,
           "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@10": 1,
+          "reciprocal_rank": 0.125
         },
         {
           "id": "piaf-p140295218124264",
@@ -2073,10 +2073,10 @@
         },
         {
           "id": "piaf-p140295218126496",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295218156240",
@@ -2130,9 +2130,9 @@
         {
           "id": "piaf-p140295218181536",
           "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.25
         },
         {
           "id": "piaf-p140295218182616",
@@ -2171,10 +2171,10 @@
         },
         {
           "id": "piaf-p140295218225584",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295218227096",
@@ -2221,16 +2221,16 @@
         {
           "id": "piaf-p140295218274664",
           "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333
         },
         {
           "id": "piaf-p140295218274880",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295218275960",
@@ -2269,10 +2269,10 @@
         },
         {
           "id": "piaf-p140295218321664",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295218322384",
@@ -2374,10 +2374,10 @@
         },
         {
           "id": "piaf-p140295218956256",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295218978888",
@@ -2395,10 +2395,10 @@
         },
         {
           "id": "piaf-p140295218980832",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295218981912",
@@ -2452,37 +2452,37 @@
         {
           "id": "piaf-p140295219052480",
           "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333
         },
         {
           "id": "piaf-p140295219070368",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295219071088",
           "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333
         },
         {
           "id": "piaf-p140295219072816",
           "recall@1": 0,
-          "recall@5": 1,
-          "recall@10": 1,
-          "reciprocal_rank": 0.2
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
         },
         {
           "id": "piaf-p140295219087328",
           "recall@1": 0,
           "recall@5": 1,
           "recall@10": 1,
-          "reciprocal_rank": 0.5
+          "reciprocal_rank": 0.3333333333333333
         },
         {
           "id": "piaf-p140295219087472",
@@ -2514,10 +2514,10 @@
         },
         {
           "id": "piaf-p140295219119664",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295219120168",
@@ -2535,10 +2535,10 @@
         },
         {
           "id": "piaf-p140295219134680",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295219136408",
@@ -2570,10 +2570,10 @@
         },
         {
           "id": "piaf-p140295219157536",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295219158400",
@@ -2587,14 +2587,14 @@
           "recall@1": 0,
           "recall@5": 1,
           "recall@10": 1,
-          "reciprocal_rank": 0.25
+          "reciprocal_rank": 0.2
         },
         {
           "id": "piaf-p140295222080064",
           "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333
         },
         {
           "id": "piaf-p140295222081432",
@@ -2612,17 +2612,17 @@
         },
         {
           "id": "piaf-p140295222083160",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295222096520",
           "recall@1": 0,
           "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@10": 1,
+          "reciprocal_rank": 0.1111111111111111
         },
         {
           "id": "piaf-p140295222097096",
@@ -2640,10 +2640,10 @@
         },
         {
           "id": "piaf-p140295222121888",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295222122680",
@@ -2661,24 +2661,24 @@
         },
         {
           "id": "piaf-p140295222123472",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295222124336",
           "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.25
         },
         {
           "id": "piaf-p140295222154296",
           "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
         },
         {
           "id": "piaf-p140295222155520",
@@ -2689,38 +2689,38 @@
         },
         {
           "id": "piaf-p140295222156528",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295222175712",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295222175856",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295222176792",
           "recall@1": 0,
           "recall@5": 0,
-          "recall@10": 1,
-          "reciprocal_rank": 0.14285714285714285
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
         },
         {
           "id": "piaf-p140295222202584",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295222203520",
@@ -2739,16 +2739,16 @@
         {
           "id": "piaf-p140295222205752",
           "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.2
         },
         {
           "id": "piaf-p140295222227448",
           "recall@1": 0,
           "recall@5": 1,
           "recall@10": 1,
-          "reciprocal_rank": 0.5
+          "reciprocal_rank": 0.3333333333333333
         },
         {
           "id": "piaf-p140295222244264",
@@ -2759,24 +2759,24 @@
         },
         {
           "id": "piaf-p140295222245272",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295222247216",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295222263952",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295222265176",
@@ -2802,16 +2802,16 @@
         {
           "id": "piaf-p140295222304560",
           "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
         },
         {
           "id": "piaf-p140295222314832",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295222314976",
@@ -2829,10 +2829,10 @@
         },
         {
           "id": "piaf-p140295222316272",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295222316632",
@@ -2867,7 +2867,7 @@
           "recall@1": 0,
           "recall@5": 1,
           "recall@10": 1,
-          "reciprocal_rank": 0.5
+          "reciprocal_rank": 0.3333333333333333
         },
         {
           "id": "piaf-p140295223138776",
@@ -2892,10 +2892,10 @@
         },
         {
           "id": "piaf-p140295223139928",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295223156880",
@@ -2906,17 +2906,17 @@
         },
         {
           "id": "piaf-p140295223157744",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295223160552",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295223181600",
@@ -2963,23 +2963,23 @@
         {
           "id": "piaf-p140295223218392",
           "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
         },
         {
           "id": "piaf-p140295223220552",
           "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
         },
         {
           "id": "piaf-p140295223221272",
           "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
         },
         {
           "id": "piaf-p140295223242968",
@@ -2990,10 +2990,10 @@
         },
         {
           "id": "piaf-p140295223244264",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295223244624",
@@ -3004,17 +3004,17 @@
         },
         {
           "id": "piaf-p140295223246784",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295223260288",
           "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.2
         },
         {
           "id": "piaf-p140295223261080",
@@ -3032,17 +3032,17 @@
         },
         {
           "id": "piaf-p140295223262448",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295223284432",
           "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333
         },
         {
           "id": "piaf-p140295223286304",
@@ -3060,17 +3060,17 @@
         },
         {
           "id": "piaf-p140295223314112",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295223316128",
           "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
         },
         {
           "id": "piaf-p140295223342496",
@@ -3082,51 +3082,51 @@
         {
           "id": "piaf-p140295223358232",
           "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
         },
         {
           "id": "piaf-p140295223358664",
           "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333
         },
         {
           "id": "piaf-p140295223359024",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295223359384",
           "recall@1": 0,
           "recall@5": 1,
           "recall@10": 1,
-          "reciprocal_rank": 0.5
+          "reciprocal_rank": 0.3333333333333333
         },
         {
           "id": "piaf-p140295442360936",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295442399808",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295442402760",
           "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.25
         },
         {
           "id": "piaf-p140295442403192",
@@ -3137,17 +3137,17 @@
         },
         {
           "id": "piaf-p140295442428480",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295442428624",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295442428984",
@@ -3158,24 +3158,24 @@
         },
         {
           "id": "piaf-p140295442429272",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295442430352",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295442455504",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295442456080",
@@ -3193,10 +3193,10 @@
         },
         {
           "id": "piaf-p140295442510040",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295442511624",
@@ -3207,10 +3207,10 @@
         },
         {
           "id": "piaf-p140295442512128",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295442513568",
@@ -3228,10 +3228,10 @@
         },
         {
           "id": "piaf-p140295442572200",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295442573064",
@@ -3263,10 +3263,10 @@
         },
         {
           "id": "piaf-p140295442603968",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295442633640",
@@ -3305,10 +3305,10 @@
         },
         {
           "id": "piaf-p140295442636304",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295442658936",
@@ -3326,17 +3326,17 @@
         },
         {
           "id": "piaf-p140295442677976",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295442678408",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295442678840",
@@ -3354,24 +3354,24 @@
         },
         {
           "id": "piaf-p140295442680136",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295442702984",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295442703272",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295442704856",
@@ -3385,7 +3385,7 @@
           "recall@1": 0,
           "recall@5": 1,
           "recall@10": 1,
-          "reciprocal_rank": 0.5
+          "reciprocal_rank": 0.3333333333333333
         },
         {
           "id": "piaf-p140295442729576",
@@ -3417,10 +3417,10 @@
         },
         {
           "id": "piaf-p140295442742584",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295442743088",
@@ -3460,16 +3460,16 @@
         {
           "id": "piaf-p140295442816888",
           "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.25
         },
         {
           "id": "piaf-p140295443288712",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295443289432",
@@ -3501,10 +3501,10 @@
         },
         {
           "id": "piaf-p140295443297624",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295443297768",
@@ -3516,16 +3516,16 @@
         {
           "id": "piaf-p140295443297912",
           "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.2
         },
         {
           "id": "piaf-p140295443299064",
           "recall@1": 0,
           "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@10": 1,
+          "reciprocal_rank": 0.14285714285714285
         },
         {
           "id": "piaf-p140295443299856",
@@ -3537,9 +3537,9 @@
         {
           "id": "piaf-p140295443353816",
           "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
         },
         {
           "id": "piaf-p140295443354248",
@@ -3557,17 +3557,17 @@
         },
         {
           "id": "piaf-p140295443357488",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "piaf-p140295460357608",
           "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.2
         }
       ]
     },
@@ -3580,63 +3580,63 @@
       "documents": 252,
       "total_cases": 277,
       "summary": {
-        "recall@1": 0.30685920577617326,
-        "recall@5": 0.4259927797833935,
-        "recall@10": 0.4584837545126354,
-        "precision@1": 0.30685920577617326,
-        "precision@5": 0.08808664259927779,
-        "precision@10": 0.04729241877256307,
-        "mrr": 0.35306859205776175,
-        "mean_first_relevant_rank": 2.015748031496063,
-        "recall@1_ci_low": 0.2527,
-        "recall@1_ci_high": 0.361,
-        "recall@5_ci_low": 0.3682,
-        "recall@5_ci_high": 0.4874,
-        "recall@10_ci_low": 0.4007,
-        "recall@10_ci_high": 0.5235,
-        "mrr_ci_low": 0.3008,
-        "mrr_ci_high": 0.406,
-        "latency_embed_p50_ms": 16.67,
-        "latency_embed_p95_ms": 32.042,
-        "latency_generation_p50_ms": 4503.141,
-        "latency_generation_p95_ms": 18329.897,
-        "latency_query_p50_ms": 26.299,
-        "latency_query_p95_ms": 52.76,
-        "latency_retrieval_p50_ms": 9.53,
-        "latency_retrieval_p95_ms": 18.915,
-        "generation_tokens_per_second_p50": 31.22,
-        "faithfulness_mean": 0.897,
+        "recall@1": 0.3249097472924188,
+        "recall@5": 0.4657039711191336,
+        "recall@10": 0.5018050541516246,
+        "precision@1": 0.3249097472924188,
+        "precision@5": 0.09602888086642578,
+        "precision@10": 0.051624548736461974,
+        "mrr": 0.3788751360953527,
+        "mean_first_relevant_rank": 2.1223021582733814,
+        "recall@1_ci_low": 0.2708,
+        "recall@1_ci_high": 0.3791,
+        "recall@5_ci_low": 0.4079,
+        "recall@5_ci_high": 0.5271,
+        "recall@10_ci_low": 0.444,
+        "recall@10_ci_high": 0.5632,
+        "mrr_ci_low": 0.3272,
+        "mrr_ci_high": 0.4326,
+        "latency_embed_p50_ms": 17.265,
+        "latency_embed_p95_ms": 34.113,
+        "latency_generation_p50_ms": 4555.877,
+        "latency_generation_p95_ms": 18303.269,
+        "latency_query_p50_ms": 79.4,
+        "latency_query_p95_ms": 111.087,
+        "latency_retrieval_p50_ms": 60.653,
+        "latency_retrieval_p95_ms": 79.811,
+        "generation_tokens_per_second_p50": 29.22,
+        "faithfulness_mean": 0.907,
         "faithfulness_judged": 100,
-        "answer_relevancy_mean": 0.71,
+        "answer_relevancy_mean": 0.725,
         "answer_relevancy_judged": 100,
-        "answer_correctness_mean": 0.418,
+        "answer_correctness_mean": 0.445,
         "answer_correctness_judged": 100
       },
       "by_type": {
         "entity": {
           "cases": 87,
-          "recall@1": 0.5862068965517241,
-          "recall@5": 0.7471264367816092,
-          "recall@10": 0.7471264367816092,
-          "mrr": 0.6450191570881226
+          "recall@1": 0.6091954022988506,
+          "recall@5": 0.7931034482758621,
+          "recall@10": 0.7931034482758621,
+          "mrr": 0.6789272030651341
         },
         "paraphrase": {
           "cases": 93,
-          "recall@1": 0.3333333333333333,
-          "recall@5": 0.5053763440860215,
-          "recall@10": 0.5698924731182796,
-          "mrr": 0.4033154121863799
+          "recall@1": 0.3548387096774194,
+          "recall@5": 0.5483870967741935,
+          "recall@10": 0.6236559139784946,
+          "mrr": 0.4323775388291517
         },
         "reference": {
           "cases": 97,
-          "recall@1": 0.030927835051546393,
-          "recall@5": 0.061855670103092786,
-          "recall@10": 0.09278350515463918,
-          "mrr": 0.04304123711340206
+          "recall@1": 0.041237113402061855,
+          "recall@5": 0.09278350515463918,
+          "recall@10": 0.12371134020618557,
+          "mrr": 0.058460153820978564
         }
       },
-      "report_path": "data\\reports\\recall-lexml_fulltext-20261103-043802.json",
-      "experiment_run_id": "994768b0-0e2c-4943-b902-231f55d15288",
+      "report_path": "data\\reports\\recall-lexml_fulltext-20261103-053935.json",
+      "experiment_run_id": "168c366a-2254-443e-a1d2-e53502cb0e85",
       "cases": [
         {
           "id": "lexml-0001",
@@ -3738,9 +3738,9 @@
           "id": "lexml-0014",
           "type": "reference",
           "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.2
         },
         {
           "id": "lexml-0015",
@@ -3873,10 +3873,10 @@
         {
           "id": "lexml-0033",
           "type": "entity",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "lexml-0034",
@@ -3906,9 +3906,9 @@
           "id": "lexml-0037",
           "type": "paraphrase",
           "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
         },
         {
           "id": "lexml-0038",
@@ -4002,9 +4002,9 @@
           "id": "lexml-0050",
           "type": "reference",
           "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333
         },
         {
           "id": "lexml-0051",
@@ -4132,7 +4132,7 @@
           "recall@1": 0,
           "recall@5": 1,
           "recall@10": 1,
-          "reciprocal_rank": 0.3333333333333333
+          "reciprocal_rank": 0.25
         },
         {
           "id": "lexml-0068",
@@ -4164,7 +4164,7 @@
           "recall@1": 0,
           "recall@5": 0,
           "recall@10": 1,
-          "reciprocal_rank": 0.16666666666666666
+          "reciprocal_rank": 0.14285714285714285
         },
         {
           "id": "lexml-0072",
@@ -4177,10 +4177,10 @@
         {
           "id": "lexml-0073",
           "type": "paraphrase",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "lexml-0074",
@@ -4474,9 +4474,9 @@
           "id": "lexml-0112",
           "type": "paraphrase",
           "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.2
         },
         {
           "id": "lexml-0113",
@@ -4753,10 +4753,10 @@
         {
           "id": "lexml-0150",
           "type": "entity",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "lexml-0151",
@@ -4812,7 +4812,7 @@
           "recall@1": 0,
           "recall@5": 0,
           "recall@10": 1,
-          "reciprocal_rank": 0.125
+          "reciprocal_rank": 0.1111111111111111
         },
         {
           "id": "lexml-0159",
@@ -5026,9 +5026,9 @@
           "id": "lexml-0186",
           "type": "entity",
           "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
         },
         {
           "id": "lexml-0187",
@@ -5235,8 +5235,8 @@
           "type": "paraphrase",
           "recall@1": 0,
           "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@10": 1,
+          "reciprocal_rank": 0.1
         },
         {
           "id": "lexml-0215",
@@ -5257,10 +5257,10 @@
         {
           "id": "lexml-0217",
           "type": "paraphrase",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "lexml-0218",
@@ -5300,7 +5300,7 @@
           "recall@1": 0,
           "recall@5": 1,
           "recall@10": 1,
-          "reciprocal_rank": 0.25
+          "reciprocal_rank": 0.2
         },
         {
           "id": "lexml-0223",
@@ -5361,10 +5361,10 @@
         {
           "id": "lexml-0231",
           "type": "entity",
-          "recall@1": 1,
+          "recall@1": 0,
           "recall@5": 1,
           "recall@10": 1,
-          "reciprocal_rank": 1.0
+          "reciprocal_rank": 0.5
         },
         {
           "id": "lexml-0232",
@@ -5372,7 +5372,7 @@
           "recall@1": 0,
           "recall@5": 0,
           "recall@10": 1,
-          "reciprocal_rank": 0.125
+          "reciprocal_rank": 0.1111111111111111
         },
         {
           "id": "lexml-0233",
@@ -5385,10 +5385,10 @@
         {
           "id": "lexml-0234",
           "type": "entity",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "lexml-0235",
@@ -5441,10 +5441,10 @@
         {
           "id": "lexml-0242",
           "type": "reference",
-          "recall@1": 0,
-          "recall@5": 0,
-          "recall@10": 0,
-          "reciprocal_rank": 0.0
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
         },
         {
           "id": "lexml-0243",
