@@ -6,6 +6,7 @@ from pathlib import Path
 import typer
 
 from raglab.benchmarks import AVAILABLE_LOADERS, get_loader
+from raglab.benchmarks.lexml_questions import generate_questions, review_question_set
 from raglab.config import get_settings
 from raglab.db import initialize_database, session_scope
 from raglab.domain.enums import ChunkingStrategy
@@ -14,6 +15,7 @@ from raglab.experiments.service import ExperimentService
 from raglab.indexing.service import IndexingService
 from raglab.ingestion.service import IngestionService
 from raglab.lexml import LexMLLoadService, getDataFromLexML
+from raglab.lexml.fulltext import FullTextCollector
 from raglab.logging_utils import configure_logging
 from raglab.ollama import OllamaService
 from raglab.retrieval.filters import build_retrieval_filters
@@ -108,14 +110,20 @@ def bench_download(
         None,
         "--limit",
         min=1,
-        help="Limiter le nombre de paires Q/R produites (pratique pour un premier run rapide).",
+        help="Nombre de paires Q/R tirees au hasard (graine --seed). Le corpus reste complet.",
+    ),
+    seed: int = typer.Option(42, "--seed", help="Graine du tirage des questions quand --limit est fourni."),
+    full_corpus: bool = typer.Option(
+        True,
+        "--full-corpus/--sample-corpus",
+        help="Ecrire tous les passages du dataset (defaut) ou seulement ceux des questions tirees.",
     ),
 ) -> None:
     """Telecharger un dataset de benchmark et ecrire corpus + ground_truth sur disque."""
     loader_cls = get_loader(loader_name)
     resolved_output = (output_dir or get_settings().data_dir / "benchmarks" / loader_cls.name).resolve()
     loader = loader_cls()
-    dataset = loader.download(resolved_output, limit=limit)
+    dataset = loader.download(resolved_output, limit=limit, sample_seed=seed, full_corpus=full_corpus)
     typer.echo(
         json.dumps(
             {
@@ -179,6 +187,81 @@ def lexml_get_data(
 ) -> None:
     result = getDataFromLexML(output_dir=output_dir, page_limit=page_limit)
     typer.echo(json.dumps(result, indent=2, ensure_ascii=False))
+
+
+@lexml_app.command("fulltext")
+def lexml_fulltext(
+    output_dir: Path = typer.Option(
+        get_settings().lexml_fulltext_dir,
+        "--output-dir",
+        help="Dossier de sortie (corpus/ + manifest.json).",
+    ),
+    year_from: int = typer.Option(1988, "--from", help="Premiere annee de signature."),
+    year_to: int = typer.Option(2024, "--to", help="Derniere annee de signature (incluse)."),
+    per_year: int = typer.Option(7, "--per-year", min=1, help="Nombre de lois gardees par annee."),
+    seed: int = typer.Option(42, "--seed", help="Graine du tirage des lois."),
+    min_chars: int = typer.Option(3000, "--min-chars", help="Ignorer les lois plus courtes."),
+    max_chars: int = typer.Option(150_000, "--max-chars", help="Ignorer les lois plus longues (codes)."),
+) -> None:
+    """Collecter le texte integral de lois federales (Senado + Planalto)."""
+    result = FullTextCollector().collect(
+        output_dir=output_dir,
+        years=range(year_from, year_to + 1),
+        per_year=per_year,
+        seed=seed,
+        min_chars=min_chars,
+        max_chars=max_chars,
+    )
+    typer.echo(json.dumps(result, indent=2, ensure_ascii=False))
+
+
+@lexml_app.command("questions")
+def lexml_questions(
+    corpus_dir: Path = typer.Option(
+        get_settings().lexml_fulltext_dir / "corpus",
+        "--corpus-dir",
+        help="Corpus texte integral produit par `raglab lexml fulltext`.",
+    ),
+    output_dir: Path = typer.Option(
+        get_settings().data_dir / "benchmarks" / "lexml_fulltext",
+        "--output-dir",
+        help="Dossier du dataset (ground_truth.jsonl + metadata.json).",
+    ),
+    count: int = typer.Option(300, "--count", min=1, help="Nombre de questions a garder."),
+    seed: int = typer.Option(42, "--seed", help="Graine du tirage des passages et des types."),
+    backend: str = typer.Option(
+        "llamacpp",
+        "--backend",
+        help="llamacpp (serveur compatible OpenAI, demarre si besoin) ou ollama.",
+    ),
+    model: str | None = typer.Option(None, "--model", help="Modele (defaut: question_model ou generation_model)."),
+    profile: str | None = typer.Option(None, "--profile", help="Profil llama.cpp a demarrer (defaut: question_model_profile)."),
+) -> None:
+    """Generer un jeu de questions typees (paraphrase / reference / entity) sur le corpus LexML."""
+    result = generate_questions(
+        get_settings(),
+        backend=backend,
+        corpus_dir=corpus_dir,
+        output_dir=output_dir,
+        count=count,
+        seed=seed,
+        model=model,
+        profile=profile,
+    )
+    typer.echo(json.dumps(result, indent=2, ensure_ascii=False))
+
+
+@lexml_app.command("review-questions")
+def lexml_review_questions(
+    ground_truth: Path = typer.Option(
+        get_settings().data_dir / "benchmarks" / "lexml_fulltext" / "ground_truth.jsonl",
+        "--ground-truth",
+        help="Jeu de questions a re-verifier avec les regles actuelles.",
+    ),
+) -> None:
+    """Marquer `rejected` les questions qui echouent aux regles actuelles (sans les supprimer)."""
+    counts = review_question_set(ground_truth)
+    typer.echo(json.dumps({"ground_truth": str(ground_truth), "newly_rejected": counts}, indent=2, ensure_ascii=False))
 
 
 @lexml_app.command("ingest")

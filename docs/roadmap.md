@@ -1,6 +1,6 @@
 # Roadmap
 
-La roadmap ci-dessous reflète l'ordre réel de livraison. Les phases 0 à 5 sont livrées, la 6 est en cours, les phases 7+ sont à venir.
+La roadmap ci-dessous reflète l'ordre réel de livraison. Les phases 0 à 6 sont livrées, les phases 7 et 8 sont en cours, la phase 9 (production) a démarré.
 
 ## Phase 0 — Cadrage ✅
 
@@ -133,9 +133,18 @@ La roadmap ci-dessous reflète l'ordre réel de livraison. Les phases 0 à 5 son
 
 - modéliser les metadata comme nœuds de premier rang pour que `metadata_equals` fonctionne côté graphe
 
-## Phase 9 — Industrialisation
+## Phase 9 — Production 🚧 (en cours)
 
-- migrations Alembic
-- observabilité avancée (traces, tableaux de bord)
-- packaging et documentation d'exploitation
-- sécurité (auth optionnelle)
+Objectif : passer du laboratoire à un pipeline RAG prêt pour la production, chaque brique justifiée par un gain mesuré (Recall@5/10, MRR, latence p50/p95, juges RAGAS) sur PIAF et LexML. Une PR par sous-phase, avec le tableau avant / après. Une brique qui n'améliore rien reste derrière un drapeau.
+
+**9.1 — Baseline reproductible 🚧**
+
+- **9.1a — Protocole ✅** : voir [benchmarks/protocole.md](benchmarks/protocole.md) et les jeux figés dans [`benchmarks/`](../benchmarks/)
+  - PIAF : corpus complet (761 paragraphes) et 500 questions tirées avec une graine, au lieu d'un corpus réduit aux paragraphes des questions
+  - pertinence au niveau du passage (`expected_spans`), indépendante de la stratégie de chunking ; métriques par type de question
+  - LexML texte intégral : 252 lois fédérales (API du Sénat + planalto.gov.br, `raglab lexml fulltext`), manifeste SHA-256
+  - 277 questions LexML typées (`paraphrase`, `reference`, `entity`) écrites par Qwen3.6-35B-A3B via llama.cpp, réponse citée et retrouvée dans le texte, filtrées puis relues sur échantillon
+  - client compatible OpenAI et `LocalLLMServer` : raglab décharge Ollama, démarre et arrête llama-server tout seul
+- **9.1b — Mesure (à venir)** : timing par étape, cache de l'embedder, `raglab bench all`, `docs/benchmarks/baseline.md`, juge answer_relevancy, juge RAGAS Gemma 4 via llama.cpp (calibré contre qwen2.5), CI GitHub Actions
+
+**À venir** : 9.2 retrieval hybride BM25 + RRF · 9.3 re-ranking cross-encoder · 9.4 compréhension de la requête et abstention · 9.5 durcissement API (SSE, timeouts, clé d'API, /ready, migrations Alembic) · 9.6 observabilité (Prometheus, Grafana, dérive) · 9.7 portes de qualité · 9.8 vitrine

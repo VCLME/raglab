@@ -46,7 +46,8 @@ function BenchDownloadTab() {
   const { t } = useTranslation();
   const loaders = useApiLoad<BenchLoaderInfo[]>(() => get("/api/bench/loaders"));
   const [loader, setLoader] = useState("");
-  const [limit, setLimit] = useState("50");
+  const [limit, setLimit] = useState("500");
+  const [seed, setSeed] = useState("42");
   const [outputDir, setOutputDir] = useState("");
   const download = useApiAction((body: unknown) =>
     post<BenchDownloadResponse>("/api/bench/download", body)
@@ -63,6 +64,7 @@ function BenchDownloadTab() {
     download.run({
       loader,
       limit: limit ? Number(limit) : null,
+      sample_seed: seed ? Number(seed) : 42,
       output_dir: outputDir || null,
     });
 
@@ -84,6 +86,9 @@ function BenchDownloadTab() {
       </FieldRow>
       <FieldRow label={t("corpus_page.bench_limit_label")} hint={t("corpus_page.bench_limit_hint")}>
         <input type="number" value={limit} onChange={(e) => setLimit(e.target.value)} min={1} />
+      </FieldRow>
+      <FieldRow label={t("corpus_page.bench_seed_label")} hint={t("corpus_page.bench_seed_hint")}>
+        <input type="number" value={seed} onChange={(e) => setSeed(e.target.value)} />
       </FieldRow>
       <FieldRow label={t("corpus_page.bench_output_label")} hint={t("corpus_page.bench_output_hint")}>
         <input value={outputDir} onChange={(e) => setOutputDir(e.target.value)} placeholder="data/benchmarks/piaf" />

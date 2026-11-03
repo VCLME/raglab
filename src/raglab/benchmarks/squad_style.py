@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import hashlib
 import logging
+import random
 from pathlib import Path
 
 from raglab.benchmarks.base import (
@@ -23,6 +24,7 @@ from raglab.benchmarks.base import (
     write_ground_truth,
     write_metadata,
 )
+from raglab.ingestion.readers import normalize_text
 from raglab.logging_utils import log_event
 
 LOGGER = logging.getLogger(__name__)
@@ -62,6 +64,8 @@ class SquadStyleLoader(BenchmarkLoader):
         output_dir: Path,
         *,
         limit: int | None = None,
+        sample_seed: int = 42,
+        full_corpus: bool = True,
     ) -> BenchmarkDataset:
         try:
             from datasets import load_dataset
@@ -84,45 +88,44 @@ class SquadStyleLoader(BenchmarkLoader):
             hf_dataset=self.hf_dataset,
             hf_split=self.hf_split,
             limit=limit,
+            sample_seed=sample_seed,
+            full_corpus=full_corpus,
             output_dir=str(output_dir),
         )
 
         dataset = load_dataset(self.hf_dataset, split=self.hf_split)
 
-        seen_stems: dict[str, str] = {}
+        # stem -> (title, normalised context)
+        articles: dict[str, tuple[str, str]] = {}
         cases: list[GroundTruthCase] = []
         processed = 0
 
         for example in dataset:
-            if limit is not None and len(cases) >= limit:
-                break
-
             title = (example.get("title") or "unknown").strip()
-            context = (example.get("context") or "").strip()
+            raw_context = example.get("context") or ""
             question = (example.get("question") or "").strip()
             example_id = str(example.get("id") or f"row-{processed}")
             answers = example.get("answers") or {}
             answer_texts: list[str] = list(answers.get("text") or [])
+            answer_starts: list[int] = list(answers.get("answer_start") or [])
             primary_answer = answer_texts[0] if answer_texts else None
 
             processed += 1
+            # Write the text exactly as raglab's ingestion will normalise it,
+            # so that gold span offsets line up with chunk offsets in the DB.
+            context = normalize_text(raw_context)
             if not context or not question:
                 continue
 
             stem = _article_stem(title, context)
-            if stem not in seen_stems:
-                write_article(
-                    corpus_dir,
-                    stem=stem,
-                    text=context,
-                    metadata={
-                        "source": self.name,
-                        "title": title,
-                        "hf_dataset": self.hf_dataset,
-                        "hf_split": self.hf_split,
-                    },
-                )
-                seen_stems[stem] = title
+            articles.setdefault(stem, (title, context))
+
+            spans: list[dict] = []
+            if primary_answer:
+                hint = answer_starts[0] if answer_starts else 0
+                span = locate_span(context, primary_answer, hint=hint)
+                if span is not None:
+                    spans.append({"file_name": f"{stem}.txt", **span})
 
             cases.append(
                 GroundTruthCase(
@@ -131,6 +134,7 @@ class SquadStyleLoader(BenchmarkLoader):
                     expected_file_names=[f"{stem}.txt"],
                     ground_truth_answer=primary_answer,
                     expected_substrings=[primary_answer] if primary_answer else [],
+                    expected_spans=spans,
                 )
             )
 
@@ -138,6 +142,30 @@ class SquadStyleLoader(BenchmarkLoader):
             raise RuntimeError(
                 f"No cases produced from {self.name}. Check the HF split "
                 f"'{self.hf_split}' for '{self.hf_dataset}'."
+            )
+
+        if limit is not None and limit < len(cases):
+            # Sort first so the sample does not depend on the HF row order.
+            ordered = sorted(cases, key=lambda case: case.id)
+            cases = sorted(random.Random(sample_seed).sample(ordered, limit), key=lambda case: case.id)
+
+        if full_corpus:
+            kept_stems = set(articles)
+        else:
+            kept_stems = {name.removesuffix(".txt") for case in cases for name in case.expected_file_names}
+
+        for stem in sorted(kept_stems):
+            title, context = articles[stem]
+            write_article(
+                corpus_dir,
+                stem=stem,
+                text=context,
+                metadata={
+                    "source": self.name,
+                    "title": title,
+                    "hf_dataset": self.hf_dataset,
+                    "hf_split": self.hf_split,
+                },
             )
 
         write_ground_truth(ground_truth_path, cases)
@@ -151,9 +179,11 @@ class SquadStyleLoader(BenchmarkLoader):
                 "language": self.language,
                 "licence": self.licence,
                 "description": self.description,
-                "article_count": len(seen_stems),
+                "article_count": len(kept_stems),
                 "case_count": len(cases),
                 "limit": limit,
+                "sample_seed": sample_seed,
+                "full_corpus": full_corpus,
             },
         )
 
@@ -162,7 +192,7 @@ class SquadStyleLoader(BenchmarkLoader):
             logging.INFO,
             "bench.squad_style.download_completed",
             loader=self.name,
-            articles=len(seen_stems),
+            articles=len(kept_stems),
             cases=len(cases),
             processed_examples=processed,
         )
@@ -172,6 +202,27 @@ class SquadStyleLoader(BenchmarkLoader):
             ground_truth_path=ground_truth_path,
             metadata_path=metadata_path,
             corpus_name=self.default_corpus_name,
-            article_count=len(seen_stems),
+            article_count=len(kept_stems),
             case_count=len(cases),
         )
+
+
+def locate_span(text: str, answer: str, *, hint: int = 0) -> dict | None:
+    """Find `answer` in the normalised `text`, preferring the occurrence
+    closest to `hint` (the answer offset in the raw, unnormalised context).
+
+    Normalisation only ever shrinks the text, so the true occurrence sits at
+    or slightly before `hint`; the nearest one disambiguates repeated answers.
+    """
+    needle = normalize_text(answer)
+    if not needle:
+        return None
+    positions: list[int] = []
+    index = text.find(needle)
+    while index != -1:
+        positions.append(index)
+        index = text.find(needle, index + 1)
+    if not positions:
+        return None
+    start = min(positions, key=lambda position: abs(position - hint))
+    return {"start": start, "end": start + len(needle), "text": needle}

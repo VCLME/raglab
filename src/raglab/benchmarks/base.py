@@ -36,9 +36,20 @@ class GroundTruthCase:
     ground_truth_answer: str | None = None
     expected_substrings: list[str] = field(default_factory=list)
     expected_urns: list[str] = field(default_factory=list)
+    #: Gold passages as `{"file_name", "start", "end", "text"}` dicts. Offsets
+    #: index into the normalised document text, so relevance can be judged at
+    #: passage level independently of the chunking strategy.
+    expected_spans: list[dict] = field(default_factory=list)
+    #: Optional tag used to break metrics down (e.g. paraphrase / reference).
+    question_type: str | None = None
+    #: Share of the question's content words found in the gold passage.
+    lexical_overlap: float | None = None
+    #: "generated", "reviewed" or "rejected" for LLM-written questions.
+    review_status: str | None = None
 
     def to_jsonl_line(self) -> str:
-        return json.dumps(asdict(self), ensure_ascii=False)
+        payload = {key: value for key, value in asdict(self).items() if value is not None}
+        return json.dumps(payload, ensure_ascii=False)
 
 
 class BenchmarkLoader(ABC):
@@ -62,12 +73,17 @@ class BenchmarkLoader(ABC):
         output_dir: Path,
         *,
         limit: int | None = None,
+        sample_seed: int = 42,
+        full_corpus: bool = True,
     ) -> BenchmarkDataset:
         """Materialise the dataset in `output_dir` and return its handles.
 
         `limit` caps the number of ground-truth cases (not the number of
         articles — articles are always deduplicated). `None` means full
-        split.
+        split. With `full_corpus=True` every article of the split is written
+        even when `limit` is set, and the `limit` cases are drawn with
+        `sample_seed`: retrieval then has to find the right passage in the
+        whole haystack, not among the handful of passages the sample touches.
         """
 
 

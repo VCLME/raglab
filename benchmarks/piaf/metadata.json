@@ -1,0 +1,14 @@
+{
+  "loader": "piaf",
+  "source": "https://huggingface.co/datasets/etalab-ia/piaf",
+  "hf_dataset": "etalab-ia/piaf",
+  "hf_split": "train",
+  "language": "fr",
+  "licence": "CC-BY-SA-3.0",
+  "description": "French Wikipedia QA dataset (SQuAD-style) published by Etalab",
+  "article_count": 761,
+  "case_count": 500,
+  "limit": 500,
+  "sample_seed": 42,
+  "full_corpus": true
+}

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -34,6 +34,8 @@ class RecallBenchmarkCase:
     expected_file_names: list[str]
     expected_urns: list[str]
     ground_truth_answer: str | None = None
+    expected_spans: list[dict[str, Any]] = field(default_factory=list)
+    question_type: str | None = None
 
 
 class RecallBenchmarkService:
@@ -73,6 +75,8 @@ class RecallBenchmarkService:
                     payload = json.loads(raw)
                 except json.JSONDecodeError as exc:
                     raise ValueError(f"Ligne invalide dans le dataset Recall ({line_number}): {exc}") from exc
+                if payload.get("review_status") == "rejected":
+                    continue
                 cases.append(
                     RecallBenchmarkCase(
                         case_id=payload["id"],
@@ -80,6 +84,8 @@ class RecallBenchmarkService:
                         expected_file_names=payload.get("expected_file_names", []),
                         expected_urns=payload.get("expected_urns", []),
                         ground_truth_answer=payload.get("ground_truth_answer"),
+                        expected_spans=payload.get("expected_spans", []),
+                        question_type=payload.get("question_type"),
                     )
                 )
         if not cases:
@@ -150,6 +156,11 @@ class RecallBenchmarkService:
 
     @staticmethod
     def _is_relevant(case: RecallBenchmarkCase, chunk: dict[str, Any]) -> bool:
+        # Passage-level ground truth wins when present: a chunk only counts if
+        # it covers the gold passage, not merely because it comes from the
+        # right (possibly very long) document.
+        if case.expected_spans:
+            return any(_chunk_covers_span(chunk, span) for span in case.expected_spans)
         if chunk["file_name"] in case.expected_file_names:
             return True
         chunk_text = chunk["chunk_text"]
@@ -280,6 +291,7 @@ class RecallBenchmarkService:
                 case_result = {
                     "id": case.case_id,
                     "question": case.question,
+                    "question_type": case.question_type,
                     "expected_file_names": case.expected_file_names,
                     "expected_urns": case.expected_urns,
                     "retrieved_chunks": retrieved,
@@ -304,6 +316,8 @@ class RecallBenchmarkService:
                         **metrics_for_case,
                         "expected_file_names": case.expected_file_names,
                         "expected_urns": case.expected_urns,
+                        "expected_spans": case.expected_spans,
+                        "question_type": case.question_type,
                     },
                 )
 
@@ -331,10 +345,12 @@ class RecallBenchmarkService:
                 )
                 summary["answer_correctness_judged"] = len(correctness_scores)
 
+            by_type = _summarise_by_type(details, k_values)
             experiment_run.config_json = {
                 **experiment_run.config_json,
                 "total_cases": total_cases,
                 "summary": summary,
+                **({"by_type": by_type} if by_type else {}),
             }
             self.session.add(experiment_run)
             complete_experiment_run(self.session, experiment_run, ExperimentStatus.COMPLETED)
@@ -355,6 +371,7 @@ class RecallBenchmarkService:
             "dataset_path": str(dataset_path),
             "total_cases": total_cases,
             "summary": summary,
+            "by_type": by_type,
             "details": details,
         }
         report_path = self._write_report(f"recall-{benchmark_label}", payload)
@@ -372,6 +389,38 @@ class RecallBenchmarkService:
             experiment_run_id=experiment_run.id,
         )
         return payload
+
+
+def _summarise_by_type(details: list[dict[str, Any]], k_values: tuple[int, ...]) -> dict[str, dict[str, float]]:
+    """Recall@k and MRR per question type, for typed datasets only."""
+    groups: dict[str, list[dict[str, Any]]] = {}
+    for detail in details:
+        if detail.get("question_type"):
+            groups.setdefault(detail["question_type"], []).append(detail["metrics"])
+    summary: dict[str, dict[str, float]] = {}
+    for question_type, metrics in sorted(groups.items()):
+        count = len(metrics)
+        row: dict[str, float] = {"cases": count}
+        for k in k_values:
+            row[f"recall@{k}"] = sum(int(m[f"recall@{k}"]) for m in metrics) / count
+        row["mrr"] = sum(m["reciprocal_rank"] for m in metrics) / count
+        summary[question_type] = row
+    return summary
+
+
+def _chunk_covers_span(chunk: dict[str, Any], span: dict[str, Any]) -> bool:
+    """True when the chunk overlaps the gold span of the same file.
+
+    Without offsets (graph store), fall back to finding the gold text inside
+    the chunk.
+    """
+    if chunk["file_name"] != span.get("file_name"):
+        return False
+    start, end = chunk.get("char_start"), chunk.get("char_end")
+    if start is not None and end is not None:
+        return start < span["end"] and span["start"] < end
+    gold_text = span.get("text")
+    return bool(gold_text) and gold_text in chunk["chunk_text"]
 
 
 def _infer_benchmark_name(dataset_path: Path) -> str:

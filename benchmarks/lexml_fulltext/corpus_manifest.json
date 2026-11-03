@@ -1,0 +1,1778 @@
+{
+  "created_at": "2026-11-02T22:21:45.851573+00:00",
+  "seed": 42,
+  "per_year": 7,
+  "min_chars": 3000,
+  "max_chars": 150000,
+  "documents": [
+    {
+      "file_name": "lei_10147_2000.txt",
+      "urn": "urn:lex:br:federal:lei:2000-12-21;10147",
+      "chars": 8341,
+      "sha256": "704e1c27b887243e872dea92d223df70216b4c1aa9f5897a6b2ddca5ccc49107",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l10147.htm"
+    },
+    {
+      "file_name": "lei_10150_2000.txt",
+      "urn": "urn:lex:br:federal:lei:2000-12-21;10150",
+      "chars": 54025,
+      "sha256": "079b28a735c5455499e7f4f26e80ea2a40d9434a9dc361a976dcf94c293378b3",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l10150.htm"
+    },
+    {
+      "file_name": "lei_10169_2000.txt",
+      "urn": "urn:lex:br:federal:lei:2000-12-29;10169",
+      "chars": 7462,
+      "sha256": "1137942f9d6736348c2bdc4b5ebfa128ca4c4457fc6a9214c32a8c5d5120e8cd",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l10169.htm"
+    },
+    {
+      "file_name": "lei_10443_2002.txt",
+      "urn": "urn:lex:br:federal:lei:2002-05-06;10443",
+      "chars": 10063,
+      "sha256": "967a252647b3bad882e1aa616f6bfdf8fe980653c9995caff64b9ce8cef4f8d8",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/2002/l10443.htm"
+    },
+    {
+      "file_name": "lei_10484_2002.txt",
+      "urn": "urn:lex:br:federal:lei:2002-07-03;10484",
+      "chars": 11472,
+      "sha256": "0f0af17e07a566c135992151e8bf3bbdc5ccb9ebe1acfcf99853cfab45a9b08b",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/2002/l10484.htm"
+    },
+    {
+      "file_name": "lei_10488_2002.txt",
+      "urn": "urn:lex:br:federal:lei:2002-07-05;10488",
+      "chars": 9201,
+      "sha256": "366bcac7d51416c4f24581d5e4659c17085bbf759ff2a12c87af69ed40324258",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/2002/l10488.htm"
+    },
+    {
+      "file_name": "lei_10514_2002.txt",
+      "urn": "urn:lex:br:federal:lei:2002-07-11;10514",
+      "chars": 8917,
+      "sha256": "e8cb6234e2b4c02bca9f6e3ba9840acb8df5a40bbff21ebb0adcae1fb2262e68",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/2002/l10514.htm"
+    },
+    {
+      "file_name": "lei_10576_2002.txt",
+      "urn": "urn:lex:br:federal:lei:2002-11-25;10576",
+      "chars": 12039,
+      "sha256": "cc17ac851ac817b370dd384b3951fffc87d53320ead8dd05d7b5f6ac1b5250fa",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/2002/l10576.htm"
+    },
+    {
+      "file_name": "lei_10580_2002.txt",
+      "urn": "urn:lex:br:federal:lei:2002-12-03;10580",
+      "chars": 5825,
+      "sha256": "28d0f2dff7dc62fccf2a44ba6e36b697202791bfa120cabc56f1bffee799192c",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/2002/l10580.htm"
+    },
+    {
+      "file_name": "lei_10604_2002.txt",
+      "urn": "urn:lex:br:federal:lei:2002-12-17;10604",
+      "chars": 7130,
+      "sha256": "a582dbb37d75ea21ac950cfad05c55038207d18570aa57f448fcb6ecd8cee455",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/2002/l10604.htm"
+    },
+    {
+      "file_name": "lei_10702_2003.txt",
+      "urn": "urn:lex:br:federal:lei:2003-07-14;10702",
+      "chars": 4035,
+      "sha256": "13b1bb4db7c412ec18022f1ea6a441a5d856be2e1f69f0e1aa1325929cbe84cb",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/2003/l10.702.htm"
+    },
+    {
+      "file_name": "lei_10728_2003.txt",
+      "urn": "urn:lex:br:federal:lei:2003-09-02;10728",
+      "chars": 8084,
+      "sha256": "634c7756c6834cf097e803bf968854a1a049f9697fed26dc7d5f58503eb5684b",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/2003/l10.728.htm"
+    },
+    {
+      "file_name": "lei_10755_2003.txt",
+      "urn": "urn:lex:br:federal:lei:2003-11-03;10755",
+      "chars": 4044,
+      "sha256": "0c0d98d97b0fabb8be1a1333d222fe46664b36e0d39e77b2d9f2a65a746089ed",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/2003/l10.755.htm"
+    },
+    {
+      "file_name": "lei_10764_2003.txt",
+      "urn": "urn:lex:br:federal:lei:2003-11-12;10764",
+      "chars": 3509,
+      "sha256": "85d5e6f2f8ae62a037c0cd3f72a703ed11dbf13e915ede95a3f962f45a6277d0",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/2003/l10.764.htm"
+    },
+    {
+      "file_name": "lei_10770_2003.txt",
+      "urn": "urn:lex:br:federal:lei:2003-11-21;10770",
+      "chars": 109931,
+      "sha256": "8dd37ffc373ec8f72d05b1d1d375224dff151142f88ffe9ab183cd3b0e205472",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/2003/l10.770.htm"
+    },
+    {
+      "file_name": "lei_10771_2003.txt",
+      "urn": "urn:lex:br:federal:lei:2003-11-21;10771",
+      "chars": 16918,
+      "sha256": "e0a4d09ae4df9f72f5f524f2b7dd07e4dc7ea7de55af4ba7c702ae855ff7e2de",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/2003/l10.771.htm"
+    },
+    {
+      "file_name": "lei_10826_2003.txt",
+      "urn": "urn:lex:br:federal:lei:2003-12-22;10826",
+      "chars": 37569,
+      "sha256": "6e950b20c8189085a53ca5ccbd00a68ef56256c54775680f58aefd4318ac7e70",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/2003/l10.826.htm"
+    },
+    {
+      "file_name": "lei_10987_2004.txt",
+      "urn": "urn:lex:br:federal:lei:2004-12-13;10987",
+      "chars": 4703,
+      "sha256": "f08665628e4a76d9b33bb005ec9ddc0d5f85d9549fc76039dde624d4e3cab16e",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2004-2006/2004/lei/l10987.htm"
+    },
+    {
+      "file_name": "lei_10988_2004.txt",
+      "urn": "urn:lex:br:federal:lei:2004-12-13;10988",
+      "chars": 6949,
+      "sha256": "34d8b1ed42c82e27de504ecfe93b34788ac87d23e2a6fc3d02adb1d863402fec",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2004-2006/2004/lei/l10988.htm"
+    },
+    {
+      "file_name": "lei_11001_2004.txt",
+      "urn": "urn:lex:br:federal:lei:2004-12-16;11001",
+      "chars": 5191,
+      "sha256": "1d836199c9f3e776b96ee38e9aa19511de94003aa1f88284e37ac11510871a55",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2004-2006/2004/lei/l11001.htm"
+    },
+    {
+      "file_name": "lei_11018_2004.txt",
+      "urn": "urn:lex:br:federal:lei:2004-12-21;11018",
+      "chars": 3297,
+      "sha256": "52a70a7dc35fbeb6532d4e74fda5e5ad338d0e2e33590fafa42543de53c05fcd",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2004-2006/2004/lei/l11018.htm"
+    },
+    {
+      "file_name": "lei_11050_2004.txt",
+      "urn": "urn:lex:br:federal:lei:2004-12-29;11050",
+      "chars": 9231,
+      "sha256": "97512368832611d5c16a034fea76fb4679ea8157be020333689d136de6c79996",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2004-2006/2004/lei/l11050.htm"
+    },
+    {
+      "file_name": "lei_11075_2004.txt",
+      "urn": "urn:lex:br:federal:lei:2004-12-30;11075",
+      "chars": 5448,
+      "sha256": "f00334b145b03fe63226aa0187e9f065cfa2e975805a0aa0acefefbdff352e8f",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2004-2006/2004/lei/l11075.htm"
+    },
+    {
+      "file_name": "lei_11086_2004.txt",
+      "urn": "urn:lex:br:federal:lei:2004-12-31;11086",
+      "chars": 3918,
+      "sha256": "fd8ea31822410999e3c83a027ee4e966437cd08f08403ae9ff3b59e0707cd5c6",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2004-2006/2004/lei/l11086.htm"
+    },
+    {
+      "file_name": "lei_11090_2005.txt",
+      "urn": "urn:lex:br:federal:lei:2005-01-07;11090",
+      "chars": 53818,
+      "sha256": "2266fc52461db898962fdda15eb77540bf1ea97df2e4d534b70cf791a60712a1",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2004-2006/2005/lei/l11090.htm"
+    },
+    {
+      "file_name": "lei_11105_2005.txt",
+      "urn": "urn:lex:br:federal:lei:2005-03-24;11105",
+      "chars": 39184,
+      "sha256": "59484cb50f08d4839c49d9be61492e738346b3ffe3d4f28e66e39d8943be08fb",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2004-2006/2005/lei/l11105.htm"
+    },
+    {
+      "file_name": "lei_11129_2005.txt",
+      "urn": "urn:lex:br:federal:lei:2005-06-30;11129",
+      "chars": 9374,
+      "sha256": "3569a2c2df45c7c4dbfe1c8488718087b274ca41aec60804070444052b03de25",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2004-2006/2005/lei/l11129.htm"
+    },
+    {
+      "file_name": "lei_11131_2005.txt",
+      "urn": "urn:lex:br:federal:lei:2005-07-01;11131",
+      "chars": 8215,
+      "sha256": "6a1d3bcb9fd6b168b71addbe98e748235fd780cd41495a3deb88af41199a4d64",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2004-2006/2005/lei/l11131.htm"
+    },
+    {
+      "file_name": "lei_11151_2005.txt",
+      "urn": "urn:lex:br:federal:lei:2005-07-29;11151",
+      "chars": 8089,
+      "sha256": "fee4540c9a1ae2c83d17fdc18c73a2521db26fa7258d887bc27a45604e3c72c7",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2004-2006/2005/lei/l11151.htm"
+    },
+    {
+      "file_name": "lei_11236_2005.txt",
+      "urn": "urn:lex:br:federal:lei:2005-12-22;11236",
+      "chars": 5150,
+      "sha256": "caad79961eda8159fd78f513bd340499d1e9a58748bbdb33eb3f610a47fd81f6",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2004-2006/2005/lei/l11236.htm"
+    },
+    {
+      "file_name": "lei_11252_2005.txt",
+      "urn": "urn:lex:br:federal:lei:2005-12-27;11252",
+      "chars": 9729,
+      "sha256": "2d88df87f80f4a0b8ff1011909b9e3d9855dca57c60f903c88f2d9c7fc16d1f8",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2004-2006/2005/lei/l11252.htm"
+    },
+    {
+      "file_name": "lei_11269_2006.txt",
+      "urn": "urn:lex:br:federal:lei:2006-01-19;11269",
+      "chars": 3251,
+      "sha256": "3cabf9a2376b56a703360aa270efeb75eb28c89942a22affffd87c729e4cc8f8",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2004-2006/2006/lei/l11269.htm"
+    },
+    {
+      "file_name": "lei_11290_2006.txt",
+      "urn": "urn:lex:br:federal:lei:2006-04-12;11290",
+      "chars": 3038,
+      "sha256": "d3f6d737b543820deb1a217f7a00b62b33c0ddd6e419aee2bc4fec9f244d04ff",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2004-2006/2006/lei/l11290.htm"
+    },
+    {
+      "file_name": "lei_11300_2006.txt",
+      "urn": "urn:lex:br:federal:lei:2006-05-10;11300",
+      "chars": 10824,
+      "sha256": "6a189aed89de0f494c3441a93131e1f5a5689d305763d161090e245f41015aae",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2004-2006/2006/lei/l11300.htm"
+    },
+    {
+      "file_name": "lei_11306_2006.txt",
+      "urn": "urn:lex:br:federal:lei:2006-05-16;11306",
+      "chars": 28289,
+      "sha256": "ef469f82123e9927259210fbdd129cab6ccb42487aa0e478862948d1b3fcb781",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2004-2006/2006/lei/l11306.htm"
+    },
+    {
+      "file_name": "lei_11311_2006.txt",
+      "urn": "urn:lex:br:federal:lei:2006-06-13;11311",
+      "chars": 6206,
+      "sha256": "1d4a723233f7db66d4bb47fa2040a8a5212170080e909f74ffcb6213bef42f16",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2004-2006/2006/lei/l11311.htm"
+    },
+    {
+      "file_name": "lei_11366_2006.txt",
+      "urn": "urn:lex:br:federal:lei:2006-11-09;11366",
+      "chars": 6315,
+      "sha256": "8b8fcc74cf8d330e8a8048b7959c9e7e7ffdd6b8537ba4b6f1bf5d9729ebb03c",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2004-2006/2006/lei/l11366.htm"
+    },
+    {
+      "file_name": "lei_11418_2006.txt",
+      "urn": "urn:lex:br:federal:lei:2006-12-19;11418",
+      "chars": 3632,
+      "sha256": "dcf4e605b650fcc5b496bc80d1697c5d5dce9f6e293f85cccc5c29c5f24faf7b",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2004-2006/2006/lei/l11418.htm"
+    },
+    {
+      "file_name": "lei_11441_2007.txt",
+      "urn": "urn:lex:br:federal:lei:2007-01-04;11441",
+      "chars": 3129,
+      "sha256": "baa65473b60e3a089fc42d870bfdd1fb2f49235a8e9f780b1f16e419874ed74c",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2007-2010/2007/lei/l11441.htm"
+    },
+    {
+      "file_name": "lei_11445_2007.txt",
+      "urn": "urn:lex:br:federal:lei:2007-01-05;11445",
+      "chars": 109465,
+      "sha256": "7c6b56e00aca8e4c1dfb61276035cc00461d8d6547de5413a5647dfa281820f8",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2007-2010/2007/lei/l11445.htm"
+    },
+    {
+      "file_name": "lei_11473_2007.txt",
+      "urn": "urn:lex:br:federal:lei:2007-05-10;11473",
+      "chars": 12226,
+      "sha256": "3ffc1ec9053c056f63115bcc93e8d42dc872a49280d5e688e47461c78ee9c80b",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2007-2010/2007/lei/l11473.htm"
+    },
+    {
+      "file_name": "lei_11478_2007.txt",
+      "urn": "urn:lex:br:federal:lei:2007-05-29;11478",
+      "chars": 8347,
+      "sha256": "2db2da49d90f1e2ac47d36c275c2022d3fc0c04e0319a6a042c2d759379ce272",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2007-2010/2007/lei/l11478.htm"
+    },
+    {
+      "file_name": "lei_11484_2007.txt",
+      "urn": "urn:lex:br:federal:lei:2007-05-31;11484",
+      "chars": 77472,
+      "sha256": "28baaf9182da60dcfff34b5ff9a4e7f04a9ac1d319a2a31f0498824d5a037156",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2007-2010/2007/lei/l11484.htm"
+    },
+    {
+      "file_name": "lei_11487_2007.txt",
+      "urn": "urn:lex:br:federal:lei:2007-06-15;11487",
+      "chars": 4615,
+      "sha256": "9e1b7ba61ec53e7f08950f611b3fdd056564b4e064264efb2e199344624d8276",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2007-2010/2007/lei/l11487.htm"
+    },
+    {
+      "file_name": "lei_11631_2007.txt",
+      "urn": "urn:lex:br:federal:lei:2007-12-27;11631",
+      "chars": 4961,
+      "sha256": "c432b1cfa8ebfb5c26030a032ed0c057bdb920055958a912e06997c99200dc6e",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2007-2010/2007/lei/l11631.htm"
+    },
+    {
+      "file_name": "lei_11668_2008.txt",
+      "urn": "urn:lex:br:federal:lei:2008-05-02;11668",
+      "chars": 4866,
+      "sha256": "5be99f197d0a56d372dd66577e055494e5d01a74e44d7601ccd00e483820c817",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2007-2010/2008/lei/l11668.htm"
+    },
+    {
+      "file_name": "lei_11697_2008.txt",
+      "urn": "urn:lex:br:federal:lei:2008-06-13;11697",
+      "chars": 68425,
+      "sha256": "11e0fd6f6cd97bb66d50ea1d2e007b2f29cbf5011b01bc7f6c3279267744d705",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2007-2010/2008/lei/l11697.htm"
+    },
+    {
+      "file_name": "lei_11707_2008.txt",
+      "urn": "urn:lex:br:federal:lei:2008-06-19;11707",
+      "chars": 13737,
+      "sha256": "1b434e287b4a72c0f21646233d0962a8e9753c9072106b80a6fefe5f676a58a2",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2007-2010/2008/lei/l11707.htm"
+    },
+    {
+      "file_name": "lei_11738_2008.txt",
+      "urn": "urn:lex:br:federal:lei:2008-07-16;11738",
+      "chars": 7065,
+      "sha256": "b79284e132e385478292981c6891ed0b864ff158b23d084db87549f804acd25e",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2007-2010/2008/lei/l11738.htm"
+    },
+    {
+      "file_name": "lei_11754_2008.txt",
+      "urn": "urn:lex:br:federal:lei:2008-07-23;11754",
+      "chars": 8058,
+      "sha256": "743242edb7669246519458e2d931d78dddb51d7dbd1ad4368fec5ca560c1d9b7",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2007-2010/2008/lei/l11754.htm"
+    },
+    {
+      "file_name": "lei_11770_2008.txt",
+      "urn": "urn:lex:br:federal:lei:2008-09-09;11770",
+      "chars": 6040,
+      "sha256": "045884b57df15be19f94f72c1d9fca14960bd0e30a73aab2c75476f4cd60dcf8",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2007-2010/2008/lei/l11770.htm"
+    },
+    {
+      "file_name": "lei_11829_2008.txt",
+      "urn": "urn:lex:br:federal:lei:2008-11-25;11829",
+      "chars": 5506,
+      "sha256": "ed1690f0e9b0fd8be135d5e45fbf4e5f3bd7ca722adea8390a7a72c0d08e9afe",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2007-2010/2008/lei/l11829.htm"
+    },
+    {
+      "file_name": "lei_11960_2009.txt",
+      "urn": "urn:lex:br:federal:lei:2009-06-29;11960",
+      "chars": 10896,
+      "sha256": "3f7e9f5e1af16a7b618c8d3231ba85c86d4df470a6d83030e1719ef73886e838",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2007-2010/2009/lei/l11960.htm"
+    },
+    {
+      "file_name": "lei_12009_2009.txt",
+      "urn": "urn:lex:br:federal:lei:2009-07-29;12009",
+      "chars": 6148,
+      "sha256": "ef5d8a3cf8239f6aa900c448b11a00e3592ed06bb0d9fd340b47e8d742843755",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2007-2010/2009/lei/l12009.htm"
+    },
+    {
+      "file_name": "lei_12010_2009.txt",
+      "urn": "urn:lex:br:federal:lei:2009-08-03;12010",
+      "chars": 60095,
+      "sha256": "00d7ef67b535aca6a859ba5ef9406dfc7417867bc0313ccc2ee230c141f259a1",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2007-2010/2009/lei/l12010.htm"
+    },
+    {
+      "file_name": "lei_12024_2009.txt",
+      "urn": "urn:lex:br:federal:lei:2009-08-27;12024",
+      "chars": 22523,
+      "sha256": "c68530a448fa9b6c4f7231d99491e4d5ddd8add6a3880462be5a8d8c379f66c3",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2007-2010/2009/lei/l12024.htm"
+    },
+    {
+      "file_name": "lei_12034_2009.txt",
+      "urn": "urn:lex:br:federal:lei:2009-09-29;12034",
+      "chars": 51824,
+      "sha256": "95592a2b88e379ff3cf38ee162efba7e5477ef251df76b93a266851b02017936",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2007-2010/2009/lei/l12034.htm"
+    },
+    {
+      "file_name": "lei_12058_2009.txt",
+      "urn": "urn:lex:br:federal:lei:2009-10-13;12058",
+      "chars": 80884,
+      "sha256": "e15ddcb8f929116dfcc4a35a4c1fb4c0bb8999eebed93e16e84922aeeed947e1",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2007-2010/2009/lei/l12058.htm"
+    },
+    {
+      "file_name": "lei_12186_2009.txt",
+      "urn": "urn:lex:br:federal:lei:2009-12-29;12186",
+      "chars": 22165,
+      "sha256": "7907698a25f0b123c06a1959cae7f078c8da032b8e92a0dd19213063900bd3a5",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2007-2010/2009/lei/l12186.htm"
+    },
+    {
+      "file_name": "lei_12229_2010.txt",
+      "urn": "urn:lex:br:federal:lei:2010-04-13;12229",
+      "chars": 3071,
+      "sha256": "a79639b8db59d47a2b9e223f346c2b8473faa02e20e205dbafa72fe445f95cf7",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2007-2010/2010/lei/l12229.htm"
+    },
+    {
+      "file_name": "lei_12240_2010.txt",
+      "urn": "urn:lex:br:federal:lei:2010-05-20;12240",
+      "chars": 3716,
+      "sha256": "eb78953d568a48c26a2a024342fd8dc8a01b41b05b09db41f970c9fe84b3e927",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2007-2010/2010/lei/l12240.htm"
+    },
+    {
+      "file_name": "lei_12246_2010.txt",
+      "urn": "urn:lex:br:federal:lei:2010-05-27;12246",
+      "chars": 5037,
+      "sha256": "a7b068d6eb6ff015fbdb82bf5b231934f4e260e7657370f2be40e634b784d421",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2007-2010/2010/lei/l12246.htm"
+    },
+    {
+      "file_name": "lei_12322_2010.txt",
+      "urn": "urn:lex:br:federal:lei:2010-09-09;12322",
+      "chars": 3633,
+      "sha256": "471f22b1efa99cbcdcb0c5b75d8dc0b491354437d2c0da0e8c37c4861ce5e6cd",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2007-2010/2010/lei/l12322.htm"
+    },
+    {
+      "file_name": "lei_12336_2010.txt",
+      "urn": "urn:lex:br:federal:lei:2010-10-26;12336",
+      "chars": 6882,
+      "sha256": "1d1add2b0ef90d627850683a59034ecdfaaaefa5c1582d6d47a11e6ba0155e28",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2007-2010/2010/lei/l12336.htm"
+    },
+    {
+      "file_name": "lei_12362_2010.txt",
+      "urn": "urn:lex:br:federal:lei:2010-12-29;12362",
+      "chars": 7294,
+      "sha256": "b7105d945d021c95919a1fda5021dfb37c6825638037e66b153ddf61cf968657",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2007-2010/2010/lei/l12362.htm"
+    },
+    {
+      "file_name": "lei_12369_2010.txt",
+      "urn": "urn:lex:br:federal:lei:2010-12-29;12369",
+      "chars": 8573,
+      "sha256": "b99e773bfcfec89cc623520b7ad6affef204ba30c256f5993c78ee60aade2b33",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2007-2010/2010/lei/l12369.htm"
+    },
+    {
+      "file_name": "lei_12380_2011.txt",
+      "urn": "urn:lex:br:federal:lei:2011-01-10;12380",
+      "chars": 17417,
+      "sha256": "47acf243a6859bf3be127e7ab445713422fad2dd9b954aac8eeba447054cb2df",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2011-2014/2011/lei/l12380.htm"
+    },
+    {
+      "file_name": "lei_12420_2011.txt",
+      "urn": "urn:lex:br:federal:lei:2011-06-15;12420",
+      "chars": 3451,
+      "sha256": "6730c2150fb71bdd8026bda747bca3d6d4d3000bfac705d94be2947cd5e62f79",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2011-2014/2011/lei/l12420.htm"
+    },
+    {
+      "file_name": "lei_12453_2011.txt",
+      "urn": "urn:lex:br:federal:lei:2011-07-21;12453",
+      "chars": 10127,
+      "sha256": "05951e163375baaee75f5ae345daee48d5be972b647acfd389cd1f0cca59bc17",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2011-2014/2011/lei/l12453.htm"
+    },
+    {
+      "file_name": "lei_12478_2011.txt",
+      "urn": "urn:lex:br:federal:lei:2011-09-02;12478",
+      "chars": 3169,
+      "sha256": "0b07e81716ac95976c508ab85a5b1d6fe04455a258b98accfdefc67b7a255ec8",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2011-2014/2011/lei/l12478.htm"
+    },
+    {
+      "file_name": "lei_12509_2011.txt",
+      "urn": "urn:lex:br:federal:lei:2011-10-11;12509",
+      "chars": 3186,
+      "sha256": "a6ebdc0746cd76493af398d3bf04bac4bd82649081a79b6b554ec63f2ca4f01a",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2011-2014/2011/lei/l12509.htm"
+    },
+    {
+      "file_name": "lei_12538_2011.txt",
+      "urn": "urn:lex:br:federal:lei:2011-12-08;12538",
+      "chars": 47489,
+      "sha256": "48e5e6b5965c4ad72a2d1a179ac81ddbca477d77f88e661acf73a0c472fc832d",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2011-2014/2011/lei/l12538.htm"
+    },
+    {
+      "file_name": "lei_12581_2011.txt",
+      "urn": "urn:lex:br:federal:lei:2011-12-29;12581",
+      "chars": 3641,
+      "sha256": "778d4f5d089842dde821e59f1f83ccb50d929e263b2fa5d2b7f319d668504d39",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2011-2014/2011/lei/l12581.htm"
+    },
+    {
+      "file_name": "lei_12591_2012.txt",
+      "urn": "urn:lex:br:federal:lei:2012-01-18;12591",
+      "chars": 3176,
+      "sha256": "88317e29c0315ed563183fe95db0cf71ae0332e625c596f994d93f1316fe4a2f",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2011-2014/2012/lei/l12591.htm"
+    },
+    {
+      "file_name": "lei_12682_2012.txt",
+      "urn": "urn:lex:br:federal:lei:2012-07-09;12682",
+      "chars": 4268,
+      "sha256": "bd5f400c85e780cf3ed21b0cf8533e915b2b341124ae5642a5b0fd381cbec195",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2011-2014/2012/lei/l12682.htm"
+    },
+    {
+      "file_name": "lei_12704_2012.txt",
+      "urn": "urn:lex:br:federal:lei:2012-08-08;12704",
+      "chars": 7996,
+      "sha256": "d9ae30bd33473bd02526a912f75dfd7b77bc01b8562b519788d781c4641a3d32",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2011-2014/2012/lei/l12704.htm"
+    },
+    {
+      "file_name": "lei_12716_2012.txt",
+      "urn": "urn:lex:br:federal:lei:2012-09-21;12716",
+      "chars": 12160,
+      "sha256": "ac725c9943d96bf157566519e9d65c1f2aede0563526325fbd46fbb232df4713",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2011-2014/2012/lei/l12716.htm"
+    },
+    {
+      "file_name": "lei_12722_2012.txt",
+      "urn": "urn:lex:br:federal:lei:2012-10-03;12722",
+      "chars": 12297,
+      "sha256": "b41dfb95184bd6bf5756360cf61f46d1d6202029becc4f68a97025d0108425fd",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2011-2014/2012/lei/l12722.htm"
+    },
+    {
+      "file_name": "lei_12747_2012.txt",
+      "urn": "urn:lex:br:federal:lei:2012-12-19;12747",
+      "chars": 7279,
+      "sha256": "4bc036bc6f04e5058f85323d4198b229f8e1310f659fcd88d7152653c619e182",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2011-2014/2012/lei/l12747.htm"
+    },
+    {
+      "file_name": "lei_12754_2012.txt",
+      "urn": "urn:lex:br:federal:lei:2012-12-19;12754",
+      "chars": 21041,
+      "sha256": "61549c3dc317a5060dd5dfd79a6a67781bf3cb027c41619e57b789f84971bb72",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2011-2014/2012/lei/l12754.htm"
+    },
+    {
+      "file_name": "lei_12809_2013.txt",
+      "urn": "urn:lex:br:federal:lei:2013-05-15;12809",
+      "chars": 3251,
+      "sha256": "977d8e42703ce327ecdfcbf083f752f1e422d4c567a180d9d5b46edfb03aea64",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2011-2014/2013/lei/l12809.htm"
+    },
+    {
+      "file_name": "lei_12826_2013.txt",
+      "urn": "urn:lex:br:federal:lei:2013-06-05;12826",
+      "chars": 6982,
+      "sha256": "ad32f267f8c5c1d9edd9a377c164c12b59e1361cc4c49d4dff93b03703928619",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2011-2014/2013/lei/l12826.htm"
+    },
+    {
+      "file_name": "lei_12847_2013.txt",
+      "urn": "urn:lex:br:federal:lei:2013-08-02;12847",
+      "chars": 17618,
+      "sha256": "066fba1f55b44fa9e1104045eae7e0b6a3d36d8cac0a50e23e9cc9a404d0907c",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2011-2014/2013/lei/l12847.htm"
+    },
+    {
+      "file_name": "lei_12869_2013.txt",
+      "urn": "urn:lex:br:federal:lei:2013-10-15;12869",
+      "chars": 5154,
+      "sha256": "635a282d383f005a8f0700dd91ff9598628ac99664d80bc5395c58f6c2bf6b60",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2011-2014/2013/lei/l12869.htm"
+    },
+    {
+      "file_name": "lei_12893_2013.txt",
+      "urn": "urn:lex:br:federal:lei:2013-12-17;12893",
+      "chars": 5506,
+      "sha256": "f10ef3dca70c4e7fe17e953f18b9aeea5ecdc664e71a21bec598db5fd9de46e0",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2011-2014/2013/lei/l12893.htm"
+    },
+    {
+      "file_name": "lei_12913_2013.txt",
+      "urn": "urn:lex:br:federal:lei:2013-12-18;12913",
+      "chars": 10299,
+      "sha256": "51702fa6c6484008ddbac666c9953b810e3be3fbedc37515d8d4fbd59699279b",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2011-2014/2013/lei/l12913.htm"
+    },
+    {
+      "file_name": "lei_12940_2013.txt",
+      "urn": "urn:lex:br:federal:lei:2013-12-27;12940",
+      "chars": 4099,
+      "sha256": "f36205f05c7929f2e6f94b2b3332a40f4b552b6543560371ecc5336338b10ed4",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2011-2014/2013/lei/l12940.htm"
+    },
+    {
+      "file_name": "lei_12954_2014.txt",
+      "urn": "urn:lex:br:federal:lei:2014-02-05;12954",
+      "chars": 4770,
+      "sha256": "fb4bc1ab977745b39d82e02af37c3df5c87342175acd5447697af3cae935abfe",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2011-2014/2014/lei/l12954.htm"
+    },
+    {
+      "file_name": "lei_12994_2014.txt",
+      "urn": "urn:lex:br:federal:lei:2014-06-17;12994",
+      "chars": 6304,
+      "sha256": "941b85495abde469eb78fc79413fa74ce1c688e5cb48ddb0dbc3def18650e803",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2011-2014/2014/lei/l12994.htm"
+    },
+    {
+      "file_name": "lei_13005_2014.txt",
+      "urn": "urn:lex:br:federal:lei:2014-06-25;13005",
+      "chars": 95215,
+      "sha256": "18de365014419f45cbfe44cc99c00ff419e201c68103f0b7916974dff65cb2d3",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2011-2014/2014/lei/l13005.htm"
+    },
+    {
+      "file_name": "lei_13023_2014.txt",
+      "urn": "urn:lex:br:federal:lei:2014-08-08;13023",
+      "chars": 7768,
+      "sha256": "10ddf27075a0773688bb70f1ee53f63b5d63c1d19c64268003dc659e8bd0d11f",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2011-2014/2014/lei/l13023.htm"
+    },
+    {
+      "file_name": "lei_13026_2014.txt",
+      "urn": "urn:lex:br:federal:lei:2014-09-03;13026",
+      "chars": 21781,
+      "sha256": "021c6a2fdb63be9c06cda875181b079df9ca7ca7909dc2fa3c33752ddd479817",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2011-2014/2014/lei/l13026.htm"
+    },
+    {
+      "file_name": "lei_13043_2014.txt",
+      "urn": "urn:lex:br:federal:lei:2014-11-13;13043",
+      "chars": 146994,
+      "sha256": "c729a579f109c0f1418e911de18008287c0a8a7fecd3c6c432c1c0c8a11c2c11",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2011-2014/2014/lei/l13043.htm"
+    },
+    {
+      "file_name": "lei_13079_2014.txt",
+      "urn": "urn:lex:br:federal:lei:2014-12-30;13079",
+      "chars": 10000,
+      "sha256": "bbe16df4fa57876cde260a73ed935c3a642fbe8771499fccaa87fcda2afea9d1",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2011-2014/2014/lei/l13079.htm"
+    },
+    {
+      "file_name": "lei_13081_2015.txt",
+      "urn": "urn:lex:br:federal:lei:2015-01-02;13081",
+      "chars": 10421,
+      "sha256": "e87b38dd7d38a6da556714d7b8cccac0195662ba8fd318b5c7c07805045b0e50",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2015/lei/l13081.htm"
+    },
+    {
+      "file_name": "lei_13139_2015.txt",
+      "urn": "urn:lex:br:federal:lei:2015-06-26;13139",
+      "chars": 24005,
+      "sha256": "d73c73435034cc3ed618191c6c7d8e7262ea9bd829e25400a23ee2a3e4cbf106",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2015/lei/l13139.htm"
+    },
+    {
+      "file_name": "lei_13150_2015.txt",
+      "urn": "urn:lex:br:federal:lei:2015-07-27;13150",
+      "chars": 6511,
+      "sha256": "c8fc133f431ed01334116d47303ddb3a3285f81609fee6993d99b5d3f00f50ad",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2015/lei/l13150.htm"
+    },
+    {
+      "file_name": "lei_13154_2015.txt",
+      "urn": "urn:lex:br:federal:lei:2015-07-30;13154",
+      "chars": 7636,
+      "sha256": "406c07b2a5c59ec524b7856894dfcbe2a2813131bfbf541663e512b71dacd0c6",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2015/lei/l13154.htm"
+    },
+    {
+      "file_name": "lei_13161_2015.txt",
+      "urn": "urn:lex:br:federal:lei:2015-08-31;13161",
+      "chars": 15087,
+      "sha256": "a907702450a2ccb06504c928bad876a0aac10ff3f240d6d3a96864f612b698ce",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2015/lei/l13161.htm"
+    },
+    {
+      "file_name": "lei_13168_2015.txt",
+      "urn": "urn:lex:br:federal:lei:2015-10-06;13168",
+      "chars": 3048,
+      "sha256": "b5b2b625b11a4e6b27841452798b24a6f86a6f5825cc24332851121c5628219a",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2015/lei/l13168.htm"
+    },
+    {
+      "file_name": "lei_13214_2015.txt",
+      "urn": "urn:lex:br:federal:lei:2015-12-22;13214",
+      "chars": 6621,
+      "sha256": "0238594adc57d5fb1dbb14edf6eed9a32bb26b4c9237d87633af5b7fa1bd8093",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2015/lei/l13214.htm"
+    },
+    {
+      "file_name": "lei_13268_2016.txt",
+      "urn": "urn:lex:br:federal:lei:2016-04-12;13268",
+      "chars": 5478,
+      "sha256": "efba8a0b1995459e070593e1ef0a52f2b7f6d2806760e0cfd18b32068d955dff",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2016/lei/l13268.htm"
+    },
+    {
+      "file_name": "lei_13281_2016.txt",
+      "urn": "urn:lex:br:federal:lei:2016-05-04;13281",
+      "chars": 27793,
+      "sha256": "99cd416ba8d154e478918b685bf6be24279aa6ae3c03b476b6b7b65bc6bd324a",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2016/lei/l13281.htm"
+    },
+    {
+      "file_name": "lei_13325_2016.txt",
+      "urn": "urn:lex:br:federal:lei:2016-07-29;13325",
+      "chars": 19475,
+      "sha256": "b8ada6b59a5687d41e7a6527dbcdff4a463e097c4e3113a0d594b98d15acd977",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2016/lei/l13325.htm"
+    },
+    {
+      "file_name": "lei_13356_2016.txt",
+      "urn": "urn:lex:br:federal:lei:2016-11-07;13356",
+      "chars": 8791,
+      "sha256": "367b659a56398657c79e0bd4ee640d63ee5668cbe09589adfbcb2045d464f11d",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2016/lei/l13356.htm"
+    },
+    {
+      "file_name": "lei_13383_2016.txt",
+      "urn": "urn:lex:br:federal:lei:2016-12-20;13383",
+      "chars": 4895,
+      "sha256": "56e0bd1a3f4db4f6f8e3270cb9fd3997b69f9b2c1c741b9250f81befc7ef18d7",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2016/lei/l13383.htm"
+    },
+    {
+      "file_name": "lei_13393_2016.txt",
+      "urn": "urn:lex:br:federal:lei:2016-12-20;13393",
+      "chars": 7220,
+      "sha256": "f9d5158198f1e44298fb9f50da4a5d3b2d9095eb8f3b343edee3d05075cc8932",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2016/lei/l13393.htm"
+    },
+    {
+      "file_name": "lei_13405_2016.txt",
+      "urn": "urn:lex:br:federal:lei:2016-12-26;13405",
+      "chars": 13924,
+      "sha256": "9a4eeb6d494f5f0a0a397ffe08f1a2d8a02e2d7db1c54359fdedc759fedac2b8",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2016/lei/l13405.htm"
+    },
+    {
+      "file_name": "lei_13414_2017.txt",
+      "urn": "urn:lex:br:federal:lei:2017-01-10;13414",
+      "chars": 23243,
+      "sha256": "96073676b80eb880a852c2d24a4f0f69be7c704dc4bd0549d70ae678489c60fb",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2017/lei/l13414.htm"
+    },
+    {
+      "file_name": "lei_13428_2017.txt",
+      "urn": "urn:lex:br:federal:lei:2017-03-30;13428",
+      "chars": 5832,
+      "sha256": "e7c3e0f7caffc8be4b551299cfe01ed4393d7dc29c1a2217b438d40ab31ed6f1",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2017/lei/l13428.htm"
+    },
+    {
+      "file_name": "lei_13445_2017.txt",
+      "urn": "urn:lex:br:federal:lei:2017-05-24;13445",
+      "chars": 89687,
+      "sha256": "351a56613cca83d2682e01710f1ca7f0eefe925f904cde8bcfd9dc81446deb4e",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2017/lei/l13445.htm"
+    },
+    {
+      "file_name": "lei_13488_2017.txt",
+      "urn": "urn:lex:br:federal:lei:2017-10-06;13488",
+      "chars": 26269,
+      "sha256": "82d39e01aa0789d1c0db1decb4530688ecf90329c8299c4bd1c6967b86bda0b6",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2017/lei/l13488.htm"
+    },
+    {
+      "file_name": "lei_13527_2017.txt",
+      "urn": "urn:lex:br:federal:lei:2017-11-29;13527",
+      "chars": 26218,
+      "sha256": "ac1affb3abd1966fc29caeae1c48b8e715548df0a28bc65b7ed0881ab4375f5d",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2017/lei/l13527.htm"
+    },
+    {
+      "file_name": "lei_13530_2017.txt",
+      "urn": "urn:lex:br:federal:lei:2017-12-07;13530",
+      "chars": 64485,
+      "sha256": "75adfcec1ebc2c34f1b56bcb90623f8898f52033f3ff6ec35a6138289186dd5b",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2017/lei/l13530.htm"
+    },
+    {
+      "file_name": "lei_13572_2017.txt",
+      "urn": "urn:lex:br:federal:lei:2017-12-21;13572",
+      "chars": 4529,
+      "sha256": "16de2c30584ca6619c76a9c14f1bf9ea4f0af90fc001b72bcceb879a3dd606b9",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2017/lei/l13572.htm"
+    },
+    {
+      "file_name": "lei_13595_2018.txt",
+      "urn": "urn:lex:br:federal:lei:2018-01-05;13595",
+      "chars": 34455,
+      "sha256": "ebfabc5b9da160bd56c41ec7d0b888610697c7048295be2e52cd01fe50a9123f",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/l13595.htm"
+    },
+    {
+      "file_name": "lei_13631_2018.txt",
+      "urn": "urn:lex:br:federal:lei:2018-03-01;13631",
+      "chars": 3730,
+      "sha256": "e0bb017d97f24df3c6daa00919f9cef9c2a6e73602105b203b43db9b2dc59453",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/l13631.htm"
+    },
+    {
+      "file_name": "lei_13705_2018.txt",
+      "urn": "urn:lex:br:federal:lei:2018-08-13;13705",
+      "chars": 12804,
+      "sha256": "3be78b58c03e76472b7af5632f904a47e125d6e0e2be60488d50db48aec3f932",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/l13705.htm"
+    },
+    {
+      "file_name": "lei_13724_2018.txt",
+      "urn": "urn:lex:br:federal:lei:2018-10-04;13724",
+      "chars": 7093,
+      "sha256": "e7decda7f8f1900b6d46d97d78d48a61488bbb66974fed3195abfd2d3feac8c7",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/l13724.htm"
+    },
+    {
+      "file_name": "lei_13764_2018.txt",
+      "urn": "urn:lex:br:federal:lei:2018-12-17;13764",
+      "chars": 35508,
+      "sha256": "17b05a50ad846271799f06a16dca1072f580dd8e7810b1173437d68eb3226a09",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/l13764.htm"
+    },
+    {
+      "file_name": "lei_13779_2018.txt",
+      "urn": "urn:lex:br:federal:lei:2018-12-26;13779",
+      "chars": 4899,
+      "sha256": "82686db07a1b4318c3790aa9e6ed1dfe3f92f2b57aa76099d67d8e7534e4d9a7",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/l13779.htm"
+    },
+    {
+      "file_name": "lei_13780_2018.txt",
+      "urn": "urn:lex:br:federal:lei:2018-12-26;13780",
+      "chars": 50207,
+      "sha256": "753b063acf1b13b92f7d6443e2615f31dd97be2918ec1467be3ef5fa6821687d",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/l13780.htm"
+    },
+    {
+      "file_name": "lei_13791_2019.txt",
+      "urn": "urn:lex:br:federal:lei:2019-01-03;13791",
+      "chars": 4096,
+      "sha256": "e45bbae0d2132850781bfa6bbd0d96a60d7cfe0e48f51f711b54db3e46b21697",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2019/lei/l13791.htm"
+    },
+    {
+      "file_name": "lei_13819_2019.txt",
+      "urn": "urn:lex:br:federal:lei:2019-04-26;13819",
+      "chars": 6878,
+      "sha256": "852da5f942bcd5189c610bfbd30087ce1461b255a6c40ecaa3763f323cd6b1b1",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2019/lei/l13819.htm"
+    },
+    {
+      "file_name": "lei_13843_2019.txt",
+      "urn": "urn:lex:br:federal:lei:2019-06-17;13843",
+      "chars": 17601,
+      "sha256": "20804bca3abaae1d9d2d0e5464b78fea3b9cb3c75121e39920d28d1ae766dd9b",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2019/lei/l13843.htm"
+    },
+    {
+      "file_name": "lei_13846_2019.txt",
+      "urn": "urn:lex:br:federal:lei:2019-06-18;13846",
+      "chars": 83478,
+      "sha256": "4ee780d8949bdb16526058a702a0615940a6b7908e04f5d828a9518d6e472a14",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2019/lei/l13846.htm"
+    },
+    {
+      "file_name": "lei_13883_2019.txt",
+      "urn": "urn:lex:br:federal:lei:2019-10-11;13883",
+      "chars": 25515,
+      "sha256": "0a28269a993fd617c6fbb2e2727b007a234609842cf3471169c5b193fce37568",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2019/lei/l13883.htm"
+    },
+    {
+      "file_name": "lei_13917_2019.txt",
+      "urn": "urn:lex:br:federal:lei:2019-11-28;13917",
+      "chars": 48438,
+      "sha256": "5ec5666461bf6ac8ba17dd08b58e2bd0625451a0447b8b95f712a87ec92282a7",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2019/lei/l13917.htm"
+    },
+    {
+      "file_name": "lei_13948_2019.txt",
+      "urn": "urn:lex:br:federal:lei:2019-12-13;13948",
+      "chars": 3084,
+      "sha256": "4d6a87e8c2f2cd731f2e5b6f37327e5cf5d047e9f118b161aa9fcbbe3ffd78e8",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2019/lei/l13948.htm"
+    },
+    {
+      "file_name": "lei_13995_2020.txt",
+      "urn": "urn:lex:br:federal:lei:2020-05-05;13995",
+      "chars": 3848,
+      "sha256": "fbea4781f5c7988b2ce92ef3a88da29bec782ac90c83ec505e09621eef1cce23",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2020/lei/l13995.htm"
+    },
+    {
+      "file_name": "lei_14019_2020.txt",
+      "urn": "urn:lex:br:federal:lei:2020-07-02;14019",
+      "chars": 12978,
+      "sha256": "9baf39da8ff0f3683237c0bb25ac9d58aaaf4f8d23cbbc5a39b1472641753607",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2020/lei/l14019.htm"
+    },
+    {
+      "file_name": "lei_14023_2020.txt",
+      "urn": "urn:lex:br:federal:lei:2020-07-08;14023",
+      "chars": 4350,
+      "sha256": "9b6060c4b82897a61b2c1fbe221affaf3d0c4dc62f2a422c79b759414d69e8c3",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2020/lei/l14023.htm"
+    },
+    {
+      "file_name": "lei_14026_2020.txt",
+      "urn": "urn:lex:br:federal:lei:2020-07-15;14026",
+      "chars": 95838,
+      "sha256": "37603f8a43cff6263fd680d4cf6ebaeff133bb3e142e69780bc9cb70adeac47b",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2020/lei/l14026.htm"
+    },
+    {
+      "file_name": "lei_14035_2020.txt",
+      "urn": "urn:lex:br:federal:lei:2020-08-11;14035",
+      "chars": 11598,
+      "sha256": "472017e77a35130e81f647de0d35c995ed725079d0a1a4037972ffdc93c3ad14",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2020/lei/l14035.htm"
+    },
+    {
+      "file_name": "lei_14045_2020.txt",
+      "urn": "urn:lex:br:federal:lei:2020-08-20;14045",
+      "chars": 5008,
+      "sha256": "8f39d9ecda9b0815098c8a3668762f8dfa75d787165d979eecb35a13a8d60bae",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2020/lei/l14045.htm"
+    },
+    {
+      "file_name": "lei_14071_2020.txt",
+      "urn": "urn:lex:br:federal:lei:2020-10-13;14071",
+      "chars": 47194,
+      "sha256": "55d9e68dc70d337c82d0f0ca2257fd59778f48055e139a8517cdb99fda6629b9",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2020/lei/l14071.htm"
+    },
+    {
+      "file_name": "lei_14150_2021.txt",
+      "urn": "urn:lex:br:federal:lei:2021-05-12;14150",
+      "chars": 13397,
+      "sha256": "1ff319ce3109effc77e9f180c2daa560d7aa776c331d467cefad3dc7e01dab54",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2021/lei/l14150.htm"
+    },
+    {
+      "file_name": "lei_14187_2021.txt",
+      "urn": "urn:lex:br:federal:lei:2021-07-15;14187",
+      "chars": 4115,
+      "sha256": "2ca586f8174199ba37506fc0c49de984c631e7fad634d2f1675dee0bd70faa85",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2021/lei/l14187.htm"
+    },
+    {
+      "file_name": "lei_14192_2021.txt",
+      "urn": "urn:lex:br:federal:lei:2021-08-04;14192",
+      "chars": 5972,
+      "sha256": "1e9553d500ea1d6c9259680b4512cfb15e11e061964c46bc021639ee69b63df1",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2021/lei/l14192.htm"
+    },
+    {
+      "file_name": "lei_14193_2021.txt",
+      "urn": "urn:lex:br:federal:lei:2021-08-06;14193",
+      "chars": 42229,
+      "sha256": "2c62df8f8de97392a3c5483526d017087470ea9ec810b0bec88cadeafd6c0b4e",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2021/lei/l14193.htm"
+    },
+    {
+      "file_name": "lei_14217_2021.txt",
+      "urn": "urn:lex:br:federal:lei:2021-10-13;14217",
+      "chars": 15359,
+      "sha256": "8ac1a0631cb1d897813ca10d64cdfbb8a57c53eb0c7631fbf73bcc6bb99c90a9",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2021/lei/l14217.htm"
+    },
+    {
+      "file_name": "lei_14225_2021.txt",
+      "urn": "urn:lex:br:federal:lei:2021-10-19;14225",
+      "chars": 3623,
+      "sha256": "27a2ae656c19eb95df96eef6394b91c94cec4ca0168ae00f3aec8e113f77917a",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2021/lei/l14225.htm"
+    },
+    {
+      "file_name": "lei_14264_2021.txt",
+      "urn": "urn:lex:br:federal:lei:2021-12-23;14264",
+      "chars": 18540,
+      "sha256": "73f578d4ab398ce6eea6f7c4f364b00a7bbc032a1063aec1d2e125e1be521ddd",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2021/lei/l14264.htm"
+    },
+    {
+      "file_name": "lei_14303_2022.txt",
+      "urn": "urn:lex:br:federal:lei:2022-01-21;14303",
+      "chars": 51706,
+      "sha256": "84b57a658e41eb05052d9a69ea05349a042b50f737ad5a0217396cc7ebb12680",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2022/lei/l14303.htm"
+    },
+    {
+      "file_name": "lei_14348_2022.txt",
+      "urn": "urn:lex:br:federal:lei:2022-05-25;14348",
+      "chars": 7881,
+      "sha256": "68e528e10868a2189b0c70654f3e7f9cea8f45741ab8775d0baf3ea525ec2f48",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2022/lei/l14348.htm"
+    },
+    {
+      "file_name": "lei_14350_2022.txt",
+      "urn": "urn:lex:br:federal:lei:2022-05-25;14350",
+      "chars": 19793,
+      "sha256": "b1ab01bc8e5b2abf03cc049cdb065f7af898de9451d97b5b50df6595d7228135",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2022/lei/l14350.htm"
+    },
+    {
+      "file_name": "lei_14375_2022.txt",
+      "urn": "urn:lex:br:federal:lei:2022-06-21;14375",
+      "chars": 37576,
+      "sha256": "0f05448ad327e9dd7692f697db7fd1b22cc20b919f3b86fb236ed09c071ced06",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2022/lei/l14375.htm"
+    },
+    {
+      "file_name": "lei_14439_2022.txt",
+      "urn": "urn:lex:br:federal:lei:2022-08-24;14439",
+      "chars": 5364,
+      "sha256": "a897184aafb0f453de9b10e676cb680d3fecdb8b2cee07ecb654827fb75f7bdf",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2022/lei/l14439.htm"
+    },
+    {
+      "file_name": "lei_14448_2022.txt",
+      "urn": "urn:lex:br:federal:lei:2022-09-09;14448",
+      "chars": 3360,
+      "sha256": "7d1f9498c85188df97169f965798a2078def95e1f4966f027595941131b524d2",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2022/lei/l14448.htm"
+    },
+    {
+      "file_name": "lei_14509_2022.txt",
+      "urn": "urn:lex:br:federal:lei:2022-12-27;14509",
+      "chars": 5525,
+      "sha256": "d8e9b1f1dc72c99bef88cfe7c3236f447087133898d7d0350bab08507d81e170",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2022/lei/l14509.htm"
+    },
+    {
+      "file_name": "lei_14563_2023.txt",
+      "urn": "urn:lex:br:federal:lei:2023-04-28;14563",
+      "chars": 5156,
+      "sha256": "79d3ddb3ec5198037f58e70a8b41de4cec5c3205ebba0a18afa65542dbf45d1b",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2023/lei/l14563.htm"
+    },
+    {
+      "file_name": "lei_14626_2023.txt",
+      "urn": "urn:lex:br:federal:lei:2023-07-19;14626",
+      "chars": 3323,
+      "sha256": "6b8e5a331342a34895ecaac3ef7a094c245dd24aa863ab9fb8ac287b4a3d1cec",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2023/lei/l14626.htm"
+    },
+    {
+      "file_name": "lei_14628_2023.txt",
+      "urn": "urn:lex:br:federal:lei:2023-07-20;14628",
+      "chars": 23045,
+      "sha256": "5ac93c293e3f4ca35dabdffa72c7e50a05478f9068fdbafc716f81c3e762d64f",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2023/lei/l14628.htm"
+    },
+    {
+      "file_name": "lei_14673_2023.txt",
+      "urn": "urn:lex:br:federal:lei:2023-09-14;14673",
+      "chars": 23317,
+      "sha256": "023a3d3ed83aef7b497405e73f77ffcd4e93b01eac41ae1454f1dff06bf30183",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2023/lei/l14673.htm"
+    },
+    {
+      "file_name": "lei_14675_2023.txt",
+      "urn": "urn:lex:br:federal:lei:2023-09-14;14675",
+      "chars": 4974,
+      "sha256": "e3242370f1426f40b7251c781ecc0747db60821b933b7661f7699c4ef173a536",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2023/lei/l14675.htm"
+    },
+    {
+      "file_name": "lei_14777_2023.txt",
+      "urn": "urn:lex:br:federal:lei:2023-12-27;14777",
+      "chars": 9692,
+      "sha256": "c2ed2ca72cc15a3ffaab86f857cd5d5aedf07499b4594cf17c53f19944c4051c",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2023/lei/l14777.htm"
+    },
+    {
+      "file_name": "lei_14790_2023.txt",
+      "urn": "urn:lex:br:federal:lei:2023-12-29;14790",
+      "chars": 48143,
+      "sha256": "636cd613b3017f1a63b086bd19af07ea56eb2bf92bbf7baa6150a8948e0d3ff7",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2023/lei/l14790.htm"
+    },
+    {
+      "file_name": "lei_14832_2024.txt",
+      "urn": "urn:lex:br:federal:lei:2024-03-27;14832",
+      "chars": 3832,
+      "sha256": "dae24dc455d4c5ef06f8f7fcdf407bc2f8438da15aca031ad6f39fba6d8364ec",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2024/lei/l14832.htm"
+    },
+    {
+      "file_name": "lei_14837_2024.txt",
+      "urn": "urn:lex:br:federal:lei:2024-04-08;14837",
+      "chars": 4616,
+      "sha256": "1dcd774eb262fb34b72fb3eaa6279dfddb30e15c03de9fa4040ab3350fa9a153",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2024/lei/l14837.htm"
+    },
+    {
+      "file_name": "lei_14878_2024.txt",
+      "urn": "urn:lex:br:federal:lei:2024-06-04;14878",
+      "chars": 6827,
+      "sha256": "d3f68f514fc5715ea29ab79030cc0ab46d39c80fc1965e538d59b3a243f1c5d5",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2024/lei/l14878.htm"
+    },
+    {
+      "file_name": "lei_14904_2024.txt",
+      "urn": "urn:lex:br:federal:lei:2024-06-27;14904",
+      "chars": 10277,
+      "sha256": "60d1426ab392ac9ff6e12b1a1026858c6a8d4854660b15d7f494080fbcdc84f8",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2024/lei/l14904.htm"
+    },
+    {
+      "file_name": "lei_14944_2024.txt",
+      "urn": "urn:lex:br:federal:lei:2024-07-31;14944",
+      "chars": 45842,
+      "sha256": "a6225c8d4a7391aa5acabb73c82bc08039b29eb045a2626d2ec26946f5b8f124",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2024/lei/l14944.htm"
+    },
+    {
+      "file_name": "lei_14990_2024.txt",
+      "urn": "urn:lex:br:federal:lei:2024-09-27;14990",
+      "chars": 9760,
+      "sha256": "01933ad3ab5ebf9e65d81d3ae66ebd4df5090039ac15df46e0a01eab76615aa4",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2024/lei/l14990.htm"
+    },
+    {
+      "file_name": "lei_14995_2024.txt",
+      "urn": "urn:lex:br:federal:lei:2024-10-10;14995",
+      "chars": 57036,
+      "sha256": "6ca4342b7de3dda9d9196ae3b1fef964d7ac1a1ebc1e9fe3737a2fb2b9aa183e",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2024/lei/l14995.htm"
+    },
+    {
+      "file_name": "lei_7662_1988.txt",
+      "urn": "urn:lex:br:federal:lei:1988-05-17;7662",
+      "chars": 3514,
+      "sha256": "755dce13d421b8feb0889d7451642f66993a90d935367e0ebb0d733c24994388",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l7662.htm"
+    },
+    {
+      "file_name": "lei_7671_1988.txt",
+      "urn": "urn:lex:br:federal:lei:1988-09-21;7671",
+      "chars": 10098,
+      "sha256": "3e5f539c2895e212eaabd2df694d898923f34c6610ac7d55b1417a764265f978",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l7671.htm"
+    },
+    {
+      "file_name": "lei_7677_1988.txt",
+      "urn": "urn:lex:br:federal:lei:1988-10-21;7677",
+      "chars": 3298,
+      "sha256": "661c9c376dcabf9e664b880eb4eb43be5ff5a699d232bc7f31ed72c3d5ee19b3",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l7677.htm"
+    },
+    {
+      "file_name": "lei_7689_1988.txt",
+      "urn": "urn:lex:br:federal:lei:1988-12-15;7689",
+      "chars": 9076,
+      "sha256": "b4b3b6b20d5906d81599ff3c4ce45c6d35298bcbf9b3df726a86d488645399ad",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l7689.htm"
+    },
+    {
+      "file_name": "lei_7691_1988.txt",
+      "urn": "urn:lex:br:federal:lei:1988-12-15;7691",
+      "chars": 7723,
+      "sha256": "43c6d03aee3b0ba2d18f23a5ccdd2487ac8acb77c35e24b11d7a001a6f574fe4",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l7691.htm"
+    },
+    {
+      "file_name": "lei_7711_1988.txt",
+      "urn": "urn:lex:br:federal:lei:1988-12-22;7711",
+      "chars": 4440,
+      "sha256": "283a339070a1d9df8efadcd4b62d65450efbf63ee5503cf97d15c1c67addc6ed",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l7711.htm"
+    },
+    {
+      "file_name": "lei_7713_1988.txt",
+      "urn": "urn:lex:br:federal:lei:1988-12-22;7713",
+      "chars": 44562,
+      "sha256": "dd09e9af9d75982f4884f547eb3a5a8df01941260d372e07a70d43ac8b996f1f",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l7713.htm"
+    },
+    {
+      "file_name": "lei_7752_1989.txt",
+      "urn": "urn:lex:br:federal:lei:1989-04-14;7752",
+      "chars": 9532,
+      "sha256": "f217a3eaf9fe530000b475785ca55d941b6d13705e0abeb5a206e627af30df9c",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l7752.htm"
+    },
+    {
+      "file_name": "lei_7787_1989.txt",
+      "urn": "urn:lex:br:federal:lei:1989-06-30;7787",
+      "chars": 10410,
+      "sha256": "18b2377271862ef6d4115e536445b66b977a416746bd128abc8f4db4d6eddca6",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l7787.htm"
+    },
+    {
+      "file_name": "lei_7801_1989.txt",
+      "urn": "urn:lex:br:federal:lei:1989-07-11;7801",
+      "chars": 3451,
+      "sha256": "d9b5a5f7cdcbbe435adf13420c760324d445117cedeeb6c09c7a96f6bd05f6c1",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l7801.htm"
+    },
+    {
+      "file_name": "lei_7804_1989.txt",
+      "urn": "urn:lex:br:federal:lei:1989-07-18;7804",
+      "chars": 10374,
+      "sha256": "357c947e4e6b42a54fb19aae449d1ec677a748239423a70571daa2b13587b5c2",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l7804.htm"
+    },
+    {
+      "file_name": "lei_7872_1989.txt",
+      "urn": "urn:lex:br:federal:lei:1989-11-08;7872",
+      "chars": 9900,
+      "sha256": "c5229f289b0fce8d3b153ffc9e6855ca5f038f5408309d9cdc7923c7dcea8e2c",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l7872.htm"
+    },
+    {
+      "file_name": "lei_7886_1989.txt",
+      "urn": "urn:lex:br:federal:lei:1989-11-20;7886",
+      "chars": 9601,
+      "sha256": "de875105566bffcd3c946eb370ba0bd23bf63beeaa3fe298b774d28ad2966806",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l7886.htm"
+    },
+    {
+      "file_name": "lei_7961_1989.txt",
+      "urn": "urn:lex:br:federal:lei:1989-12-21;7961",
+      "chars": 4179,
+      "sha256": "e1fde64cadfe3ef1a75c5793682847b7351cc4472d51058d0dba1c5b8d7ab105",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l7961.htm"
+    },
+    {
+      "file_name": "lei_7998_1990.txt",
+      "urn": "urn:lex:br:federal:lei:1990-01-11;7998",
+      "chars": 28811,
+      "sha256": "e5e75d11b598758023cd5e1efa39f8ec9d53a34f913f488543206708ee18d0a3",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l7998.htm"
+    },
+    {
+      "file_name": "lei_8019_1990.txt",
+      "urn": "urn:lex:br:federal:lei:1990-04-11;8019",
+      "chars": 9506,
+      "sha256": "6c8795ac1699959ce1a7f5a801fb313ad099289c9160fa20bc9a02d44a79de7c",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l8019.htm"
+    },
+    {
+      "file_name": "lei_8027_1990.txt",
+      "urn": "urn:lex:br:federal:lei:1990-04-12;8027",
+      "chars": 9185,
+      "sha256": "01897452e91309ac575822f7a665438f5507f55151a6d949f7cd75a1444e9ace",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l8027.htm"
+    },
+    {
+      "file_name": "lei_8032_1990.txt",
+      "urn": "urn:lex:br:federal:lei:1990-04-12;8032",
+      "chars": 7147,
+      "sha256": "f9f72595adbee22f7e0bdac252017e9eaae3e9c780cc65541e19c47231dc69cc",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l8032.htm"
+    },
+    {
+      "file_name": "lei_8074_1990.txt",
+      "urn": "urn:lex:br:federal:lei:1990-07-31;8074",
+      "chars": 56488,
+      "sha256": "20c7902492a1cd7350fed046ef4f07164ccdac5a874319fb5e2c2a3d16e91687",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l8074.htm"
+    },
+    {
+      "file_name": "lei_8131_1990.txt",
+      "urn": "urn:lex:br:federal:lei:1990-12-24;8131",
+      "chars": 4191,
+      "sha256": "e27eb44447f44bb359e3e26373c94a7110c2da60457abd6d43f74fcdfae847c4",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l8131.htm"
+    },
+    {
+      "file_name": "lei_8132_1990.txt",
+      "urn": "urn:lex:br:federal:lei:1990-12-26;8132",
+      "chars": 6172,
+      "sha256": "1df585ce69e8009f904586e7f5a37a9cc37c08f5961fc0c01bac60f34bd981be",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l8132.htm"
+    },
+    {
+      "file_name": "lei_8162_1991.txt",
+      "urn": "urn:lex:br:federal:lei:1991-01-08;8162",
+      "chars": 7637,
+      "sha256": "ac2ae73314d5ccf6b553bfe0955755ac2f46900be4eb02dd3ad4be8abe3c5def",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l8162.htm"
+    },
+    {
+      "file_name": "lei_8171_1991.txt",
+      "urn": "urn:lex:br:federal:lei:1991-01-17;8171",
+      "chars": 57232,
+      "sha256": "67edc0f0175e9b81b961be42973621281ee5715507e30161d6af39073aeb3747",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l8171.htm"
+    },
+    {
+      "file_name": "lei_8173_1991.txt",
+      "urn": "urn:lex:br:federal:lei:1991-01-30;8173",
+      "chars": 5996,
+      "sha256": "661558c05853ce92a068efea30d1ba2bf599cb9b5f8e8c92854883d55358d6cc",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l8173.htm"
+    },
+    {
+      "file_name": "lei_8177_1991.txt",
+      "urn": "urn:lex:br:federal:lei:1991-03-01;8177",
+      "chars": 32350,
+      "sha256": "bce7693ac0e02831a50dc0d4223ef5ed8b294d2cab20ccb1b94be983c06c4002",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l8177.htm"
+    },
+    {
+      "file_name": "lei_8221_1991.txt",
+      "urn": "urn:lex:br:federal:lei:1991-09-05;8221",
+      "chars": 12014,
+      "sha256": "6cb6f5d981fd3800c9da4afb59fec7817342cc76680050d54fbc2c4186b2c9f6",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l8221.htm"
+    },
+    {
+      "file_name": "lei_8344_1991.txt",
+      "urn": "urn:lex:br:federal:lei:1991-12-27;8344",
+      "chars": 3483,
+      "sha256": "a64bd1bb778ccf3cb8be405ff858c12f3d34c98f96a359d21086629535cbdc5b",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l8344.htm"
+    },
+    {
+      "file_name": "lei_8352_1991.txt",
+      "urn": "urn:lex:br:federal:lei:1991-12-28;8352",
+      "chars": 8647,
+      "sha256": "808c8a7b83f50b61e05446ebc76b418f7c2760e845b1c9e8ad456335731f3e77",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l8352.htm"
+    },
+    {
+      "file_name": "lei_8420_1992.txt",
+      "urn": "urn:lex:br:federal:lei:1992-05-08;8420",
+      "chars": 7937,
+      "sha256": "2512f754bd4aead1f41b903b65b12d0144c67da3e364488477a61d83a0cc3f32",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l8420.htm"
+    },
+    {
+      "file_name": "lei_8428_1992.txt",
+      "urn": "urn:lex:br:federal:lei:1992-05-29;8428",
+      "chars": 5369,
+      "sha256": "1093b1d2739bf4361f09ca3680d41c37d04762cc7204cc61d0c7c6140798187e",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l8428.htm"
+    },
+    {
+      "file_name": "lei_8433_1992.txt",
+      "urn": "urn:lex:br:federal:lei:1992-06-16;8433",
+      "chars": 6044,
+      "sha256": "c13edc0fe6477d44a07e3dada1f9eed544f4c8df1fd3565eda8f1a53c3df463d",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l8433.htm"
+    },
+    {
+      "file_name": "lei_8447_1992.txt",
+      "urn": "urn:lex:br:federal:lei:1992-07-21;8447",
+      "chars": 50132,
+      "sha256": "85c53d4b5c39eb639df038a214be96343000d2573e95b477338e9b3dfc315ea0",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l8447.htm"
+    },
+    {
+      "file_name": "lei_8448_1992.txt",
+      "urn": "urn:lex:br:federal:lei:1992-07-21;8448",
+      "chars": 3016,
+      "sha256": "e29135ee92f0bcd740a2112600feeefc662323856eb446da85f0ffdfa3608b62",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l8448.htm"
+    },
+    {
+      "file_name": "lei_8522_1992.txt",
+      "urn": "urn:lex:br:federal:lei:1992-12-11;8522",
+      "chars": 3993,
+      "sha256": "ff0193e3381230e841b46af7d7b6b12fcde0d53cca6e4a3072a7af20d0f92b28",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l8522.htm"
+    },
+    {
+      "file_name": "lei_8541_1992.txt",
+      "urn": "urn:lex:br:federal:lei:1992-12-23;8541",
+      "chars": 42398,
+      "sha256": "43c3d0503c757f1c37c32bde6d254e8483d5090f73e52c9f7eab366e2aa9a9fb",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l8541.htm"
+    },
+    {
+      "file_name": "lei_8624_1993.txt",
+      "urn": "urn:lex:br:federal:lei:1993-02-04;8624",
+      "chars": 4709,
+      "sha256": "819549a3bcfe137cd81283bb55ee6da3314d41a531d48c3f56ceb952ea38a4a6",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l8624.htm"
+    },
+    {
+      "file_name": "lei_8629_1993.txt",
+      "urn": "urn:lex:br:federal:lei:1993-02-25;8629",
+      "chars": 44807,
+      "sha256": "40da03ff7a2950357ea31ea8806d7730b4451ae4c1b95b4ec100a996fc06ad0b",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l8629.htm"
+    },
+    {
+      "file_name": "lei_8662_1993.txt",
+      "urn": "urn:lex:br:federal:lei:1993-06-07;8662",
+      "chars": 12891,
+      "sha256": "3b3b878eca80a4de4aa028116da22a5b7582b7bf2a764aec8ae4c80b436ed276",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l8662.htm"
+    },
+    {
+      "file_name": "lei_8668_1993.txt",
+      "urn": "urn:lex:br:federal:lei:1993-06-25;8668",
+      "chars": 19183,
+      "sha256": "1f1d4ef851be7f0157fc8688ccf2c1722caf7db02050d7163e7761aaa84e8a2a",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l8668.htm"
+    },
+    {
+      "file_name": "lei_8689_1993.txt",
+      "urn": "urn:lex:br:federal:lei:1993-07-27;8689",
+      "chars": 11568,
+      "sha256": "28351f3a1f102e4902ca8e0fd2f646a5d3fd1f37085183405c526d00dda74ebc",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l8689.htm"
+    },
+    {
+      "file_name": "lei_8691_1993.txt",
+      "urn": "urn:lex:br:federal:lei:1993-07-28;8691",
+      "chars": 30344,
+      "sha256": "606ad8f1959b89adefe0fc0248f158462e2ba7ad5c2f33865c25d3c8c17a0339",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l8691.htm"
+    },
+    {
+      "file_name": "lei_8692_1993.txt",
+      "urn": "urn:lex:br:federal:lei:1993-07-28;8692",
+      "chars": 17333,
+      "sha256": "416afc9aaa8070eac137bfb797ebb34f933c1ce8d25b4be0145182bad8716521",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l8692.htm"
+    },
+    {
+      "file_name": "lei_8846_1994.txt",
+      "urn": "urn:lex:br:federal:lei:1994-01-21;8846",
+      "chars": 7853,
+      "sha256": "bbe58c4b6d8b75b2948a4c5e7d95224466ebb341b71624a086e3ceb1e3fad7dd",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l8846.htm"
+    },
+    {
+      "file_name": "lei_8866_1994.txt",
+      "urn": "urn:lex:br:federal:lei:1994-04-11;8866",
+      "chars": 4783,
+      "sha256": "0f1eb6aa3516b1f7cd0f27a62a5bb7e69105b3ee5465929dc634786e4d727c9a",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l8866.htm"
+    },
+    {
+      "file_name": "lei_8868_1994.txt",
+      "urn": "urn:lex:br:federal:lei:1994-04-14;8868",
+      "chars": 7129,
+      "sha256": "baae4b2932e2da71a74335e38368487a471bdf3d416c58fc9673bb88710b2802",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l8868.htm"
+    },
+    {
+      "file_name": "lei_8884_1994.txt",
+      "urn": "urn:lex:br:federal:lei:1994-06-11;8884",
+      "chars": 5365,
+      "sha256": "e6e61aa0d811e56be5dfbda1971522c0eb2a6f55129ba12024752a40bbc0fa57",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l8884.htm"
+    },
+    {
+      "file_name": "lei_8918_1994.txt",
+      "urn": "urn:lex:br:federal:lei:1994-07-14;8918",
+      "chars": 6485,
+      "sha256": "b058a17abe769807cd1cbdf6d87aa6843a79ce75d5174ad047839a9ddaec76cc",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l8918.htm"
+    },
+    {
+      "file_name": "lei_8928_1994.txt",
+      "urn": "urn:lex:br:federal:lei:1994-08-10;8928",
+      "chars": 10873,
+      "sha256": "f70e31dd3cc139e6437d42e863a7ac2678a8d0f6de251486e652a5eaba35702e",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l8928.htm"
+    },
+    {
+      "file_name": "lei_8952_1994.txt",
+      "urn": "urn:lex:br:federal:lei:1994-12-13;8952",
+      "chars": 12117,
+      "sha256": "956bf89a9c84ab14f9c2dffdded89aac67acf3dd9a99b4e5296361056c213003",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l8952.htm"
+    },
+    {
+      "file_name": "lei_9007_1995.txt",
+      "urn": "urn:lex:br:federal:lei:1995-03-17;9007",
+      "chars": 3107,
+      "sha256": "30dd3dc65386e0eff524bef7bf60d62711524d82d8d38328b2f4651e2e265e88",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l9007.htm"
+    },
+    {
+      "file_name": "lei_9019_1995.txt",
+      "urn": "urn:lex:br:federal:lei:1995-03-30;9019",
+      "chars": 12780,
+      "sha256": "e0a7521fb0d7e37070d1f446dfe7e605f51affe455e97b2b63ecd02850f265b3",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l9019.htm"
+    },
+    {
+      "file_name": "lei_9069_1995.txt",
+      "urn": "urn:lex:br:federal:lei:1995-06-29;9069",
+      "chars": 57657,
+      "sha256": "1567c542e32d28a7c0b29816bf7c066c567494aabdd067ac1ab26b8c3903c946",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l9069.htm"
+    },
+    {
+      "file_name": "lei_9099_1995.txt",
+      "urn": "urn:lex:br:federal:lei:1995-09-26;9099",
+      "chars": 39219,
+      "sha256": "97f0c2532c95d985aae2136765220cfcc5dbfe4b0b740e82a0fec6cdf3d24a5b",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l9099.htm"
+    },
+    {
+      "file_name": "lei_9100_1995.txt",
+      "urn": "urn:lex:br:federal:lei:1995-09-29;9100",
+      "chars": 66356,
+      "sha256": "d1da3820483c767f8de06dbba07612c6d38c216f51690870db4d14e030cf5b55",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l9100.htm"
+    },
+    {
+      "file_name": "lei_9126_1995.txt",
+      "urn": "urn:lex:br:federal:lei:1995-11-10;9126",
+      "chars": 10497,
+      "sha256": "5b994b3cf2b2b669e2f5fd93afc8005b2cc0b3590c61500d587e91778fc8de22",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l9126.htm"
+    },
+    {
+      "file_name": "lei_9143_1995.txt",
+      "urn": "urn:lex:br:federal:lei:1995-12-08;9143",
+      "chars": 3662,
+      "sha256": "e7ba2cde7211d52b0346112e0d5d15eb170cd8a7e54e109e862f9ff81230a5eb",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l9143.htm"
+    },
+    {
+      "file_name": "lei_9257_1996.txt",
+      "urn": "urn:lex:br:federal:lei:1996-01-09;9257",
+      "chars": 4718,
+      "sha256": "ae499d7c9ca16f46156f1d892b914d55f2b16f6ee57fb316c6caba28ab07fac4",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l9257.htm"
+    },
+    {
+      "file_name": "lei_9262_1996.txt",
+      "urn": "urn:lex:br:federal:lei:1996-01-12;9262",
+      "chars": 3150,
+      "sha256": "1002bbe33c1faecf774e4cf53d0dce2a16c56ee47c484be3e47e361346ea6cf5",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l9262.htm"
+    },
+    {
+      "file_name": "lei_9266_1996.txt",
+      "urn": "urn:lex:br:federal:lei:1996-03-15;9266",
+      "chars": 5877,
+      "sha256": "beffcb5de1e0c0c16ddfac4db794d7968e9d080e2a3dde1e3b616fa5d161531a",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l9266.htm"
+    },
+    {
+      "file_name": "lei_9307_1996.txt",
+      "urn": "urn:lex:br:federal:lei:1996-09-23;9307",
+      "chars": 26726,
+      "sha256": "550a919581ad85227513da2d4e9921e4f702cbad5a4dd5a73d788f1567f2ff1e",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l9307.htm"
+    },
+    {
+      "file_name": "lei_9314_1996.txt",
+      "urn": "urn:lex:br:federal:lei:1996-11-14;9314",
+      "chars": 20774,
+      "sha256": "dd3e7150a8db8b39ece7e6c871fc61df0d42c6e880eb0f05028d646050197b2e",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l9314.htm"
+    },
+    {
+      "file_name": "lei_9322_1996.txt",
+      "urn": "urn:lex:br:federal:lei:1996-12-05;9322",
+      "chars": 5572,
+      "sha256": "078fbe94746c7b3d3ebcb4280a26238ac885473e0a8cca762c54e97c178a9f40",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l9322.htm"
+    },
+    {
+      "file_name": "lei_9367_1996.txt",
+      "urn": "urn:lex:br:federal:lei:1996-12-16;9367",
+      "chars": 11832,
+      "sha256": "f827ff8891ce67f181ddf68b3472681a016560d8d8a55a678df6b7b25b264b16",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l9367.htm"
+    },
+    {
+      "file_name": "lei_9438_1997.txt",
+      "urn": "urn:lex:br:federal:lei:1997-02-26;9438",
+      "chars": 12100,
+      "sha256": "f3ba70d9ba07bfac41dfb87445c7c016d7970a1ac9a70e33be55f851d880511c",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l9438.htm"
+    },
+    {
+      "file_name": "lei_9468_1997.txt",
+      "urn": "urn:lex:br:federal:lei:1997-07-10;9468",
+      "chars": 10083,
+      "sha256": "87e9619445b97fa00571cbd234e863ac554e2c3da2ee6a558ae6c1f3af699f20",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l9468.htm"
+    },
+    {
+      "file_name": "lei_9473_1997.txt",
+      "urn": "urn:lex:br:federal:lei:1997-07-22;9473",
+      "chars": 81180,
+      "sha256": "322dd374b20578051ae003a0c8929cb76bba7826999cc4ad584e6568ad87ed76",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l9473.htm"
+    },
+    {
+      "file_name": "lei_9474_1997.txt",
+      "urn": "urn:lex:br:federal:lei:1997-07-22;9474",
+      "chars": 16903,
+      "sha256": "57a05df3874aaf4864c13970c72f3ec919ba0b9656d230d186bf77c74d859730",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l9474.htm"
+    },
+    {
+      "file_name": "lei_9493_1997.txt",
+      "urn": "urn:lex:br:federal:lei:1997-09-10;9493",
+      "chars": 8504,
+      "sha256": "8d8c2083ca6e9b4524ea06245dd53c82438fb46b645c763f228111e256528393",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l9493.htm"
+    },
+    {
+      "file_name": "lei_9514_1997.txt",
+      "urn": "urn:lex:br:federal:lei:1997-11-20;9514",
+      "chars": 42402,
+      "sha256": "00139eaf51ca09a5b6c54dd45c2bca11008a2110f3292ef43de5e997b73fe378",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l9514.htm"
+    },
+    {
+      "file_name": "lei_9532_1997.txt",
+      "urn": "urn:lex:br:federal:lei:1997-12-10;9532",
+      "chars": 65322,
+      "sha256": "7f9b3ace032ec978bf75e64c6fb3e32330de5336a94511473561b0c08be94df9",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l9532.htm"
+    },
+    {
+      "file_name": "lei_9612_1998.txt",
+      "urn": "urn:lex:br:federal:lei:1998-02-19;9612",
+      "chars": 15607,
+      "sha256": "2450515bd60dcecacb311f2259542ac6193f970849f7d18322828e002582d414",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l9612.htm"
+    },
+    {
+      "file_name": "lei_9618_1998.txt",
+      "urn": "urn:lex:br:federal:lei:1998-04-02;9618",
+      "chars": 4777,
+      "sha256": "562fc11777293bd3bc08af7fbb1b0de428413848c8a6c508d1da3d9c5fefb6e9",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l9618.htm"
+    },
+    {
+      "file_name": "lei_9619_1998.txt",
+      "urn": "urn:lex:br:federal:lei:1998-04-02;9619",
+      "chars": 6285,
+      "sha256": "7c086774973e82e270074698984e78bfa3f4768167608a8ccddd31c5859c6c56",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l9619.htm"
+    },
+    {
+      "file_name": "lei_9712_1998.txt",
+      "urn": "urn:lex:br:federal:lei:1998-11-20;9712",
+      "chars": 6336,
+      "sha256": "536fb79ec94f8fb1ef2839b0d3bf17236baf8591394dd00168d46c0fec96d977",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l9712.htm"
+    },
+    {
+      "file_name": "lei_9766_1998.txt",
+      "urn": "urn:lex:br:federal:lei:1998-12-18;9766",
+      "chars": 5115,
+      "sha256": "1b6006f3c8b4864c5f33410e899feca7429689071392d0b130cba1fb9e5e8cb2",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l9766.htm"
+    },
+    {
+      "file_name": "lei_9774_1998.txt",
+      "urn": "urn:lex:br:federal:lei:1998-12-21;9774",
+      "chars": 3929,
+      "sha256": "cec4ef94066640122addf209a3212ee6f59ad562c7c02257d3cd08758880a835",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l9774.htm"
+    },
+    {
+      "file_name": "lei_9775_1998.txt",
+      "urn": "urn:lex:br:federal:lei:1998-12-21;9775",
+      "chars": 3509,
+      "sha256": "b1f1eae61ec4967bf7567530546f7bf68ae204921ca350731043d38ea3ee41d3",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l9775.htm"
+    },
+    {
+      "file_name": "lei_9779_1999.txt",
+      "urn": "urn:lex:br:federal:lei:1999-01-19;9779",
+      "chars": 18098,
+      "sha256": "eff0028e5599bef77e64aba7505c9f99c2bee1e9679130eb7cab3a027f026607",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l9779.htm"
+    },
+    {
+      "file_name": "lei_9782_1999.txt",
+      "urn": "urn:lex:br:federal:lei:1999-01-26;9782",
+      "chars": 71300,
+      "sha256": "47dc675fd946e01a7123bf62ddbb67cd5f4260f906b150f767db22b5a38061df",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l9782.htm"
+    },
+    {
+      "file_name": "lei_9790_1999.txt",
+      "urn": "urn:lex:br:federal:lei:1999-03-23;9790",
+      "chars": 18816,
+      "sha256": "5e24e46535cd3d1e769764ef0046c539024e25db2c43f9a09397435abb5c39a7",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l9790.htm"
+    },
+    {
+      "file_name": "lei_9795_1999.txt",
+      "urn": "urn:lex:br:federal:lei:1999-04-27;9795",
+      "chars": 17774,
+      "sha256": "9b235699ce206f77bddf1dddba215c2c56ec40b834843beae7e4fdb3339266fd",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l9795.htm"
+    },
+    {
+      "file_name": "lei_9826_1999.txt",
+      "urn": "urn:lex:br:federal:lei:1999-08-23;9826",
+      "chars": 7941,
+      "sha256": "1ad7a69496bb63408964ea95a2c57be33d8b6f85dd35a5582cd8c1e65c366f08",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l9826.htm"
+    },
+    {
+      "file_name": "lei_9873_1999.txt",
+      "urn": "urn:lex:br:federal:lei:1999-11-23;9873",
+      "chars": 4033,
+      "sha256": "185ea9c130685ad01b37a63bfa515b106e66e4866a6f710a480f33ab2bf05c69",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l9873.htm"
+    },
+    {
+      "file_name": "lei_9876_1999.txt",
+      "urn": "urn:lex:br:federal:lei:1999-11-26;9876",
+      "chars": 27986,
+      "sha256": "a98f6d09e49d56fb59966fbbd68b9447c076c5fbaf09218df32b0af57757cd09",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l9876.htm"
+    },
+    {
+      "file_name": "lei_9973_2000.txt",
+      "urn": "urn:lex:br:federal:lei:2000-05-29;9973",
+      "chars": 6310,
+      "sha256": "16457658aa2c86273b7d0e0ad7f7f28ac44f2b6954b1133719a602a58c6d2fd7",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l9973.htm"
+    },
+    {
+      "file_name": "lei_9976_2000.txt",
+      "urn": "urn:lex:br:federal:lei:2000-07-03;9976",
+      "chars": 5857,
+      "sha256": "b562cd543f564ca4b323af37c9489d22c690c4423802711adbcaddfc321db6b4",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l9976.htm"
+    },
+    {
+      "file_name": "lei_9992_2000.txt",
+      "urn": "urn:lex:br:federal:lei:2000-07-24;9992",
+      "chars": 3148,
+      "sha256": "a196d8995a9ea454831ec10642b80dfe74997ebf3935cec545ee62d8b8f018c9",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l9992.htm"
+    },
+    {
+      "file_name": "lei_9995_2000.txt",
+      "urn": "urn:lex:br:federal:lei:2000-07-25;9995",
+      "chars": 94423,
+      "sha256": "dce9497e4e363983db9c0686d6dfb0b03acb244ae57f225e097a86bbcc2f2498",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l9995.htm"
+    }
+  ],
+  "skipped": {
+    "not_found": 532,
+    "too_short": 383,
+    "too_long": 6
+  }
+}

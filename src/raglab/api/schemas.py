@@ -160,6 +160,26 @@ class LexMLGetDataRequest(BaseModel):
     page_limit: int | None = None
 
 
+class LexMLFullTextRequest(BaseModel):
+    output_dir: str | None = None
+    year_from: int = 1988
+    year_to: int = 2024
+    per_year: int = Field(7, ge=1)
+    seed: int = 42
+    min_chars: int = 3000
+    max_chars: int = 150_000
+
+
+class LexMLQuestionsRequest(BaseModel):
+    corpus_dir: str | None = None
+    output_dir: str | None = None
+    count: int = Field(300, ge=1)
+    seed: int = 42
+    backend: str = "llamacpp"
+    model: str | None = None
+    profile: str | None = None
+
+
 class LexMLLoadRequest(BaseModel):
     corpus: str = "lexml_real"
     strategy: ChunkingStrategy = ChunkingStrategy.TRADITIONAL
@@ -229,6 +249,8 @@ class BenchDatasetOnDisk(BaseModel):
 class BenchDownloadRequest(BaseModel):
     loader: str
     limit: int | None = None
+    sample_seed: int = 42
+    full_corpus: bool = True
     output_dir: str | None = None
 
 
