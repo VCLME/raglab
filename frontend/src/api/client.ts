@@ -113,6 +113,8 @@ export interface QueryStreamHandlers {
   onPipeline?: (stages: string[]) => void;
   /** Start / end of a pipeline stage, with duration, counts and intermediate data. */
   onStage?: (event: StageEvent) => void;
+  /** Aborting it stops the request (the "Arrêter" button); the AbortError propagates. */
+  signal?: AbortSignal;
 }
 
 /** Raised when the streaming endpoint cannot be used at all (old API, proxy, browser). */
@@ -147,8 +149,11 @@ async function streamQuery(
         ...authHeaders(),
       },
       body: JSON.stringify(body ?? {}),
+      signal: handlers.signal,
     });
   } catch (e) {
+    // A stop is not a missing endpoint: never fall back to /api/query then.
+    if (handlers.signal?.aborted) throw e;
     throw new StreamUnavailable(e instanceof Error ? e.message : String(e));
   }
   if ([404, 405, 501].includes(response.status)) {
@@ -178,6 +183,7 @@ async function streamQuery(
     try {
       chunk = await reader.read();
     } catch (e) {
+      if (handlers.signal?.aborted) throw e;
       // Connection dropped: retry without streaming only if nothing was shown yet.
       if (!sawRetrieval) throw new StreamUnavailable(String(e));
       throw new ApiError("Flux interrompu pendant la génération.", 0, null);

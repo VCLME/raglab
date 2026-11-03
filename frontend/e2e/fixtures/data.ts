@@ -9,6 +9,7 @@ import type {
   ExperimentRunSummary,
   HealthResponse,
   IndexRunSummary,
+  LlmModelsResponse,
   OllamaModelsResponse,
   QueryResponse,
   RetrievedChunk,
@@ -61,6 +62,7 @@ export const corpora: CorpusSummary[] = [
     description: "Constitution de la Ve République",
     documents_count: 3,
     index_runs_count: 1,
+    features: { legal_citations: true },
   },
 ];
 
@@ -88,6 +90,31 @@ export const ollamaModels: OllamaModelsResponse = {
   default_generation_model: "qwen2.5:7b",
   models: [
     { name: "qwen2.5:7b", size: 4683087332, modified_at: "2026-10-01T10:00:00Z", digest: "845dbda0ea48" },
+  ],
+};
+
+export const llmModels: LlmModelsResponse = {
+  default_provider: "ollama",
+  default_model: "qwen2.5:7b",
+  providers: [
+    {
+      name: "ollama",
+      label: "Ollama",
+      kind: "ollama",
+      base_url: "http://localhost:11434",
+      available: true,
+      error: null,
+      models: ["qwen2.5:7b"],
+    },
+    {
+      name: "llamacpp",
+      label: "llama.cpp",
+      kind: "openai",
+      base_url: "http://127.0.0.1:8080/v1",
+      available: true,
+      error: null,
+      models: ["gemma4-26b-a4b"],
+    },
   ],
 };
 

@@ -7,6 +7,7 @@ import type {
   HealthResponse,
   IndexRunSummary,
 } from "../api/types";
+import { ApiConnection } from "../components/ApiConnection";
 import { ErrorBanner } from "../components/ErrorBanner";
 import { ExplainBanner } from "../components/ExplainBanner";
 import { Spinner } from "../components/Spinner";
@@ -104,6 +105,8 @@ export function Dashboard() {
           </div>
         ) : null}
       </div>
+
+      <ApiConnection />
 
       <div className="grid grid-2">
         <div className="card">

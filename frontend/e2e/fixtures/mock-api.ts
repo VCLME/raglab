@@ -26,6 +26,7 @@ function defaultRoutes(): Record<string, Reply> {
     "GET /api/corpora": json(data.corpora),
     "GET /api/index-runs": json(data.indexRuns),
     "GET /api/ollama/models": json(data.ollamaModels),
+    "GET /api/llm/models": json(data.llmModels),
     "GET /api/bench/suggestions": json(data.suggestions),
     "GET /api/bench/datasets": json([]),
     "GET /api/experiments/history": json(data.experimentsHistory),

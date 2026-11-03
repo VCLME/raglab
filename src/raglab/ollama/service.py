@@ -38,8 +38,8 @@ class OllamaService:
         )
         return result
 
-    def list_models(self) -> dict[str, Any]:
-        payload = self._get_tags()
+    def list_models(self, *, timeout: float | None = None) -> dict[str, Any]:
+        payload = self._get_tags(timeout=timeout)
         models = payload.get("models", [])
         normalized_models = [
             {

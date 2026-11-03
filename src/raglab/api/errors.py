@@ -15,6 +15,7 @@ from fastapi.responses import JSONResponse
 
 from raglab.config import Settings
 from raglab.domain.errors import StageTimeoutError
+from raglab.llm.errors import LLMProviderError
 from raglab.ollama.errors import OllamaError, OllamaOutOfMemoryError
 
 
@@ -39,6 +40,15 @@ def describe_error(exc: Exception, settings: Settings) -> ErrorInfo | None:
             body["stage"] = exc.stage
             body["timeout_seconds"] = exc.timeout_seconds
         return ErrorInfo(exc.status_code, body, headers)
+    if isinstance(exc, LLMProviderError):
+        # llama.cpp / vLLM (and an unknown provider name, 400).
+        provider_body: dict = {"detail": str(exc), "error": type(exc).__name__, "provider": exc.provider}
+        if exc.cause:
+            provider_body["cause"] = exc.cause
+        if isinstance(exc, StageTimeoutError):
+            provider_body["stage"] = exc.stage
+            provider_body["timeout_seconds"] = exc.timeout_seconds
+        return ErrorInfo(exc.status_code, provider_body)
     if isinstance(exc, StageTimeoutError):
         return ErrorInfo(
             504,
@@ -77,6 +87,7 @@ def register_error_handlers(app: FastAPI, settings: Settings) -> None:
 
     for exc_type in (
         OllamaError,
+        LLMProviderError,
         StageTimeoutError,
         requests.exceptions.Timeout,
         requests.exceptions.ConnectionError,

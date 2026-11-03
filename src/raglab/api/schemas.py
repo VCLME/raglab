@@ -56,6 +56,30 @@ class ConfigResponse(BaseModel):
     rerank_gpu: bool = False
     rerank_model_name: str = ""
     rerank_candidates: int = 0
+    citation_resolver: bool = True
+    # Enabled generation providers (RAGLAB_LLM_PROVIDERS) and the default one.
+    llm_providers: list[str] = Field(default_factory=lambda: ["ollama"])
+    default_llm_provider: str = "ollama"
+
+
+class LLMProviderInfo(BaseModel):
+    name: str
+    label: str
+    # "ollama" (native API) or "openai" (OpenAI-compatible: llama.cpp, vLLM).
+    kind: str
+    base_url: str
+    available: bool
+    # Short reason when unavailable: "unreachable", "timeout", "http 401"...
+    error: str | None = None
+    models: list[str] = Field(default_factory=list)
+    # Model used when a request names none (None = the server's choice).
+    default_model: str | None = None
+
+
+class LLMModelsResponse(BaseModel):
+    default_provider: str
+    default_model: str | None = None
+    providers: list[LLMProviderInfo]
 
 
 class OllamaPullRequest(BaseModel):
@@ -142,14 +166,24 @@ class QueryRequest(BaseModel):
     # Cross-encoder re-ranking of rerank_candidates first-stage chunks.
     # None = RAGLAB_DEFAULT_RERANK.
     rerank: bool | None = None
-    # Ollama model for the answer; None = RAGLAB_GENERATION_MODEL.
-    # Ignored by /api/graph/query.
+    # Model for the answer; None = RAGLAB_GENERATION_MODEL (Ollama) or the
+    # server's first model (llama.cpp, vLLM). Ignored by /api/graph/query.
     llm_model: str | None = None
+    # Generation provider among RAGLAB_LLM_PROVIDERS (ollama, llamacpp,
+    # vllm); None = RAGLAB_DEFAULT_LLM_PROVIDER. Ignored by /api/graph/query.
+    llm_provider: str | None = None
     # Graph-only: "vector" = KNN, "hybrid" = KNN seed + entity re-rank.
     # Ignored by the pgvector /api/query endpoint.
     mode: str = "vector"
     seed_top_n: int = 3
     entity_weight: float = 0.3
+
+
+class CorpusFeatures(BaseModel):
+    # The corpus holds law or code articles (LexML `number`, Légifrance
+    # `article_number` metadata): the Chat offers the article-reference
+    # option (citation resolver) only then.
+    legal_citations: bool = False
 
 
 class CorpusSummary(BaseModel):
@@ -158,6 +192,7 @@ class CorpusSummary(BaseModel):
     description: str | None = None
     documents_count: int
     index_runs_count: int
+    features: CorpusFeatures = Field(default_factory=CorpusFeatures)
 
 
 class CorpusDeleteResponse(BaseModel):

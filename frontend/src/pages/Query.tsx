@@ -7,9 +7,12 @@ import type {
   CorpusSummary,
   IndexRunSummary,
   QueryResponse,
+  RetrievedChunk,
   RetrievalMode,
 } from "../api/types";
+import { renderAnswer } from "../components/AnswerText";
 import { ChunkCard } from "../components/ChunkCard";
+import { prefersReducedMotion } from "../edu/pipeline";
 import { ErrorBanner } from "../components/ErrorBanner";
 import { ExplainBanner } from "../components/ExplainBanner";
 import { FieldRow } from "../components/FieldRow";
@@ -17,6 +20,7 @@ import { JsonViewer } from "../components/JsonViewer";
 import { Spinner } from "../components/Spinner";
 import { useConfig } from "../hooks/useConfig";
 import { useLocalHistory } from "../hooks/useLocalHistory";
+import { Select } from "../components/Select";
 
 const STRATEGIES: ("" | ChunkingStrategy)[] = ["", "traditional", "slide", "late"];
 const RETRIEVAL_MODES: RetrievalMode[] = ["dense", "lexical", "hybrid"];
@@ -36,6 +40,14 @@ interface HistoryEntry {
 
 export function Query() {
   const { t } = useTranslation();
+  const [citedRank, setCitedRank] = useState<number | null>(null);
+  // A [Rank N] citation in the answer jumps to that chunk's card.
+  const showCitedChunk = (chunk: RetrievedChunk) => {
+    setCitedRank(chunk.rank);
+    const card = document.getElementById(`chunk-rank-${chunk.rank}`);
+    card?.scrollIntoView({ block: "center", behavior: prefersReducedMotion() ? "auto" : "smooth" });
+    card?.focus({ preventScroll: true });
+  };
   const config = useConfig();
   const corpora = useApiLoad<CorpusSummary[]>(() => get("/api/corpora"));
   const [corpus, setCorpus] = useState("");
@@ -156,36 +168,36 @@ export function Query() {
               <textarea value={question} onChange={(e) => setQuestion(e.target.value)} rows={3} />
             </FieldRow>
             <FieldRow label={t("common.corpus")} hint={t("query.corpus_hint")}>
-              <select value={corpus} onChange={(e) => setCorpus(e.target.value)}>
+              <Select value={corpus} onChange={(e) => setCorpus(e.target.value)}>
                 <option value="">{t("common.selected_placeholder")}</option>
                 {(corpora.data ?? []).map((c) => (
                   <option key={c.id} value={c.name}>
                     {c.name}
                   </option>
                 ))}
-              </select>
+              </Select>
             </FieldRow>
             <FieldRow label={t("common.strategy")}>
-              <select value={strategy} onChange={(e) => setStrategy(e.target.value as "" | ChunkingStrategy)}>
+              <Select value={strategy} onChange={(e) => setStrategy(e.target.value as "" | ChunkingStrategy)}>
                 {STRATEGIES.map((s) => (
                   <option key={s} value={s}>
                     {s || t("query.strategy_auto")}
                   </option>
                 ))}
-              </select>
+              </Select>
             </FieldRow>
             <FieldRow label={t("query.index_run")} hint={t("query.index_run_hint")}>
-              <select value={indexRunId} onChange={(e) => setIndexRunId(e.target.value)}>
+              <Select value={indexRunId} onChange={(e) => setIndexRunId(e.target.value)}>
                 <option value="">{t("query.index_run_auto")}</option>
                 {(indexRuns.data ?? []).map((r) => (
                   <option key={r.id} value={r.id}>
                     {r.name} — {r.strategy}
                   </option>
                 ))}
-              </select>
+              </Select>
             </FieldRow>
             <FieldRow label={t("retrieval.mode_label")} hint={t("retrieval.mode_hint")}>
-              <select
+              <Select
                 value={retrievalMode}
                 onChange={(e) => setRetrievalMode(e.target.value as "" | RetrievalMode)}
               >
@@ -198,7 +210,7 @@ export function Query() {
                     {t(`retrieval.mode_${m}`)}
                   </option>
                 ))}
-              </select>
+              </Select>
             </FieldRow>
             <FieldRow
               label={t("retrieval.rerank_label")}
@@ -207,7 +219,7 @@ export function Query() {
                 model: config?.rerank_model_name ?? "BAAI/bge-reranker-v2-m3",
               })}
             >
-              <select value={rerank} onChange={(e) => setRerank(e.target.value as RerankChoice)}>
+              <Select value={rerank} onChange={(e) => setRerank(e.target.value as RerankChoice)}>
                 <option value="">
                   {t("retrieval.mode_default")}
                   {config?.default_rerank != null
@@ -216,7 +228,7 @@ export function Query() {
                 </option>
                 <option value="on">{t("retrieval.rerank_on")}</option>
                 <option value="off">{t("retrieval.rerank_off")}</option>
-              </select>
+              </Select>
             </FieldRow>
             <FieldRow label={t("retrieval.citations_label")} hint={t("retrieval.citations_hint")}>
               <label className="inline" style={{ gap: 4 }}>
@@ -420,9 +432,9 @@ export function Query() {
                   </div>
                 ) : null}
                 {action.data.answer ? (
-                  <pre style={{ whiteSpace: "pre-wrap", margin: 0, fontFamily: "inherit" }}>
-                    {action.data.answer}
-                  </pre>
+                  <div className="answer-text" style={{ whiteSpace: "pre-wrap" }}>
+                    {renderAnswer(action.data.answer, action.data.retrieved_chunks, null, showCitedChunk)}
+                  </div>
                 ) : (
                   <p className="muted">{t("query.no_generation")}</p>
                 )}
@@ -430,7 +442,14 @@ export function Query() {
               <div className="card">
                 <h3>{t("query.chunks_header", { count: action.data.retrieved_chunks.length })}</h3>
                 {action.data.retrieved_chunks.map((c) => (
-                  <ChunkCard key={c.chunk_id} chunk={c} maxScore={barScale} showScores />
+                  <ChunkCard
+                    key={c.chunk_id}
+                    chunk={c}
+                    maxScore={barScale}
+                    showScores
+                    anchorId={`chunk-rank-${c.rank}`}
+                    active={citedRank === c.rank}
+                  />
                 ))}
               </div>
               <div className="card">
