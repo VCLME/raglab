@@ -1,0 +1,556 @@
+% raglab : rapport technique.
+% Construction : voir README.md dans ce dossier (tectonic, latexmk ou pdflatex).
+\documentclass[11pt,a4paper]{article}
+
+% --- Encodage et polices (pdfLaTeX, XeLaTeX / tectonic, LuaLaTeX) ----------
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[utf8]{inputenc}
+  \usepackage[T1]{fontenc}
+  \usepackage{lmodern}
+\else
+  \usepackage{fontspec}
+\fi
+\usepackage[french]{babel}
+\usepackage[a4paper,margin=2.3cm,headheight=14pt]{geometry}
+\usepackage{microtype}
+
+% --- Mise en page -------------------------------------------------------------
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{amsmath}
+\usepackage{listings}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta,fit,backgrounds,babel}
+\usepackage[hidelinks]{hyperref}
+
+% Couleurs nommées ici, avant que babel-french ne rende « ! » actif.
+\definecolor{accent}{HTML}{1F4E79}
+\definecolor{accentclair}{HTML}{DCE8F4}
+\definecolor{gris}{HTML}{5B6670}
+\definecolor{grisclair}{HTML}{F1F3F5}
+\definecolor{vert}{HTML}{2E7D32}
+\definecolor{vertclair}{HTML}{E3F1E4}
+\definecolor{orange}{HTML}{B45309}
+\definecolor{orangeclair}{HTML}{FDF0E1}
+\definecolor{violet}{HTML}{5B3E8F}
+\definecolor{violetclair}{HTML}{ECE6F5}
+
+\hypersetup{colorlinks=true,linkcolor=accent,urlcolor=accent,citecolor=accent,
+  pdftitle={raglab : rapport technique},pdfauthor={Luc Melaye}}
+
+\setlist{itemsep=2pt,topsep=4pt}
+\setlength{\parskip}{4pt}
+\setlength{\parindent}{0pt}
+\renewcommand{\arraystretch}{1.18}
+
+\titleformat{\section}{\Large\bfseries\color{accent}}{\thesection}{0.8em}{}
+\titleformat{\subsection}{\large\bfseries\color{accent}}{\thesubsection}{0.7em}{}
+\titleformat{\subsubsection}{\normalsize\bfseries}{\thesubsubsection}{0.6em}{}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\color{gris}raglab --- rapport technique}
+\fancyhead[R]{\small\color{gris}\nouppercase{\leftmark}}
+\fancyfoot[C]{\small\color{gris}\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\lstset{basicstyle=\ttfamily\small,backgroundcolor=\color{grisclair},
+  frame=single,rulecolor=\color{grisclair},columns=fullflexible,
+  keepspaces=true,breaklines=true,xleftmargin=4pt,xrightmargin=4pt,
+  aboveskip=6pt,belowskip=6pt}
+
+% --- Macros -------------------------------------------------------------------
+% Code en ligne : les « _ » sont imprimés tels quels.
+\newcommand{\code}[1]{\texttt{\detokenize{#1}}}
+% Valeur pas encore mesurée. Ne jamais la remplacer par un chiffre estimé :
+% seulement par un chiffre lu dans benchmarks/results/<label>.json.
+\newcommand{\aMesurer}[1][à mesurer]{\textcolor{orange}{\textsf{\small[#1]}}}
+\newcommand{\statut}[2]{\textcolor{#1}{\textsf{\small #2}}}
+\newcommand{\livre}{\statut{vert}{livré}}
+\newcommand{\encours}{\statut{orange}{en cours}}
+\newcommand{\avenir}{\statut{gris}{à venir}}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+
+\begin{document}
+
+% --- Page de titre ------------------------------------------------------------
+\begin{titlepage}
+  \thispagestyle{empty}
+  \vspace*{3cm}
+  {\color{accent}\rule{\linewidth}{1.2pt}}\par\vspace{0.8cm}
+  {\fontsize{40}{44}\selectfont\bfseries\color{accent} raglab\par}
+  \vspace{0.4cm}
+  {\LARGE Un pipeline RAG local, mesuré brique par brique\par}
+  \vspace{0.8cm}
+  {\color{accent}\rule{\linewidth}{1.2pt}}\par
+  \vspace{1.2cm}
+  {\large Rapport technique\par}
+  \vspace{0.3cm}
+  {\color{gris} Architecture, protocole de mesure, phases d'industrialisation et résultats\par}
+  \vfill
+  {\large Luc Melaye\par}
+  \vspace{0.2cm}
+  {\color{gris} Novembre 2026\par}
+  \vspace{0.6cm}
+  {\small\color{gris} Code : \url{https://github.com/VCLME/raglab} --- licence MIT\par}
+\end{titlepage}
+
+\section*{Résumé}
+\addcontentsline{toc}{section}{Résumé}
+
+raglab est un système de \emph{Retrieval-Augmented Generation} (RAG) qui tourne entièrement sur une machine locale : PostgreSQL et pgvector pour la recherche vectorielle, Neo4j pour un store graphe alternatif, Ollama (qwen2.5:7b) pour la génération, llama.cpp pour les modèles d'évaluation, FastAPI et React pour l'interface. Né comme laboratoire de comparaison des stratégies de découpage, il est transformé en pipeline prêt pour la production, avec une règle stricte : \textbf{une brique n'entre dans le pipeline que si elle apporte un gain mesuré} sur des jeux d'évaluation figés.
+
+Ce rapport décrit l'architecture, le protocole de mesure (corpus indexés en entier, pertinence jugée au niveau du passage, questions juridiques typées, juges LLM d'une autre famille que le générateur et calibrés), les sous-phases d'industrialisation (9.1 à 9.8) et les résultats disponibles. Les chiffres de la baseline et des briques de retrieval sont en cours de mesure : ils apparaissent comme \aMesurer{} et seront repris depuis les fichiers de résultats versionnés, jamais estimés.
+
+\tableofcontents
+\newpage
+
+% =============================================================================
+\section{Contexte et objectifs}
+
+\subsection{Le problème}
+
+Un RAG répond à une question en deux temps : il retrouve des passages pertinents dans un corpus, puis demande à un modèle de langage de rédiger une réponse appuyée sur ces passages. Chaque étape offre des dizaines de variantes : découpage des documents, modèle d'embedding, recherche dense ou lexicale, re-classement, prompt, modèle génératif. Dans la pratique, ces choix se font souvent à l'intuition, sur quelques questions de démonstration, et l'on ne sait pas dire si une brique ajoutée a amélioré quoi que ce soit.
+
+\subsection{Objectifs}
+
+\begin{enumerate}
+  \item \textbf{Tout en local.} Aucun appel à un service externe pour répondre : les documents restent sur la machine. Le budget matériel est celui d'un poste de travail, avec un GPU de 8 Go.
+  \item \textbf{Mesurer avant d'ajouter.} Chaque brique est comparée à une baseline sur les mêmes questions : Recall@5 et @10, MRR, latence p50 et p95, notes de juges RAGAS. Une brique qui n'apporte rien reste désactivée, derrière un drapeau.
+  \item \textbf{Un benchmark qui peut échouer.} Des jeux sur lesquels tout système obtient 100\,\% ne montrent ni gain ni régression ; les jeux de raglab sont construits pour être discriminants.
+  \item \textbf{Exploitable.} API avec streaming, budgets de temps, corrélation des logs, sondes de santé, intégration continue et porte de qualité qui bloque une régression.
+\end{enumerate}
+
+\subsection{Point de départ}
+
+À l'entrée de la phase 9, raglab savait ingérer des documents \code{.txt}, \code{.pdf} et \code{.docx}, les découper selon trois stratégies, les indexer dans pgvector ou Neo4j, générer des réponses citées et calculer Recall@k et MRR. Les jeux d'évaluation existants donnaient pourtant des scores flatteurs mais sans valeur : le corpus PIAF ne contenait que les paragraphes des questions tirées (6 paragraphes pour 30 questions, d'où un R@1 de 0,87), et chaque question LexML recopiait le titre du document attendu. La première tâche de la phase 9 a donc été de refaire la mesure.
+
+% =============================================================================
+\section{Architecture}
+
+\subsection{Vue d'ensemble}
+
+La figure~\ref{fig:architecture} montre les composants. Les clients (interface web, CLI) passent par les mêmes services Python ; l'API n'ajoute aucune logique métier. Les deux modèles volumineux, le générateur servi par Ollama et le juge servi par llama.cpp, partagent un GPU de 8 Go et ne sont jamais chargés en même temps.
+
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}[
+  font=\sffamily\footnotesize,
+  >={Stealth[length=2.2mm]},
+  boite/.style={draw=accent, fill=accentclair, rounded corners=2pt, align=center, inner sep=4pt},
+  svc/.style={draw=accent, fill=white, rounded corners=2pt, align=center, text width=2.15cm, minimum height=1.15cm, inner sep=2pt},
+  store/.style={draw=vert, fill=vertclair, rounded corners=2pt, align=center, text width=2.9cm, minimum height=1.1cm},
+  modele/.style={draw=violet, fill=violetclair, rounded corners=2pt, align=center, text width=3.0cm, minimum height=1.1cm},
+  fleche/.style={->, draw=gris, thick},
+]
+  % Clients
+  \node[boite, text width=4.2cm] (ui) at (5.0,0) {\textbf{Interface web}\\React + Vite, nginx :8081};
+  \node[boite, text width=3.2cm] (cli) at (13.3,-1.75) {\textbf{CLI} \code{raglab}\\Typer};
+  % API
+  \node[boite, text width=9.4cm] (api) at (5.0,-1.75) {\textbf{API FastAPI :8000}\\middlewares ASGI : X-Request-ID, CORS, clé d'API, limite de débit\\\code{/api/query}, \code{/api/query/stream} (SSE), \code{/health}, \code{/ready}};
+
+  % Services
+  \node[svc] (ing) at (0.9,-4.0) {\textbf{ingestion}\\txt, pdf, docx\\+ metadata};
+  \node[svc] (chk) at (3.35,-4.0) {\textbf{chunking}\\traditional\\slide, late};
+  \node[svc] (emb) at (5.8,-4.0) {\textbf{embeddings}\\e5-small 384 d\\cache};
+  \node[svc] (qry) at (8.25,-4.0) {\textbf{QueryService}\\retrieve, query\\stream\_answer};
+  \node[svc] (exp) at (10.7,-4.0) {\textbf{experiments}\\recall, RAGAS\\2 passes};
+  \node[svc] (ben) at (13.15,-4.0) {\textbf{benchmarks}\\bench all\\gate};
+  \begin{scope}[on background layer]
+    \node[draw=accent, dashed, rounded corners=4pt, fill=grisclair, inner sep=7pt, fit=(ing) (ben), label={[anchor=south west, inner sep=2pt, font=\sffamily\footnotesize\bfseries, text=accent]north west:Services Python (src/raglab)}] (svcbox) {};
+  \end{scope}
+
+  % Stockage et modèles
+  \node[store] (pg) at (1.6,-6.9) {\textbf{PostgreSQL 16}\\pgvector, HNSW partiel\\par dimension};
+  \node[store] (neo) at (5.2,-6.9) {\textbf{Neo4j 5}\\vector-in-graph\\entités};
+  \node[modele] (oll) at (9.2,-6.9) {\textbf{Ollama} :11434\\qwen2.5:7b (génération)};
+  \node[modele] (lcp) at (13.3,-6.9) {\textbf{llama-server}\\Gemma 4 (juge)\\Qwen3.6 (questions)};
+  \begin{scope}[on background layer]
+    \node[draw=violet, dashed, rounded corners=4pt, inner sep=6pt, fit=(oll) (lcp), label={[font=\sffamily\footnotesize, text=violet]below:GPU 8 Go : un seul gros modèle à la fois}] (gpu) {};
+  \end{scope}
+
+  % Flèches
+  \draw[fleche] (ui) -- (api);
+  \draw[fleche] (api.south) -- (api.south |- svcbox.north);
+  \draw[fleche] (cli.south) -- (cli.south |- svcbox.north);
+  \draw[fleche] (pg.north |- svcbox.south) -- (pg.north);
+  \draw[fleche] (neo.north |- svcbox.south) -- (neo.north);
+  \draw[fleche] (oll.north |- svcbox.south) -- (oll.north);
+  \draw[fleche] (lcp.north |- svcbox.south) -- (lcp.north);
+  \draw[->, draw=violet, thick, dashed] (lcp.west) -- node[above, font=\sffamily\scriptsize, text=violet] {décharge} (oll.east);
+\end{tikzpicture}
+\caption{Composants de raglab. Les flèches violettes en pointillé matérialisent l'orchestration du GPU par \code{LocalLLMServer} : avant un job llama.cpp, les modèles Ollama sont déchargés.}
+\label{fig:architecture}
+\end{figure}
+
+\subsection{Composants}
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabularx}{\linewidth}{@{}l L@{}}
+\toprule
+\textbf{Module} & \textbf{Rôle} \\
+\midrule
+\code{ingestion} & lecture et normalisation des fichiers, checksum, metadata par fichier compagnon JSON \\
+\code{chunking} & trois stratégies interchangeables, gelées pendant la phase 9 (référence de comparaison) \\
+\code{embeddings} & \code{intfloat/multilingual-e5-small} (384 dimensions) ou un modèle Ollama ; un modèle chargé par configuration \\
+\code{indexing} & un \code{index_run} par corpus, stratégie et espace d'embedding ; mode incrémental \\
+\code{retrieval} & résolution de l'index, embedding de la question, recherche KNN filtrée, génération \\
+\code{generation} & prompt de \emph{grounding} et citations \code{[Rank N]}, appel Ollama avec ou sans streaming \\
+\code{graph} & store Neo4j : chunks en nœuds, index vectoriel par dimension, entités, recherche hybride \\
+\code{experiments} & benchmark de recall, juges RAGAS, calibration des juges \\
+\code{benchmarks} & jeux figés, \code{raglab bench all}, porte de qualité \code{raglab gate} \\
+\code{llm} & client compatible OpenAI et \code{LocalLLMServer} (orchestration du GPU) \\
+\code{api} & FastAPI, middlewares, correspondance erreurs vers statuts HTTP \\
+\bottomrule
+\end{tabularx}
+\caption{Modules de \code{src/raglab}.}
+\end{table}
+
+\subsection{Indexation}
+
+Un document ingéré est découpé selon une stratégie, puis chaque morceau (\emph{chunk}) est vectorisé :
+
+\begin{itemize}
+  \item \code{traditional} : 900 caractères, chevauchement de 150 ;
+  \item \code{slide} : fenêtre glissante de 900 caractères, pas de 300 ;
+  \item \code{late} : chunk focal de 700 caractères dont l'embedding est calculé avec 500 caractères de contexte de part et d'autre.
+\end{itemize}
+
+Les vecteurs de dimensions différentes cohabitent dans une même colonne pgvector non dimensionnée ; un index HNSW partiel par dimension (\code{m = 16}, \code{ef_construction = 64}, distance cosinus) est créé à la volée. Chaque \code{index_run} pointe vers son espace d'embedding (fournisseur, modèle, dimension, préfixes \code{query:} et \code{passage:}) : la requête est toujours vectorisée avec le modèle de l'index interrogé.
+
+\subsection{Chemin d'une requête}
+
+\begin{enumerate}
+  \item L'API attribue un identifiant de requête (\code{X-Request-ID}, accepté ou généré), vérifie la clé d'API et la limite de débit si elles sont activées.
+  \item \code{QueryService.retrieve} résout l'index, vectorise la question (étape \code{embed}, budget de 30\,s par défaut) puis cherche les $k$ plus proches voisins dans pgvector (étape \code{retrieval}, sous \code{statement_timeout} de 15\,s).
+  \item En streaming, l'événement SSE \code{retrieval} envoie immédiatement les sources, leurs scores et les temps par étape ; la génération Ollama suit, un événement \code{token} par fragment, puis \code{done} avec la réponse complète et le temps jusqu'au premier token.
+  \item Un échec est converti par une fonction unique en statut HTTP et en événement \code{error} : modèle absent (424), mémoire saturée (503 avec \code{Retry-After}), Ollama injoignable (502), délai dépassé (504 qui nomme l'étape).
+\end{enumerate}
+
+Deux défauts trouvés en préparant la baseline ont été corrigés à cet endroit. \textbf{Le modèle d'embedding était rechargé à chaque requête}, avec des vérifications réseau auprès de Hugging Face : une requête RAG dépendait d'internet. Il est désormais gardé en mémoire, chargé une seule fois même sous concurrence. \textbf{Le top-$k$ pouvait être incomplet} : l'index HNSW est partagé par tous les runs de même dimension et pgvector filtrait l'\code{index_run} après avoir lu 40 candidats. Avec plusieurs corpus en base, une question pouvait revenir avec moins de 5 chunks, voire aucun. La recherche itérative de pgvector~0.8 (\code{hnsw.iterative_scan = strict_order}) parcourt désormais le graphe jusqu'à remplir le top-$k$. Les deux correctifs sont désactivables pour que leur effet soit mesuré séparément (section~\ref{sec:resultats}).
+
+\subsection{Store graphe}
+
+Neo4j sert de backend alternatif, comparable sur les mêmes questions : chaque chunk devient un nœud portant son embedding, relié à son document et à son run ; un index vectoriel Neo4j par dimension sert la recherche KNN. Une extraction d'entités optionnelle (LLM ou spaCy) ajoute des nœuds \code{Entity} et un mode hybride combine score vectoriel et entités partagées. Sur l'ancien jeu PIAF réduit, pgvector et Neo4j donnaient des résultats identiques (mêmes chunks, mêmes embeddings) ; la comparaison sur les jeux refaits reste à faire.
+
+% =============================================================================
+\section{Méthodologie de mesure}
+\label{sec:methodo}
+
+\subsection{Principes}
+
+\begin{enumerate}
+  \item \textbf{Corpus complet.} On tire $N$ questions, mais on cherche la réponse parmi \emph{tous} les passages du corpus. Le nombre de questions et la taille du corpus sont indépendants.
+  \item \textbf{Tirage figé.} Questions triées par identifiant puis tirées avec une graine (42) : mêmes questions quel que soit l'ordre de la source. Les jeux sont versionnés dans \code{benchmarks/} et ne sont pas régénérés entre deux mesures.
+  \item \textbf{Pertinence au niveau du passage.} Chaque cas porte des \code{expected_spans} : fichier et positions de la réponse dans le texte normalisé. Un chunk est pertinent s'il chevauche ce passage. La vérité terrain ne dépend donc pas de la stratégie de découpage, et un chunk du bon document mais du mauvais endroit ne compte pas, ce qui est décisif pour des lois de plusieurs centaines de chunks.
+  \item \textbf{Métriques par type de question}, quand les cas sont typés.
+  \item \textbf{Traçabilité.} Chaque run écrit \code{benchmarks/results/<label>.json} : chiffres, machine, versions logicielles, empreintes des modèles et commande exacte.
+\end{enumerate}
+
+\subsection{Jeux d'évaluation}
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabularx}{\linewidth}{@{}l l r L@{}}
+\toprule
+\textbf{Jeu} & \textbf{Langue} & \textbf{Questions} & \textbf{Corpus} \\
+\midrule
+PIAF & français & 500 & 761 paragraphes de Wikipédia (split \code{train} complet, 540 Ko environ) \\
+LexML texte intégral & portugais & 277 & 252 lois fédérales brésiliennes, 4,6 millions de caractères, manifeste SHA-256 \\
+Abstention & fr + pt & 80 & aucune réponse dans les corpus (hors périmètre, quasi-sujet, conversationnel) \\
+\bottomrule
+\end{tabularx}
+\caption{Jeux figés. Les deux premiers mesurent le retrieval et la génération ; le troisième, introduit pour la phase 9.4, mesure la capacité à refuser.}
+\label{tab:jeux}
+\end{table}
+
+\paragraph{PIAF.} Questions rédigées par des annotateurs sur des paragraphes de Wikipédia. Les 500 réponses annotées ont été relocalisées dans le texte normalisé. Les annotateurs lisaient le paragraphe : les questions en reprennent souvent les mots, ce qui favorise la recherche lexicale par construction.
+
+\paragraph{LexML texte intégral.} Pour chaque année de 1988 à 2024, la liste des lois fédérales vient de l'API ouverte du Sénat brésilien ; on garde 7 lois par année dont le texte consolidé (planalto.gov.br) fait entre 3\,000 et 150\,000 caractères, passages révoqués retirés. Médiane : 8\,600 caractères par loi. Le corpus n'est pas versionné, mais chaque fichier est vérifié contre le manifeste avant une mesure : si un texte a changé à la source, le run s'arrête au lieu de mesurer sur un autre corpus.
+
+\subsection{Questions juridiques typées}
+
+Les questions LexML sont écrites par un modèle rédacteur (Qwen3.6-35B-A3B, servi par llama.cpp en JSON contraint par grammaire, température 0) à partir de passages d'environ 700 caractères tirés dans le corps des lois. Trois types testent des capacités différentes :
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabularx}{\linewidth}{@{}l L L r@{}}
+\toprule
+\textbf{Type} & \textbf{La question contient} & \textbf{Elle teste} & \textbf{Nombre} \\
+\midrule
+\code{paraphrase} & les idées du passage, sans numéro d'article ni de loi & la recherche sémantique & 93 \\
+\code{reference} & le numéro de l'article et de la loi & les identifiants exacts, que les embeddings brouillent & 97 \\
+\code{entity} & un sigle ou un nom propre du passage & les termes rares & 87 \\
+\midrule
+\multicolumn{3}{@{}l}{Total utilisable (sur 168 lois)} & 277 \\
+\bottomrule
+\end{tabularx}
+\caption{Questions LexML par type.}
+\end{table}
+
+Le modèle doit aussi rendre une réponse copiée mot pour mot du passage ; une question est rejetée si cette citation est introuvable, si la réponse est vide de sens (formule de promulgation, \og VETADO \fg{}), si la question ne se comprend qu'à côté du passage (\og neste trecho \fg{}), ou si son type n'est pas respecté. Un premier essai avec qwen2.5:7b a été abandonné : 187 rejets pour 147 questions gardées, et environ un tiers de questions vagues à la relecture. 40 questions ont été relues à la main ; les défauts trouvés sont devenus des règles automatiques, qui ont écarté 23 cas sur 300. Chaque cas enregistre aussi son recouvrement lexical avec le passage, pour vérifier plutôt que supposer l'avantage donné à la recherche lexicale.
+
+\subsection{Juges RAGAS et calibration}
+
+La qualité des réponses est notée par un modèle de langage (\emph{LLM-as-judge}) sur trois critères : \emph{faithfulness} (chaque affirmation est-elle appuyée par le contexte ?), \emph{answer relevancy} (la réponse traite-t-elle la question ?) et \emph{answer correctness} (dit-elle la même chose que la réponse attendue ?), sur une grille 0 / 0,5 / 1.
+
+Le juge est \textbf{Gemma 4 26B-A4B}, d'une autre famille que le générateur : un modèle tend à préférer son propre style, et qwen2.5 ne doit pas noter ses propres réponses. Les 8 Go de VRAM ne contiennent pas les deux modèles ; la notation se fait donc en deux passes (figure~\ref{fig:deuxpasses}), sans aucune intervention manuelle.
+
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}[
+  font=\sffamily\footnotesize,
+  >={Stealth[length=2mm]},
+  etape/.style={draw=accent, fill=accentclair, rounded corners=2pt, align=center, text width=2.45cm, minimum height=1.25cm},
+  fleche/.style={->, draw=gris, thick},
+]
+  \node[etape] (a) {\textbf{Passe 1}\\retrieval + génération\\Ollama qwen2.5};
+  \node[etape, right=5mm of a] (b) {déchargement\\Ollama\\\code{keep_alive: 0}};
+  \node[etape, right=5mm of b] (c) {démarrage\\llama-server\\profil du juge};
+  \node[etape, right=5mm of c] (d) {\textbf{Passe 2}\\notation\\Gemma 4};
+  \node[etape, right=5mm of d] (e) {arrêt\\si démarré\\par raglab};
+  \draw[fleche] (a) -- (b);
+  \draw[fleche] (b) -- (c);
+  \draw[fleche] (c) -- (d);
+  \draw[fleche] (d) -- (e);
+\end{tikzpicture}
+\caption{Notation RAGAS en deux passes, orchestrée par \code{LocalLLMServer}.}
+\label{fig:deuxpasses}
+\end{figure}
+
+Une note n'a de valeur que si le juge est fiable. La calibration fabrique, à partir de 30 paragraphes PIAF, des réponses dont on connaît le bon verdict : la réponse annotée (fidèle et pertinente), la réponse d'une autre question (inventée), la bonne réponse augmentée d'une affirmation absente du contexte (ajout inventé, le cas difficile), et la réponse à une autre question sur le même paragraphe (hors sujet). Une note compte comme positive à partir de 0,75. Le tableau~\ref{tab:calibration} reprend les résultats de \code{benchmarks/judge_calibration.json}.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{@{}l c c@{}}
+\toprule
+\textbf{Taux de bons verdicts} & \textbf{qwen2.5:7b (Ollama)} & \textbf{Gemma 4 26B-A4B (llama.cpp)} \\
+\midrule
+Réponse fidèle reconnue fidèle & 0,800 & \textbf{0,900} \\
+Réponse inventée repérée & \textbf{1,000} & 0,967 \\
+Ajout inventé repéré & \textbf{1,000} & 0,967 \\
+\textbf{Faithfulness} & 0,933 & \textbf{0,944} \\
+\midrule
+Bonne réponse jugée pertinente & 0,400 & \textbf{0,967} \\
+Réponse à une autre question repérée & \textbf{0,933} & 0,700 \\
+\textbf{Answer relevancy} & 0,667 & \textbf{0,833} \\
+\midrule
+Réponses notées / non lisibles & 150 / 0 & 150 / 0 \\
+\bottomrule
+\end{tabular}
+\caption{Calibration des juges (30 paragraphes, 5 réponses par paragraphe, graine 7).}
+\label{tab:calibration}
+\end{table}
+
+Sur la fidélité, les deux juges se valent : choisir Gemma n'améliore pas la détection, il évite que le générateur se note lui-même. Sur la pertinence, qwen2.5 pénalise à tort plus de la moitié des bonnes réponses courtes. Gemma se laisse tromper 3 fois sur 10 par une réponse au bon format à une autre question ; c'est en partie le protocole, puisque le juge de pertinence ne voit pas le contexte. Un premier essai avec un seuil à 0,5 semblait montrer que les juges ne voyaient pas les ajouts inventés ; en réalité ils leur donnaient 0,5, la note juste selon leur grille. C'est le seuil qui était faux.
+
+% =============================================================================
+\section{Les briques, phase par phase}
+
+La phase 9 transforme le laboratoire en pipeline de production. Chaque sous-phase fait l'objet d'une branche et d'une pull request avec un tableau avant / après ; rien n'est fusionné sans validation.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabularx}{\linewidth}{@{}l l L@{}}
+\toprule
+\textbf{Phase} & \textbf{Statut} & \textbf{Contenu} \\
+\midrule
+9.1a Protocole & \livre & jeux refaits, corpus complets, pertinence au passage, questions LexML typées, \code{LocalLLMServer} \\
+9.1b Baseline & \encours & temps par étape, cache de l'embedder, scan HNSW itératif, \code{raglab bench all}, juges calibrés ; mesures en cours \\
+9.2 Hybride & \encours & BM25 dans PostgreSQL et fusion RRF ; PR ouverte, première migration Alembic \\
+9.3 Re-ranking & \encours & cross-encoder \code{bge-reranker-v2-m3} ; PR ouverte, désactivé par défaut \\
+9.4 Routeur & \encours & compréhension de la requête et abstention ; jeu de 80 questions livré \\
+9.5 API & \livre & SSE, budgets par étape, request id, clé d'API, limite de débit, \code{/health} et \code{/ready}, erreurs typées \\
+9.6 Observabilité & \encours & métriques Prometheus, tableaux Grafana, suivi de dérive \\
+9.7 Portes de qualité & \encours & \code{raglab gate} et porte hebdomadaire en place ; seuils à fixer depuis la baseline \\
+9.8 Vitrine & \avenir & démonstration et documentation de présentation \\
+\bottomrule
+\end{tabularx}
+\caption{Sous-phases de la phase 9 (production).}
+\end{table}
+
+\subsection{9.1 --- Baseline reproductible}
+
+La baseline est mesurée en trois runs qui isolent chacun une cause :
+
+\begin{itemize}
+  \item \code{baseline-v0} : le code d'avant la phase 9 (cache d'embedding et scan itératif désactivés) ;
+  \item \code{baseline-v0-cache} : + modèle d'embedding chargé une fois ; isole le gain de latence, à retrieval identique ;
+  \item \code{baseline-v1} : + scan HNSW itératif ; isole le gain de recall du correctif. C'est la baseline officielle.
+\end{itemize}
+
+Configuration : découpage \code{traditional}, e5-small sur CPU, pgvector cosinus, top-$k$ 5 (10 récupérés pour Recall@10), qwen2.5:7b en Q4 sur GPU à température 0,1, juges RAGAS sur les 100 premières questions de chaque jeu.
+
+\subsection{9.2 --- Recherche hybride BM25 + RRF}
+
+Les questions de type \code{reference} (\og art. 49 da Lei nº 8.078 \fg{}) et \code{entity} (sigles) reposent sur des termes exacts que les embeddings denses rendent mal. La phase 9.2 ajoute une recherche lexicale BM25 calculée dans PostgreSQL ($k_1 = 1{,}2$, $b = 0{,}75$, statistiques tenues à jour à l'indexation) et fusionne les deux classements par \emph{Reciprocal Rank Fusion} pondérée, sur 50 candidats de chaque côté :
+\[
+  \operatorname{score}(d) \;=\; \frac{1 - w}{k + r_{\text{dense}}(d)} \;+\; \frac{w}{k + r_{\text{lex}}(d)}, \qquad k = 60,\; w = 0{,}5 .
+\]
+Le mode (\code{dense}, \code{lexical}, \code{hybrid}), $w$ et $k$ sont exposés dans la CLI, l'API et l'interface. La mesure prévue croise les trois modes avec les deux jeux et les trois types de questions, puis fait varier $w$ et $k$.
+
+\subsection{9.3 --- Re-ranking par cross-encoder}
+
+Un cross-encoder lit la question et chaque passage ensemble, ce qui le rend plus précis qu'une similarité de vecteurs mais trop lent pour tout le corpus. Il re-classe donc les 40 premiers candidats et garde les $k$ meilleurs. Modèle : \code{BAAI/bge-reranker-v2-m3} (multilingue, environ 1,1 Go de VRAM en fp16), avec un cache de scores. L'option est désactivée par défaut tant que son gain n'est pas mesuré ; sa latence apparaît comme une étape séparée.
+
+\subsection{9.4 --- Routeur de requête et abstention}
+
+Un RAG qui répond à tout invente quand le corpus ne contient pas la réponse. Le jeu d'abstention (80 questions : 27 hors périmètre, 23 \og quasi-sujets \fg{} proches des corpus mais sans réponse, 30 conversationnelles) mesurera la capacité du système à dire qu'il ne sait pas, sans dégrader les réponses aux vraies questions.
+
+\subsection{9.5 --- Durcissement de l'API}
+
+\begin{itemize}
+  \item \code{POST /api/query/stream} en SSE ; \code{POST /api/query} reste compatible.
+  \item Budgets par étape (\code{embed}, \code{retrieval}, \code{generation}) réglables, 504 qui nomme l'étape.
+  \item \code{X-Request-ID} propagé dans chaque ligne de log ; middlewares ASGI purs, qui ne mettent pas le flux en mémoire tampon.
+  \item Clé d'API optionnelle, limite de débit par clé ou adresse, \code{/health} (vivacité) et \code{/ready} (Postgres, Ollama, modèle installé).
+\end{itemize}
+
+\subsection{9.6 à 9.8}
+
+L'observabilité (9.6) ajoute des métriques Prometheus et des tableaux Grafana, avec un suivi de dérive des scores. Les portes de qualité (9.7) font échouer une commande, en local ou en CI, quand Recall@5, MRR ou la faithfulness passent sous un plancher versionné. La vitrine (9.8) clôt la phase.
+
+\subsection{Intégration continue}
+
+Chaque push et chaque pull request passent par \code{ruff} (lint et format), \code{mypy}, \code{pytest} (base et Ollama simulés, torch CPU), la vérification de types et le build du frontend, et le build des images Docker. Une porte hebdomadaire mesure le retrieval sur CPU avec une base pgvector de service et les corpus en cache ; la faithfulness, qui demande un GPU, se vérifie en local avec \code{raglab gate --run}.
+
+% =============================================================================
+\section{Résultats}
+\label{sec:resultats}
+
+\begin{center}
+\fcolorbox{orange}{orangeclair}{\begin{minipage}{0.92\linewidth}
+\small Les valeurs \aMesurer{} ne sont pas encore mesurées. Elles seront reprises de \code{benchmarks/results/<label>.json} (\code{raglab bench report}) ; aucune n'est estimée.
+\end{minipage}}
+\end{center}
+
+\subsection{Baseline et briques de retrieval}
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabularx}{\linewidth}{@{}L c c c c c c@{}}
+\toprule
+& \multicolumn{2}{c}{\textbf{PIAF}} & \multicolumn{2}{c}{\textbf{LexML}} & \textbf{Latence} & \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}
+\textbf{Run} & \textbf{R@5} & \textbf{MRR} & \textbf{R@5} & \textbf{MRR} & \textbf{p50 / p95} & \textbf{Faithf.} \\
+\midrule
+\code{baseline-v0} & \aMesurer & \aMesurer & \aMesurer & \aMesurer & \aMesurer & \aMesurer \\
+\code{baseline-v0-cache} & \aMesurer & \aMesurer & \aMesurer & \aMesurer & \aMesurer & --- \\
+\code{baseline-v1} & \aMesurer & \aMesurer & \aMesurer & \aMesurer & \aMesurer & \aMesurer \\
+9.2 hybride & \aMesurer & \aMesurer & \aMesurer & \aMesurer & \aMesurer & \aMesurer \\
+9.3 re-ranking & \aMesurer & \aMesurer & \aMesurer & \aMesurer & \aMesurer & \aMesurer \\
+\bottomrule
+\end{tabularx}
+\caption{Recall@5, MRR, latence de la requête (retrieval) et faithfulness moyenne (juge Gemma 4) sur les jeux figés.}
+\label{tab:resultats}
+\end{table}
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{@{}l c c c@{}}
+\toprule
+\textbf{Mode (LexML, Recall@5)} & \code{paraphrase} & \code{reference} & \code{entity} \\
+\midrule
+dense (\code{baseline-v1}) & \aMesurer & \aMesurer & \aMesurer \\
+lexical & \aMesurer & \aMesurer & \aMesurer \\
+hybride & \aMesurer & \aMesurer & \aMesurer \\
+\bottomrule
+\end{tabular}
+\caption{Recall@5 par type de question LexML. Hypothèse à vérifier : la recherche lexicale aide surtout les types \code{reference} et \code{entity}.}
+\end{table}
+
+\subsection{API : ce que l'utilisateur perçoit}
+
+Le streaming a été mesuré sans GPU, sur un serveur uvicorn réel dont la recherche et Ollama sont remplacés par des faux de vitesse connue (recherche 60\,ms, préremplissage 300\,ms, 120 tokens à 40 tokens/s, médiane de 10 exécutions) :
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{@{}l r@{}}
+\toprule
+\textbf{Mesure} & \textbf{ms} \\
+\midrule
+\code{/api/query} : réponse complète & 3\,381 \\
+\code{/api/query/stream} : sources affichables (événement \code{retrieval}) & \textbf{65} \\
+\code{/api/query/stream} : premier token & \textbf{366} \\
+\code{/api/query/stream} : fin (événement \code{done}) & 3\,484 \\
+\bottomrule
+\end{tabular}
+\caption{Streaming SSE, sans GPU (\code{scripts/bench_api_hardening.py}).}
+\end{table}
+
+L'utilisateur voit les sources environ 52 fois plus tôt et le début de la réponse environ 9 fois plus tôt ; le temps total augmente de 3\,\%. Les middlewares ajoutent environ 0,16\,ms par requête. Le temps réel jusqu'au premier token sur GPU est \aMesurer.
+
+\subsection{Génération sur GPU}
+
+Avec qwen2.5:7b en Q4 sur une RTX 3070 Ti Laptop (8 Go), la génération passe d'environ 10,7 tokens/s sur CPU à 38 tokens/s sur GPU ($\times$\,3,6), pour environ 4,7 Gio de VRAM.
+
+% =============================================================================
+\section{Limites et suite}
+
+\subsection{Limites connues}
+
+\begin{itemize}
+  \item \textbf{Une seule réponse attendue par question.} Un autre passage qui répond aussi bien compte comme non pertinent : Recall et MRR sont des bornes basses.
+  \item \textbf{Questions LexML écrites par un modèle.} Elles évaluent le retrieval sans favoriser le générateur, mais héritent des tournures du rédacteur.
+  \item \textbf{Biais lexical de PIAF.} Les annotateurs lisaient le paragraphe ; le jeu favorise la recherche lexicale.
+  \item \textbf{Calibration limitée.} 30 paragraphes et une graine : les écarts de quelques points ne sont pas significatifs. Calibration en français seulement ; les variantes fabriquées sont plus faciles à repérer que de vraies hallucinations.
+  \item \textbf{Fonctionnel.} Pas d'OCR pour les PDF image ; ingestion et indexation synchrones côté API, sans file de jobs ; limite de débit en mémoire, propre à un processus.
+\end{itemize}
+
+\subsection{Suite}
+
+\begin{enumerate}
+  \item Terminer la baseline (\code{baseline-v0}, \code{-v0-cache}, \code{-v1}) et en déduire les seuils de la porte de qualité.
+  \item Mesurer la recherche hybride et le re-ranking sur les deux jeux et par type de question ; ne les activer par défaut que si le gain est net.
+  \item Mesurer l'abstention et le routeur de requête (9.4), puis instrumenter le pipeline (9.6).
+  \item Mesurer le temps réel jusqu'au premier token sur GPU.
+\end{enumerate}
+
+% =============================================================================
+\appendix
+\section{Reproduire les mesures}
+
+Infrastructure, puis initialisation de la base :
+
+\begin{lstlisting}
+docker compose up -d postgres ollama neo4j
+docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d ollama
+pip install -e .[dev]
+raglab db init
+\end{lstlisting}
+
+Jeux d'évaluation (les questions sont versionnées ; ces commandes régénèrent les corpus) :
+
+\begin{lstlisting}
+raglab bench download piaf --limit 500 --seed 42
+raglab lexml fulltext --from 1988 --to 2024 --per-year 7 --seed 42
+\end{lstlisting}
+
+Mesures, comparaison et porte de qualité :
+
+\begin{lstlisting}
+raglab bench all --label baseline-v1
+raglab bench report baseline-v0 baseline-v0-cache baseline-v1
+raglab gate --results benchmarks/results/baseline-v1.json
+raglab experiment calibrate-judges --output benchmarks/judge_calibration.json
+\end{lstlisting}
+
+Le juge llama.cpp est démarré et arrêté automatiquement si \code{RAGLAB_LLAMACPP_START_COMMAND} et \code{RAGLAB_LLAMACPP_STOP_COMMAND} sont définies ; sinon, un serveur déjà lancé sur \code{RAGLAB_LLAMACPP_BASE_URL} est utilisé.
+
+\end{document}
