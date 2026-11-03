@@ -61,6 +61,11 @@ class Settings(BaseSettings):
     # rerank_candidates chunks, the cross-encoder keeps top_k. fp16 on CUDA
     # when available (~1.1 GB VRAM for bge-reranker-v2-m3), CPU otherwise.
     default_rerank: bool = True
+    # What a *default* re-rank does without a usable GPU: "skip" (no
+    # re-ranking, the response says why) or "cpu" (slow, several seconds).
+    # A request that asks for rerank=true explicitly always runs, on CPU if
+    # need be, and the response says so.
+    rerank_without_gpu: str = "skip"
     rerank_model_name: str = "BAAI/bge-reranker-v2-m3"
     rerank_device: str = "cuda"
     rerank_candidates: int = 40

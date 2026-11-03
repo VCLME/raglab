@@ -22,7 +22,7 @@ from raglab.generation.prompts import build_prompt_bundle
 from raglab.generation.service import OllamaGenerator
 from raglab.logging_utils import log_event
 from raglab.retrieval.fusion import reciprocal_rank_fusion
-from raglab.retrieval.rerank import Reranker, get_reranker
+from raglab.retrieval.rerank import Reranker, get_reranker, rerank_gpu_available
 from raglab.retrieval.stages import planned_stages, prompt_details, retrieval_stage_events, stage_end, stage_start
 from raglab.stores.lexical.postgres import PostgresLexicalStore
 from raglab.stores.vector.postgres import PostgresVectorStore
@@ -53,6 +53,8 @@ class RetrievalOutcome:
     rrf_k: int | None = None
     rerank: bool = False
     rerank_stats: dict[str, float] = field(default_factory=dict)
+    # "skipped_no_gpu" (default re-rank skipped) or "cpu" (ran without GPU).
+    rerank_notice: str | None = None
     # First-stage chunks the cross-encoder read (0 without re-ranking).
     rerank_candidates: int = 0
 
@@ -66,6 +68,7 @@ class RetrievalOutcome:
             query_lexemes=self.query_lexemes,
             rerank=self.rerank,
             rerank_stats=dict(self.rerank_stats),
+            rerank_notice=self.rerank_notice,
             filters=self.filters,
             timings_ms=dict(self.timings_ms),
             **extra,
@@ -176,6 +179,16 @@ class QueryService:
         )
         effective_top_k = top_k or self.settings.default_top_k
         do_rerank = self.settings.default_rerank if rerank is None else rerank
+        rerank_notice: str | None = None
+        if do_rerank and not rerank_gpu_available(self.settings.rerank_device):
+            if rerank is None and self.settings.rerank_without_gpu == "skip":
+                do_rerank = False
+                rerank_notice = "skipped_no_gpu"
+            else:
+                rerank_notice = "cpu"
+            log_event(
+                LOGGER, logging.WARNING, "rerank.no_gpu", device=self.settings.rerank_device, action=rerank_notice
+            )
         # The first stage returns more than top_k when the cross-encoder
         # picks among its candidates.
         stage_top_k = max(effective_top_k, self.settings.rerank_candidates) if do_rerank else effective_top_k
@@ -274,6 +287,7 @@ class QueryService:
             lexical_weight=weight if hybrid else None,
             rrf_k=fusion_k if hybrid else None,
             rerank=do_rerank,
+            rerank_notice=rerank_notice,
             rerank_stats=rerank_stats,
             rerank_candidates=int(rerank_stats.get("candidates", 0)),
         )

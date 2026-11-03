@@ -241,3 +241,45 @@ def test_cross_encoder_scores_in_batches_and_releases(monkeypatch):
     assert scorer.loaded and scorer.device == "cpu"
     scorer.release()
     assert not scorer.loaded
+
+
+def test_default_rerank_is_skipped_without_gpu_and_says_why(monkeypatch):
+    import raglab.retrieval.service as service_module
+
+    monkeypatch.setattr(service_module, "rerank_gpu_available", lambda device: False)
+    service, scorer = _service(Settings(_env_file=None, rerank_candidates=4, default_rerank=True))
+    response = service.query(question="q", corpus_name="c", top_k=2, generate_answer=False)
+
+    assert scorer.calls == []
+    assert response.rerank is False
+    assert response.rerank_notice == "skipped_no_gpu"
+
+
+def test_explicit_rerank_runs_on_cpu_and_says_so(monkeypatch):
+    import raglab.retrieval.service as service_module
+
+    monkeypatch.setattr(service_module, "rerank_gpu_available", lambda device: False)
+    service, scorer = _service(Settings(_env_file=None, rerank_candidates=4, default_rerank=True))
+    response = service.query(question="q", corpus_name="c", top_k=2, generate_answer=False, rerank=True)
+
+    assert len(scorer.calls) == 1
+    assert response.rerank is True
+    assert response.rerank_notice == "cpu"
+
+
+def test_cpu_fallback_can_be_chosen_for_the_default(monkeypatch):
+    import raglab.retrieval.service as service_module
+
+    monkeypatch.setattr(service_module, "rerank_gpu_available", lambda device: False)
+    settings = Settings(_env_file=None, rerank_candidates=4, default_rerank=True, rerank_without_gpu="cpu")
+    service, scorer = _service(settings)
+    response = service.query(question="q", corpus_name="c", top_k=2, generate_answer=False)
+
+    assert len(scorer.calls) == 1
+    assert response.rerank_notice == "cpu"
+
+
+def test_gpu_available_needs_a_cuda_device_name():
+    from raglab.retrieval.rerank import rerank_gpu_available
+
+    assert rerank_gpu_available("cpu") is False
