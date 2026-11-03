@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{title}}</title>
+<meta name="description" content="{{description}}">
+<link rel="canonical" href="{{site_url}}{{path}}">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="raglab">
+<meta property="og:title" content="{{title}}">
+<meta property="og:description" content="{{description}}">
+<meta property="og:url" content="{{site_url}}{{path}}">
+<meta property="og:image" content="{{site_url}}assets/chat-welcome.png">
+<meta property="og:image:alt" content="raglab chat answering from a private document corpus with inline citations">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{title}}">
+<meta name="twitter:description" content="{{description}}">
+<meta name="twitter:image" content="{{site_url}}assets/chat-welcome.png">
+<meta name="theme-color" content="#f8f9fc">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap header-row">
+    <a class="brand" href="./"><span class="brand-mark" aria-hidden="true"></span>raglab</a>
+    <nav aria-label="Main">
+      <ul>
+        <li><a href="./" data-nav="index">Overview</a></li>
+        <li><a href="results.html" data-nav="results">Results</a></li>
+        <li><a href="method.html" data-nav="method">How it's measured</a></li>
+        <li><a href="{{repo_url}}">Code</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+<main id="main">
+{{content}}
+</main>
+<footer class="site-footer">
+  <div class="wrap footer-row">
+    <p>raglab by Luc Melaye · MIT licence</p>
+    <ul>
+      <li><a href="{{repo_url}}">Source on GitHub</a></li>
+      <li><a href="raglab-report-fr.pdf">Technical report (PDF, French)</a></li>
+      <li><a href="{{repo_url}}/blob/main/docs/README.md">Documentation (French)</a></li>
+    </ul>
+  </div>
+</footer>
+</body>
+</html>

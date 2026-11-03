@@ -1,0 +1,32 @@
+[
+  {
+    "label": "baseline-v0",
+    "name": "Baseline v0",
+    "change": "original pipeline: dense search only (multilingual-e5-small, pgvector HNSW)",
+    "status": ""
+  },
+  {
+    "label": "baseline-v0-cache",
+    "name": "Embedder cache",
+    "change": "+ embedding model loaded once instead of per question (retrieval only, not judged)",
+    "status": ""
+  },
+  {
+    "label": "baseline-v1",
+    "name": "Baseline v1",
+    "change": "+ top-k always filled when several indexes share the database (official baseline)",
+    "status": ""
+  },
+  {
+    "label": "hybrid-v1",
+    "name": "Hybrid search",
+    "change": "+ BM25 keyword search in PostgreSQL, fused with dense results (RRF)",
+    "status": "phase 9.2, in review"
+  },
+  {
+    "label": "rerank-v1",
+    "name": "Re-ranking",
+    "change": "+ cross-encoder bge-reranker-v2-m3 on the fused candidates",
+    "status": "phase 9.3, in review"
+  }
+]
