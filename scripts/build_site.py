@@ -25,6 +25,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+import site_charts
+
 ROOT = Path(__file__).resolve().parent.parent
 SITE_SRC = ROOT / "site"
 RESULTS_DIR = ROOT / "benchmarks" / "results"
@@ -354,6 +356,12 @@ def build_site(out: Path, site_url: str) -> None:
     runs = load_results()
     values = {
         "results_table": html_table(stages, runs),
+        "chart_stages": site_charts.stage_chart(runs),
+        "chart_tradeoff": site_charts.tradeoff_chart(runs, stages),
+        "chart_sweep": site_charts.sweep_chart(runs),
+        "chart_types": site_charts.types_chart(runs),
+        "chart_recallk": site_charts.recall_k_chart(runs),
+        "pipeline": site_charts.pipeline(runs, REPO_URL),
         "run_details": run_details(runs),
         "calibration_table": calibration_table(),
         "repo_url": REPO_URL,
@@ -377,6 +385,10 @@ def build_site(out: Path, site_url: str) -> None:
         }
         page_values["content"] = render(body, page_values)
         html_out = render(layout, page_values)
+        if page.stem == "index":
+            # On the overview, Overview and Results scroll within the page (smoothly, see style.css).
+            html_out = html_out.replace('href="./" data-nav="index"', 'href="#top" data-nav="index"')
+            html_out = html_out.replace('href="results.html" data-nav="results"', 'href="#results" data-nav="results"')
         for nav in ("index", "results", "method"):
             current = ' aria-current="page"' if fields.get("nav") == nav else ""
             html_out = html_out.replace(f'data-nav="{nav}"', f'data-nav="{nav}"{current}')

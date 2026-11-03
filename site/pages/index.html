@@ -2,11 +2,11 @@ title: raglab · Private RAG you can measure
 description: A retrieval-augmented generation pipeline that runs entirely on your own infrastructure, proves its quality with before/after numbers on frozen benchmarks, and says when the answer is not in your documents.
 nav: index
 ---
-<section class="hero">
+<section class="hero" id="top">
   <div class="wrap">
     <p class="eyebrow">Open-source RAG pipeline · MIT</p>
     <h1>Private RAG you can measure.</h1>
-    <p class="lede">raglab answers questions from your documents without them ever leaving your servers. Every component is kept only if it improves the numbers on frozen benchmarks, scored by an independent, calibrated judge. When the answer is not in your documents, it says so.</p>
+    <p class="lede">Naive RAG breaks on structured, cross-referenced, versioned documents such as laws and contracts. raglab shows where, measures it and fixes it, entirely on your own servers. Every component is kept only if it moves the numbers on frozen benchmarks.</p>
     <p class="cta">
       <a class="button" href="results.html">See the results</a>
       <a class="button secondary" href="{{repo_url}}">Read the code</a>
@@ -23,9 +23,40 @@ nav: index
 
 <section class="wrap shot">
   <figure>
-    <img src="assets/chat-welcome.png" width="1440" height="900" alt="The raglab chat screen: pick a corpus, an index and a local model, then ask a question; answers cite the passages they come from.">
+    <img class="shot-media" src="assets/chat-welcome.png" width="1440" height="900" alt="The raglab chat screen: pick a corpus, an index and a local model, then ask a question; answers cite the passages they come from.">
     <figcaption>The chat: pick a corpus, an index and a local model. Answers cite the passages they use.</figcaption>
   </figure>
+</section>
+
+<section class="wrap" aria-labelledby="failures">
+  <h2 id="failures">Where naive RAG breaks</h2>
+  <p class="section-lead">On a corpus of laws, a classic embed-and-retrieve pipeline fails in four ways. Each gets its own frozen question set, a before/after measurement and one brick that fixes it. Only measured numbers are shown as results.</p>
+  <ol class="failures">
+    <li>
+      <h3>Identifiers</h3>
+      <p>Embeddings blur numbers: “art. 49 da Lei 8.078” comes back as art. 94.</p>
+      <p class="failure-brick">Citation resolver (9.3b)</p>
+      <p class="state is-measured">Measured: {{ref_r5_v1}} → {{ref_r5_full}} of article-number questions answered from the right passage</p>
+    </li>
+    <li>
+      <h3>Cross-references</h3>
+      <p>The answer sits in the article the retrieved one cites: the penalties for art. 5 are in art. 12.</p>
+      <p class="failure-brick">Citation graph in Neo4j (9.9)</p>
+      <p class="state">In measurement</p>
+    </li>
+    <li>
+      <h3>Versions</h3>
+      <p>A revoked or rewritten article is quoted as if it were in force (“Revogado”, “Redação dada pela Lei nº 14.026”).</p>
+      <p class="failure-brick">Version status per passage (9.10)</p>
+      <p class="state">Planned</p>
+    </li>
+    <li>
+      <h3>Out of scope</h3>
+      <p>The model answers anyway, for instance a French-law question asked of a Brazilian corpus.</p>
+      <p class="failure-brick">Router and abstention (9.4)</p>
+      <p class="state">Measured on an earlier pipeline; re-measure pending</p>
+    </li>
+  </ol>
 </section>
 
 <section class="wrap" aria-labelledby="why">
@@ -56,40 +87,24 @@ nav: index
       <p>What fixed it is a <a href="{{repo_url}}/blob/main/docs/citations.md">citation resolver</a>: “art. N da Lei X” is parsed, the search is restricted to that law and the cited article is pinned first. Those questions went from {{ref_r5_v1}} to {{ref_r5_cites}} with the resolver alone, and {{ref_r5_full}} in the full pipeline.</p>
     </div>
   </div>
+  {{chart_types}}
 </section>
 
 <section class="wrap" aria-labelledby="results">
   <h2 id="results">Results, before and after</h2>
-  <p>Each row adds one component to the previous one. Rows marked <em>measuring</em> have code but no recorded run yet.</p>
+  <p>Each brick was added on its own and measured on the same frozen questions, with bootstrap intervals so a gain can be told from noise.</p>
+  {{chart_stages}}
+  {{chart_tradeoff}}
+  <p>The full table: each row adds one component to the previous one. Rows marked <em>measuring</em> have code but no recorded run yet.</p>
   {{results_table}}
-  <p class="note">The embedder cache cut search latency from {{latency_v0}} to {{latency_cache}} per question (the model was being reloaded from disk for every question). Details per run on the <a href="results.html">results page</a>.</p>
+  <p class="note">The embedder cache cut search latency from {{latency_v0}} to {{latency_cache}} per question (the model was being reloaded from disk for every question). Every run, the candidate sweep and recall at k on the <a href="results.html">results page</a>.</p>
 </section>
 
 <section class="wrap" aria-labelledby="built">
-  <h2 id="built">How it's built</h2>
-  <figure class="diagram">
-    <svg viewBox="0 0 880 210" role="img" aria-labelledby="diagram-title diagram-desc">
-      <title id="diagram-title">raglab architecture</title>
-      <desc id="diagram-desc">Documents are chunked and embedded into PostgreSQL with pgvector. A question is embedded, searched densely and by keywords, fused, re-ranked, then answered by a local model through Ollama with citations, or refused when the context is insufficient.</desc>
-      <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="arrowhead"/></marker></defs>
-      <g class="node"><rect x="10" y="20" width="150" height="56" rx="8"/><text x="85" y="45">Documents</text><text x="85" y="63" class="sub">txt · pdf · docx</text></g>
-      <g class="node"><rect x="200" y="20" width="150" height="56" rx="8"/><text x="275" y="45">Chunk + embed</text><text x="275" y="63" class="sub">e5-small, local</text></g>
-      <g class="node store"><rect x="390" y="20" width="170" height="56" rx="8"/><text x="475" y="45">PostgreSQL</text><text x="475" y="63" class="sub">pgvector HNSW + BM25</text></g>
-      <g class="node"><rect x="10" y="134" width="150" height="56" rx="8"/><text x="85" y="159">Question</text><text x="85" y="177" class="sub">UI · API · CLI</text></g>
-      <g class="node"><rect x="200" y="134" width="150" height="56" rx="8"/><text x="275" y="159">Dense + keyword</text><text x="275" y="177" class="sub">fused with RRF</text></g>
-      <g class="node"><rect x="390" y="134" width="170" height="56" rx="8"/><text x="475" y="159">Re-rank</text><text x="475" y="177" class="sub">cross-encoder</text></g>
-      <g class="node accent"><rect x="600" y="134" width="270" height="56" rx="8"/><text x="735" y="159">Local LLM (Ollama)</text><text x="735" y="177" class="sub">cited answer, or “not in your documents”</text></g>
-      <path d="M160 48 H196" marker-end="url(#arrow)"/>
-      <path d="M350 48 H386" marker-end="url(#arrow)"/>
-      <path d="M160 162 H196" marker-end="url(#arrow)"/>
-      <path d="M350 162 H386" marker-end="url(#arrow)"/>
-      <path d="M560 162 H596" marker-end="url(#arrow)"/>
-      <path d="M475 76 V100 H275 V130" marker-end="url(#arrow)"/>
-      <text x="610" y="45" class="sub left">Everything runs on your machines.</text>
-      <text x="610" y="63" class="sub left">No external API call.</text>
-    </svg>
-    <figcaption>The default pipeline: hybrid search, re-ranking with {{reranker_full}}, the citation resolver, and {{generator_full}} for generation.</figcaption>
-  </figure>
+  <h2 id="built">How a question flows</h2>
+  <p class="section-lead">The default pipeline, stage by stage. Pick a stage to see what it does, why it is there and what it measurably changed. The wording follows the app's learning mode.</p>
+  {{pipeline}}
+  <h3 class="sub-title">Bricks, in the order they shipped</h3>
   <ul class="bricks">
     <li><strong>Passage-level benchmarks</strong> (phase 9.1): frozen PIAF and LexML question sets; a hit counts only if the retrieved chunk overlaps the exact answer passage.</li>
     <li><strong>Embedder cache</strong>: model loaded once; search latency {{latency_v0}} → {{latency_cache}} p50.</li>
@@ -126,7 +141,9 @@ docker compose exec ollama ollama pull qwen2.5:7b</code></pre>
   <div>
     <h2 id="next">What I'd do next</h2>
     <ul>
-      <li>Query routing and calibrated abstention (phase 9.4), measured on 80 unanswerable questions.</li>
+      <li>Cross-references: a citation graph as a third search branch (9.9), measured on a frozen set of questions whose answer is in a cited article.</li>
+      <li>Versions: flag revoked and rewritten articles at indexing time (9.10).</li>
+      <li>Re-measure the router and abstention (9.4) on the current pipeline, with its 80 unanswerable questions.</li>
       <li>Weekly quality gate that fails when retrieval regresses (9.7).</li>
       <li>Run the benchmark on a client's own documents before any deployment.</li>
     </ul>
