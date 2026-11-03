@@ -190,6 +190,8 @@ ruff check . && ruff format --check . && mypy && pytest
 
 ## Documentation
 
+Index complet, classé par besoin (lancer, mesurer, étendre, exploiter) : **[docs/README.md](docs/README.md)**. Rapport technique : [docs/rapport/](docs/rapport/README.md).
+
 - [docs/base-idea.md](docs/base-idea.md) — mission et axes de comparaison
 - [docs/architecture.md](docs/architecture.md) — architecture logicielle
 - [docs/technical-choices.md](docs/technical-choices.md) — choix techniques (pgvector, Ollama, etc.)
@@ -198,6 +200,9 @@ ruff check . && ruff format --check . && mypy && pytest
 - [docs/roadmap.md](docs/roadmap.md) — ce qui est livré, ce qui vient
 - [docs/frontend-ui.md](docs/frontend-ui.md) — détail des pages React
 - [docs/run-and-test.md](docs/run-and-test.md) — commandes pour lancer / tester / rejouer
+- [docs/exploitation.md](docs/exploitation.md) — démarrage, budget GPU, sauvegardes, dépannage
+- [docs/api-production.md](docs/api-production.md) — API durcie : SSE, budgets, request id, clé d'API
+- [docs/portes-qualite.md](docs/portes-qualite.md) — `raglab gate` et seuils de non-régression
 - [docs/benchmarks/protocole.md](docs/benchmarks/protocole.md) — comment raglab mesure (jeux figés, pertinence au niveau du passage)
 - [docs/benchmarks/juges.md](docs/benchmarks/juges.md) — juges RAGAS et leur calibration
 - [docs/benchmarks/baseline.md](docs/benchmarks/baseline.md) — la configuration de référence et ses chiffres
@@ -208,6 +213,6 @@ ruff check . && ruff format --check . && mypy && pytest
 
 - pas d'OCR pour PDF images
 - pas de reranker (cross-encoder en roadmap)
-- Neo4j est branché, l'indexation et le retrieval graphe sont fonctionnels (vector-in-graph, un vector index Neo4j 5 par dimension). Les filtres `metadata_equals` sur le store graphe et l'extraction d'entités arrivent en phase 8.2 — voir [docs/roadmap.md](docs/roadmap.md)
+- Neo4j est branché : indexation et retrieval graphe (vector-in-graph, un vector index Neo4j 5 par dimension), extraction d'entités et recherche hybride vecteur + entités. Les filtres `metadata_equals` sur le store graphe arrivent en phase 8.2.3 — voir [docs/roadmap.md](docs/roadmap.md)
 - l'API exécute ingest/index/lexml load en synchrone, sans file de jobs
 - la collecte LexML historique (`raglab lexml load`) ne sauvegarde que des fiches ; le texte intégral passe par `raglab lexml fulltext` (lois fédérales seulement)
