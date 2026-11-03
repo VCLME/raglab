@@ -21,7 +21,7 @@ class QueryService:
     def __init__(self, session: Session, settings: Settings | None = None):
         self.session = session
         self.settings = settings or get_settings()
-        self.vector_store = PostgresVectorStore()
+        self.vector_store = PostgresVectorStore(iterative_scan=self.settings.hnsw_iterative_scan)
         self.generator = OllamaGenerator(self.settings)
 
     def _resolve_index_run(

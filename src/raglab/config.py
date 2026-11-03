@@ -68,6 +68,9 @@ class Settings(BaseSettings):
     query_prefix: str = "query: "
     passage_prefix: str = "passage: "
     distance_metric: str = "cosine"
+    # pgvector iterative HNSW scans, so filters (index run, metadata) never
+    # starve the top-k. Off = behaviour measured in baseline-v0.
+    hnsw_iterative_scan: bool = True
 
     chunk_size: int = 900
     chunk_overlap: int = 150
