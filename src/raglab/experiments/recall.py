@@ -232,7 +232,13 @@ class RecallBenchmarkService:
                 "backend": self.backend,
                 "compute_ragas": compute_ragas,
                 **(
-                    {"judge": judge.label(self.settings), "ragas_case_limit": ragas_case_limit} if compute_ragas else {}
+                    {
+                        "judge": judge.label(self.settings),
+                        "ragas_case_limit": ragas_case_limit,
+                        "generation_top_k": self.settings.default_top_k,
+                    }
+                    if compute_ragas
+                    else {}
                 ),
             },
         )
@@ -259,6 +265,7 @@ class RecallBenchmarkService:
         first_rank_sum = 0
         first_rank_count = 0
         grade_limit = len(cases) if ragas_case_limit is None else ragas_case_limit
+        generation_top_k = self.settings.default_top_k
 
         try:
             for position, case in enumerate(cases):
@@ -272,6 +279,10 @@ class RecallBenchmarkService:
                 }
                 if index_run_id:
                     query_kwargs["index_run_id"] = index_run_id
+                if generate and self.backend == "pgvector":
+                    # Retrieval keeps max_k chunks for Recall@k, but the
+                    # answer is generated from the production top-k only.
+                    query_kwargs["generation_top_k"] = generation_top_k
                 response = self.query_service.query(**query_kwargs)
                 retrieved = [chunk.model_dump() for chunk in response.retrieved_chunks]
                 flags = relevance_flags(retrieved, is_relevant=lambda chunk: self._is_relevant(case, chunk))  # noqa: B023 (called immediately)
@@ -303,6 +314,11 @@ class RecallBenchmarkService:
                         "expected_urns": case.expected_urns,
                         "retrieved_chunks": retrieved,
                         "answer": response.answer if generate else None,
+                        "generation_context_size": (
+                            (min(generation_top_k, len(retrieved)) if self.backend == "pgvector" else len(retrieved))
+                            if generate
+                            else 0
+                        ),
                         "timings_ms": dict(getattr(response, "timings_ms", {}) or {}),
                         "generation_stats": dict(getattr(response, "generation_stats", {}) or {}),
                         "metrics": metrics_for_case,
@@ -409,7 +425,11 @@ class RecallBenchmarkService:
                     "faithfulness": judges["faithfulness"].score(
                         question=case.question,
                         answer=answer,
-                        retrieved_texts=[chunk["chunk_text"] for chunk in detail["retrieved_chunks"]],
+                        # The judge sees exactly the context the generator saw.
+                        retrieved_texts=[
+                            chunk["chunk_text"]
+                            for chunk in detail["retrieved_chunks"][: detail.get("generation_context_size") or None]
+                        ],
                     ),
                     "answer_relevancy": judges["answer_relevancy"].score(question=case.question, answer=answer),
                 }

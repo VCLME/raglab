@@ -340,3 +340,64 @@ def test_llamacpp_judge_grades_in_a_second_pass_inside_the_server(
     assert events.count("faith") == 2
     assert result["summary"]["faithfulness_judged"] == 2
     assert result["judge"].startswith("llamacpp:")
+
+
+@patch("raglab.experiments.recall.AnswerRelevancyJudge")
+@patch("raglab.experiments.recall.AnswerCorrectnessJudge")
+@patch("raglab.experiments.recall.FaithfulnessJudge")
+def test_answers_use_the_production_top_k_and_the_judge_sees_that_context(
+    faith_cls, corr_cls, relevancy_cls, tmp_path: Path
+):
+    ds = tmp_path / "gt.jsonl"
+    ds.write_text(json.dumps({"id": "c1", "question": "Q?", "expected_file_names": ["a.txt"]}) + "\n", encoding="utf-8")
+    for cls in (faith_cls, corr_cls, relevancy_cls):
+        cls.return_value.score.return_value = SimpleNamespace(score=1.0, reason="")
+    chunks = [
+        RetrievedChunk(
+            chunk_id=f"k{i}",
+            document_id="d",
+            file_name="a.txt",
+            source_path="a.txt",
+            chunk_text=f"t{i}",
+            score=1.0,
+            rank=i,
+        )
+        for i in range(1, 11)
+    ]
+    calls = []
+
+    class Recording:
+        def query(self, **kwargs):
+            calls.append(kwargs)
+            return SimpleNamespace(retrieved_chunks=chunks, index_run_id="r", answer="A.")
+
+    service = RecallBenchmarkService(session=MagicMock())
+    service.query_service = Recording()
+    with (
+        patch("raglab.experiments.recall.create_experiment_run", return_value=SimpleNamespace(id="e", config_json={})),
+        patch("raglab.experiments.recall.store_experiment_result"),
+        patch("raglab.experiments.recall.complete_experiment_run"),
+    ):
+        service.run(
+            corpus_name="demo",
+            strategy=ChunkingStrategy.TRADITIONAL,
+            dataset_path=ds,
+            k_values=(1, 5, 10),
+            compute_ragas=True,
+        )
+
+    assert calls[0]["top_k"] == 10
+    assert calls[0]["generation_top_k"] == service.settings.default_top_k == 5
+    judged_context = faith_cls.return_value.score.call_args.kwargs["retrieved_texts"]
+    assert judged_context == ["t1", "t2", "t3", "t4", "t5"]
+
+
+def test_faithfulness_judge_reads_chunks_in_full():
+    from raglab.experiments.ragas import FaithfulnessJudge
+
+    client = MagicMock()
+    client.chat.return_value = {"answer": '{"score": 1.0, "reason": "ok"}'}
+    judge = FaithfulnessJudge(settings=MagicMock(generation_model="m"), client=client)
+    long_chunk = "début " + "x" * 800 + " FIN-DU-CHUNK"
+    judge.score(question="Q?", answer="A.", retrieved_texts=[long_chunk])
+    assert "FIN-DU-CHUNK" in client.chat.call_args.kwargs["messages"][0]["content"]

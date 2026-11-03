@@ -167,7 +167,11 @@ class QueryService:
         generate_answer: bool = True,
         filters: RetrievalFilters | None = None,
         llm_model: str | None = None,
+        generation_top_k: int | None = None,
     ) -> QueryResponse:
+        """`generation_top_k` sends only the first N retrieved chunks to the
+        LLM; the benchmark retrieves 10 (for Recall@10) but must generate from
+        the same top-k as production."""
         outcome = self.retrieve(
             question=question,
             corpus_name=corpus_name,
@@ -179,7 +183,8 @@ class QueryService:
         answer = None
         if generate_answer:
             generation_started = perf_counter()
-            answer = self.generator.generate_answer(question, outcome.retrieved, model=llm_model)
+            context = outcome.retrieved[:generation_top_k] if generation_top_k else outcome.retrieved
+            answer = self.generator.generate_answer(question, context, model=llm_model)
             outcome.timings_ms["generation"] = round((perf_counter() - generation_started) * 1000, 3)
         elapsed_ms = (perf_counter() - outcome.started) * 1000
         self._log_completed(outcome, generate_answer=generate_answer, elapsed_ms=elapsed_ms)
