@@ -130,6 +130,8 @@ class QueryRequest(BaseModel):
     # pgvector only: dense (cosine KNN), lexical (BM25) or hybrid (RRF of
     # both). Distinct from the graph store's `mode` below. None = settings.
     retrieval_mode: RetrievalMode | None = None
+    # Resolve legal citations ("art. 49 da Lei nº 8.078"); None = server default.
+    citations: bool | None = None
     lexical_weight: float | None = Field(None, ge=0.0, le=1.0)
     rrf_k: int | None = Field(None, ge=0)
     # Ollama model for the answer; None = RAGLAB_GENERATION_MODEL.
@@ -359,6 +361,7 @@ class RecallRequest(BaseModel):
     retrieval_mode: RetrievalMode | None = None
     lexical_weight: float | None = Field(None, ge=0.0, le=1.0)
     rrf_k: int | None = Field(None, ge=0)
+    citations: bool | None = None
     compute_ragas: bool = False
     # Grade only the first N cases (retrieval still runs on all of them).
     ragas_case_limit: int | None = Field(None, ge=1)

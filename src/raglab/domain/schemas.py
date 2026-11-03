@@ -52,6 +52,9 @@ class RetrievedChunk(BaseModel):
     lexical_score: float | None = None
     lexical_rank: int | None = None
     fused_score: float | None = None
+    # True when the chunk was pinned because the question cites its law and
+    # article (see raglab.retrieval.citations).
+    citation_match: bool | None = None
 
 
 class RetrievalFilters(BaseModel):
@@ -73,6 +76,9 @@ class QueryResponse(BaseModel):
     strategy: ChunkingStrategy
     retrieved_chunks: list[RetrievedChunk]
     retrieval_mode: RetrievalMode = RetrievalMode.DENSE
+    # Legal citation parsed from the question when the citations option is
+    # on: label, law_number, article, law_found, article_found.
+    citation: dict[str, Any] | None = None
     # Lexemes the question was reduced to for BM25 (lexical / hybrid modes).
     query_lexemes: list[str] = Field(default_factory=list)
     filters: RetrievalFilters | None = None

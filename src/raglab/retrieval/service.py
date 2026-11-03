@@ -21,6 +21,7 @@ from raglab.embeddings.factory import build_embedding_provider
 from raglab.generation.prompts import build_prompt_bundle
 from raglab.generation.service import OllamaGenerator
 from raglab.logging_utils import log_event
+from raglab.retrieval.citations import article_chunks, find_law_document, merge_with_citation, parse_citation
 from raglab.retrieval.fusion import reciprocal_rank_fusion
 from raglab.retrieval.stages import planned_stages, prompt_details, retrieval_stage_events, stage_end, stage_start
 from raglab.stores.lexical.postgres import PostgresLexicalStore
@@ -50,6 +51,8 @@ class RetrievalOutcome:
     query_lexemes: list[str] = field(default_factory=list)
     lexical_weight: float | None = None
     rrf_k: int | None = None
+    # Parsed legal citation and whether it resolved (citations option).
+    citation: dict[str, Any] | None = None
 
     def response(self, **extra: Any) -> QueryResponse:
         return QueryResponse(
@@ -61,6 +64,7 @@ class RetrievalOutcome:
             query_lexemes=self.query_lexemes,
             filters=self.filters,
             timings_ms=dict(self.timings_ms),
+            citation=self.citation,
             **extra,
         )
 
@@ -139,8 +143,13 @@ class QueryService:
         retrieval_mode: RetrievalMode | str | None = None,
         lexical_weight: float | None = None,
         rrf_k: int | None = None,
+        citations: bool | None = None,
     ) -> RetrievalOutcome:
         """Search the index for the question, each stage under its budget.
+
+        With `citations` on, a question citing a law ("art. 49 da Lei nº
+        8.078") is restricted to that law and the cited article is pinned
+        first (see `raglab.retrieval.citations`).
 
         dense: embed + cosine KNN (as before). lexical: BM25, no embedder.
         hybrid: both, fused by Reciprocal Rank Fusion over deeper lists.
@@ -160,6 +169,18 @@ class QueryService:
         weight = self.settings.hybrid_lexical_weight if lexical_weight is None else lexical_weight
         fusion_k = self.settings.rrf_k if rrf_k is None else rrf_k
 
+        citation_started = perf_counter()
+        use_citations = self.settings.citation_resolver if citations is None else citations
+        citation = parse_citation(question) if use_citations else None
+        law_document_id: str | None = None
+        pinned: list[RetrievedChunk] = []
+        if citation is not None:
+            law_document_id = find_law_document(self.session, index_run, citation)
+            if law_document_id is not None:
+                if citation.article:
+                    pinned = article_chunks(self.session, index_run, law_document_id, citation.article)
+                filters = (filters or RetrievalFilters()).model_copy(update={"document_ids": [law_document_id]})
+        citation_seconds = perf_counter() - citation_started if citation is not None else 0.0
         started = perf_counter()
         query_embedding: list[float] | None = None
         if mode != RetrievalMode.LEXICAL:
@@ -207,6 +228,8 @@ class QueryService:
                     top_k=effective_top_k,
                 )
                 stage_ms["fusion"] = perf_counter() - fusion_started
+            if pinned:
+                retrieved = merge_with_citation(pinned, retrieved, effective_top_k)
             searched = perf_counter()
 
         # `embed` + `retrieval` stay the two stages the recall benchmark sums
@@ -219,7 +242,11 @@ class QueryService:
         timings_ms: dict[str, float] = {}
         if query_embedding is not None:
             timings_ms["embed"] = round((embedded - started) * 1000, 3)
-        timings_ms["retrieval"] = round((searched - search_started) * 1000, 3)
+        # Citation resolution is part of retrieval: counted in `retrieval`
+        # (so the benchmark's query latency includes it) and shown apart.
+        timings_ms["retrieval"] = round((searched - search_started + citation_seconds) * 1000, 3)
+        if citation is not None:
+            timings_ms["citation"] = round(citation_seconds * 1000, 3)
         if mode != RetrievalMode.DENSE:
             timings_ms.update({stage: round(seconds * 1000, 3) for stage, seconds in stage_ms.items()})
         hybrid = mode == RetrievalMode.HYBRID
@@ -237,6 +264,17 @@ class QueryService:
             query_lexemes=query_lexemes,
             lexical_weight=weight if hybrid else None,
             rrf_k=fusion_k if hybrid else None,
+            citation=(
+                {
+                    "label": citation.label(),
+                    "law_number": citation.law_number,
+                    "article": citation.article,
+                    "law_found": law_document_id is not None,
+                    "article_found": bool(pinned),
+                }
+                if citation is not None
+                else None
+            ),
         )
 
     def query(
@@ -254,6 +292,7 @@ class QueryService:
         retrieval_mode: RetrievalMode | str | None = None,
         lexical_weight: float | None = None,
         rrf_k: int | None = None,
+        citations: bool | None = None,
     ) -> QueryResponse:
         """`generation_top_k` sends only the first N retrieved chunks to the
         LLM; the benchmark retrieves 10 (for Recall@10) but must generate from
@@ -268,6 +307,7 @@ class QueryService:
             retrieval_mode=retrieval_mode,
             lexical_weight=lexical_weight,
             rrf_k=rrf_k,
+            citations=citations,
         )
         answer = None
         if generate_answer:

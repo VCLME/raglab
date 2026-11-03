@@ -143,6 +143,11 @@ def bench_all(
         None, "--lexical-weight", min=0.0, max=1.0, help="Poids du BM25 dans la fusion RRF (mode hybrid)."
     ),
     rrf_k: int | None = typer.Option(None, "--rrf-k", min=0, help="Constante k de la fusion RRF (defaut 60)."),
+    citations: bool | None = typer.Option(
+        None,
+        "--citations/--no-citations",
+        help="Reconnaitre les citations juridiques (art. N da Lei X) : restreindre a la loi citee, epingler l'article. Defaut: RAGLAB_CITATION_RESOLVER.",
+    ),
 ) -> None:
     """Regenerer tous les chiffres de benchmark (PIAF + LexML) et les ecrire dans benchmarks/results/."""
     from raglab.benchmarks.suite import render_markdown, run_all
@@ -156,6 +161,7 @@ def bench_all(
         retrieval_mode=retrieval_mode,
         lexical_weight=lexical_weight,
         rrf_k=rrf_k,
+        citations=citations,
     )
     output = Path("benchmarks/results") / f"{label}.json"
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -544,6 +550,11 @@ def query(
         help="Poids du BM25 dans la fusion RRF (0 = dense seul, 1 = BM25 seul). Mode hybrid.",
     ),
     rrf_k: int | None = typer.Option(None, "--rrf-k", min=0, help="Constante k de la fusion RRF (defaut 60)."),
+    citations: bool | None = typer.Option(
+        None,
+        "--citations/--no-citations",
+        help="Reconnaitre les citations juridiques (art. N da Lei X) : restreindre a la loi citee, epingler l'article. Defaut: RAGLAB_CITATION_RESOLVER.",
+    ),
     stream: bool = typer.Option(
         False,
         "--stream",
@@ -576,6 +587,7 @@ def query(
                 retrieval_mode=retrieval_mode,
                 lexical_weight=lexical_weight,
                 rrf_k=rrf_k,
+                citations=citations,
             )
             final: dict = {}
             for event, data in service.stream_answer(outcome, llm_model=llm_model):
@@ -597,6 +609,7 @@ def query(
             retrieval_mode=retrieval_mode,
             lexical_weight=lexical_weight,
             rrf_k=rrf_k,
+            citations=citations,
             llm_model=llm_model,
         )
     typer.echo(response.model_dump_json(indent=2))
@@ -701,6 +714,11 @@ def experiment_recall(
         help="Poids du BM25 dans la fusion RRF (0 = dense seul, 1 = BM25 seul). Mode hybrid.",
     ),
     rrf_k: int | None = typer.Option(None, "--rrf-k", min=0, help="Constante k de la fusion RRF (defaut 60)."),
+    citations: bool | None = typer.Option(
+        None,
+        "--citations/--no-citations",
+        help="Reconnaitre les citations juridiques (art. N da Lei X) : restreindre a la loi citee, epingler l'article. Defaut: RAGLAB_CITATION_RESOLVER.",
+    ),
 ) -> None:
     with session_scope() as session:
         service = RecallBenchmarkService(session)
@@ -713,6 +731,7 @@ def experiment_recall(
             retrieval_mode=retrieval_mode,
             lexical_weight=lexical_weight,
             rrf_k=rrf_k,
+            citations=citations,
             compute_ragas=ragas,
             ragas_case_limit=ragas_limit,
             judge=JudgeConfig(backend=judge_backend, model=judge_model),

@@ -47,6 +47,10 @@ class Settings(BaseSettings):
     # default_language picks the text-search config when neither a document
     # nor its corpus declares one.
     default_retrieval_mode: str = "dense"
+    # Resolve legal citations ("art. 49 da Lei nº 8.078") before searching:
+    # restrict to the cited law, pin the cited article. Off by default
+    # until measured (see raglab.retrieval.citations).
+    citation_resolver: bool = False
     default_language: str = "fr"
     bm25_k1: float = 1.2
     bm25_b: float = 0.75
