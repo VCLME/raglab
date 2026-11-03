@@ -110,6 +110,7 @@ function LaunchTab({ onLaunched }: { onLaunched: () => void }) {
   const [rrfK, setRrfK] = useState("");
   const [rerank, setRerank] = useState(false);
   const [citations, setCitations] = useState(false);
+  const [graph, setGraph] = useState(false);
 
   const action = useApiAction((body: unknown) =>
     post<{
@@ -166,6 +167,7 @@ function LaunchTab({ onLaunched }: { onLaunched: () => void }) {
         body.retrieval_mode = retrievalMode;
         body.rerank = rerank;
         body.citations = citations;
+        body.graph = graph;
         if (retrievalMode === "hybrid") {
           if (lexicalWeight !== "") body.lexical_weight = Number(lexicalWeight);
           if (rrfK !== "") body.rrf_k = Number(rrfK);
@@ -230,6 +232,14 @@ function LaunchTab({ onLaunched }: { onLaunched: () => void }) {
           <label className="inline" style={{ gap: 4 }}>
             <input type="checkbox" checked={citations} onChange={(e) => setCitations(e.target.checked)} />
             {t("retrieval.citations_checkbox")}
+          </label>
+        </FieldRow>
+      ) : null}
+      {backendChoice !== "neo4j" ? (
+        <FieldRow label={t("retrieval.graph_label")} hint={t("retrieval.graph_hint")}>
+          <label className="inline" style={{ gap: 4 }}>
+            <input type="checkbox" checked={graph} onChange={(e) => setGraph(e.target.checked)} />
+            {t("retrieval.graph_checkbox")}
           </label>
         </FieldRow>
       ) : null}

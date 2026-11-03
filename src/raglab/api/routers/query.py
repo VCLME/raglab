@@ -61,6 +61,7 @@ def run_query(
         rrf_k=body.rrf_k,
         rerank=body.rerank,
         citations=body.citations,
+        graph=body.graph,
     )
 
 
@@ -110,6 +111,7 @@ def stream_query(
         rrf_k=body.rrf_k,
         rerank=body.rerank,
         citations=body.citations,
+        graph=body.graph,
     )
     retrieval = outcome.response().model_dump(mode="json")
 

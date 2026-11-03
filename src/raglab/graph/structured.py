@@ -19,10 +19,11 @@ import logging
 from collections import defaultdict
 from collections.abc import Iterable, Iterator
 from datetime import UTC, datetime
-from time import perf_counter
+from time import monotonic, perf_counter
 from typing import Any
 
 from neo4j import GraphDatabase
+from neo4j.exceptions import ServiceUnavailable, SessionExpired
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -30,6 +31,7 @@ from raglab.config import Settings, get_settings
 from raglab.db.crud import get_index_run, resolve_latest_index_run
 from raglab.db.models import Chunk, Corpus, Document, IndexRun
 from raglab.domain.errors import GraphUnavailableError
+from raglab.graph.legal import RULES_VERSION
 from raglab.graph.structure import ChunkRow, DocumentRow, GraphPayload, build_payload, law_label
 from raglab.logging_utils import log_event
 
@@ -67,6 +69,10 @@ class StructuredGraphStore:
         self._auth = (user or settings.neo4j_user, password or settings.neo4j_password)
         self.database = database or settings.neo4j_database
         self._timeout = settings.graph_timeout_seconds
+        # Circuit breaker: after a connection failure, queries fail at once
+        # for `graph_retry_seconds` instead of waiting on the network each time.
+        self._retry_after = settings.graph_retry_seconds
+        self._down_until = 0.0
         self._driver = None
         self._schema_ready = False
 
@@ -97,14 +103,22 @@ class StructuredGraphStore:
     def ping(self) -> bool:
         try:
             self._get_driver().verify_connectivity()
-            return True
         except Exception as exc:
             log_event(LOGGER, logging.DEBUG, "graph.ping_failed", error=str(exc))
+            self._down_until = monotonic() + self._retry_after
             return False
+        self._down_until = 0.0
+        return True
 
     def _run(self, cypher: str, **params: Any) -> list[dict[str, Any]]:
-        with self._get_driver().session(database=self.database) as session:
-            return [record.data() for record in session.run(cypher, params)]
+        if monotonic() < self._down_until:
+            raise ServiceUnavailable("Neo4j unreachable a moment ago; not retried yet")
+        try:
+            with self._get_driver().session(database=self.database) as session:
+                return [record.data() for record in session.run(cypher, params)]
+        except (ServiceUnavailable, SessionExpired, OSError):
+            self._down_until = monotonic() + self._retry_after
+            raise
 
     def ensure_schema(self) -> None:
         """Constraints and indexes, created once per store (idempotent)."""
@@ -133,11 +147,12 @@ class StructuredGraphStore:
         self.delete_run(run)
         self._run(
             "MERGE (r:GraphRun {index_run_id: $run}) SET r.corpus = $corpus, r.profile = $profile, "
-            "r.status = 'building', r.started_at = $now",
+            "r.status = 'building', r.started_at = $now, r.rules_version = $rules",
             run=run,
             corpus=payload.corpus,
             profile=payload.profile,
             now=_now(),
+            rules=RULES_VERSION,
         )
         for label, rows in payload.nodes.items():
             extra = ""
@@ -279,6 +294,74 @@ class StructuredGraphStore:
         for row in rows:
             out[row["uid"]].append(row)
         return dict(out)
+
+    def cited_articles(
+        self,
+        index_run_id: str,
+        *,
+        seed_chunks: list[dict[str, Any]],
+        seed_articles: list[dict[str, Any]],
+        max_seeds: int,
+        per_seed: int,
+        chunks_per_article: int,
+    ) -> list[dict[str, Any]]:
+        """Articles cited (one CITES hop) by the seed articles, with their chunks.
+
+        Seeds are the articles of first-stage chunks (`{id, rank}`) and
+        articles named directly (`{document_id, number, rank}`, e.g. the one
+        the question cites). One row per (seed, cited article), best seeds
+        first, at most `per_seed` cited articles per seed, each with its
+        first `chunks_per_article` chunks in reading order and the
+        first-stage chunks of the citing article (`via`).
+        """
+        return self._run(
+            "CALL { "
+            "  UNWIND $chunks AS s "
+            "  MATCH (c:Chunk {uid: s.id})-[:PART_OF]->(a:Article) "
+            "  RETURN a, s.rank AS rank, c.uid AS via "
+            "  UNION ALL "
+            "  UNWIND $articles AS s "
+            "  MATCH (a:Article {index_run_id: $run, document_id: s.document_id, number: s.number}) "
+            "  RETURN a, s.rank AS rank, null AS via "
+            "} "
+            "WITH a, min(rank) AS rank, [v IN collect(via) WHERE v IS NOT NULL] AS via "
+            "ORDER BY rank LIMIT $max_seeds "
+            "MATCH (a)-[r:CITES]->(b:Article) WHERE b <> a "
+            "WITH a, rank, via, b, r ORDER BY rank, r.mentions DESC, b.order "
+            "WITH a, rank, via, collect({b: b, mentions: r.mentions, snippet: r.snippet})[..$per_seed] AS targets "
+            "MATCH (a)-[:PART_OF]->(la) "
+            "UNWIND targets AS t "
+            "WITH a, la, rank, via, t, t.b AS b "
+            "MATCH (b)-[:PART_OF]->(lb) "
+            "MATCH (ch:Chunk)-[:PART_OF]->(b) "
+            "WITH a, la, rank, via, t, b, lb, ch ORDER BY ch.order "
+            "WITH a, la, rank, via, t, b, lb, collect(ch.id)[..$chunks_per_article] AS chunk_ids "
+            "RETURN rank, via, a.uid AS seed_uid, a.number AS seed_number, la.key AS seed_law_key, "
+            "  la.year AS seed_law_year, b.uid AS target_uid, b.number AS target_number, "
+            "  b.document_id AS target_document_id, lb.key AS target_law_key, lb.year AS target_law_year, "
+            "  t.mentions AS mentions, t.snippet AS snippet, chunk_ids "
+            "ORDER BY rank, mentions DESC, target_uid",
+            run=index_run_id,
+            chunks=seed_chunks,
+            articles=seed_articles,
+            max_seeds=max_seeds,
+            per_seed=per_seed,
+            chunks_per_article=chunks_per_article,
+        )
+
+
+_SHARED: dict[tuple[str, str, str], StructuredGraphStore] = {}
+
+
+def get_graph_store(settings: Settings | None = None) -> StructuredGraphStore:
+    """One store (and driver, thread-safe) per Neo4j target, shared by
+    queries: opening a driver per request would cost a connection each time."""
+    settings = settings or get_settings()
+    key = (settings.neo4j_uri, settings.neo4j_user, settings.neo4j_database)
+    store = _SHARED.get(key)
+    if store is None:
+        store = _SHARED[key] = StructuredGraphStore(settings=settings)
+    return store
 
 
 def _batches(rows: list[dict[str, Any]], size: int = BATCH_SIZE) -> Iterator[list[dict[str, Any]]]:
@@ -495,6 +578,20 @@ class StructuredGraphService:
             duration_ms=result["duration_ms"],
         )
         return result
+
+
+def ensure_graph(session: Session, index_run_id: str, *, settings: Settings | None = None) -> dict[str, Any]:
+    """Build the index run's graph unless a complete one with the current
+    rules is already there (benchmarks call this before a graph run)."""
+    settings = settings or get_settings()
+    store = get_graph_store(settings)
+    if not store.ping():
+        return {"status": "skipped", "reason": "neo4j_unreachable"}
+    info = store.run_info(index_run_id)
+    if info and info.get("status") == "completed" and info.get("rules_version") == RULES_VERSION:
+        return {"status": "present", "index_run_id": index_run_id, "rules_version": RULES_VERSION}
+    result = StructuredGraphService(session, store=store, settings=settings).build(index_run_id=index_run_id)
+    return {"status": "built", **result}
 
 
 def build_after_index(session: Session, index_run_id: str, *, settings: Settings | None = None) -> dict[str, Any]:

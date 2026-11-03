@@ -60,6 +60,23 @@ class Settings(BaseSettings):
     graph_build_on_index: bool = True
     graph_profiles: dict[str, str] = Field(default_factory=dict)
     graph_timeout_seconds: float = 3.0
+    # After Neo4j failed to answer, skip it for this long before trying again.
+    graph_retry_seconds: float = 30.0
+    # Graph retrieval branch (phase 9.9b), off until measured: seeds are the
+    # article the question cites and the articles of the best
+    # graph_seed_chunks dense / BM25 hits (at most graph_seed_articles);
+    # follow CITES one hop, graph_max_per_seed cited articles per seed,
+    # graph_max_articles in all, graph_chunks_per_article chunks each. RRF
+    # weight graph_weight (dense / BM25 keep theirs); after re-ranking, up to
+    # graph_group_max cited passages are kept right after the citing one.
+    graph_retrieval: bool = False
+    graph_seed_chunks: int = 10
+    graph_seed_articles: int = 10
+    graph_max_per_seed: int = 3
+    graph_max_articles: int = 12
+    graph_chunks_per_article: int = 2
+    graph_weight: float = 0.5
+    graph_group_max: int = 2
     # Phase-8 entity store (chunks + LLM/spaCy entities in Neo4j), never
     # measured: its Expert pages are hidden unless this flag is on.
     entity_graph_enabled: bool = False

@@ -61,6 +61,8 @@ export function Query() {
   const [rerank, setRerank] = useState<RerankChoice>("");
   // Citation resolution is on by default server-side (citations-v1).
   const [citations, setCitations] = useState(true);
+  // Graph branch: off by default until measured (RAGLAB_GRAPH_RETRIEVAL).
+  const [graph, setGraph] = useState(false);
   const [question, setQuestion] = useState("");
 
   const [documentIdsRaw, setDocumentIdsRaw] = useState("");
@@ -109,6 +111,7 @@ export function Query() {
       rrf_k: retrievalMode === "hybrid" && rrfK !== "" ? Number(rrfK) : null,
       rerank: rerank === "" ? null : rerank === "on",
       citations,
+      graph,
       filters: {
         document_ids: documentIdsRaw.split(",").map((s) => s.trim()).filter(Boolean),
         file_names: fileNamesRaw.split(",").map((s) => s.trim()).filter(Boolean),
@@ -234,6 +237,12 @@ export function Query() {
               <label className="inline" style={{ gap: 4 }}>
                 <input type="checkbox" checked={citations} onChange={(e) => setCitations(e.target.checked)} />
                 {t("retrieval.citations_checkbox")}
+              </label>
+            </FieldRow>
+            <FieldRow label={t("retrieval.graph_label")} hint={t("retrieval.graph_hint")}>
+              <label className="inline" style={{ gap: 4 }}>
+                <input type="checkbox" checked={graph} onChange={(e) => setGraph(e.target.checked)} />
+                {t("retrieval.graph_checkbox")}
               </label>
             </FieldRow>
             {retrievalMode === "hybrid" ? (
@@ -402,6 +411,19 @@ export function Query() {
                 {action.data.rerank_notice ? (
                   <div className="badge warn" style={{ marginBottom: 8 }}>
                     {t(`retrieval.rerank_notice_${action.data.rerank_notice}`)}
+                  </div>
+                ) : null}
+                {action.data.graph_notice ? (
+                  <div className="badge warn" style={{ marginBottom: 8 }}>
+                    {t(`retrieval.graph_notice_${action.data.graph_notice}`)}
+                  </div>
+                ) : action.data.graph && action.data.graph_stats ? (
+                  <div className="muted" style={{ marginBottom: 8, fontSize: 12 }}>
+                    {t("retrieval.graph_stats", {
+                      seeds: action.data.graph_stats.seeds ?? 0,
+                      articles: action.data.graph_stats.articles ?? 0,
+                      chunks: action.data.graph_stats.chunks ?? 0,
+                    })}
                   </div>
                 ) : null}
                 {rerankStats && rerankStats.candidates != null ? (

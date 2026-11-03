@@ -163,6 +163,9 @@ class QueryRequest(BaseModel):
     retrieval_mode: RetrievalMode | None = None
     # Resolve legal citations ("art. 49 da Lei nº 8.078"); None = server default.
     citations: bool | None = None
+    # Graph branch: follow the legal references of the found articles
+    # (Neo4j); None = RAGLAB_GRAPH_RETRIEVAL.
+    graph: bool | None = None
     lexical_weight: float | None = Field(None, ge=0.0, le=1.0)
     rrf_k: int | None = Field(None, ge=0)
     # Cross-encoder re-ranking of rerank_candidates first-stage chunks.
@@ -471,6 +474,7 @@ class RecallRequest(BaseModel):
     rrf_k: int | None = Field(None, ge=0)
     rerank: bool | None = None
     citations: bool | None = None
+    graph: bool | None = None
     compute_ragas: bool = False
     # Grade only the first N cases (retrieval still runs on all of them).
     ragas_case_limit: int | None = Field(None, ge=1)

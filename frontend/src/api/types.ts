@@ -170,6 +170,13 @@ export interface RetrievedChunk {
   rerank_rank?: number | null;
   // True when pinned because the question cites this chunk's law and article.
   citation_match?: boolean | null;
+  // Graph branch: the chunk's article is cited by `graph_via` ("Art. 5º —
+  // Lei nº 8.078/1990"); `graph_pinned` when kept right after that passage.
+  graph_score?: number | null;
+  graph_rank?: number | null;
+  graph_reason?: string | null;
+  graph_via?: string | null;
+  graph_pinned?: boolean | null;
 }
 
 /** Legal citation parsed from the question (citations option). */
@@ -199,6 +206,10 @@ export interface QueryResponse {
   citation?: CitationInfo | null;
   // "skipped_no_gpu" or "cpu" when re-ranking could not use a GPU.
   rerank_notice?: string | null;
+  // Graph branch: whether it ran, why it was skipped, its counters.
+  graph?: boolean;
+  graph_notice?: string | null;
+  graph_stats?: Record<string, number>;
   answer: string | null;
   elapsed_ms: number;
   filters: unknown;
