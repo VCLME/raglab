@@ -159,10 +159,23 @@ def test_validity_follows_the_dates_not_the_frozen_state():
 
 
 def test_sql_filter_lets_unversioned_documents_through():
-    sql = str(valid_at_condition("2015-12-31").compile(dialect=postgresql.dialect()))
-    assert "NOT ((documents.metadata_json ? %(metadata_json_1)s))" in sql
-    assert "->> %(metadata_json_" in sql
-    assert "IS NULL" in sql
+    """Structure of the clause (the exact rendering, casts included, varies
+    with SQLAlchemy / psycopg versions); its behaviour on PostgreSQL is
+    tested in tests/test_versions_postgres.py."""
+    condition = valid_at_condition("2015-12-31")
+    compiled = condition.compile(dialect=postgresql.dialect())
+    sql = str(compiled)
+    # Unversioned documents pass: NOT (metadata ? 'etat') OR (...).
+    assert sql.startswith("NOT (") and " OR " in sql
+    assert "documents.metadata_json ?" in sql
+    assert sql.count("IS NULL") == 2
+    assert {str(value) for value in compiled.params.values()} == {
+        "etat",
+        "ANNULE",
+        "date_debut",
+        "date_fin",
+        "2015-12-31",
+    }
 
 
 def test_metadata_version_says_what_replaced_it():
