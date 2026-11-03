@@ -1,0 +1,80 @@
+{"id": "oos-fr-01", "language": "fr", "category": "out_of_scope", "subtype": "personal", "question": "Quel est le solde actuel de mon compte bancaire ?"}
+{"id": "oos-fr-02", "language": "fr", "category": "out_of_scope", "subtype": "personal", "question": "À quelle heure est mon prochain rendez-vous chez le dentiste ?"}
+{"id": "oos-fr-03", "language": "fr", "category": "out_of_scope", "subtype": "company_internal", "question": "Quelle est la politique de télétravail de notre entreprise ?"}
+{"id": "oos-fr-04", "language": "fr", "category": "out_of_scope", "subtype": "company_internal", "question": "Combien de jours de congés me reste-t-il cette année ?"}
+{"id": "oos-fr-05", "language": "fr", "category": "out_of_scope", "subtype": "company_internal", "question": "Qui est le responsable du service comptabilité chez nous ?"}
+{"id": "oos-fr-06", "language": "fr", "category": "out_of_scope", "subtype": "realtime", "question": "Quel temps fera-t-il à Lyon demain après-midi ?"}
+{"id": "oos-fr-07", "language": "fr", "category": "out_of_scope", "subtype": "realtime", "question": "Quel est le cours du bitcoin en ce moment ?"}
+{"id": "oos-fr-08", "language": "fr", "category": "out_of_scope", "subtype": "realtime", "question": "Quels sont les horaires du prochain TGV entre Paris et Marseille ?"}
+{"id": "oos-fr-09", "language": "fr", "category": "out_of_scope", "subtype": "task", "question": "Écris une fonction Python qui trie une liste de dictionnaires par date."}
+{"id": "oos-fr-10", "language": "fr", "category": "out_of_scope", "subtype": "task", "question": "Combien font 17 % de 2 340 euros ?"}
+{"id": "oos-fr-11", "language": "fr", "category": "out_of_scope", "subtype": "task", "question": "Rédige un e-mail de relance poli pour une facture impayée."}
+{"id": "oos-fr-12", "language": "fr", "category": "out_of_scope", "subtype": "task", "question": "Traduis « contrat de prestation de services » en allemand."}
+{"id": "oos-fr-13", "language": "fr", "category": "out_of_scope", "subtype": "general", "question": "Quelle est la recette traditionnelle de la tarte Tatin ?"}
+{"id": "oos-fr-14", "language": "fr", "category": "out_of_scope", "subtype": "general", "question": "Comment remplacer le joint d'un robinet qui fuit ?"}
+{"id": "oos-fr-15", "language": "fr", "category": "out_of_scope", "subtype": "general", "question": "Quels sont les effets secondaires du paracétamol à forte dose ?"}
+{"id": "oos-fr-16", "language": "fr", "category": "near_miss", "subtype": "adjacent_topic", "question": "Quel joueur a remporté le Ballon d'or en 2023 ?"}
+{"id": "oos-fr-17", "language": "fr", "category": "near_miss", "subtype": "adjacent_topic", "question": "Quel est le palmarès de l'Olympique lyonnais en Ligue des champions ?"}
+{"id": "oos-fr-18", "language": "fr", "category": "near_miss", "subtype": "adjacent_topic", "question": "Combien de médailles d'or la France a-t-elle remportées aux Jeux olympiques de Paris 2024 ?"}
+{"id": "oos-fr-19", "language": "fr", "category": "near_miss", "subtype": "adjacent_topic", "question": "Qui a succédé à Emmanuel Macron à la tête de La République en marche en 2022 ?"}
+{"id": "oos-fr-20", "language": "fr", "category": "near_miss", "subtype": "adjacent_topic", "question": "Quelle est la population de la ville de Rennes selon le dernier recensement ?"}
+{"id": "oos-fr-21", "language": "fr", "category": "near_miss", "subtype": "adjacent_topic", "question": "En quelle année le télescope James-Webb a-t-il été lancé ?"}
+{"id": "oos-fr-22", "language": "fr", "category": "near_miss", "subtype": "adjacent_topic", "question": "Quelle est la durée de vie moyenne d'un hérisson d'Europe ?"}
+{"id": "oos-fr-23", "language": "fr", "category": "near_miss", "subtype": "adjacent_topic", "question": "Quel architecte a conçu la pyramide du Louvre ?"}
+{"id": "oos-fr-24", "language": "fr", "category": "near_miss", "subtype": "adjacent_topic", "question": "Qui a réalisé le film Intouchables ?"}
+{"id": "oos-fr-25", "language": "fr", "category": "near_miss", "subtype": "adjacent_topic", "question": "Quelle est la capitale de la Mongolie ?"}
+{"id": "oos-pt-01", "language": "pt", "category": "out_of_scope", "subtype": "personal", "question": "Qual é o saldo do meu FGTS hoje?"}
+{"id": "oos-pt-02", "language": "pt", "category": "out_of_scope", "subtype": "personal", "question": "Quando vence a próxima parcela do meu financiamento imobiliário?"}
+{"id": "oos-pt-03", "language": "pt", "category": "out_of_scope", "subtype": "company_internal", "question": "Qual é o regulamento interno de home office da nossa empresa?"}
+{"id": "oos-pt-04", "language": "pt", "category": "out_of_scope", "subtype": "company_internal", "question": "Quem aprova os reembolsos de despesas de viagem no meu departamento?"}
+{"id": "oos-pt-05", "language": "pt", "category": "out_of_scope", "subtype": "realtime", "question": "Qual é a cotação do dólar agora?"}
+{"id": "oos-pt-06", "language": "pt", "category": "out_of_scope", "subtype": "realtime", "question": "Vai chover em São Paulo amanhã?"}
+{"id": "oos-pt-07", "language": "pt", "category": "out_of_scope", "subtype": "realtime", "question": "Qual foi o placar do último jogo do Flamengo?"}
+{"id": "oos-pt-08", "language": "pt", "category": "out_of_scope", "subtype": "task", "question": "Escreva uma consulta SQL que conte os pedidos por cliente."}
+{"id": "oos-pt-09", "language": "pt", "category": "out_of_scope", "subtype": "task", "question": "Calcule os juros compostos de R$ 10.000 a 1% ao mês por 12 meses."}
+{"id": "oos-pt-10", "language": "pt", "category": "out_of_scope", "subtype": "task", "question": "Redija uma notificação extrajudicial para um inquilino em atraso."}
+{"id": "oos-pt-11", "language": "pt", "category": "out_of_scope", "subtype": "general", "question": "Qual é a receita tradicional de feijoada?"}
+{"id": "oos-pt-12", "language": "pt", "category": "out_of_scope", "subtype": "general", "question": "Como trocar o pneu de um carro?"}
+{"id": "oos-pt-13", "language": "pt", "category": "near_miss", "subtype": "nonexistent_law", "question": "O que dispõe o art. 7º da Lei nº 99.871, de 2031?"}
+{"id": "oos-pt-14", "language": "pt", "category": "near_miss", "subtype": "foreign_law", "question": "Qual é o prazo de prescrição no Código Civil português?"}
+{"id": "oos-pt-15", "language": "pt", "category": "near_miss", "subtype": "foreign_law", "question": "O que diz a Constituição dos Estados Unidos sobre o porte de armas?"}
+{"id": "oos-pt-16", "language": "pt", "category": "near_miss", "subtype": "state_law", "question": "Qual é a alíquota do ICMS sobre energia elétrica no Estado do Paraná?"}
+{"id": "oos-pt-17", "language": "pt", "category": "near_miss", "subtype": "state_law", "question": "O que estabelece a lei municipal de zoneamento de Curitiba sobre altura de prédios?"}
+{"id": "oos-pt-18", "language": "pt", "category": "near_miss", "subtype": "jurisprudence", "question": "Qual foi a decisão do STF no julgamento do marco temporal das terras indígenas?"}
+{"id": "oos-pt-19", "language": "pt", "category": "near_miss", "subtype": "jurisprudence", "question": "Qual é o entendimento da Súmula 331 do TST sobre terceirização?"}
+{"id": "oos-pt-20", "language": "pt", "category": "near_miss", "subtype": "adjacent_topic", "question": "Quem é o atual presidente do Banco Central do Brasil?"}
+{"id": "oos-pt-21", "language": "pt", "category": "near_miss", "subtype": "adjacent_topic", "question": "Quantos deputados federais tem o Estado de Minas Gerais?"}
+{"id": "oos-pt-22", "language": "pt", "category": "near_miss", "subtype": "adjacent_topic", "question": "Qual é o valor do salário mínimo em 2026?"}
+{"id": "oos-pt-23", "language": "pt", "category": "near_miss", "subtype": "adjacent_topic", "question": "Como funciona o processo de impeachment na Argentina?"}
+{"id": "oos-pt-24", "language": "pt", "category": "near_miss", "subtype": "adjacent_topic", "question": "Qual é a pena prevista no Código Penal alemão para furto?"}
+{"id": "oos-pt-25", "language": "pt", "category": "near_miss", "subtype": "adjacent_topic", "question": "Quais são as regras do campeonato brasileiro de futebol para rebaixamento?"}
+{"id": "conv-fr-01", "language": "fr", "category": "conversational", "subtype": "greeting", "question": "Bonjour !"}
+{"id": "conv-fr-02", "language": "fr", "category": "conversational", "subtype": "greeting", "question": "Salut, ça va ?"}
+{"id": "conv-fr-03", "language": "fr", "category": "conversational", "subtype": "thanks", "question": "Merci beaucoup, c'est très clair."}
+{"id": "conv-fr-04", "language": "fr", "category": "conversational", "subtype": "thanks", "question": "Parfait, merci pour ton aide."}
+{"id": "conv-fr-05", "language": "fr", "category": "conversational", "subtype": "meta", "question": "Tu es qui exactement ?"}
+{"id": "conv-fr-06", "language": "fr", "category": "conversational", "subtype": "meta", "question": "Qu'est-ce que tu sais faire ?"}
+{"id": "conv-fr-07", "language": "fr", "category": "conversational", "subtype": "meta", "question": "Sur quels documents tu t'appuies pour répondre ?"}
+{"id": "conv-fr-08", "language": "fr", "category": "conversational", "subtype": "feedback", "question": "Ta réponse précédente était fausse."}
+{"id": "conv-fr-09", "language": "fr", "category": "conversational", "subtype": "feedback", "question": "Tu peux faire plus court ?"}
+{"id": "conv-fr-10", "language": "fr", "category": "conversational", "subtype": "closing", "question": "Au revoir, bonne journée."}
+{"id": "conv-fr-11", "language": "fr", "category": "conversational", "subtype": "smalltalk", "question": "Tu préfères les chats ou les chiens ?"}
+{"id": "conv-fr-12", "language": "fr", "category": "conversational", "subtype": "smalltalk", "question": "Raconte-moi une blague."}
+{"id": "conv-fr-13", "language": "fr", "category": "conversational", "subtype": "acknowledgement", "question": "D'accord."}
+{"id": "conv-fr-14", "language": "fr", "category": "conversational", "subtype": "acknowledgement", "question": "Ok, je vois."}
+{"id": "conv-fr-15", "language": "fr", "category": "conversational", "subtype": "meta", "question": "Est-ce que tu gardes mes questions en mémoire ?"}
+{"id": "conv-pt-01", "language": "pt", "category": "conversational", "subtype": "greeting", "question": "Olá, bom dia!"}
+{"id": "conv-pt-02", "language": "pt", "category": "conversational", "subtype": "greeting", "question": "E aí, tudo bem?"}
+{"id": "conv-pt-03", "language": "pt", "category": "conversational", "subtype": "thanks", "question": "Muito obrigado pela ajuda!"}
+{"id": "conv-pt-04", "language": "pt", "category": "conversational", "subtype": "thanks", "question": "Valeu, era isso mesmo."}
+{"id": "conv-pt-05", "language": "pt", "category": "conversational", "subtype": "meta", "question": "Você é um robô?"}
+{"id": "conv-pt-06", "language": "pt", "category": "conversational", "subtype": "meta", "question": "O que você consegue fazer?"}
+{"id": "conv-pt-07", "language": "pt", "category": "conversational", "subtype": "meta", "question": "De onde vêm as suas respostas?"}
+{"id": "conv-pt-08", "language": "pt", "category": "conversational", "subtype": "feedback", "question": "Não entendi, pode explicar de novo?"}
+{"id": "conv-pt-09", "language": "pt", "category": "conversational", "subtype": "feedback", "question": "Essa resposta está errada."}
+{"id": "conv-pt-10", "language": "pt", "category": "conversational", "subtype": "closing", "question": "Tchau, até mais!"}
+{"id": "conv-pt-11", "language": "pt", "category": "conversational", "subtype": "smalltalk", "question": "Qual é o seu time de futebol?"}
+{"id": "conv-pt-12", "language": "pt", "category": "conversational", "subtype": "smalltalk", "question": "Me conta uma piada."}
+{"id": "conv-pt-13", "language": "pt", "category": "conversational", "subtype": "acknowledgement", "question": "Beleza."}
+{"id": "conv-pt-14", "language": "pt", "category": "conversational", "subtype": "acknowledgement", "question": "Entendi, obrigado."}
+{"id": "conv-pt-15", "language": "pt", "category": "conversational", "subtype": "meta", "question": "Você guarda o histórico da conversa?"}

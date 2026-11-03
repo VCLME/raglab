@@ -159,6 +159,8 @@ Objectif : passer du laboratoire à un pipeline RAG prêt pour la production, ch
 - mesuré sans GPU (`scripts/bench_api_hardening.py`) : sources affichées après ~65 ms au lieu de ~3,4 s, premier token à 366 ms (préremplissage simulé 300 ms) ; middlewares +0,16 ms par requête ; TTFT réel sur GPU à mesurer
 - migrations Alembic : introduites avec 9.2 (`feature/hybrid-retrieval`), aucune migration dans cette PR
 
+- **9.7 — Portes de qualité (outillage en place)** : `raglab gate` et seuils versionnés dans `benchmarks/thresholds.json` (à fixer depuis `baseline-v1`), workflow hebdomadaire de retrieval sur CPU, voir [portes-qualite.md](portes-qualite.md)
+
 **9.6 — Observabilité 🚧 (PR ouverte, empilée sur 9.1b)** : voir [observabilite.md](observabilite.md)
 
 - `GET /metrics` (Prometheus) : latence par étape (embed, retrieval, rerank, generation), tokens/s, score top-1, requêtes par route et statut, compteurs génériques de cache (`embedder`, `reranker`) et d'abstention que 9.3 et 9.4 incrémentent ; labels à faible cardinalité (gabarits de route)

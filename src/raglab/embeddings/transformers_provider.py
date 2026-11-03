@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from threading import Lock
 from typing import Any
 
 import torch
@@ -21,6 +22,7 @@ class TransformersEmbeddingProvider:
         self.device = self._resolve_device(settings.embedding_device)
         self._tokenizer: Any = None
         self._model: Any = None
+        self._load_lock = Lock()
 
     def _resolve_device(self, requested: str) -> str:
         if requested.startswith("cuda") and torch.cuda.is_available():
@@ -28,12 +30,18 @@ class TransformersEmbeddingProvider:
         return "cpu"
 
     def _ensure_loaded(self) -> None:
-        if self._tokenizer is None:
-            self._tokenizer = AutoTokenizer.from_pretrained(self.model_name)
-        if self._model is None:
-            self._model = AutoModel.from_pretrained(self.model_name)
-            self._model.to(self.device)
-            self._model.eval()
+        # The provider is shared across API worker threads (see the factory
+        # cache): load the weights once, even if two requests arrive together.
+        if self._tokenizer is not None and self._model is not None:
+            return
+        with self._load_lock:
+            if self._tokenizer is None:
+                self._tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+            if self._model is None:
+                model = AutoModel.from_pretrained(self.model_name)
+                model.to(self.device)
+                model.eval()
+                self._model = model
 
     def _mean_pool(self, last_hidden_state: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
         masked = last_hidden_state * attention_mask.unsqueeze(-1)

@@ -200,6 +200,10 @@ def run_suite(
         indexing = IndexingService(session).index_corpus(
             corpus_name=suite.corpus_name, strategy=strategy, incremental=True
         )
+        documents = session.execute(
+            text("SELECT count(*) FROM documents d JOIN corpora c ON c.id = d.corpus_id WHERE c.name = :name"),
+            {"name": suite.corpus_name},
+        ).scalar_one()
     log_event(LOGGER, logging.INFO, "bench.suite.indexed", suite=suite.name, ingestion=ingestion, indexing=indexing)
 
     with session_scope() as session:
@@ -224,7 +228,7 @@ def run_suite(
         "corpus_name": suite.corpus_name,
         "index_run_id": indexing["index_run_id"],
         "chunks": indexing.get("chunks"),
-        "documents": ingestion.get("ingested", 0) + ingestion.get("updated", 0) + ingestion.get("skipped", 0),
+        "documents": documents,
         "total_cases": report["total_cases"],
         "summary": report["summary"],
         "by_type": report.get("by_type") or {},

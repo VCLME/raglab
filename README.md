@@ -27,6 +27,23 @@ Plus de détails : **[docs/base-idea.md](docs/base-idea.md)**.
 
 ---
 
+## Résultats mesurés
+
+Chaque brique du pipeline n'est gardée que si elle apporte un gain mesuré sur deux jeux figés : **PIAF** (500 questions, Wikipédia en français, 761 paragraphes) et **LexML** (277 questions sur le texte intégral de 252 lois fédérales brésiliennes). La pertinence est jugée au niveau du passage qui contient la réponse, et les réponses générées sont notées par un juge indépendant (Gemma 4) dont la fiabilité a été mesurée. Méthode : [protocole](docs/benchmarks/protocole.md), [juges](docs/benchmarks/juges.md), [baseline](docs/benchmarks/baseline.md).
+
+<!-- bench-table:start -->
+| Étape | Ce qui change | PIAF Recall@5 | LexML Recall@5 | Latence requête p50 | Faithfulness |
+|---|---|---|---|---|---|
+| Baseline v0 | code d'origine | *mesure en cours* | | | |
+| Baseline v1 | modèle d'embedding chargé une fois, top-k toujours complet | | | | |
+| 9.2 Hybride | + recherche lexicale BM25, fusion RRF | *à mesurer* | | | |
+| 9.3 Re-ranking | + cross-encoder bge-reranker-v2-m3 | *à mesurer* | | | |
+<!-- bench-table:end -->
+
+Régénérer les chiffres : `raglab bench all --label <nom>`, puis `raglab bench report <runs…>`.
+
+---
+
 ## Aperçu de l'UI
 
 La nav Expert est groupée en trois familles repliables (Vecteur / Graphe / LLM), avec Dashboard, Corpus et Benchmarks au top-level :
@@ -190,6 +207,9 @@ ruff check . && ruff format --check . && mypy && pytest
 - [docs/roadmap.md](docs/roadmap.md) — ce qui est livré, ce qui vient
 - [docs/frontend-ui.md](docs/frontend-ui.md) — détail des pages React
 - [docs/run-and-test.md](docs/run-and-test.md) — commandes pour lancer / tester / rejouer
+- [docs/benchmarks/protocole.md](docs/benchmarks/protocole.md) — comment raglab mesure (jeux figés, pertinence au niveau du passage)
+- [docs/benchmarks/juges.md](docs/benchmarks/juges.md) — juges RAGAS et leur calibration
+- [docs/benchmarks/baseline.md](docs/benchmarks/baseline.md) — la configuration de référence et ses chiffres
 - [docs/observabilite.md](docs/observabilite.md) — métriques Prometheus, Grafana, rapport de dérive
 
 ---
@@ -200,4 +220,4 @@ ruff check . && ruff format --check . && mypy && pytest
 - pas de reranker (cross-encoder en roadmap)
 - Neo4j est branché, l'indexation et le retrieval graphe sont fonctionnels (vector-in-graph, un vector index Neo4j 5 par dimension). Les filtres `metadata_equals` sur le store graphe et l'extraction d'entités arrivent en phase 8.2 — voir [docs/roadmap.md](docs/roadmap.md)
 - l'API exécute ingest/index/lexml load en synchrone, sans file de jobs
-- la collecte LexML V1 sauvegarde des fiches structurées, sans suivre encore les liens de texte intégral
+- la collecte LexML historique (`raglab lexml load`) ne sauvegarde que des fiches ; le texte intégral passe par `raglab lexml fulltext` (lois fédérales seulement)

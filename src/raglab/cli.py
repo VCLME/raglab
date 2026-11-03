@@ -131,6 +131,48 @@ def bench_all(
     typer.echo(f"\nResultat: {output}")
 
 
+@app.command("gate")
+def gate(
+    results: Path | None = typer.Option(None, "--results", help="Resultat de `raglab bench all` a verifier."),
+    run: bool = typer.Option(False, "--run", help="Lancer `raglab bench all` puis verifier son resultat."),
+    ragas_limit: int = typer.Option(
+        100, "--ragas-limit", min=0, help="Avec --run : questions notees (0 = retrieval seul)."
+    ),
+    judge_backend: str = typer.Option("llamacpp", "--judge-backend", help="Avec --run : juge RAGAS."),
+    thresholds: Path = typer.Option(Path("benchmarks/thresholds.json"), "--thresholds"),
+    require_all: bool = typer.Option(False, "--require-all", help="Echouer aussi si une metrique n'a pas ete mesuree."),
+    summary_file: Path | None = typer.Option(
+        None, "--summary-file", help="Ecrire le tableau Markdown ici (ex. $GITHUB_STEP_SUMMARY)."
+    ),
+) -> None:
+    """Echouer (code 1) si Recall@5, MRR ou faithfulness passent sous les seuils versionnes."""
+    from datetime import UTC, datetime
+
+    from raglab.benchmarks.gate import evaluate, failed, load_thresholds, render
+
+    if run == (results is not None):
+        raise typer.BadParameter("Donner soit --results, soit --run.")
+    if run:
+        from raglab.benchmarks.suite import run_all
+
+        label = f"gate-{datetime.now(UTC).strftime('%Y%m%d-%H%M%S')}"
+        result = run_all(label=label, ragas_limit=ragas_limit or None, judge=JudgeConfig(backend=judge_backend))
+        results = Path("benchmarks/results") / f"{label}.json"
+        results.parent.mkdir(parents=True, exist_ok=True)
+        results.write_text(json.dumps(result, indent=2, ensure_ascii=False), encoding="utf-8")
+    else:
+        assert results is not None
+        result = json.loads(results.read_text(encoding="utf-8"))
+    checks = evaluate(result, load_thresholds(thresholds))
+    table = render(checks, label=result.get("label", str(results)))
+    typer.echo(table)
+    if summary_file:
+        with summary_file.open("a", encoding="utf-8") as handle:
+            handle.write(table + "\n")
+    if failed(checks, require_all=require_all):
+        raise typer.Exit(code=1)
+
+
 @bench_app.command("report")
 def bench_report(
     labels: list[str] = typer.Argument(..., help="Runs a comparer, dans l'ordre des colonnes."),
