@@ -37,7 +37,7 @@ from raglab.logging_utils import log_event
 
 LOGGER = logging.getLogger(__name__)
 
-NODE_LABELS = ("Document", "Section", "Chunk", "Article", "Law")
+NODE_LABELS = ("Document", "Section", "Chunk", "Article", "Law", "Act", "Recital", "Annex")
 BATCH_SIZE = 2000
 _SCHEMA = [
     *(
@@ -213,12 +213,14 @@ class StructuredGraphStore:
             rows = self._run(
                 f"MATCH (a:{label} {{index_run_id: $run}})-[r]->(b) WHERE a.uid IS NOT NULL{only} "
                 "RETURN type(r) AS type, CASE WHEN b:Article THEN 'Article' WHEN b:Section THEN 'Section' "
-                "WHEN b:Chunk THEN 'Chunk' WHEN b:Document THEN 'Document' ELSE 'Law' END AS target, "
+                "WHEN b:Chunk THEN 'Chunk' WHEN b:Document THEN 'Document' WHEN b:Act THEN 'Act' "
+                "WHEN b:Recital THEN 'Recital' WHEN b:Annex THEN 'Annex' ELSE 'Law' END AS target, "
                 "count(r) AS count",
                 run=index_run_id,
             )
             for row in rows:
-                key = row["type"] if row["type"] in {"NEXT", "AMENDS", "REVOKES"} else f"{row['type']}->{row['target']}"
+                plain = {"NEXT", "AMENDS", "REVOKES", "SUPPLEMENTS", "SAME_AS"}
+                key = row["type"] if row["type"] in plain else f"{row['type']}->{row['target']}"
                 relationships[key] += row["count"]
         return {"nodes": nodes, "relationships": dict(sorted(relationships.items()))}
 

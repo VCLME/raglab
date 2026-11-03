@@ -129,6 +129,8 @@ class Settings(BaseSettings):
     lexml_fulltext_dir: Path = Field(default_factory=lambda: Path("data/lexml/fulltext"))
     # French codes with their version history (`raglab legifrance fetch`).
     legifrance_dir: Path = Field(default_factory=lambda: Path("data/legifrance"))
+    # EU acts from EUR-Lex / CELLAR (`raglab eurlex fetch`).
+    eurlex_dir: Path = Field(default_factory=lambda: Path("data/eurlex"))
 
     generation_model: str = "qwen2.5:7b"
     generation_temperature: float = 0.1

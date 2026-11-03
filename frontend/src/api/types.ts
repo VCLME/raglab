@@ -190,6 +190,8 @@ export interface CitationInfo {
   article: string | null;
   /** French code slug ("consommation", "civil"), when one is cited. */
   code?: string | null;
+  /** CELEX of the EU act ("32016R0679"), when one is cited. */
+  celex?: string | null;
   law_found: boolean;
   article_found: boolean;
 }

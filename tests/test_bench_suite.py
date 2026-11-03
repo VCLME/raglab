@@ -93,6 +93,9 @@ def test_the_french_code_suite_is_registered_but_opt_in(tmp_path: Path):
     assert (legi.corpus_name, legi.language, legi.default) == ("bench_legi_consommation_fr", "fr", False)
     assert legi.manifest_path == tmp_path / "benchmarks" / "legi_consommation" / "corpus_manifest.json"
     assert [name for name, suite in suites.items() if suite.default] == ["piaf", "lexml_fulltext"]
+    eurlex = suites["eurlex_compliance"]
+    assert (eurlex.corpus_name, eurlex.language, eurlex.default) == ("bench_eurlex_compliance", "multi", False)
+    assert eurlex.manifest_path == tmp_path / "benchmarks" / "eurlex_compliance" / "corpus_manifest.json"
 
 
 def test_a_suite_without_questions_says_so(tmp_path: Path):
