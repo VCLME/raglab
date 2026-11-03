@@ -87,6 +87,10 @@ class Settings(BaseSettings):
     # pgvector iterative HNSW scans, so filters (index run, metadata) never
     # starve the top-k. Off = behaviour measured in baseline-v0.
     hnsw_iterative_scan: bool = True
+    # "exact" (default): true nearest neighbours of the index run, ~10-15 ms
+    # for a few thousand chunks. "hnsw": shared approximate index, see
+    # PostgresVectorStore for why it is not the default.
+    vector_search_mode: str = "exact"
 
     chunk_size: int = 900
     chunk_overlap: int = 150

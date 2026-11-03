@@ -207,6 +207,20 @@ def _reusable_index_run(session: Any, corpus_name: str, strategy: ChunkingStrate
         return None
     if (run.chunk_size, run.chunk_overlap) != (settings.chunk_size, settings.chunk_overlap):
         return None
+    # The ingestion summary counts every existing document as "updated";
+    # whether the run is stale is decided by the documents' own timestamps
+    # and by the run covering every document of the corpus.
+    stale = session.execute(
+        text(
+            "SELECT count(*) FILTER (WHERE d.updated_at > :started) AS changed, "
+            "count(*) AS total, "
+            "(SELECT count(DISTINCT document_id) FROM chunks WHERE index_run_id = :run) AS covered "
+            "FROM documents d WHERE d.corpus_id = :corpus"
+        ),
+        {"started": run.started_at, "run": run.id, "corpus": run.corpus_id},
+    ).one()
+    if stale.changed or stale.covered != stale.total:
+        return None
     return run
 
 
@@ -244,7 +258,7 @@ def run_suite(
         )
     with session_scope() as session:
         reusable = None
-        if not ingestion.get("ingested") and not ingestion.get("updated"):
+        if not ingestion.get("ingested"):
             reusable = _reusable_index_run(session, suite.corpus_name, strategy, settings)
         if reusable is not None:
             # Same documents, same chunking and embedding: re-indexing would
