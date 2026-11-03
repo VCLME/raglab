@@ -1,0 +1,19 @@
+title: Results · raglab
+description: Before/after retrieval and answer-quality numbers for raglab on frozen French and Brazilian-law benchmarks, generated from the committed run files.
+nav: results
+---
+<section class="wrap page-head">
+  <h1>Results</h1>
+  <p class="lede">Every number on this page is read from the run files in <a href="{{repo_url}}/tree/main/benchmarks/results"><code>benchmarks/results/</code></a> when the site is built. A component without a recorded run is shown as <em>measuring</em>, never estimated.</p>
+</section>
+
+<section class="wrap" aria-labelledby="summary">
+  <h2 id="summary">Before and after</h2>
+  {{results_table}}
+  <p class="note">Recall@5: share of questions whose answer passage is in the first five retrieved chunks. Search latency: embedding plus vector search for one question, generation excluded. Faithfulness: share of answer claims supported by the retrieved context, scored on 100 answers per corpus.</p>
+</section>
+
+<section class="wrap" aria-labelledby="runs">
+  <h2 id="runs">Every run</h2>
+  {{run_details}}
+</section>

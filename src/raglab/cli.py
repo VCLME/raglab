@@ -4,12 +4,15 @@ import json
 from pathlib import Path
 
 import typer
+from sqlalchemy import select
 
 from raglab.benchmarks import AVAILABLE_LOADERS, get_loader
 from raglab.benchmarks.lexml_questions import generate_questions, review_question_set
 from raglab.config import get_settings
 from raglab.db import initialize_database, session_scope
-from raglab.domain.enums import ChunkingStrategy
+from raglab.db.lexical import refresh_lexical_index
+from raglab.db.models import Corpus, IndexRun
+from raglab.domain.enums import ChunkingStrategy, RetrievalMode
 from raglab.experiments.ragas import JudgeConfig
 from raglab.experiments.recall import RecallBenchmarkService
 from raglab.experiments.service import ExperimentService
@@ -56,6 +59,25 @@ def main(
 def db_init() -> None:
     initialize_database()
     typer.echo("Base initialisee avec pgvector.")
+
+
+@db_app.command("refresh-lexical")
+def db_refresh_lexical(
+    corpus: str | None = typer.Option(None, "--corpus", help="Limiter aux runs de ce corpus."),
+    index_run_ids: list[str] | None = typer.Option(None, "--index-run-id", help="Run(s) a recalculer."),
+) -> None:
+    """Recalculer tsvector et statistiques BM25 (apres un changement de langue), sans re-embedder."""
+    with session_scope() as session:
+        stmt = select(IndexRun.id)
+        if index_run_ids:
+            stmt = stmt.where(IndexRun.id.in_(index_run_ids))
+        if corpus:
+            stmt = stmt.join(Corpus, Corpus.id == IndexRun.corpus_id).where(Corpus.name == corpus)
+        results = {
+            run_id: refresh_lexical_index(session, run_id, default_language=get_settings().default_language)
+            for run_id in session.scalars(stmt).all()
+        }
+    typer.echo(json.dumps(results, indent=2, ensure_ascii=False))
 
 
 @ollama_app.command("status")
@@ -112,6 +134,25 @@ def bench_all(
     judge_backend: str = typer.Option(
         "llamacpp", "--judge-backend", help="llamacpp (Gemma, demarre si besoin) ou ollama."
     ),
+    retrieval_mode: RetrievalMode | None = typer.Option(
+        None,
+        "--retrieval-mode",
+        help="dense (KNN cosinus), lexical (BM25) ou hybrid (fusion RRF). Defaut: RAGLAB_DEFAULT_RETRIEVAL_MODE.",
+    ),
+    lexical_weight: float | None = typer.Option(
+        None, "--lexical-weight", min=0.0, max=1.0, help="Poids du BM25 dans la fusion RRF (mode hybrid)."
+    ),
+    rrf_k: int | None = typer.Option(None, "--rrf-k", min=0, help="Constante k de la fusion RRF (defaut 60)."),
+    rerank: bool | None = typer.Option(
+        None,
+        "--rerank/--no-rerank",
+        help="Re-ranking cross-encoder des candidats (defaut: RAGLAB_DEFAULT_RERANK).",
+    ),
+    citations: bool | None = typer.Option(
+        None,
+        "--citations/--no-citations",
+        help="Reconnaitre les citations juridiques (art. N da Lei X) : restreindre a la loi citee, epingler l'article. Defaut: RAGLAB_CITATION_RESOLVER.",
+    ),
 ) -> None:
     """Regenerer tous les chiffres de benchmark (PIAF + LexML) et les ecrire dans benchmarks/results/."""
     from raglab.benchmarks.suite import render_markdown, run_all
@@ -122,6 +163,11 @@ def bench_all(
         ragas_limit=ragas_limit or None,
         judge=JudgeConfig(backend=judge_backend),
         suites=suite or None,
+        retrieval_mode=retrieval_mode,
+        lexical_weight=lexical_weight,
+        rrf_k=rrf_k,
+        rerank=rerank,
+        citations=citations,
     )
     output = Path("benchmarks/results") / f"{label}.json"
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -170,6 +216,19 @@ def gate(
             handle.write(table + "\n")
     if failed(checks, require_all=require_all):
         raise typer.Exit(code=1)
+
+
+@bench_app.command("compare")
+def bench_compare(
+    before: str = typer.Argument(..., help="Run de reference (ex. baseline-v1)."),
+    after: str = typer.Argument(..., help="Run compare (ex. hybrid-v1)."),
+    k: int = typer.Option(5, "--k", help="Recall@k compare."),
+) -> None:
+    """Comparer deux runs question par question (McNemar sur le recall, bootstrap apparie sur le MRR)."""
+    from raglab.benchmarks.compare import compare_runs, render
+
+    load = lambda name: json.loads((Path("benchmarks/results") / f"{name}.json").read_text(encoding="utf-8"))  # noqa: E731
+    typer.echo(render(compare_runs(load(before), load(after), k=k), k=k))
 
 
 @bench_app.command("report")
@@ -250,10 +309,17 @@ def ingest(
     corpus: str = typer.Option(get_settings().default_corpus_name, "--corpus", help="Nom du corpus cible."),
     description: str | None = typer.Option(None, "--description", help="Description optionnelle du corpus."),
     tags: list[str] | None = typer.Option(None, "--tag", help="Tag a appliquer a tous les documents ingeres."),
+    language: str | None = typer.Option(
+        None,
+        "--language",
+        help="Langue du corpus (fr, pt) pour la recherche lexicale. Defaut: metadata.json du loader, sinon RAGLAB_DEFAULT_LANGUAGE.",
+    ),
 ) -> None:
     with session_scope() as session:
         service = IngestionService(session)
-        summary = service.ingest_folder(folder, corpus_name=corpus, description=description, tags=tags)
+        summary = service.ingest_folder(
+            folder, corpus_name=corpus, description=description, tags=tags, language=language
+        )
     typer.echo(json.dumps({"corpus": corpus, **summary}, indent=2, ensure_ascii=False))
 
 
@@ -364,7 +430,7 @@ def lexml_ingest(
 ) -> None:
     with session_scope() as session:
         service = IngestionService(session)
-        summary = service.ingest_folder(folder, corpus_name=corpus, description=description, tags=tags)
+        summary = service.ingest_folder(folder, corpus_name=corpus, description=description, tags=tags, language="pt")
     typer.echo(json.dumps({"corpus": corpus, **summary}, indent=2, ensure_ascii=False))
 
 
@@ -477,6 +543,29 @@ def query(
         "--metadata-eq",
         help="Filtre metadata exact, repetable, au format cle=valeur.",
     ),
+    retrieval_mode: RetrievalMode | None = typer.Option(
+        None,
+        "--retrieval-mode",
+        help="dense (KNN cosinus), lexical (BM25) ou hybrid (fusion RRF). Defaut: RAGLAB_DEFAULT_RETRIEVAL_MODE.",
+    ),
+    lexical_weight: float | None = typer.Option(
+        None,
+        "--lexical-weight",
+        min=0.0,
+        max=1.0,
+        help="Poids du BM25 dans la fusion RRF (0 = dense seul, 1 = BM25 seul). Mode hybrid.",
+    ),
+    rrf_k: int | None = typer.Option(None, "--rrf-k", min=0, help="Constante k de la fusion RRF (defaut 60)."),
+    rerank: bool | None = typer.Option(
+        None,
+        "--rerank/--no-rerank",
+        help="Re-ranking cross-encoder de RAGLAB_RERANK_CANDIDATES candidats (defaut: RAGLAB_DEFAULT_RERANK).",
+    ),
+    citations: bool | None = typer.Option(
+        None,
+        "--citations/--no-citations",
+        help="Reconnaitre les citations juridiques (art. N da Lei X) : restreindre a la loi citee, epingler l'article. Defaut: RAGLAB_CITATION_RESOLVER.",
+    ),
     stream: bool = typer.Option(
         False,
         "--stream",
@@ -512,13 +601,18 @@ def query(
                 index_run_id=index_run_id,
                 top_k=top_k,
                 filters=filters,
+                retrieval_mode=retrieval_mode,
+                lexical_weight=lexical_weight,
+                rrf_k=rrf_k,
+                rerank=rerank,
+                citations=citations,
                 routing=routing,
             )
             final: dict = {}
             for event, data in service.stream_answer(outcome, llm_model=llm_model):
                 if event == "token":
                     typer.echo(data["text"], nl=False, err=True)
-                else:
+                elif event == "done":
                     final = data
             typer.echo("", err=True)
             typer.echo(json.dumps(final, indent=2, ensure_ascii=False))
@@ -531,6 +625,11 @@ def query(
             top_k=top_k,
             generate_answer=generate,
             filters=filters,
+            retrieval_mode=retrieval_mode,
+            lexical_weight=lexical_weight,
+            rrf_k=rrf_k,
+            rerank=rerank,
+            citations=citations,
             llm_model=llm_model,
             routing=routing,
         )
@@ -623,6 +722,29 @@ def experiment_recall(
         help="llamacpp (juge independant, demarre si besoin) ou ollama (le generateur se note lui-meme).",
     ),
     judge_model: str | None = typer.Option(None, "--judge-model", help="Modele juge (defaut: judge_model)."),
+    retrieval_mode: RetrievalMode | None = typer.Option(
+        None,
+        "--retrieval-mode",
+        help="dense (KNN cosinus), lexical (BM25) ou hybrid (fusion RRF). Defaut: RAGLAB_DEFAULT_RETRIEVAL_MODE.",
+    ),
+    lexical_weight: float | None = typer.Option(
+        None,
+        "--lexical-weight",
+        min=0.0,
+        max=1.0,
+        help="Poids du BM25 dans la fusion RRF (0 = dense seul, 1 = BM25 seul). Mode hybrid.",
+    ),
+    rrf_k: int | None = typer.Option(None, "--rrf-k", min=0, help="Constante k de la fusion RRF (defaut 60)."),
+    rerank: bool | None = typer.Option(
+        None,
+        "--rerank/--no-rerank",
+        help="Re-ranking cross-encoder des candidats (defaut: RAGLAB_DEFAULT_RERANK).",
+    ),
+    citations: bool | None = typer.Option(
+        None,
+        "--citations/--no-citations",
+        help="Reconnaitre les citations juridiques (art. N da Lei X) : restreindre a la loi citee, epingler l'article. Defaut: RAGLAB_CITATION_RESOLVER.",
+    ),
 ) -> None:
     with session_scope() as session:
         service = RecallBenchmarkService(session)
@@ -632,6 +754,11 @@ def experiment_recall(
             dataset_path=dataset_path,
             lexml_documents_dir=lexml_documents_dir,
             case_limit=case_limit,
+            retrieval_mode=retrieval_mode,
+            lexical_weight=lexical_weight,
+            rrf_k=rrf_k,
+            rerank=rerank,
+            citations=citations,
             compute_ragas=ragas,
             ragas_case_limit=ragas_limit,
             judge=JudgeConfig(backend=judge_backend, model=judge_model),
@@ -662,6 +789,21 @@ def experiment_routing(
         help="Questions in-scope de calibration par corpus (disjointes des questions evaluees) "
         "pour les seuils par corpus.",
     ),
+    retrieval_mode: RetrievalMode | None = typer.Option(
+        None,
+        "--retrieval-mode",
+        help="Retrieval derriere le routeur : dense, lexical ou hybrid. Defaut: RAGLAB_DEFAULT_RETRIEVAL_MODE.",
+    ),
+    rerank: bool | None = typer.Option(
+        None,
+        "--rerank/--no-rerank",
+        help="Re-ranking cross-encoder (defaut: RAGLAB_DEFAULT_RERANK, ignore sans GPU).",
+    ),
+    citations: bool | None = typer.Option(
+        None,
+        "--citations/--no-citations",
+        help="Resolution des citations juridiques (defaut: RAGLAB_CITATION_RESOLVER).",
+    ),
 ) -> None:
     """Mesurer le routeur : abstention (precision / rappel / F1, courbe), intention, langue, corpus, latence."""
     from raglab.experiments.routing import RoutingExperimentService, render_markdown
@@ -674,6 +816,9 @@ def experiment_routing(
             seed=seed,
             top_k=top_k,
             calibration_size=calibration_size,
+            retrieval_mode=retrieval_mode,
+            rerank=rerank,
+            citations=citations,
         )
     summary = {k: v for k, v in report["summary"].items() if k != "curve"}
     typer.echo(json.dumps({"report_path": report["report_path"], "summary": summary}, indent=2, ensure_ascii=False))

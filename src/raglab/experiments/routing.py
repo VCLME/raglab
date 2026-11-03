@@ -24,7 +24,7 @@ from typing import Any
 from sqlalchemy.orm import Session
 
 from raglab.config import Settings, get_settings
-from raglab.domain.enums import ChunkingStrategy
+from raglab.domain.enums import ChunkingStrategy, RetrievalMode
 from raglab.experiments.recall import _chunk_covers_span, _percentile
 from raglab.retrieval.service import QueryService
 from raglab.routing.abstention import best_score, threshold_for
@@ -188,6 +188,9 @@ def _threshold_for(threshold: Threshold, record: dict[str, Any]) -> float:
 
 
 def predict_abstain(record: dict[str, Any], *, margin: float | None, threshold: Threshold) -> bool:
+    # Same rule as the router: a question citing a law is never declined.
+    if record.get("legal_citation"):
+        return False
     if margin is not None and decide_intent(record["intent_scores"], margin=margin) != Intent.DOCUMENTARY:
         return True
     score = record["best_score"]
@@ -366,6 +369,9 @@ class RoutingExperimentService:
         seed: int = 42,
         top_k: int = 5,
         calibration_size: int = 100,
+        retrieval_mode: RetrievalMode | None = None,
+        rerank: bool | None = None,
+        citations: bool | None = None,
         abstention_path: Path = ABSTENTION_PATH,
         in_scope_sets: tuple[InScopeSet, ...] = IN_SCOPE_SETS,
     ) -> dict[str, Any]:
@@ -374,6 +380,12 @@ class RoutingExperimentService:
         )
         router = QueryRouter(self.session, self.settings)
         retriever = QueryService(self.session, self.settings)
+        # None = the production defaults (hybrid + re-ranking + citations).
+        retrieval_options: dict[str, Any] = {
+            "retrieval_mode": retrieval_mode,
+            "rerank": rerank,
+            "citations": citations,
+        }
         # Warm-up: model weights, example embeddings and corpus centroids are
         # loaded once per process and kept out of the latency figures.
         warm_up = router.route("warm-up", strategy=strategy, candidate_corpora=corpora or None)
@@ -384,7 +396,12 @@ class RoutingExperimentService:
             decision = router.route(case.question, strategy=strategy, candidate_corpora=corpora or None)
             if decision.corpus.index_run_id is None:
                 raise ValueError("Aucun index compatible avec l'embedder du routeur : indexez au moins un corpus.")
-            outcome = retriever.retrieve(question=case.question, index_run_id=decision.corpus.index_run_id, top_k=top_k)
+            outcome = retriever.retrieve(
+                question=case.question,
+                index_run_id=decision.corpus.index_run_id,
+                top_k=top_k,
+                **retrieval_options,
+            )
             chunks = [chunk.model_dump() for chunk in outcome.retrieved]
             records.append(
                 {
@@ -395,6 +412,7 @@ class RoutingExperimentService:
                     "corpus_routed": decision.corpus.corpus_name,
                     "corpus_margin": decision.corpus.margin,
                     "corpus_scores": {c.corpus_name: c.score for c in decision.corpus.candidates},
+                    "legal_citation": decision.legal_citation is not None,
                     "best_score": best_score(outcome.retrieved, self.settings.routing_score_source),
                     "scores": [round(chunk.score, 4) for chunk in outcome.retrieved],
                     "hit": any(_chunk_covers_span(chunk, span) for chunk in chunks for span in case.expected_spans),
@@ -412,7 +430,12 @@ class RoutingExperimentService:
         for case in calibration_cases:
             if case.expected_corpus not in runs:
                 continue
-            outcome = retriever.retrieve(question=case.question, index_run_id=runs[case.expected_corpus], top_k=top_k)
+            outcome = retriever.retrieve(
+                question=case.question,
+                index_run_id=runs[case.expected_corpus],
+                top_k=top_k,
+                **retrieval_options,
+            )
             score = best_score(outcome.retrieved, self.settings.routing_score_source)
             if score is not None:
                 calibration.setdefault(case.expected_corpus, []).append(score)
@@ -427,6 +450,9 @@ class RoutingExperimentService:
                 "seed": seed,
                 "top_k": top_k,
                 "calibration_size": calibration_size,
+                "retrieval_mode": (retrieval_mode or RetrievalMode(self.settings.default_retrieval_mode)).value,
+                "rerank": self.settings.default_rerank if rerank is None else rerank,
+                "citations": self.settings.citation_resolver if citations is None else citations,
                 "score_source": self.settings.routing_score_source,
                 "intent_margin": self.settings.routing_intent_margin,
                 "abstention_threshold": self.settings.routing_abstention_threshold,

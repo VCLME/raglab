@@ -17,6 +17,8 @@ CONVERSATIONAL_ANSWERS = {
 }
 
 SCORE_SOURCES = ("dense", "rerank")
+# Set on chunks whose `score` is not a cosine similarity.
+_NON_COSINE_FIELDS = ("lexical_score", "fused_score", "rerank_score", "citation_match")
 
 
 def chunk_score(chunk: Any, source: str) -> float | None:
@@ -24,13 +26,19 @@ def chunk_score(chunk: Any, source: str) -> float | None:
 
     - dense: cosine similarity. Hybrid retrieval (9.2) keeps it in
       `dense_score` while `score` holds the fused RRF value, which has no
-      absolute meaning; without hybrid, `score` is the cosine similarity.
+      absolute meaning; a chunk found only by BM25 (or pinned by the
+      citation resolver) has no cosine and is skipped. A plain chunk without
+      those fields carries the cosine in `score`.
     - rerank: cross-encoder score (9.3), read from `rerank_score` when the
       reranker ran, None otherwise.
     """
     if source == "dense":
         dense = getattr(chunk, "dense_score", None)
-        return float(dense) if dense is not None else float(chunk.score)
+        if dense is not None:
+            return float(dense)
+        if any(getattr(chunk, name, None) is not None for name in _NON_COSINE_FIELDS):
+            return None
+        return float(chunk.score)
     if source == "rerank":
         value = getattr(chunk, "rerank_score", None)
         return float(value) if value is not None else None
@@ -58,9 +66,17 @@ def decide_abstention(
     score: float | None,
     threshold: float,
     score_source: str,
+    legal_citation: bool = False,
 ) -> AbstentionDecision:
-    if intent != Intent.DOCUMENTARY:
-        reason: str | None = f"intent:{intent.value}"
+    """A question citing a law ("art. 49 da Lei nº 8.078") is never declined:
+    it names a document, so it is documentary by construction, and its
+    passages are found by the citation resolver rather than by similarity
+    (identifiers embed poorly, so the dense score is low on exactly these
+    questions)."""
+    if legal_citation:
+        reason: str | None = None
+    elif intent != Intent.DOCUMENTARY:
+        reason = f"intent:{intent.value}"
     elif score is None:
         reason = "no_passage"
     elif score < threshold:
@@ -73,6 +89,7 @@ def decide_abstention(
         score_source=score_source,
         best_score=round(score, 4) if score is not None else None,
         threshold=threshold,
+        override="legal_citation" if legal_citation else None,
     )
 
 

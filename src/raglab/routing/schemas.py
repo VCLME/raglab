@@ -58,12 +58,16 @@ class AbstentionDecision(BaseModel):
     score_source: str
     best_score: float | None = None
     threshold: float
+    # "legal_citation" when the question cites a law: never declined.
+    override: str | None = None
 
 
 class RoutingDecision(BaseModel):
     language: LanguageDecision
     intent: IntentDecision
     corpus: CorpusDecision
+    # Label of the law cited by the question ("art. 49 — Lei nº 8078"), if any.
+    legal_citation: str | None = None
     abstention: AbstentionDecision | None = None
     # True when the answer comes from the documents (generation runs).
     answer_from_documents: bool = True

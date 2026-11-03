@@ -13,9 +13,22 @@ import { Citation } from "../components/Citation";
 import { RoutingPanel } from "../components/RoutingPanel";
 import { SendIcon } from "../components/Icon";
 import { SourceList } from "../components/SourcePill";
+import { PipelineDiagram } from "../components/PipelineDiagram";
 import { SuggestionChips } from "../components/SuggestionChips";
+import {
+  StageScheduler,
+  applyPlan,
+  applyStage,
+  failPipeline,
+  finishPipeline,
+  idlePipeline,
+  prefersReducedMotion,
+  startPipeline,
+  type PipelineState,
+} from "../edu/pipeline";
 import { useApiAction, useApiLoad } from "../hooks/useApi";
 import { useConfig } from "../hooks/useConfig";
+import { useEducationalMode } from "../hooks/useEducationalMode";
 
 interface ChatTurn {
   id: string;
@@ -31,6 +44,8 @@ interface ChatTurn {
   error?: { message: string; detail: string | null };
   // Router decisions when routing was on for this turn.
   routing?: RoutingDecision | null;
+  // Stage-by-stage view of the request, drawn by the educational mode.
+  pipeline?: PipelineState;
 }
 
 function newTurnId(): string {
@@ -54,6 +69,9 @@ function formatRunLabel(run: IndexRunSummary): string {
   const parts = [run.strategy, run.embedding_model_name ?? "—", shortDate(run.started_at)];
   return parts.join(" · ");
 }
+
+// Pause before closing each replayed stage, so the diagram can be followed.
+const REPLAY_STEP_MS = 280;
 
 const CITATION_REGEX = /\[(?:Rank|rank|Source\s+rank\s*=)\s*(\d+)\]/g;
 const TRAILING_SOURCES_REGEX = /\n+\s*Sources?\s*:[\s\S]*$/i;
@@ -125,6 +143,9 @@ export function Chat() {
   const [highlight, setHighlight] = useState<Record<string, string | null>>({});
 
   const streamRef = useRef<HTMLDivElement | null>(null);
+  const [educational] = useEducationalMode();
+  const [diagramOpen, setDiagramOpen] = useState(true);
+  const schedulerRef = useRef<StageScheduler | null>(null);
 
   useEffect(() => {
     // With routing on, an empty corpus means "let the router choose".
@@ -175,6 +196,7 @@ export function Chat() {
         index_run_id: null,
         strategy: null,
         elapsed_ms: null,
+        pipeline: startPipeline(),
       },
     ]);
     setQuestion("");
@@ -190,6 +212,13 @@ export function Chat() {
     if (llmModel) body.llm_model = llmModel;
     const patchTurn = (update: (tn: ChatTurn) => Partial<ChatTurn>) =>
       setTurns((prev) => prev.map((tn) => (tn.id === id ? { ...tn, ...update(tn) } : tn)));
+    // Stage events go through a queue so replayed stages light up one by one;
+    // the answer itself is never held back.
+    schedulerRef.current?.cancel();
+    const scheduler = new StageScheduler(prefersReducedMotion() ? 0 : REPLAY_STEP_MS);
+    schedulerRef.current = scheduler;
+    const patchPipeline = (update: (state: PipelineState) => PipelineState) =>
+      patchTurn((tn) => ({ pipeline: update(tn.pipeline ?? startPipeline()) }));
     try {
       // Sources show up as soon as retrieval is done, then the answer grows
       // token by token (falls back to a single response without streaming).
@@ -203,7 +232,10 @@ export function Chat() {
           })),
         onToken: (text) =>
           patchTurn((tn) => ({ answer: (tn.answer ?? "") + text, streaming: true })),
+        onPipeline: (stages) => scheduler.push(() => patchPipeline((state) => applyPlan(state, stages))),
+        onStage: (event) => scheduler.push(() => patchPipeline((state) => applyStage(state, event)), event),
       });
+      scheduler.push(() => patchPipeline((state) => finishPipeline(state, result)));
       patchTurn(() => ({
         answer: result.answer ?? t("chat.no_answer_generated"),
         chunks: result.retrieved_chunks,
@@ -224,6 +256,7 @@ export function Chat() {
       const detail = e instanceof ApiError ? extractErrorDetail(e) : null;
       // A partial streamed answer stays visible above the error.
       patchTurn(() => ({ streaming: false, error: { message, detail } }));
+      scheduler.push(() => patchPipeline(failPipeline));
     }
   };
 
@@ -233,7 +266,10 @@ export function Chat() {
     }
   }, [turns]);
 
+  useEffect(() => () => schedulerRef.current?.cancel(), []);
+
   const reset = () => {
+    schedulerRef.current?.cancel();
     setTurns([]);
     setExpanded({});
     setHighlight({});
@@ -253,8 +289,10 @@ export function Chat() {
 
   const empty = turns.length === 0;
   const noRuns = !!corpus && !indexRuns.loading && runsForCorpus.length === 0;
+  const lastTurn = turns[turns.length - 1];
+  const lastPipeline = lastTurn?.pipeline ?? idlePipeline();
 
-  return (
+  const page = (
     <div className="chat-page">
       <div className="settings-bar">
         <div className="compact-field">
@@ -396,6 +434,23 @@ export function Chat() {
           </button>
         </div>
       </div>
+    </div>
+  );
+
+  if (!educational) return page;
+  return (
+    <div className="edu-layout">
+      {page}
+      <aside className={`edu-aside${diagramOpen ? "" : " collapsed"}`} aria-label={t("edu.title")}>
+        <button
+          className="ghost sm edu-collapse"
+          aria-expanded={diagramOpen}
+          onClick={() => setDiagramOpen((open) => !open)}
+        >
+          {diagramOpen ? t("edu.hide") : t("edu.show")}
+        </button>
+        {diagramOpen ? <PipelineDiagram key={lastTurn?.id ?? "idle"} state={lastPipeline} /> : null}
+      </aside>
     </div>
   );
 }

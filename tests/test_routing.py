@@ -8,6 +8,7 @@ import numpy as np
 import pytest
 
 from raglab.config import Settings
+from raglab.domain.enums import RetrievalMode
 from raglab.domain.schemas import RetrievedChunk
 from raglab.experiments.routing import (
     ABSTENTION_PATH,
@@ -18,6 +19,7 @@ from raglab.experiments.routing import (
     intent_confusion,
     load_calibration,
     load_cases,
+    predict_abstain,
     render_curve_svg,
     render_markdown,
     summarize,
@@ -196,6 +198,24 @@ def test_decide_abstention(intent, score, abstain, reason):
     assert decision.reason == reason
 
 
+@pytest.mark.parametrize(
+    ("intent", "score"),
+    [(Intent.DOCUMENTARY, 0.1), (Intent.DOCUMENTARY, None), (Intent.OUT_OF_SCOPE, 0.95)],
+)
+def test_decide_abstention_never_declines_a_legal_citation(intent, score):
+    decision = decide_abstention(intent=intent, score=score, threshold=0.8, score_source="dense", legal_citation=True)
+    assert decision.abstain is False
+    assert decision.reason is None
+    assert decision.override == "legal_citation"
+
+
+def test_dense_score_skips_chunks_without_a_cosine():
+    # Found by BM25 only, or pinned by the citation resolver: no cosine.
+    assert chunk_score(SimpleNamespace(score=0.016, dense_score=None, lexical_score=7.1), "dense") is None
+    assert chunk_score(SimpleNamespace(score=1.0, dense_score=None, citation_match=True), "dense") is None
+    assert best_score([SimpleNamespace(score=0.03, dense_score=None, fused_score=0.03)], "dense") is None
+
+
 def test_fallback_answers_follow_the_language_and_intent():
     assert fallback_answer(Intent.DOCUMENTARY, "fr") == "Je ne trouve pas cela dans les documents."
     assert fallback_answer(Intent.OUT_OF_SCOPE, "pt") == "Não encontrei isso nos documentos."
@@ -343,6 +363,50 @@ def test_query_with_routing_answers_conversation_without_generation(routed_env):
     service.generator.generate_answer.assert_not_called()
 
 
+def test_query_with_routing_never_abstains_on_a_cited_law_article(routed_env):
+    """Full default pipeline (hybrid + re-ranking + citations) behind the router:
+    the cited article is pinned with no cosine score and the other passages
+    score far below the threshold, yet the router answers."""
+    question = "O que diz o art. 49 da Lei nº 8.078?"
+    service = _service([_chunk(0.3)], routing_abstention_threshold=0.8)
+    pinned = _chunk(1.0, 1, citation_match=True).model_copy(update={"chunk_id": "art-49"})
+    service.lexical_store = Mock()
+    service.lexical_store.search.return_value = ([], [])
+    service.reranker = Mock()
+    service.reranker.rerank.side_effect = lambda q, chunks, top_k: (chunks[:top_k], {"candidates": len(chunks)})
+    with (
+        patch("raglab.retrieval.service.rerank_gpu_available", return_value=True),
+        patch("raglab.retrieval.service.find_law_document", return_value="lei-8078"),
+        patch("raglab.retrieval.service.article_chunks", return_value=[pinned]),
+    ):
+        response = service.query(question=question, routing=True, retrieval_mode="hybrid", rerank=True, citations=True)
+    assert response.routing.legal_citation == "art. 49 — Lei nº 8078"
+    assert response.routing.abstention.abstain is False
+    assert response.routing.abstention.override == "legal_citation"
+    assert response.answer == "Réponse générée"
+    assert response.retrieved_chunks[0].chunk_id == "art-49"
+    assert response.retrieval_mode == RetrievalMode.HYBRID
+    assert response.rerank is True
+    assert response.citation["article_found"] is True
+    service.reranker.rerank.assert_called_once()
+
+
+def test_query_with_routing_uses_hybrid_and_rerank_when_it_answers(routed_env):
+    service = _service([_chunk(0.9)], routing_abstention_threshold=0.8)
+    service.lexical_store = Mock()
+    service.lexical_store.search.return_value = ([], ["loi"])
+    service.reranker = Mock()
+    service.reranker.rerank.side_effect = lambda q, chunks, top_k: (chunks[:top_k], {})
+    with patch("raglab.retrieval.service.rerank_gpu_available", return_value=True):
+        response = service.query(question="Que dit la loi ?", routing=True, retrieval_mode="hybrid", rerank=True)
+    assert response.routing.abstention.abstain is False
+    assert response.retrieval_mode == RetrievalMode.HYBRID
+    assert response.rerank is True
+    # The fused chunk keeps its cosine for the abstention test.
+    assert response.routing.abstention.best_score == pytest.approx(0.9)
+    assert routed_env.calls.count("Que dit la loi ?") == 1
+
+
 def test_query_without_routing_is_unchanged(routed_env):
     service = _service([_chunk(0.1)], routing_abstention_threshold=0.8)
     response = service.query(question="Que dit la loi ?", corpus_name="lexml")
@@ -354,7 +418,8 @@ def test_stream_answer_streams_the_fallback_when_the_router_declines(routed_env)
     service = _service([_chunk(0.5)], routing_abstention_threshold=0.8)
     outcome = service.retrieve(question="Que dit la loi ?", routing=True)
     events = list(service.stream_answer(outcome))
-    assert events[0] == ("token", {"text": "Je ne trouve pas cela dans les documents."})
+    tokens = [event for event in events if event[0] == "token"]
+    assert tokens == [("token", {"text": "Je ne trouve pas cela dans les documents."})]
     assert events[-1][0] == "done"
     assert events[-1][1]["routing"]["abstention"]["abstain"] is True
     service.generator.stream_answer.assert_not_called()
@@ -398,6 +463,12 @@ def test_abstention_metrics_count_intent_and_score_refusals():
     assert metrics["false_abstention_rate"] == pytest.approx(1 / 3, abs=1e-4)
     # Intent ignored: the conversational question scores 0.86 and gets answered.
     assert abstention_metrics(RECORDS, margin=None, threshold=0.8)["counts"]["tp"] == 1
+
+
+def test_offline_evaluation_never_abstains_on_a_legal_citation():
+    record = {**_record("in_scope", 0.2, corpus="lexml"), "legal_citation": True}
+    assert predict_abstain(record, margin=0.0, threshold=0.8) is False
+    assert predict_abstain({**record, "legal_citation": False}, margin=0.0, threshold=0.8) is True
 
 
 def test_sweep_and_candidate_points_cover_the_curve():

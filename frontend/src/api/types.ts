@@ -29,6 +29,15 @@ export interface ConfigResponse {
   slide_stride: number;
   late_chunk_size: number;
   late_context_chars: number;
+  default_retrieval_mode: string;
+  hybrid_lexical_weight: number;
+  rrf_k: number;
+  bm25_k1: number;
+  bm25_b: number;
+  default_rerank?: boolean;
+  rerank_gpu?: boolean;
+  rerank_model_name?: string;
+  rerank_candidates?: number;
 }
 
 export interface OllamaStatus {
@@ -123,16 +132,52 @@ export interface RetrievedChunk {
   chunk_text: string;
   score: number;
   rank: number;
+  // Hybrid retrieval intermediate scores; null when that retriever did not
+  // run or did not return the chunk.
+  dense_score?: number | null;
+  dense_rank?: number | null;
+  lexical_score?: number | null;
+  lexical_rank?: number | null;
+  fused_score?: number | null;
+  fused_rank?: number | null;
+  // Cross-encoder re-ranking; score / rank are then these.
+  rerank_score?: number | null;
+  rerank_rank?: number | null;
+  // True when pinned because the question cites this chunk's law and article.
+  citation_match?: boolean | null;
 }
+
+/** Legal citation parsed from the question (citations option). */
+export interface CitationInfo {
+  label: string;
+  law_number: string;
+  article: string | null;
+  law_found: boolean;
+  article_found: boolean;
+}
+
+export type RetrievalMode = "dense" | "lexical" | "hybrid";
 
 export interface QueryResponse {
   question: string;
   index_run_id: string;
   strategy: ChunkingStrategy;
   retrieved_chunks: RetrievedChunk[];
+  retrieval_mode?: RetrievalMode;
+  query_lexemes?: string[];
+  rerank?: boolean;
+  // candidates, scored, cache_hits, cache_hit_rate, cache_size, cache_hit_rate_total
+  rerank_stats?: Record<string, number>;
+  citation?: CitationInfo | null;
+  // "skipped_no_gpu" or "cpu" when re-ranking could not use a GPU.
+  rerank_notice?: string | null;
   answer: string | null;
   elapsed_ms: number;
   filters: unknown;
+  // Per-stage durations (embed, retrieval, generation, and dense / lexical /
+  // fusion / rerank when those stages ran) and Ollama token counters.
+  timings_ms?: Record<string, number>;
+  generation_stats?: Record<string, number>;
   // Present when the request enabled the query router (phase 9.4).
   routing?: RoutingDecision | null;
 }
@@ -155,16 +200,32 @@ export interface RoutingDecision {
     margin: number;
     source: "routed" | "requested" | "none";
   };
+  legal_citation?: string | null;
   abstention: {
     abstain: boolean;
     reason: string | null;
     score_source: string;
     best_score: number | null;
     threshold: number;
+    // "legal_citation" when the question cites a law: never declined.
+    override?: string | null;
   } | null;
   answer_from_documents: boolean;
   fallback_answer: string | null;
   timings_ms: Record<string, number>;
+}
+
+/** SSE `stage` event of /api/query/stream (educational mode). */
+export interface StageEvent {
+  stage: string;
+  status: "start" | "end";
+  /** Time since the start of the pipeline. */
+  t_ms: number;
+  /** false for stages replayed after the fact (embed and search run before the stream opens). */
+  live: boolean;
+  duration_ms?: number | null;
+  counts?: Record<string, number | string | null>;
+  data?: Record<string, unknown>;
 }
 
 export interface ExperimentRunSummary {
@@ -186,6 +247,12 @@ export interface ExperimentRunSummary {
   summary: Record<string, number | null> | null;
   duration_ms: number | null;
   backend: string | null;
+  retrieval_mode?: RetrievalMode | null;
+  lexical_weight?: number | null;
+  rrf_k?: number | null;
+  rerank?: boolean | null;
+  rerank_model?: string | null;
+  rerank_candidates?: number | null;
 }
 
 export interface ExperimentResultCase {

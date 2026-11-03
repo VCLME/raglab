@@ -134,7 +134,7 @@ def test_routing_endpoint_runs_the_router_evaluation(client):
         cls.return_value.run.return_value = {"kind": "routing", "summary": {}}
         response = client.post(
             "/api/experiments/routing",
-            json={"corpora": ["bench_piaf_fr", "bench_lexml_pt"], "sample_size": 20, "seed": 7},
+            json={"corpora": ["bench_piaf_fr", "bench_lexml_pt"], "sample_size": 20, "seed": 7, "rerank": True},
         )
     assert response.status_code == 200
     assert response.json()["kind"] == "routing"
@@ -146,4 +146,7 @@ def test_routing_endpoint_runs_the_router_evaluation(client):
         "seed": 7,
         "top_k": 5,
         "calibration_size": 100,
+        "retrieval_mode": None,
+        "rerank": True,
+        "citations": None,
     }

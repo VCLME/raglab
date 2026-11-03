@@ -45,6 +45,11 @@ export function RoutingPanel({ routing, detailed = false }: Props) {
               : t("routing.answered")
           }
         />
+        {abstention?.override === "legal_citation" ? (
+          <span className="muted">
+            {t("routing.citation_override", { label: routing.legal_citation ?? "" })}
+          </span>
+        ) : null}
       </div>
 
       {detailed ? (

@@ -54,6 +54,11 @@ def run_query(
         generate_answer=body.generate,
         filters=_filters(body),
         llm_model=body.llm_model,
+        retrieval_mode=body.retrieval_mode,
+        lexical_weight=body.lexical_weight,
+        rrf_k=body.rrf_k,
+        rerank=body.rerank,
+        citations=body.citations,
         routing=body.routing,
     )
 
@@ -70,7 +75,9 @@ def sse_event(event: str, data: dict[str, Any]) -> str:
             "content": {"text/event-stream": {}},
             "description": (
                 "Flux SSE : `retrieval` (chunks, scores, timings), puis `token` (fragments de "
-                "reponse), puis `done` (QueryResponse complete + first_token_ms) ou `error`."
+                "reponse), puis `done` (QueryResponse complete + first_token_ms) ou `error`. "
+                "Evenements additifs du mode pedagogique : `pipeline` (etapes executees) puis "
+                "`stage` (debut / fin de chaque etape, duree, compteurs, donnees intermediaires)."
             ),
         }
     },
@@ -95,11 +102,18 @@ def stream_query(
         index_run_id=body.index_run_id,
         top_k=body.top_k,
         filters=_filters(body),
+        retrieval_mode=body.retrieval_mode,
+        lexical_weight=body.lexical_weight,
+        rrf_k=body.rrf_k,
+        rerank=body.rerank,
+        citations=body.citations,
         routing=body.routing,
     )
     retrieval = outcome.response().model_dump(mode="json")
 
     def events() -> Iterator[str]:
+        for event, data in service.pipeline_events(outcome, generate=body.generate):
+            yield sse_event(event, data)
         yield sse_event("retrieval", retrieval)
         if not body.generate:
             yield sse_event("done", {**retrieval, "first_token_ms": None})

@@ -11,6 +11,7 @@ from raglab.db.crud import get_index_run
 from raglab.domain.enums import ChunkingStrategy
 from raglab.domain.errors import run_with_timeout
 from raglab.embeddings.factory import build_embedding_provider
+from raglab.retrieval.citations import parse_citation
 from raglab.routing.abstention import best_score, decide_abstention, fallback_answer, threshold_for
 from raglab.routing.corpus import embedding_identity, list_candidate_runs, score_corpora
 from raglab.routing.intent import get_intent_classifier, normalize
@@ -62,11 +63,13 @@ class QueryRouter:
             strategy=strategy,
             candidate_corpora=candidate_corpora,
         )
+        citation = parse_citation(question)
         routed = perf_counter()
         decision = RoutingDecision(
             language=language,
             intent=intent,
             corpus=corpus,
+            legal_citation=citation.label() if citation else None,
             timings_ms={
                 "embed": _ms(started, embedded),
                 "language": _ms(embedded, detected),
@@ -131,6 +134,7 @@ class QueryRouter:
             score=best_score(retrieved, source),
             threshold=threshold_for(self.settings, decision.corpus.corpus_name),
             score_source=source,
+            legal_citation=decision.legal_citation is not None,
         )
         declined = abstention.abstain
         return decision.model_copy(

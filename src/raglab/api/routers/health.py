@@ -12,6 +12,7 @@ from raglab.api.schemas import ConfigResponse, HealthResponse, LivenessResponse,
 from raglab.config import Settings
 from raglab.graph import Neo4jGraphStore
 from raglab.ollama.service import OllamaService
+from raglab.retrieval.rerank import rerank_gpu_available
 
 LOGGER = logging.getLogger(__name__)
 
@@ -135,4 +136,13 @@ def config(settings: Settings = Depends(get_current_settings)) -> ConfigResponse
         slide_stride=settings.slide_stride,
         late_chunk_size=settings.late_chunk_size,
         late_context_chars=settings.late_context_chars,
+        default_retrieval_mode=settings.default_retrieval_mode,
+        hybrid_lexical_weight=settings.hybrid_lexical_weight,
+        rrf_k=settings.rrf_k,
+        bm25_k1=settings.bm25_k1,
+        bm25_b=settings.bm25_b,
+        default_rerank=settings.default_rerank,
+        rerank_gpu=rerank_gpu_available(settings.rerank_device),
+        rerank_model_name=settings.rerank_model_name,
+        rerank_candidates=settings.rerank_candidates,
     )

@@ -58,7 +58,9 @@
     "api_key_placeholder": "Coller la clé d'API",
     "api_key_save": "Enregistrer",
     "api_key_clear": "Effacer",
-    "api_key_hint": "Stockée dans ce navigateur uniquement."
+    "api_key_hint": "Stockée dans ce navigateur uniquement.",
+    "edu": "Mode pédagogique",
+    "edu_title": "Afficher le schéma du pipeline RAG et suivre la requête étape par étape"
   },
   "nav": {
     "expert_section": "Mode expert",
@@ -440,7 +442,8 @@
     "judge_llamacpp": "llama.cpp (Gemma 4, juge indépendant)",
     "ragas_limit_label": "Cas notés",
     "ragas_limit_hint": "Vide = tous. Le retrieval porte toujours sur tous les cas.",
-    "table_relevancy": "Answer relevancy"
+    "table_relevancy": "Answer relevancy",
+    "rerank_hint": "Ajoute l'étape cross-encoder (pgvector). Sa VRAM est libérée avant la passe du juge RAGAS."
   },
   "corpus_page": {
     "title": "Corpus",
@@ -505,6 +508,7 @@
     "no_candidate": "aucun index compatible",
     "intent_rule": "documentaire sauf si une autre intention le dépasse de plus de {{margin}}",
     "nearest_example": "exemple le plus proche : « {{text}} »",
+    "citation_override": "Citation juridique ({{label}}) : jamais d'abstention",
     "abstention_rule": "meilleur score {{source}} {{score}} (seuil {{threshold}})",
     "intents": {
       "documentary": "documentaire",
@@ -526,5 +530,148 @@
       "requested": "choisi par l'utilisateur",
       "none": "aucun corpus"
     }
+  },
+  "edu": {
+    "title": "Le pipeline en direct",
+    "subtitle": "Posez une question : chaque étape s'allume quand elle s'exécute. Cliquez sur une étape pour comprendre son rôle.",
+    "diagram_label": "Schéma de l'architecture RAG : de la question à la réponse",
+    "hide": "Masquer le schéma",
+    "show": "Afficher le schéma",
+    "hint": "Cliquez sur une étape du schéma pour voir ce qu'elle fait et ses données intermédiaires.",
+    "status_running": "en cours…",
+    "status_disabled": "désactivé",
+    "status_error": "échec",
+    "total": "total {{duration}}",
+    "what": "Ce qu'elle fait :",
+    "why": "Pourquoi elle existe :",
+    "duration": "Durée",
+    "follow_live": "Suivre en direct",
+    "following": "Suivi en direct",
+    "replayed": "Cette étape s'exécute avant l'ouverture du flux : sa durée est réelle, son animation est rejouée.",
+    "from_timings": "L'API a répondu sans streaming : le schéma est reconstruit à partir des durées de la réponse.",
+    "announce_running": "{{stage}} en cours",
+    "announce_done": "{{stage}} terminé en {{duration}}",
+    "vector_title": "Vecteur de la question ({{dimension}} dimensions, 8 premières valeurs)",
+    "vector_norm": "Norme : {{norm}} (les embeddings normalisés ont une norme proche de 1).",
+    "top_chunks": "Meilleurs passages",
+    "system_prompt": "Consignes système",
+    "user_prompt": "Message envoyé (question + contexte)",
+    "prompt_truncated": "Aperçu tronqué : le prompt complet contient tous les passages.",
+    "model": "Modèle : {{model}}",
+    "counts": {
+      "dimension": "Dimensions",
+      "chunks_out": "Passages retenus",
+      "top_k": "top_k demandé",
+      "candidates_in": "Candidats en entrée",
+      "chunks_in": "Passages dans le contexte",
+      "prompt_chars": "Taille du prompt (caractères)",
+      "prompt_tokens": "Tokens lus",
+      "output_tokens": "Tokens générés",
+      "tokens_per_second": "Tokens / s",
+      "fragments": "Fragments streamés",
+      "first_token_ms": "Premier token après"
+    },
+    "scores": {
+      "score": "score",
+      "dense_score": "vectoriel",
+      "lexical_score": "BM25",
+      "fused_score": "fusion",
+      "rerank_score": "re-ranking"
+    },
+    "stages": {
+      "question": {
+        "name": "Question",
+        "what": "Le texte saisi dans le Chat, envoyé à l'API avec le corpus et l'index choisis.",
+        "why": "Tout part de là : la même question traverse chaque étape, et le schéma montre ce que chacune en fait.",
+        "disabled": ""
+      },
+      "routing": {
+        "name": "Routeur",
+        "what": "Détecte la langue et l'intention, choisit le corpus, et peut refuser de répondre si aucun document ne couvre la question.",
+        "why": "Éviter de chercher au mauvais endroit et d'inventer une réponse hors sujet : mieux vaut s'abstenir que d'halluciner.",
+        "disabled": "Le routeur n'est pas activé pour cette requête : la question va directement au corpus choisi."
+      },
+      "embed": {
+        "name": "Embedding",
+        "what": "Un modèle d'embedding transforme la question en vecteur de nombres qui encode son sens.",
+        "why": "Deux textes de sens proche donnent des vecteurs proches : c'est ce qui permet de chercher par le sens et pas seulement par les mots.",
+        "disabled": "Pas de recherche vectorielle pour cette requête, donc pas d'embedding."
+      },
+      "retrieval": {
+        "name": "Recherche vectorielle",
+        "what": "Compare le vecteur de la question aux vecteurs des passages indexés (pgvector, index HNSW) et garde les plus proches.",
+        "why": "Retrouver en quelques millisecondes, parmi des milliers de passages, ceux qui parlent du sujet même sans les mêmes mots.",
+        "disabled": "La recherche est uniquement lexicale pour cette requête."
+      },
+      "lexical": {
+        "name": "BM25",
+        "what": "Recherche plein texte classique : score les passages selon les mots exacts de la question et leur rareté.",
+        "why": "Les embeddings ratent parfois les termes précis (numéros d'article, sigles, noms propres) que BM25 trouve à coup sûr.",
+        "disabled": "Recherche hybride désactivée : seule la recherche vectorielle est utilisée."
+      },
+      "fusion": {
+        "name": "Fusion",
+        "what": "Combine les deux classements (vectoriel et BM25) en un seul, par Reciprocal Rank Fusion.",
+        "why": "Profiter des forces des deux recherches sans avoir à comparer des scores d'échelles différentes.",
+        "disabled": "Pas de fusion : une seule recherche a tourné."
+      },
+      "rerank": {
+        "name": "Re-ranking",
+        "what": "Un cross-encoder relit chaque paire (question, passage) et les reclasse finement.",
+        "why": "Plus précis que la recherche, mais trop lent pour tout le corpus : on ne l'applique qu'aux meilleurs candidats.",
+        "disabled": "Re-ranking désactivé : l'ordre de la recherche est conservé."
+      },
+      "prompt": {
+        "name": "Prompt",
+        "what": "Assemble les consignes, la question et les passages retrouvés (avec leur rang) dans le message envoyé au LLM.",
+        "why": "C'est le prompt qui oblige le modèle à répondre uniquement à partir des sources et à les citer [Rank X].",
+        "disabled": "Pas de génération demandée : aucun prompt n'est construit."
+      },
+      "generation": {
+        "name": "LLM",
+        "what": "Le modèle de langage local (Ollama) lit le prompt et rédige la réponse, token par token.",
+        "why": "Transformer des passages bruts en une réponse claire et sourcée ; c'est l'étape la plus coûteuse en temps et en GPU.",
+        "disabled": "Pas de génération demandée pour cette requête."
+      },
+      "answer": {
+        "name": "Réponse",
+        "what": "La réponse affichée dans le Chat, avec ses citations cliquables vers les sources.",
+        "why": "Chaque affirmation peut être vérifiée dans le passage cité : c'est ce qui rend un RAG digne de confiance.",
+        "disabled": ""
+      }
+    }
+  },
+  "retrieval": {
+    "mode_label": "Mode de retrieval",
+    "mode_hint": "dense = similarité d'embeddings, lexical = BM25 sur les mots, hybrid = fusion des deux (RRF).",
+    "mode_default": "défaut du serveur",
+    "mode_dense": "dense (embeddings)",
+    "mode_lexical": "lexical (BM25)",
+    "mode_hybrid": "hybrid (RRF)",
+    "lexical_weight_label": "Poids du BM25",
+    "lexical_weight_hint": "0 = ordre dense seul, 1 = ordre BM25 seul, 0,5 = RRF classique.",
+    "rrf_k_label": "Constante k de la RRF",
+    "rrf_k_hint": "Plus k est petit, plus les premiers rangs pèsent. Défaut 60.",
+    "query_lexemes": "Lexèmes BM25 de la question",
+    "timings": "Temps par étape",
+    "scores_dense": "dense",
+    "scores_lexical": "BM25",
+    "scores_fused": "RRF",
+    "not_retrieved": "absent",
+    "rerank_label": "Re-ranking cross-encoder",
+    "rerank_hint": "Le retrieval renvoie {{candidates}} candidats, {{model}} les relit avec la question et garde le top-k.",
+    "rerank_on": "activé",
+    "rerank_off": "désactivé",
+    "rerank_stats": "Re-ranking : {{candidates}} candidats, {{scored}} paires calculées, {{hits}} lues dans le cache (taux de hit cumulé {{rate}} %)",
+    "scores_rerank": "rerank",
+    "citations_label": "Citations juridiques",
+    "citations_checkbox": "Reconnaître « art. N da Lei X »",
+    "citations_hint": "Si la question cite une loi présente dans l'index, la recherche se limite à cette loi et place l'article cité en tête.",
+    "citation_badge": "article cité",
+    "citation_badge_title": "Épinglé : la question cite la loi et l'article de ce passage.",
+    "citation_resolved": "Citation reconnue : {{label}}",
+    "citation_unresolved": "Citation reconnue ({{label}}) mais loi absente de l'index : recherche normale.",
+    "rerank_notice_skipped_no_gpu": "Re-ranking ignoré : aucun GPU disponible (il prendrait plusieurs secondes sur CPU). Forcez-le avec « activé » si besoin.",
+    "rerank_notice_cpu": "Re-ranking exécuté sur CPU, sans GPU : comptez plusieurs secondes par requête."
   }
 }

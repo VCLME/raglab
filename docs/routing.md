@@ -27,7 +27,11 @@ Les passages récupérés restent dans la réponse de l'API (transparence), mais
 
 **Corpus.** Pour chaque corpus, on prend le dernier index_run pgvector terminé dans le même espace d'embedding que le routeur, et la moyenne de ses embeddings de chunks (un `AVG` en SQL, calculé une fois par index_run puis gardé en mémoire). Le corpus le plus proche de la question gagne ; la marge avec le second est renvoyée. Si l'appelant nomme un corpus ou un index_run, ce choix est respecté et le routeur indique seulement le corpus qu'il aurait choisi.
 
-**Abstention.** Après le retrieval, le routeur s'abstient si l'intention n'est pas documentaire, si aucun passage n'est revenu, ou si le meilleur score est sous le seuil **du corpus interrogé**. Le score vient de `RAGLAB_ROUTING_SCORE_SOURCE` : `dense` (similarité cosinus, `dense_score` en mode hybride 9.2) ; `rerank` lira le score du cross-encoder de la phase 9.3 (`rerank_score`) dès qu'il existe.
+**Abstention.** Après le retrieval, le routeur s'abstient si l'intention n'est pas documentaire, si aucun passage n'est revenu, ou si le meilleur score est sous le seuil **du corpus interrogé**. Le score vient de `RAGLAB_ROUTING_SCORE_SOURCE` : `dense` (similarité cosinus, `dense_score` en mode hybride 9.2) ; `rerank` lit le score du cross-encoder de la phase 9.3 (`rerank_score`). En mode hybride, un passage trouvé seulement par BM25 (ou épinglé par le résolveur de citations) n'a pas de similarité cosinus et n'entre pas dans le score `dense`.
+
+**Citations juridiques.** Une question qui cite une loi (« art. 49 da Lei nº 8.078 ») n'est jamais refusée, quels que soient l'intention et le score : elle désigne un document, et ses passages viennent du résolveur de citations plutôt que de la similarité (les identifiants s'encodent mal, le score dense y est justement faible). La décision porte alors `abstention.override = "legal_citation"` et `legal_citation` contient la citation reconnue. L'évaluation hors ligne applique la même règle.
+
+**Pipeline derrière le routeur.** Le routeur décide la langue, l'intention et le corpus avant le retrieval ; quand il répond, le retrieval suit les réglages par défaut (hybride BM25 + RRF, re-ranking cross-encoder, résolveur de citations) ou ceux de la requête.
 
 Pourquoi un seuil par corpus : les scores denses n'ont pas la même échelle d'un corpus à l'autre. Sur nos index, une question LexML qui a sa réponse obtient au moins 0,87, une question PIAF parfois 0,74 : aucun seuil global ne sépare bien les deux. Les seuils par corpus sont calibrés sur des questions in-scope **disjointes** de celles qu'on évalue (voir plus bas).
 
@@ -50,7 +54,14 @@ Pourquoi un seuil par corpus : les scores denses n'ont pas la même échelle d'u
 raglab experiment routing --corpus bench_piaf_fr --corpus bench_lexml_pt
 ```
 
-Équivalent API : `POST /api/experiments/routing` (`corpora`, `strategy`, `sample_size`, `seed`, `top_k`, `calibration_size`).
+Équivalent API : `POST /api/experiments/routing` (`corpora`, `strategy`, `sample_size`, `seed`, `top_k`, `calibration_size`, `retrieval_mode`, `rerank`, `citations`).
+
+Sans option, le retrieval évalué est celui de production (hybride, re-ranking, citations) ; le re-ranking par défaut est ignoré sans GPU, donc pour une mesure reproductible on le force (`--rerank`) ou on le coupe (`--no-rerank`). Les résultats ci-dessous ont été mesurés avant la fusion de 9.2 / 9.3, en retrieval dense seul ; la re-mesure sur le pipeline complet reste à faire :
+
+```bash
+RAGLAB_ROUTING_SCORE_SOURCE=dense  raglab experiment routing --corpus bench_piaf_fr --corpus bench_lexml_pt --retrieval-mode hybrid --rerank --citations
+RAGLAB_ROUTING_SCORE_SOURCE=rerank raglab experiment routing --corpus bench_piaf_fr --corpus bench_lexml_pt --retrieval-mode hybrid --rerank --citations
+```
 
 - **Questions évaluées** : les 80 questions du jeu d'abstention (`benchmarks/abstention/questions.jsonl` : 27 hors périmètre, 23 quasi-pièges, 30 conversationnelles, fr + pt) et autant de questions in-scope tirées avec la graine (40 PIAF, 40 LexML hors questions rejetées).
 - **Calibration** : 100 autres questions in-scope par corpus (graine + 1), jamais évaluées. Le seuil d'un corpus au quantile *q* est le meilleur score sous lequel tombent environ *q* % de ces questions.

@@ -4,8 +4,19 @@ from datetime import datetime
 from uuid import uuid4
 
 from pgvector.sqlalchemy import VECTOR
-from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint, func
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy import (
+    ARRAY,
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+    func,
+)
+from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from raglab.db.base import Base
@@ -32,6 +43,9 @@ class Corpus(TimestampMixin, Base):
     name: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     root_path: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # ISO 639-1 code ("fr", "pt") picking the text-search config for lexical
+    # search when a document's metadata does not carry its own language.
+    language: Mapped[str | None] = mapped_column(String(8), nullable=True)
 
     documents: Mapped[list[Document]] = relationship(back_populates="corpus")
     index_runs: Mapped[list[IndexRun]] = relationship(back_populates="corpus")
@@ -114,6 +128,10 @@ class Chunk(TimestampMixin, Base):
     char_end: Mapped[int] = mapped_column(Integer, nullable=False)
     token_estimate: Mapped[int] = mapped_column(Integer, nullable=False)
     metadata_json: Mapped[dict] = mapped_column(JSONB, default=dict, nullable=False)
+    # Filled by raglab.db.lexical.refresh_lexical_index once the run's chunks
+    # are written; lexical_length is the token count (|d| in BM25).
+    lexical_tsv: Mapped[str | None] = mapped_column(TSVECTOR, nullable=True, deferred=True)
+    lexical_length: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     index_run: Mapped[IndexRun] = relationship(back_populates="chunks")
     document: Mapped[Document] = relationship(back_populates="chunks")
@@ -176,10 +194,39 @@ class ExperimentResult(Base):
     index_run: Mapped[IndexRun] = relationship(back_populates="experiment_results")
 
 
+class LexicalIndexStats(Base):
+    """Per index run BM25 collection statistics (N, avgdl, configs used)."""
+
+    __tablename__ = "lexical_index_stats"
+
+    index_run_id: Mapped[str] = mapped_column(
+        ForeignKey("index_runs.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    doc_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    avg_length: Mapped[float] = mapped_column(Float, nullable=False)
+    ts_configs: Mapped[list[str]] = mapped_column(ARRAY(Text), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+
+class LexicalTermStats(Base):
+    """Document frequency of each lexeme within an index run (BM25 IDF)."""
+
+    __tablename__ = "lexical_term_stats"
+
+    index_run_id: Mapped[str] = mapped_column(
+        ForeignKey("index_runs.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    lexeme: Mapped[str] = mapped_column(Text, primary_key=True)
+    doc_freq: Mapped[int] = mapped_column(Integer, nullable=False)
+
+
 Index("ix_documents_corpus_id", Document.corpus_id)
 Index("ix_chunks_index_run_id", Chunk.index_run_id)
 Index("ix_chunks_document_id", Chunk.document_id)
 Index("ix_chunk_embeddings_embedding_space_id", ChunkEmbedding.embedding_space_id)
+Index("ix_chunks_lexical_tsv", Chunk.lexical_tsv, postgresql_using="gin")
 
 # HNSW indexes on chunk_embeddings.embedding are partial, one per embedding
 # dimension encountered at indexing time, created on demand via

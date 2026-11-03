@@ -1,4 +1,4 @@
-import type { QueryResponse } from "./types";
+import type { QueryResponse, StageEvent } from "./types";
 
 const DEFAULT_BASE = "";
 const API_KEY_STORAGE = "raglab.apiKey";
@@ -109,6 +109,10 @@ export interface QueryStreamHandlers {
   /** Retrieved chunks, scores and embed/retrieval timings, before generation. */
   onRetrieval?: (partial: QueryResponse) => void;
   onToken?: (text: string) => void;
+  /** Stages this request runs, in order (educational mode). */
+  onPipeline?: (stages: string[]) => void;
+  /** Start / end of a pipeline stage, with duration, counts and intermediate data. */
+  onStage?: (event: StageEvent) => void;
 }
 
 /** Raised when the streaming endpoint cannot be used at all (old API, proxy, browser). */
@@ -190,6 +194,10 @@ async function streamQuery(
         handlers.onRetrieval?.(parsed.data as QueryResponse);
       } else if (parsed.event === "token") {
         handlers.onToken?.((parsed.data as { text: string }).text);
+      } else if (parsed.event === "pipeline") {
+        handlers.onPipeline?.((parsed.data as { stages: string[] }).stages);
+      } else if (parsed.event === "stage") {
+        handlers.onStage?.(parsed.data as StageEvent);
       } else if (parsed.event === "done") {
         await reader.cancel().catch(() => undefined);
         return parsed.data as StreamedQueryResponse;
