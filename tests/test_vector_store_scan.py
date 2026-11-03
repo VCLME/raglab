@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import re
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 import pytest
 
+from raglab.domain.schemas import RetrievalFilters
 from raglab.stores.vector.postgres import PostgresVectorStore
 
 
@@ -47,3 +49,44 @@ def test_hnsw_without_iterative_scan_reproduces_v0():
 def test_unknown_mode_is_rejected():
     with pytest.raises(ValueError):
         PostgresVectorStore(search_mode="ivf")
+
+
+@pytest.mark.parametrize("mode", ["exact", "hnsw"])
+def test_search_does_not_load_document_content(mode):
+    # documents.content is the full text of a law for LexML: loading it for
+    # each of the 50 candidates of a hybrid query cost ~13 ms per query.
+    filters = RetrievalFilters(file_names=["a.txt"], tags=["droit"], metadata_equals={"lang": "fr"})
+    session = MagicMock()
+    session.execute.return_value.all.return_value = []
+    PostgresVectorStore(search_mode=mode).search(
+        session, index_run=_index_run(), query_embedding=[0.0] * 384, top_k=50, filters=filters
+    )
+    knn = _statements(session)[-1]
+    selected = re.split(r"\sFROM\s", knn, maxsplit=1)[0]
+    assert "documents.content" not in selected
+    assert "documents.metadata_json" not in selected
+    assert "documents.file_name" in selected
+    assert "documents.metadata_json" in knn  # still used by the filters
+
+
+def test_search_maps_selected_columns_to_ranked_results():
+    row = SimpleNamespace(
+        id="c1",
+        text="Art. 1",
+        char_start=0,
+        char_end=6,
+        document_id="d1",
+        file_name="loi.txt",
+        source_path="/corpus/loi.txt",
+        distance=0.25,
+    )
+    session = MagicMock()
+    session.execute.return_value.all.return_value = [row, SimpleNamespace(**{**vars(row), "id": "c2", "distance": 1.5})]
+    results = PostgresVectorStore().search(session, index_run=_index_run(), query_embedding=[0.0] * 384, top_k=2)
+    assert [(r.chunk_id, r.rank, r.score) for r in results] == [("c1", 1, 0.75), ("c2", 2, 0.0)]
+    assert (results[0].document_id, results[0].file_name, results[0].source_path) == (
+        "d1",
+        "loi.txt",
+        "/corpus/loi.txt",
+    )
+    assert (results[0].chunk_text, results[0].char_start, results[0].char_end) == ("Art. 1", 0, 6)
