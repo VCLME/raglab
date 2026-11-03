@@ -25,13 +25,13 @@ L'option `versions` dit quelles versions la recherche peut utiliser :
 
 | Valeur | Effet |
 |---|---|
-| `in_force` (défaut) | les versions en vigueur **aujourd'hui** ; si la question porte sur le passé (« avant 2016 »), celles en vigueur à cette date |
+| `in_force` (la brique, en cours de mesure) | les versions en vigueur **aujourd'hui** ; si la question porte sur le passé (« avant 2016 »), celles en vigueur à cette date |
 | `as_of=AAAA-MM-JJ` | les versions en vigueur à la date donnée |
-| `all` | toutes les versions, comme un RAG classique (la référence de comparaison) |
+| `all` (**défaut livré**) | toutes les versions, comme un RAG classique et comme avant 9.10 (la référence de comparaison) |
 
 ### 1. La date de référence
 
-Par défaut, aujourd'hui. `src/raglab/domain/versions.py` (`parse_question_date`) lit dans la question une date **de référence**, en français, portugais et anglais :
+Sous `in_force`, la date est aujourd'hui, sauf si la question en donne une. `src/raglab/domain/versions.py` (`parse_question_date`) lit dans la question une date **de référence**, en français, portugais et anglais :
 
 | Question | Date retenue |
 |---|---|
@@ -92,7 +92,7 @@ Chaque chunk porte `version` (source `metadata` ou `markers`, état, en vigueur 
 | UI | Chat : « Options » → « Versions des articles » (corpus de lois seulement) ; page Retrieval (mode Expert) : le même choix, un badge par passage (« en vigueur depuis le … », « ancienne version (… → …) », « abrogé le … », « dispositions abrogées ») et, en expert, ses dates, textes et successeur ; lancement des benchmarks |
 | Mode pédagogique | une étape « Versions » après le re-ranking : la date utilisée, d'où elle vient, ce qui a été écarté, l'état des premiers passages, le code |
 | Benchmark | `raglab bench all --suite legi_versions --versions all` (référence) contre `--versions in_force` |
-| Par défaut | `RAGLAB_VERSIONS_DEFAULT=in_force` ; sans effet sur un corpus sans versions ni marqueurs |
+| Par défaut | `RAGLAB_VERSIONS_DEFAULT=all` : la brique n'est pas encore mesurée, elle reste derrière l'option (règle du projet) ; `in_force` deviendra le défaut si la mesure montre un gain. Même sous `all`, chaque passage porte son état, affiché dans l'interface (pas donné au modèle) |
 
 ## La mesure
 
@@ -135,13 +135,13 @@ raglab bench compare versions-full-all-v1 versions-full-v1
 raglab bench all --suite legi_consommation --label legi-full-all-v1 --versions all
 raglab bench all --suite legi_consommation --label legi-full-versions-v1 --versions in_force
 raglab bench compare legi-full-all-v1 legi-full-versions-v1
-raglab bench all --label versions-v1
+raglab bench all --label versions-v1 --versions in_force
 raglab bench compare full-v1 versions-v1
 ```
 
 ### Résultats
 
-À mesurer. Si la brique ne fait pas mieux que `all` sur le jeu figé, ou coûte sur PIAF, LexML ou `legi_consommation`, le défaut repasse à `all` (`RAGLAB_VERSIONS_DEFAULT=all`) et l'option reste disponible, signalée comme telle.
+À mesurer. Le défaut livré est `all` ; `in_force` ne devient le défaut (`RAGLAB_VERSIONS_DEFAULT=in_force`) que si elle fait mieux que `all` sur le jeu figé sans coûter sur PIAF, LexML ni `legi_consommation`. Sinon elle reste une option, signalée comme telle.
 
 ## Limites
 

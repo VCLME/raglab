@@ -70,10 +70,12 @@ test("Retrieval page: the versions option is sent and every passage shows its ve
   await page.goto("/expert/query");
   const row = (label: RegExp) => page.locator(".form-row").filter({ has: page.locator("label", { hasText: label }) });
   await row(/^Question$/).locator("textarea").fill("Quel délai pour se rétracter d'un contrat à distance ?");
-  await page.getByRole("radio", { name: "Toutes" }).check();
+  // Shipped default: every version; nothing to send.
+  await expect(page.getByRole("radio", { name: "Toutes" })).toBeChecked();
   await page.getByRole("button", { name: "Exécuter" }).click();
 
-  expect(body).toMatchObject({ versions: "all" });
+  await expect.poll(() => "versions" in body).toBe(true);
+  expect(body.versions).toBeNull();
   const cards = page.locator(".chunk");
   await expect(cards.first().locator(".version-badge")).toHaveText("en vigueur depuis le 1er juillet 2016");
   await expect(cards.nth(1).locator(".version-badge")).toHaveText("ancienne version (8 août 2015 → 1er juillet 2016)");
@@ -131,11 +133,13 @@ test("Learning mode: the versions step says which date the question asked about"
   });
   await page.goto("/");
   await page.getByRole("button", { name: "Mode pédagogique" }).click();
+  // In force (not the shipped default yet): the server reads the date in the question.
+  await page.getByRole("button", { name: /^Options/ }).click();
+  await page.getByRole("dialog").getByRole("radio", { name: "En vigueur" }).check();
+  await page.keyboard.press("Escape");
   await page.getByPlaceholder(/Pose ta question/).fill("Que prévoyait l'article L. 121-21 avant 2016 ?");
   await page.getByRole("button", { name: "Envoyer" }).click();
-  // Default option: nothing sent, the server reads the date in the question.
-  await expect.poll(() => body.question).toBeTruthy();
-  expect(body.versions).toBeUndefined();
+  await expect.poll(() => body.versions).toBe("in_force");
 
   const diagram = page.getByRole("group", { name: /Schéma de l'architecture RAG/ });
   const step = diagram.getByRole("button", { name: /^Versions des articles — au 2015-12-31$/ });
@@ -151,7 +155,10 @@ test("Learning mode: the versions step says which date the question asked about"
   await expect(lesson.locator(".edu-code")).toContainText("def valid_at(metadata, on):");
 });
 
-test("Chat options: the versions choice is offered on legal corpora and sent", async ({ page, api }) => {
+test("Chat options: the versions choice is offered on legal corpora, sent when it differs from the default", async ({
+  page,
+  api,
+}) => {
   let body: Record<string, unknown> = {};
   api.set("POST /api/query/stream", async (route) => {
     body = route.request().postDataJSON();
@@ -159,11 +166,13 @@ test("Chat options: the versions choice is offered on legal corpora and sent", a
   });
   await page.goto("/");
   await page.getByRole("button", { name: /^Options/ }).click();
-  await page.getByRole("dialog").getByRole("radio", { name: "Toutes" }).check();
+  // Shipped default: every version, as a naive RAG.
+  await expect(page.getByRole("dialog").getByRole("radio", { name: "Toutes" })).toBeChecked();
   await expect(page.getByRole("dialog")).toContainText("comme un RAG classique");
+  await page.getByRole("dialog").getByRole("radio", { name: "En vigueur" }).check();
   await page.keyboard.press("Escape");
-  await expect(page.getByRole("button", { name: /^Options/ })).toContainText("toutes versions");
+  await expect(page.getByRole("button", { name: /^Options/ })).toContainText("en vigueur");
   await page.getByPlaceholder(/Pose ta question/).fill(data.QUESTION);
   await page.getByRole("button", { name: "Envoyer" }).click();
-  await expect.poll(() => body.versions).toBe("all");
+  await expect.poll(() => body.versions).toBe("in_force");
 });

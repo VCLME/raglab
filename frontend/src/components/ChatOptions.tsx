@@ -39,7 +39,7 @@ export function effectiveOptions(value: RetrievalOverrides, config: ConfigRespon
     rerank: value.rerank ?? config?.default_rerank ?? false,
     citations: legalCorpus && (value.citations ?? config?.citation_resolver ?? true),
     graph: legalCorpus && (value.graph ?? config?.graph_retrieval ?? false),
-    versions: legalCorpus ? (value.versions ?? config?.versions_default ?? "in_force") : "in_force",
+    versions: legalCorpus ? (value.versions ?? config?.versions_default ?? "all") : "all",
   };
 }
 
@@ -101,7 +101,7 @@ export function ChatOptions({ value, onChange, config, legalCorpus }: Props) {
     current.rerank ? t("chat.options_rerank_short") : null,
     current.citations ? t("chat.options_citations_short") : null,
     current.graph ? t("chat.options_graph_short") : null,
-    legalCorpus && current.versions !== "in_force"
+    legalCorpus && current.versions !== (config?.versions_default ?? "all")
       ? t(`versions.short_${parseVersionsValue(current.versions).mode}`)
       : null,
   ]

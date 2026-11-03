@@ -307,7 +307,7 @@ class FakeLookup:
 
 
 def _service(lookup: FakeLookup, chunks: list[RetrievedChunk]) -> QueryService:
-    service = QueryService(Mock(), Settings())
+    service = QueryService(Mock(), Settings(versions_default="in_force"))
     service._resolve_index_run = Mock(
         return_value=SimpleNamespace(id="run-1", corpus_id="corpus-1", strategy=ChunkingStrategy.TRADITIONAL.value)
     )
@@ -367,6 +367,14 @@ def test_all_keeps_every_version_and_counts_the_outdated_ones():
         False,
         1,
     )
+
+
+def test_shipped_default_keeps_every_version():
+    service = _service(FakeLookup(True, {"doc-old": _l121_21(3)}), [_chunk("old", 1)])
+    service.settings = Settings(versions_default="all")
+    response = service.query(question="Quel délai avant 2016 ?", corpus_name="legi", generate_answer=False)
+    assert service.vector_store.search.call_args.kwargs["filters"] is None
+    assert (response.versions["mode"], response.versions["source"]) == ("all", "default")
 
 
 def test_corpus_without_versions_is_untouched():

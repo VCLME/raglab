@@ -102,8 +102,9 @@ class Settings(BaseSettings):
     # Article versions retrieval may use (phase 9.10, docs/versions.md):
     # in_force (today, or the date the question asks about), all, or
     # as_of=YYYY-MM-DD. Acts only on corpora with version metadata
-    # (Légifrance) or repeal markers (LexML).
-    versions_default: str = "in_force"
+    # (Légifrance) or repeal markers (LexML). Shipped as `all` (every
+    # version, as before 9.10) until the GPU measurement shows in_force helps.
+    versions_default: str = "all"
     default_language: str = "fr"
     bm25_k1: float = 1.2
     bm25_b: float = 0.75
