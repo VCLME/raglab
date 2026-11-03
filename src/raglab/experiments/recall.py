@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import math
+import random
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -255,7 +256,13 @@ class RecallBenchmarkService:
                 **retrieval,
                 "compute_ragas": compute_ragas,
                 **(
-                    {"judge": judge.label(self.settings), "ragas_case_limit": ragas_case_limit} if compute_ragas else {}
+                    {
+                        "judge": judge.label(self.settings),
+                        "ragas_case_limit": ragas_case_limit,
+                        "generation_top_k": self.settings.default_top_k,
+                    }
+                    if compute_ragas
+                    else {}
                 ),
             },
         )
@@ -282,6 +289,7 @@ class RecallBenchmarkService:
         first_rank_sum = 0
         first_rank_count = 0
         grade_limit = len(cases) if ragas_case_limit is None else ragas_case_limit
+        generation_top_k = self.settings.default_top_k
 
         try:
             for position, case in enumerate(cases):
@@ -297,6 +305,10 @@ class RecallBenchmarkService:
                     query_kwargs["index_run_id"] = index_run_id
                 if self.backend == "pgvector":
                     query_kwargs.update(retrieval)
+                if generate and self.backend == "pgvector":
+                    # Retrieval keeps max_k chunks for Recall@k, but the
+                    # answer is generated from the production top-k only.
+                    query_kwargs["generation_top_k"] = generation_top_k
                 response = self.query_service.query(**query_kwargs)
                 retrieved = [chunk.model_dump() for chunk in response.retrieved_chunks]
                 flags = relevance_flags(retrieved, is_relevant=lambda chunk: self._is_relevant(case, chunk))  # noqa: B023 (called immediately)
@@ -328,6 +340,11 @@ class RecallBenchmarkService:
                         "expected_urns": case.expected_urns,
                         "retrieved_chunks": retrieved,
                         "answer": response.answer if generate else None,
+                        "generation_context_size": (
+                            (min(generation_top_k, len(retrieved)) if self.backend == "pgvector" else len(retrieved))
+                            if generate
+                            else 0
+                        ),
                         "timings_ms": dict(getattr(response, "timings_ms", {}) or {}),
                         "generation_stats": dict(getattr(response, "generation_stats", {}) or {}),
                         "metrics": metrics_for_case,
@@ -361,6 +378,7 @@ class RecallBenchmarkService:
                 summary[f"precision@{k}"] = precision_sums[k] / total_cases
             summary["mrr"] = reciprocal_rank_sum / total_cases
             summary["mean_first_relevant_rank"] = first_rank_sum / first_rank_count if first_rank_count else None
+            summary.update(_confidence_intervals(details, k_values))
             summary.update(_latency_summary(details))
             for metric, scores in ragas_scores.items():
                 summary[f"{metric}_mean"] = sum(scores) / len(scores) if scores else None
@@ -435,7 +453,11 @@ class RecallBenchmarkService:
                     "faithfulness": judges["faithfulness"].score(
                         question=case.question,
                         answer=answer,
-                        retrieved_texts=[chunk["chunk_text"] for chunk in detail["retrieved_chunks"]],
+                        # The judge sees exactly the context the generator saw.
+                        retrieved_texts=[
+                            chunk["chunk_text"]
+                            for chunk in detail["retrieved_chunks"][: detail.get("generation_context_size") or None]
+                        ],
                     ),
                     "answer_relevancy": judges["answer_relevancy"].score(question=case.question, answer=answer),
                 }
@@ -478,6 +500,29 @@ def _build_judges(settings: Settings, config: JudgeConfig) -> dict[str, Any]:
     }
 
 
+def _bootstrap_ci(values: list[float], *, resamples: int = 2000, seed: int = 0) -> tuple[float, float]:
+    """95% percentile-bootstrap interval of the mean (seeded, reproducible)."""
+    rng = random.Random(seed)
+    count = len(values)
+    means = sorted(sum(values[rng.randrange(count)] for _ in range(count)) / count for _ in range(resamples))
+    return means[int(0.025 * resamples)], means[int(0.975 * resamples) - 1]
+
+
+def _confidence_intervals(details: list[dict[str, Any]], k_values: tuple[int, ...]) -> dict[str, float]:
+    """Bounds for Recall@k and MRR: with a few hundred questions, a 2-3 point
+    difference between two runs can be noise."""
+    if len(details) < 2:
+        return {}
+    metrics = {f"recall@{k}": [float(d["metrics"][f"recall@{k}"]) for d in details] for k in k_values}
+    metrics["mrr"] = [float(d["metrics"]["reciprocal_rank"]) for d in details]
+    bounds: dict[str, float] = {}
+    for name, values in metrics.items():
+        low, high = _bootstrap_ci(values)
+        bounds[f"{name}_ci_low"] = round(low, 4)
+        bounds[f"{name}_ci_high"] = round(high, 4)
+    return bounds
+
+
 def _percentile(values: list[float], fraction: float) -> float:
     """Nearest-rank percentile (no interpolation): an observed value."""
     ordered = sorted(values)
@@ -492,8 +537,10 @@ def _latency_summary(details: list[dict[str, Any]]) -> dict[str, float]:
         timings = detail.get("timings_ms") or {}
         for stage, value in timings.items():
             per_stage.setdefault(stage, []).append(float(value))
-        if "embed" in timings and "retrieval" in timings:
-            per_stage.setdefault("query", []).append(float(timings["embed"]) + float(timings["retrieval"]))
+        # Lexical-only retrieval has no embed stage: its query path is the
+        # search alone.
+        if "retrieval" in timings:
+            per_stage.setdefault("query", []).append(float(timings.get("embed", 0.0)) + float(timings["retrieval"]))
     summary: dict[str, float] = {}
     for stage, values in sorted(per_stage.items()):
         summary[f"latency_{stage}_p50_ms"] = round(_percentile(values, 0.50), 3)

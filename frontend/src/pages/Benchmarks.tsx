@@ -259,7 +259,7 @@ function LaunchTab({ onLaunched }: { onLaunched: () => void }) {
         </div>
       ) : null}
       {showMismatch ? (
-        <div className="error-banner" style={{ borderColor: "rgba(251,191,36,0.5)", background: "rgba(251,191,36,0.09)", color: "#fde68a" }}>
+        <div className="error-banner warn" role="status">
           {t("benchmarks.dataset_mismatch")}
         </div>
       ) : null}

@@ -16,12 +16,14 @@ export function useApiAction<TArgs extends unknown[], T>(
     error: null,
   });
   const mounted = useRef(true);
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    // StrictMode mounts, unmounts and remounts in dev: set the flag on every
+    // mount, or it stays false and results are dropped (stuck `loading`).
+    mounted.current = true;
+    return () => {
       mounted.current = false;
-    },
-    []
-  );
+    };
+  }, []);
 
   const run = useCallback(
     async (...args: TArgs) => {

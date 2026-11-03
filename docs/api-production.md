@@ -36,6 +36,40 @@ Même corps que `POST /api/query` (`question`, `corpus`, `index_run_id`,
 | `done` | une fois, à la fin | le `QueryResponse` complet (`answer`, `timings_ms.generation`, `generation_stats`) + `first_token_ms` |
 | `error` | si la génération échoue en cours de route | `{"status": 503, "detail": "...", "error": "OllamaOutOfMemoryError", ...}` |
 
+### Mode pédagogique : événements `pipeline` et `stage`
+
+Événements additifs, intercalés dans la séquence ci-dessus sans la modifier
+(un client qui ne les connaît pas les ignore ; `/api/query` ne change pas) :
+
+| Événement | Quand | Contenu |
+|---|---|---|
+| `pipeline` | une fois, en premier | `{"stages": ["embed", "retrieval", "prompt", "generation"]}` : les étapes que la requête exécute, dans l'ordre |
+| `stage` | au début et à la fin de chaque étape | `{"stage", "status": "start" \| "end", "t_ms", "live"}` ; à la fin, en plus `duration_ms`, `counts` et `data` |
+
+Ordre : `pipeline`, étapes de recherche rejouées (`live: false`), `retrieval`,
+`prompt` (début / fin), `generation` (début), `token`…, `generation` (fin),
+`done`. Si la génération échoue, `generation` reste ouverte et `error` suit.
+
+La liste des étapes est déduite de ce que la requête a réellement exécuté
+(`src/raglab/retrieval/stages.py`) : clés de `timings_ms` (`embed`,
+`retrieval`, et `dense`, `lexical`, `fusion`, `rerank` quand la recherche
+hybride ou le re-ranking ont tourné), décision du routeur si présente, puis
+`prompt` et `generation` si une réponse est demandée. Avec la recherche
+hybride, l'étape `retrieval` porte la durée de la partie vectorielle
+(`dense`). Aucune de ces étapes n'est requise.
+
+| Étape | `counts` | `data` |
+|---|---|---|
+| `embed` | `dimension` | `head` (8 premières valeurs), `norm`, `dimension` |
+| `retrieval`, `lexical`, `fusion`, `rerank` | `chunks_out` (+ `top_k`, `candidates_in`) | `top_chunks` : 5 premiers passages (`rank`, `file_name`, `excerpt` de 160 caractères, tous les champs `*score`) |
+| `routing` | — | la décision du routeur (`RoutingDecision`) |
+| `prompt` | `chunks_in`, `prompt_chars` | `system_prompt`, `user_prompt` (600 premiers caractères), `truncated` |
+| `generation` | `output_tokens`, `prompt_tokens`, `tokens_per_second`, `fragments`, `first_token_ms` | `model` |
+
+Embedding et recherche tournent avant l'ouverture du flux (pour garder un vrai
+code HTTP en cas d'échec), d'où leur rejeu : `t_ms` est cumulé depuis le début
+de l'embedding, `duration_ms` est la durée mesurée.
+
 ```bash
 curl -N -X POST http://localhost:8000/api/query/stream \
   -H 'Content-Type: application/json' \

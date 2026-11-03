@@ -13,6 +13,7 @@ from raglab.domain.enums import ChunkingStrategy, RetrievalMode
 from raglab.domain.schemas import QueryResponse, RetrievedChunk
 from raglab.experiments.recall import RecallBenchmarkService
 from raglab.retrieval.service import QueryService
+from raglab.retrieval.stages import planned_stages
 
 
 def _chunk(chunk_id: str, rank: int, score: float, **extra) -> RetrievedChunk:
@@ -70,8 +71,9 @@ def test_lexical_mode_skips_the_embedder():
     service.vector_store.search.assert_not_called()
     assert [chunk.chunk_id for chunk in response.retrieved_chunks] == ["b", "c"]
     assert response.query_lexemes == ["loi", "8.666"]
-    assert response.timings_ms["embed"] == 0.0
-    assert "lexical" in response.timings_ms
+    # No embedding ran: no `embed` stage, so the Chat draws no vector stage.
+    assert set(response.timings_ms) == {"retrieval", "lexical"}
+    assert planned_stages(response, generate=False) == ["lexical"]
 
 
 def test_hybrid_mode_fuses_deeper_candidate_lists():
@@ -88,6 +90,20 @@ def test_hybrid_mode_fuses_deeper_candidate_lists():
     assert (fused.dense_rank, fused.lexical_rank) == (2, 1)
     assert fused.fused_score == pytest.approx(0.5 / 62 + 0.5 / 61)
     assert {"embed", "dense", "lexical", "fusion", "retrieval"} <= set(response.timings_ms)
+
+
+def test_hybrid_stream_replays_lexical_and_fusion_stages():
+    service = _service()
+    outcome = service.retrieve(question="q", corpus_name="c", top_k=2, retrieval_mode="hybrid")
+    events = QueryService.pipeline_events(outcome, generate=False)
+
+    assert events[0] == ("pipeline", {"stages": ["embed", "retrieval", "lexical", "fusion"]})
+    ended = {data["stage"]: data for event, data in events[1:] if event == "stage" and data["status"] == "end"}
+    assert set(ended) == {"embed", "retrieval", "lexical", "fusion"}
+    # The vector-search stage reports the dense leg only, not the whole search.
+    assert ended["retrieval"]["duration_ms"] == outcome.timings_ms["dense"]
+    top = ended["fusion"]["data"]["top_chunks"][0]
+    assert {"dense_score", "lexical_score", "fused_score"} <= set(top)
 
 
 def test_hybrid_mode_honours_weight_and_k_overrides():
@@ -256,3 +272,19 @@ def test_recall_benchmark_rejects_lexical_modes_on_the_graph_backend():
     with pytest.raises(ValueError):
         service._retrieval_config("hybrid", None, None)
     assert service._retrieval_config(None, None, None) == {}
+
+
+def test_bench_all_forwards_the_retrieval_mode(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    result = {"label": "hybrid-v1", "retrieval_mode": "hybrid", "suites": []}
+    with patch("raglab.benchmarks.suite.run_all", return_value=result) as run_all:
+        cli_result = CliRunner().invoke(
+            cli_app,
+            ["bench", "all", "--label", "hybrid-v1", "--retrieval-mode", "hybrid", "--lexical-weight", "0.3"],
+        )
+    assert cli_result.exit_code == 0, cli_result.output
+    kwargs = run_all.call_args.kwargs
+    assert (kwargs["retrieval_mode"], kwargs["lexical_weight"], kwargs["rrf_k"]) == (RetrievalMode.HYBRID, 0.3, None)
+    assert (
+        json.loads((tmp_path / "benchmarks" / "results" / "hybrid-v1.json").read_text())["retrieval_mode"] == "hybrid"
+    )

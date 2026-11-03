@@ -1,0 +1,69 @@
+name: Quality gate
+
+# Weekly retrieval gate on the frozen benchmarks (PIAF + LexML). GitHub
+# runners have no GPU, so this job measures retrieval only (Recall@5, MRR)
+# on CPU; generation quality (faithfulness) is gated locally with
+# `raglab gate --run`, which needs Ollama and the llama.cpp judge.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 5 * * 1" # Mondays 05:00 UTC
+
+permissions:
+  contents: read
+
+jobs:
+  retrieval-gate:
+    name: Retrieval gate (PIAF + LexML, CPU)
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: raglab
+          POSTGRES_USER: raglab
+          POSTGRES_PASSWORD: raglab
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U raglab -d raglab"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      RAGLAB_DATABASE_URL: postgresql+psycopg://raglab:raglab@localhost:5432/raglab
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install --extra-index-url https://download.pytorch.org/whl/cpu -e ".[dev]"
+
+      # The LexML corpus is collected from planalto.gov.br (~1 h with the
+      # polite 1 s delay): keep it between runs. The key follows the frozen
+      # manifest, so a new manifest triggers a fresh collection.
+      - name: Restore benchmark corpora
+        uses: actions/cache@v4
+        with:
+          path: |
+            data/benchmarks/piaf
+            data/lexml/fulltext
+            ~/.cache/huggingface
+          key: bench-corpora-${{ hashFiles('benchmarks/lexml_fulltext/corpus_manifest.json', 'benchmarks/piaf/metadata.json') }}
+
+      - name: Gate
+        run: raglab gate --run --ragas-limit 0 --summary-file "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-gate-results
+          path: benchmarks/results/
+          if-no-files-found: ignore

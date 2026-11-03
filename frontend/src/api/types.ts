@@ -148,8 +148,24 @@ export interface QueryResponse {
   query_lexemes?: string[];
   answer: string | null;
   elapsed_ms: number;
-  timings_ms?: Record<string, number>;
   filters: unknown;
+  // Per-stage durations (embed, retrieval, generation, and dense / lexical /
+  // fusion / rerank when those stages ran) and Ollama token counters.
+  timings_ms?: Record<string, number>;
+  generation_stats?: Record<string, number>;
+}
+
+/** SSE `stage` event of /api/query/stream (educational mode). */
+export interface StageEvent {
+  stage: string;
+  status: "start" | "end";
+  /** Time since the start of the pipeline. */
+  t_ms: number;
+  /** false for stages replayed after the fact (embed and search run before the stream opens). */
+  live: boolean;
+  duration_ms?: number | null;
+  counts?: Record<string, number | string | null>;
+  data?: Record<string, unknown>;
 }
 
 export interface ExperimentRunSummary {

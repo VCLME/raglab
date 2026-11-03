@@ -40,17 +40,17 @@ interface Props {
 }
 
 const ENTITY_TYPE_COLORS: Record<string, string> = {
-  PERSON: "#f87171",
-  ORGANIZATION: "#c084fc",
-  LOCATION: "#fbbf24",
-  DATE: "#60a5fa",
-  LAW: "#a3e635",
-  EVENT: "#f472b6",
-  PRODUCT: "#34d399",
-  MISC: "#94a3b8",
+  PERSON: "#d9483b",
+  ORGANIZATION: "#9b4fd6",
+  LOCATION: "#c98a0b",
+  DATE: "#2f7fd8",
+  LAW: "#5f9a1a",
+  EVENT: "#d1468f",
+  PRODUCT: "#169a72",
+  MISC: "#7a8599",
 };
 
-const CHUNK_COLOR = "#7c9cff";
+const CHUNK_COLOR = "#3d5fd1";
 
 function truncate(s: string, n: number): string {
   return s.length <= n ? s : s.slice(0, Math.max(0, n - 1)) + "…";
@@ -117,14 +117,14 @@ export function SubgraphView({ data, loading, errorMessage, height = 460 }: Prop
               "background-color": "data(color)",
               label: "data(label)",
               "font-size": 10,
-              color: "#e6e8ec",
+              color: "#2a2f3d",
               "text-valign": "bottom",
               "text-halign": "center",
               "text-margin-y": 4,
               "text-wrap": "ellipsis",
               "text-max-width": "110px",
               "border-width": 1,
-              "border-color": "#1a1e28",
+              "border-color": "#ffffff",
             },
           },
           {
@@ -146,14 +146,14 @@ export function SubgraphView({ data, loading, errorMessage, height = 460 }: Prop
             selector: "node:selected",
             style: {
               "border-width": 2,
-              "border-color": "#a5b6ff",
+              "border-color": "#1f2a52",
             },
           },
           {
             selector: "edge",
             style: {
               width: 1,
-              "line-color": "#2a3042",
+              "line-color": "#aab2c5",
               "curve-style": "straight",
               opacity: 0.6,
             },

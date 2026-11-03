@@ -1,0 +1,106 @@
+{
+  "label": "baseline-v0-cache",
+  "strategy": "traditional",
+  "top_k": 5,
+  "ragas_limit": null,
+  "environment": {
+    "date": "2026-11-03T03:04:45+00:00",
+    "git_commit": "94f84a9",
+    "git_dirty": false,
+    "os": "Windows-11-10.0.26300-SP0",
+    "cpu": "Intel64 Family 6 Model 154 Stepping 3, GenuineIntel",
+    "cpu_count": 20,
+    "ram": "unknown",
+    "gpu": "NVIDIA GeForce RTX 3070 Ti Laptop GPU, 8192 MiB, 595.79",
+    "python": "3.12.10",
+    "torch": "2.11.0",
+    "transformers": "5.5.4",
+    "postgres": "16.13 (Debian 16.13-1.pgdg12+1)",
+    "pgvector": "0.8.2",
+    "embedding_model": "transformers:intfloat/multilingual-e5-small (cpu)",
+    "distance": "cosine",
+    "generation_model": "ollama:qwen2.5:7b (845dbda0ea48)",
+    "judge": null,
+    "command": "raglab bench all --label baseline-v0-cache --ragas-limit 0"
+  },
+  "suites": [
+    {
+      "suite": "piaf",
+      "language": "fr",
+      "corpus_name": "bench_piaf_fr",
+      "index_run_id": "2a434420-8082-40af-bb87-111c1ce1eec8",
+      "chunks": 833,
+      "documents": 761,
+      "total_cases": 500,
+      "summary": {
+        "recall@1": 0.672,
+        "recall@5": 0.878,
+        "recall@10": 0.898,
+        "precision@1": 0.672,
+        "precision@5": 0.17600000000000143,
+        "precision@10": 0.09000000000000073,
+        "mrr": 0.7583492063492059,
+        "mean_first_relevant_rank": 1.5367483296213809,
+        "latency_embed_p50_ms": 11.487,
+        "latency_embed_p95_ms": 17.305,
+        "latency_query_p50_ms": 19.721,
+        "latency_query_p95_ms": 26.624,
+        "latency_retrieval_p50_ms": 8.384,
+        "latency_retrieval_p95_ms": 10.233
+      },
+      "by_type": {},
+      "report_path": "data\\reports\\recall-piaf-20261103-030534.json",
+      "experiment_run_id": "4d651835-023f-498d-a5f5-48f77d0836ec"
+    },
+    {
+      "suite": "lexml_fulltext",
+      "language": "pt",
+      "corpus_name": "bench_lexml_pt",
+      "index_run_id": "17d0cf62-1873-4bb1-bb95-7d1ea1f84f90",
+      "chunks": 6075,
+      "documents": 252,
+      "total_cases": 277,
+      "summary": {
+        "recall@1": 0.3176895306859206,
+        "recall@5": 0.45126353790613716,
+        "recall@10": 0.48375451263537905,
+        "precision@1": 0.3176895306859206,
+        "precision@5": 0.09314079422382651,
+        "precision@10": 0.049819494584837434,
+        "mrr": 0.3679645865566443,
+        "mean_first_relevant_rank": 2.0597014925373136,
+        "latency_embed_p50_ms": 11.963,
+        "latency_embed_p95_ms": 17.811,
+        "latency_query_p50_ms": 40.233,
+        "latency_query_p95_ms": 57.3,
+        "latency_retrieval_p50_ms": 29.65,
+        "latency_retrieval_p95_ms": 39.794
+      },
+      "by_type": {
+        "entity": {
+          "cases": 87,
+          "recall@1": 0.6091954022988506,
+          "recall@5": 0.7701149425287356,
+          "recall@10": 0.7701149425287356,
+          "mrr": 0.668007662835249
+        },
+        "paraphrase": {
+          "cases": 93,
+          "recall@1": 0.34408602150537637,
+          "recall@5": 0.5376344086021505,
+          "recall@10": 0.6021505376344086,
+          "mrr": 0.4206989247311828
+        },
+        "reference": {
+          "cases": 97,
+          "recall@1": 0.030927835051546393,
+          "recall@5": 0.08247422680412371,
+          "recall@10": 0.1134020618556701,
+          "mrr": 0.04829405989199803
+        }
+      },
+      "report_path": "data\\reports\\recall-lexml_fulltext-20261103-030650.json",
+      "experiment_run_id": "1b83a55d-5f32-4650-90b1-6ac075427987"
+    }
+  ]
+}
