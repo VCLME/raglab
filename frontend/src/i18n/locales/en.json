@@ -617,6 +617,8 @@
     "rerank_on": "on",
     "rerank_off": "off",
     "rerank_stats": "Re-ranking: {{candidates}} candidates, {{scored}} pairs scored, {{hits}} read from the cache (cumulative hit rate {{rate}}%)",
-    "scores_rerank": "rerank"
+    "scores_rerank": "rerank",
+    "rerank_notice_skipped_no_gpu": "Re-ranking skipped: no GPU available (it would take several seconds on CPU). Force it with “on” if needed.",
+    "rerank_notice_cpu": "Re-ranking ran on CPU, without a GPU: expect several seconds per query."
   }
 }

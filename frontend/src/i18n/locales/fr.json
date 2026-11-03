@@ -617,6 +617,8 @@
     "rerank_on": "activé",
     "rerank_off": "désactivé",
     "rerank_stats": "Re-ranking : {{candidates}} candidats, {{scored}} paires calculées, {{hits}} lues dans le cache (taux de hit cumulé {{rate}} %)",
-    "scores_rerank": "rerank"
+    "scores_rerank": "rerank",
+    "rerank_notice_skipped_no_gpu": "Re-ranking ignoré : aucun GPU disponible (il prendrait plusieurs secondes sur CPU). Forcez-le avec « activé » si besoin.",
+    "rerank_notice_cpu": "Re-ranking exécuté sur CPU, sans GPU : comptez plusieurs secondes par requête."
   }
 }

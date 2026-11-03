@@ -84,6 +84,8 @@ class QueryResponse(BaseModel):
     # Re-ranking counters for this request: candidates, pairs actually
     # scored, score-cache hits and hit rates (this request / since start).
     rerank_stats: dict[str, float] = Field(default_factory=dict)
+    # Set when re-ranking could not use a GPU: "skipped_no_gpu" or "cpu".
+    rerank_notice: str | None = None
     filters: RetrievalFilters | None = None
     answer: str | None = None
     elapsed_ms: float = 0.0

@@ -52,6 +52,7 @@ class ConfigResponse(BaseModel):
     bm25_k1: float
     bm25_b: float
     default_rerank: bool = False
+    rerank_gpu: bool = False
     rerank_model_name: str = ""
     rerank_candidates: int = 0
 

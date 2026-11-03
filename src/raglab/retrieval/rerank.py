@@ -17,6 +17,7 @@ import gc
 import logging
 from collections import OrderedDict
 from collections.abc import Sequence
+from functools import lru_cache
 from threading import Lock
 from typing import Any, Protocol
 
@@ -232,6 +233,23 @@ def _reranker_key(settings: Settings) -> tuple:
         settings.rerank_max_length,
         settings.rerank_cache_size,
     )
+
+
+@lru_cache(maxsize=8)
+def rerank_gpu_available(device: str) -> bool:
+    """True when the configured rerank device is a CUDA device torch can use.
+
+    bge-reranker-v2-m3 scores 40 candidates in ~0.4-0.6 s on a laptop GPU and
+    several seconds on CPU; the query path checks this before re-ranking by
+    default (see `QueryService.retrieve`).
+    """
+    if not device.startswith("cuda"):
+        return False
+    try:
+        import torch
+    except ImportError:
+        return False
+    return bool(torch.cuda.is_available())
 
 
 def get_reranker(settings: Settings | None = None) -> Reranker:

@@ -378,6 +378,11 @@ export function Query() {
                       .join(" · ")}
                   </div>
                 ) : null}
+                {action.data.rerank_notice ? (
+                  <div className="badge warn" style={{ marginBottom: 8 }}>
+                    {t(`retrieval.rerank_notice_${action.data.rerank_notice}`)}
+                  </div>
+                ) : null}
                 {rerankStats && rerankStats.candidates != null ? (
                   <div className="muted" style={{ marginBottom: 8, fontSize: 12 }}>
                     {t("retrieval.rerank_stats", {
