@@ -203,3 +203,33 @@ def test_markers_inside_quotes_belong_to_the_amended_law():
 def test_looks_like_law():
     assert looks_like_law(ARBITRAGEM)
     assert not looks_like_law("# Guide\n\nUn texte sans articles.\n")
+
+
+def test_errors_found_in_the_reviewed_sample():
+    """Patterns of the five errors of the seed-42 review (and one found in the UI)."""
+    text = (
+        "Art. 1º As obrigações mantidas por força do contido na Lei nº 8.880, de 27 de maio de 1994, "
+        "inclusive em seu art. 16.\n"
+        "Art. 2º O art. 19 da Lei nº 11.314, de 2006, alterado pelo art. 13 da Lei nº 11.452, de 2007, "
+        "passa a vigorar com a seguinte redação:\n"
+        "Art. 3º Revoga-se o § 2º do art. 1º do Decreto-lei nº 1.578, de 11 de outubro de 1977.\n"
+        "Art. 4º O disposto no art. 1º aplica-se às entidades. (Vide artigos 1º e 2º da Mpv 2.189-49, de 2001)\n"
+        "Art. 5º Ficam revogados:\n"
+        "I - os seguintes dispositivos da Lei nº 13.529, de 4 de dezembro de 2017:\n"
+        "a) o parágrafo único do art. 1º;\n"
+        "b) o § 3º do art. 4º.\n"
+        "Art. 6º (Vetado).\n"
+        "CAPÍTULO XV\n"
+        "(Redação dada pela Lei nº 15.526, de 2026)\n"
+        "DO SEGURO RURAL\n"
+        "Art. 7º É instituído o seguro rural.\n"
+    )
+    structure = parse_law(text)
+    cites = {(c.source, c.target_article, c.law.number if c.law else None) for c in structure.citations}
+    assert ("1", "16", "8880") in cites  # "seu art. 16": Lei 8.880's
+    assert ("4", "1", None) in cites and ("4", "2", None) not in cites  # editorial note skipped
+    assert ("5", "4", "13529") in cites and ("5", "4", None) not in cites  # list header
+    amended = {(a.relation, a.target_law.number if a.target_law else None) for a in structure.amendments}
+    assert ("AMENDS", "11314") in amended and ("AMENDS", "11452") not in amended
+    assert not [a for a in structure.amendments if a.target_law and a.target_law.number == "1578"]  # decree-law
+    assert not [a for a in structure.amendments if a.by and a.by.number == "15526"]  # chapter heading

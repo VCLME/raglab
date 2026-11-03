@@ -53,9 +53,10 @@ _END_OF_BODY_RE = re.compile(r"^[ \t]*(?:Bras[íi]lia\s*,|ANEXO\b)", re.MULTILIN
 
 # A law: "Lei nº 8.078", "Lei n. 8078/90", "Lei no 9.504", "Lei 13.445",
 # "Lei Complementar nº 101". Group 1: "complementar", 2: number, 3: /year.
+# "Decreto-Lei nº 1.578" is a decree-law, not a law.
 _LAW_NUMBER = r"(\d{1,2}\.\d{3}|\d{4,5}|\d{1,3})"
 _LAW_RE = re.compile(
-    rf"\bLei(\s+Complementar)?\s*(?:n(?:[{_ORD}.]|\s*[{_ORD}]|[ú]mero)?\.?\s*)?{_LAW_NUMBER}(?![\d.]\d)(?:\s*/\s*(\d{{2,4}})\b)?",
+    rf"(?<!-)\bLei(\s+Complementar)?\s*(?:n(?:[{_ORD}.]|\s*[{_ORD}]|[ú]mero)?\.?\s*)?{_LAW_NUMBER}(?![\d.]\d)(?:\s*/\s*(\d{{2,4}})\b)?",
     re.IGNORECASE,
 )
 _LAW_YEAR_AFTER_RE = re.compile(
@@ -86,7 +87,7 @@ _ANAPHORA_RE = re.compile(
     r"^(?:da|na)\s+(?:referida|mencionada|citada|aludida)\s+Lei\b|^(?:daquela|naquela)\s+Lei\b", re.IGNORECASE
 )
 _EXTERNAL_RE = re.compile(
-    r"^(?:da|do|na|no|das|dos)\s+(?:Constitui[çc][ãa]o|Decreto|Medida\s+Provis[óo]ria|C[óo]digo|Consolida[çc][ãa]o|"
+    r"^(?:da|do|na|no|das|dos)\s+(?:Constitui[çc][ãa]o|Decreto|Medida\s+Provis[óo]ria|Mpv?\b|C[óo]digo|Consolida[çc][ãa]o|"
     r"Ato\s+das\s+Disposi[çc][õo]es|Regimento|Resolu[çc][ãa]o|Portaria|Instru[çc][ãa]o|Estatuto|Emenda|Conven[çc][ãa]o|"
     r"Lei\s+(?:Org[âa]nica|de\s|das\s|do\s|dos\s|da\s|Geral)|Anexo|Regulamento|Tratado|Acordo|Protocolo)",
     re.IGNORECASE,
@@ -95,12 +96,17 @@ _EXTERNAL_RE = re.compile(
 _LIST_ITEM_RE = re.compile(r"^\s*(?:[IVXLCDM]+(?:-[A-Z])?\s*[-–—]|[a-z]\)|\d+\.\s)")
 # Characters opening a quoted amendment ("Art. 1º ..." of the amended law).
 _QUOTES = {"“", '"', "‘", "'"}
-# "... com a redação dada pela Lei nº X": X is not the amended law.
+# "... com a redação dada pela Lei nº X", "alterado pelo art. 13 da Lei nº
+# X": X is not the amended law.
 _NOT_AMENDED_RE = re.compile(
     r"(?:reda[çc][ãa]o\s+dada|alterad[oa]s?|inclu[íi]d[oa]s?|acrescid[oa]s?|introduzid[oa]s?|convertid[oa]s?|"
-    r"institu[íi]d[oa]s?|criad[oa]s?|nos\s+termos|na\s+forma|previst[oa]s?|revogad[oa]s?|vide)\s+(?:pel[oa]s?|n[ao]s?|em)?\s*$",
+    r"institu[íi]d[oa]s?|criad[oa]s?|nos\s+termos|na\s+forma|previst[oa]s?|revogad[oa]s?|vide)\s+"
+    r"(?:pel[oa]s?|n[ao]s?|em)?\s*(?:(?:o\s+|os\s+)?arts?\.\s*[\d.ºo°-]+[A-Z]?\s+(?:d[ao]\s+)?)?$",
     re.IGNORECASE,
 )
+# Editorial notes of the compiled text: "(Vide Lei nº 13.105, de 2015)",
+# "(Vide artigos 1º e 2º da Mpv 2.189-49)". Not the law's own text.
+_EDITORIAL_NOTE_RE = re.compile(r"\((?:Vide|Ver|Produção\s+de\s+efeito|Vigência)\b[^()]*\)", re.IGNORECASE)
 # Amending sentences of this law: "A Lei nº X ... passa a vigorar ...".
 _AMENDING_VERB_RE = re.compile(
     r"passa(?:m)?\s+a\s+vigorar|acrescid[oa]s?\s+d[oa]s?|fica(?:m)?\s+acrescid|com\s+a\s+seguinte\s+reda[çc][ãa]o",
@@ -334,6 +340,16 @@ class _Spans:
         return index >= 0 and offset < self.spans[index][1]
 
 
+def _merge_spans(spans: list[tuple[int, int]]) -> list[tuple[int, int]]:
+    merged: list[tuple[int, int]] = []
+    for start, end in sorted(spans):
+        if merged and start <= merged[-1][1]:
+            merged[-1] = (merged[-1][0], max(merged[-1][1], end))
+        else:
+            merged.append((start, end))
+    return merged
+
+
 def _longest_increasing(keys: list[tuple[int, int]]) -> list[int]:
     """Indices of a longest strictly increasing subsequence (first such in
     reading order on ties, so a law's own early articles win)."""
@@ -506,8 +522,13 @@ def parse_law(text: str) -> LawStructure:
             if section.start <= article.start < section.end:
                 article.section = section.key
                 break
-    structure.citations = _parse_citations(text, structure, quoted)
-    structure.amendments = _parse_markers(text, structure, quoted) + _parse_amending_provisions(text, structure, quoted)
+    # Editorial notes ("(Vide Lei nº ...)") are not the law's own references.
+    notes = [(match.start(), match.end()) for match in _EDITORIAL_NOTE_RE.finditer(text)]
+    skipped = _Spans(_merge_spans([*quoted.spans, *notes]))
+    structure.citations = _parse_citations(text, structure, skipped)
+    structure.amendments = _parse_markers(text, structure, quoted) + _parse_amending_provisions(
+        text, structure, skipped
+    )
     stats["citations"] = len(structure.citations)
     stats["amendments"] = len(structure.amendments)
     return structure
@@ -655,6 +676,8 @@ _DESIGNATION_BEFORE_RE = re.compile(
 # A list header naming the text its items belong to: "II - da Medida
 # Provisória nº 2.158-35, de 24 de agosto de 2001:", "A Lei nº X passa a
 # vigorar com as seguintes alterações:".
+_LISTING_RE = re.compile(r"\b(?:dispositivos|seguintes)\b", re.IGNORECASE)
+_POSSESSIVE_RE = re.compile(r"\b(?:seus?|suas?)\s+$", re.IGNORECASE)
 _HEADER_DESIGNATION_RE = re.compile(
     r"\b(?:d[ao]s?|n[ao]s?|à|a|o)\s+(Lei(?:\s+Complementar)?\s*(?:n\S{0,2}\s*)?\d|Decreto|Medida\s+Provis[óo]ria|"
     r"Constitui[çc][ãa]o|C[óo]digo|Consolida[çc][ãa]o)",
@@ -671,8 +694,13 @@ def _context_owner(body: str, position: int, heading_end: int) -> _Owner:
        passa a vigorar acrescida do seguinte art. 4º-A");
     3. a list header above names another text ("II - da Medida Provisória
        nº ...:" then "a) os §§ 2º e 3º do art. 50").
+    0. a possessive ("inclusive em seu art. 16") points to the law named just
+       before.
     Otherwise the article belongs to this law.
     """
+    if _POSSESSIVE_RE.search(body, max(heading_end, position - 24), position):
+        named = list(_LAW_RE.finditer(body, heading_end, position))
+        return _Owner("law", parse_law_mention(body, named[-1])) if named else _Owner("external")
     clause_start = max(body.rfind(mark, heading_end, position) for mark in ("(", ";", "\n", ":"))
     clause = body[max(clause_start + 1, heading_end) : position]
     designation = _DESIGNATION_BEFORE_RE.search(clause)
@@ -696,7 +724,9 @@ def _context_owner(body: str, position: int, heading_end: int) -> _Owner:
         if previous.endswith(":"):
             named = _HEADER_DESIGNATION_RE.search(previous)
             verb = _AMENDING_VERB_RE.search(previous) or _REVOKING_RE.search(previous)
-            if named is not None and (verb is not None or previous[: named.start()].strip(" -–—IVXLCDM.") == ""):
+            lead = previous[: named.start()] if named is not None else ""
+            listing = lead.strip(" -–—IVXLCDM.") == "" or _LISTING_RE.search(lead)
+            if named is not None and (verb is not None or listing):
                 return _designated(previous, named.start(1))
         if (
             previous
@@ -749,6 +779,13 @@ def _parse_markers(text: str, structure: LawStructure, quoted: _Spans) -> list[A
             # no amending law to point from.
             continue
         line_start = text.rfind("\n", 0, match.start()) + 1
+        # "CAPÍTULO XV (Redação dada pela Lei nº ...)", on the heading's line
+        # or alone on the next one: the heading was rewritten, not an article.
+        heading_line = line_start
+        if not text[line_start : match.start()].strip() and line_start > 0:
+            heading_line = text.rfind("\n", 0, line_start - 1) + 1
+        if _SECTION_RE.match(text, heading_line):
+            continue
         scope = _line_scope(text[line_start : match.start()])
         amendments.append(
             Amendment(
