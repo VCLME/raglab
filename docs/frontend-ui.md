@@ -67,7 +67,7 @@ Le top-bar affiche le mot-symbole `raglab`, le bouton « Mode pédagogique », u
 
 ## Systeme de design (theme clair)
 
-L'interface utilise un theme clair d'outil de developpeur : neutres chauds legerement teintes, un seul accent (le vert sauge du portfolio du proprietaire, `#a8d298`, assombri en `oklch(0.47 0.105 145)` pour garder un contraste >= 4,5:1 sur les boutons et le texte) reserve aux actions, a la selection et au focus, et JetBrains Mono (la police du portfolio) pour le mot-symbole, les libelles de section et les donnees (scores, ids, latences). Inter reste la police de l'interface. Le cadrage produit (public, principes, accessibilite) est dans [`PRODUCT.md`](../PRODUCT.md).
+L'interface utilise un theme clair d'outil de developpeur : neutres chauds legerement teintes, un seul accent (le vert foret du portfolio developpeur du proprietaire : `--accent` `oklch(0.48 0.1 158)` et `--accent-strong` `oklch(0.42 0.09 160)`, memes valeurs que `--accent` / `--accent-deep` du portfolio ; contraste >= 4,5:1 sur les boutons et le texte) reserve aux actions, a la selection et au focus, et JetBrains Mono (la police du portfolio) pour le mot-symbole, les libelles de section et les donnees (scores, ids, latences). Inter reste la police de l'interface. Le cadrage produit (public, principes, accessibilite) est dans [`PRODUCT.md`](../PRODUCT.md).
 
 Tout passe par les tokens CSS de `frontend/src/styles.css` (valeurs en OKLCH) ; aucune page ne doit coder une couleur en dur.
 
@@ -123,7 +123,7 @@ Ecran par defaut. Trois elements verticaux :
    - **Corpus** : liste les corpus indexes, auto-selection du premier.
    - **Index** : liste les `index_run` disponibles pour ce corpus, chaque option etiquetee `strategie · modele_embedding · date`. Option par defaut `(plus recent) · <label du run le plus recent>`. Message explicite `— aucun index pour ce corpus —` si rien n'a ete indexe.
 
-   - **Options** : petit panneau (non modal, Echap ou clic exterieur pour fermer) avec les options de retrieval de l'API : mode de recherche (vectorielle / BM25 / hybride), re-ranking (interrupteur) et citations juridiques. Les valeurs par defaut viennent de `/api/config` (`default_retrieval_mode`, `default_rerank`, `citation_resolver`) ; seules les options modifiees sont envoyees, le reste suit le serveur. Le bouton resume l'etat (`Hybride · rerank · citations`). Sans GPU (`rerank_gpu: false`), le panneau previent que le re-ranking par defaut est ignore et qu'un re-ranking force tourne sur CPU ; la reponse affiche alors le `rerank_notice` (« Re-ranking ignoré : aucun GPU… » ou « exécuté sur CPU »).
+   - **Options** : petit panneau (non modal, Echap ou clic exterieur pour fermer) avec les options de retrieval de l'API : mode de recherche (vectorielle / mots-clés / hybride), re-ranking (interrupteur) et « Références d'articles de loi » (« art. 49 da Lei 8.078 », « article L. 221-18 du Code de la consommation »). Cette derniere option n'apparait que si le corpus choisi contient des articles de loi ou de code (`features.legal_citations` de `/api/corpora`, vrai des qu'un document porte la metadonnee `number` (LexML) ou `article_number` (Legifrance)) ; ailleurs elle est masquee, jamais envoyee, et le mode pedagogique ne dessine pas l'etape « Référence ». Les valeurs par defaut viennent de `/api/config` (`default_retrieval_mode`, `default_rerank`, `citation_resolver`) ; seules les options modifiees sont envoyees, le reste suit le serveur. Le bouton resume l'etat (`Hybride · re-ranking · articles de loi`). Sans GPU (`rerank_gpu: false`), le panneau previent que le re-ranking par defaut est ignore et qu'un re-ranking force tourne sur CPU ; la reponse affiche alors le `rerank_notice` (« Re-ranking sauté : pas de GPU… » ou « fait sur CPU »).
 
    La strategie de chunking et le modele d'embedding ne sont **plus** des selecteurs separes : ils sont figes par l'`index_run` choisi (ce sont des proprietes de l'indexation, pas du query). Voir [data-model.md](data-model.md) section 4.
 
@@ -259,7 +259,7 @@ Tous prefixes par `/api`. Swagger disponible sur http://localhost:8000/docs.
 | POST | `/api/ollama/pull` | Delegation a `OllamaService.pull_model(model)` |
 | DELETE | `/api/ollama/models/{name}` | Delegation a `OllamaService.delete_model(name)` |
 | POST | `/api/ollama/chat` | Delegation a `OllamaService.chat(...)` — appel direct Ollama `/api/chat` sans RAG |
-| GET | `/api/corpora` | Liste des corpus + compteurs |
+| GET | `/api/corpora` | Liste des corpus + compteurs + `features.legal_citations` (le corpus contient des articles de loi / de code) |
 | DELETE | `/api/corpora/{name}` | Supprime un corpus et cascade sur documents, chunks, embeddings et index runs |
 | GET | `/api/index-runs?corpus=…` | Liste des index runs (avec `embedding_space_name`, `embedding_provider`, `embedding_model_name`, `embedding_dimension`) — consommé par l'Index picker du Chat |
 | POST | `/api/ingest` | `IngestionService.ingest_folder(...)` |

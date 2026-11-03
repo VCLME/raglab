@@ -138,6 +138,7 @@ export function Chat() {
   }, [corpus]);
 
   const runsForCorpus = indexRuns.data ?? [];
+  const legalCorpus = !!corpora.data?.find((c) => c.name === corpus)?.features?.legal_citations;
   const resolvedRun =
     runsForCorpus.find((r) => r.id === indexRunId) ?? runsForCorpus[0] ?? null;
 
@@ -184,8 +185,9 @@ export function Chat() {
       body.llm_model = picked.model;
     }
     // Only the options changed in the popover: the rest keeps the server defaults.
+    // Article references are not sent for a corpus without law articles.
     (Object.keys(options) as (keyof RetrievalOverrides)[]).forEach((key) => {
-      if (options[key] !== null) body[key] = options[key];
+      if (options[key] !== null && (key !== "citations" || legalCorpus)) body[key] = options[key];
     });
     const patchTurn = (update: (tn: ChatTurn) => Partial<ChatTurn>) =>
       setTurns((prev) => prev.map((tn) => (tn.id === id ? { ...tn, ...update(tn) } : tn)));
@@ -339,7 +341,7 @@ export function Chat() {
         </div>
 
         <div className="settings-actions">
-          <ChatOptions value={options} onChange={setOptions} config={config} />
+          <ChatOptions value={options} onChange={setOptions} config={config} legalCorpus={legalCorpus} />
           {/* Always there (disabled when empty) so the bar does not reflow at the first answer. */}
           <button className="ghost sm" onClick={reset} disabled={turns.length === 0}>
             {t("chat.new_conversation")}
@@ -450,7 +452,7 @@ export function Chat() {
   if (!educational) return page;
   // Decisions of the last request (from its response), or what the current
   // options will do before the first question.
-  const planned = effectiveOptions(options, config);
+  const planned = effectiveOptions(options, config, legalCorpus);
   const answered = !!lastTurn?.index_run_id;
   const route: RouteInfo = {
     known: answered,
@@ -458,6 +460,7 @@ export function Chat() {
     rerank: (answered ? lastTurn?.rerank : null) ?? planned.rerank,
     rerankNotice: answered ? lastTurn?.rerank_notice ?? null : null,
     rerankCandidates: config?.rerank_candidates ?? 40,
+    legalCorpus,
     citationsOn: planned.citations,
     citation: answered ? lastTurn?.citation ?? null : null,
   };

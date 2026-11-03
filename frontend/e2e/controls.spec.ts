@@ -58,7 +58,7 @@ test("Chat options: only changed options are sent; the rerank notice is shown", 
   await page.goto("/");
 
   const trigger = page.getByRole("button", { name: /^Options/ });
-  await expect(trigger).toContainText("Hybride · re-ranking · citations");
+  await expect(trigger).toContainText("Hybride · re-ranking · articles de loi");
   await ask(page);
   await expect(page.getByText(/Re-ranking sauté : pas de GPU/)).toBeVisible();
   expect(bodies[0]).not.toHaveProperty("rerank");
@@ -71,7 +71,7 @@ test("Chat options: only changed options are sent; the rerank notice is shown", 
   await dialog.getByRole("radio", { name: "Vectorielle" }).check();
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
-  await expect(trigger).toContainText("Vectorielle · citations");
+  await expect(trigger).toContainText("Vectorielle · articles de loi");
 
   await ask(page);
   await expect.poll(() => bodies.length).toBe(2);

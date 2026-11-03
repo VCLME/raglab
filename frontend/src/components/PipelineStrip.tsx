@@ -32,6 +32,8 @@ export interface RouteInfo {
   /** "skipped_no_gpu" or "cpu" when the re-ranker had no GPU. */
   rerankNotice: string | null;
   rerankCandidates: number;
+  /** The corpus holds law articles: only then is the citation decision drawn. */
+  legalCorpus: boolean;
   citationsOn: boolean;
   citation: CitationInfo | null;
 }
@@ -185,9 +187,17 @@ export function PipelineStrip({ state, question, lexemes = [], rrfK, lexicalWeig
                 {node("routing")}
               </>
             ) : null}
-            {arrow(withRouting ? "routing" : "question", "citation", citation !== "off" && reached("citation") ? " lit" : "")}
-            {node("citation")}
-            {arrow("citation", "embed", reached("embed") || reached("lexical") ? " lit" : "")}
+            {route.legalCorpus ? (
+              <>
+                {arrow(withRouting ? "routing" : "question", "citation", citation !== "off" && reached("citation") ? " lit" : "")}
+                {node("citation")}
+              </>
+            ) : null}
+            {arrow(
+              route.legalCorpus ? "citation" : withRouting ? "routing" : "question",
+              "embed",
+              reached("embed") || reached("lexical") ? " lit" : ""
+            )}
             <div className={`edu-branch${route.mode === "hybrid" ? " both" : ""}`}>
               <div className={`edu-lane${vectorOff ? " off" : ""}`}>
                 {wire(reached("embed"), true)}
@@ -244,7 +254,7 @@ interface RouteRowProps {
 /** The three decisions of the request, each option shown, the one taken highlighted, with its reason. */
 function RouteRow({ route, citation, rerank }: RouteRowProps) {
   const { t } = useTranslation();
-  const decisions: { key: string; options: string[]; taken: string; reason: string }[] = [
+  const all: { key: string; options: string[]; taken: string; reason: string }[] = [
     {
       key: "citation",
       options: ["none", "law", "off"],
@@ -264,8 +274,10 @@ function RouteRow({ route, citation, rerank }: RouteRowProps) {
       reason: t(`edu.route.rerank_${rerank}`, { count: route.rerankCandidates }),
     },
   ];
+  // A corpus without law articles has no citation decision to show.
+  const decisions = route.legalCorpus ? all : all.filter((decision) => decision.key !== "citation");
   return (
-    <div className="edu-route" role="list" aria-label={t("edu.route.title")}>
+    <div className={`edu-route${decisions.length < 3 ? " two" : ""}`} role="list" aria-label={t("edu.route.title")}>
       <span className="edu-route-title">{route.known ? t("edu.route.title") : t("edu.route.title_planned")}</span>
       {decisions.map((decision) => (
         <div key={decision.key} className="edu-decision" role="listitem">

@@ -179,12 +179,20 @@ class QueryRequest(BaseModel):
     entity_weight: float = 0.3
 
 
+class CorpusFeatures(BaseModel):
+    # The corpus holds law or code articles (LexML `number`, Légifrance
+    # `article_number` metadata): the Chat offers the article-reference
+    # option (citation resolver) only then.
+    legal_citations: bool = False
+
+
 class CorpusSummary(BaseModel):
     id: str
     name: str
     description: str | None = None
     documents_count: int
     index_runs_count: int
+    features: CorpusFeatures = Field(default_factory=CorpusFeatures)
 
 
 class CorpusDeleteResponse(BaseModel):

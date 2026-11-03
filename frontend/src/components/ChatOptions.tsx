@@ -15,11 +15,16 @@ export const NO_OVERRIDES: RetrievalOverrides = { retrieval_mode: null, rerank: 
 
 const MODES: RetrievalMode[] = ["dense", "lexical", "hybrid"];
 
-export function effectiveOptions(value: RetrievalOverrides, config: ConfigResponse | null) {
+/**
+ * What a request will do. Article references only apply to a corpus of law /
+ * code articles (`features.legal_citations` of /api/corpora); elsewhere the
+ * option is hidden and never sent.
+ */
+export function effectiveOptions(value: RetrievalOverrides, config: ConfigResponse | null, legalCorpus = true) {
   return {
     mode: (value.retrieval_mode ?? config?.default_retrieval_mode ?? "hybrid") as RetrievalMode,
     rerank: value.rerank ?? config?.default_rerank ?? false,
-    citations: value.citations ?? config?.citation_resolver ?? true,
+    citations: legalCorpus && (value.citations ?? config?.citation_resolver ?? true),
   };
 }
 
@@ -27,21 +32,24 @@ interface Props {
   value: RetrievalOverrides;
   onChange: (value: RetrievalOverrides) => void;
   config: ConfigResponse | null;
+  /** The selected corpus holds law / code articles: show the article-reference option. */
+  legalCorpus: boolean;
 }
 
 /**
  * Compact popover of the retrieval options the API exposes (mode, re-ranking,
- * legal citations). Only the options changed here are sent: the rest keeps the
- * server defaults from /api/config.
+ * article references on legal corpora). Only the options changed here are
+ * sent: the rest keeps the server defaults from /api/config.
  */
-export function ChatOptions({ value, onChange, config }: Props) {
+export function ChatOptions({ value, onChange, config, legalCorpus }: Props) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const panelId = useId();
-  const current = effectiveOptions(value, config);
-  const overridden = Object.values(value).some((v) => v !== null);
+  const current = effectiveOptions(value, config, legalCorpus);
+  const overridden =
+    value.retrieval_mode !== null || value.rerank !== null || (legalCorpus && value.citations !== null);
   const noGpu = config?.rerank_gpu === false;
 
   useEffect(() => {
@@ -65,7 +73,7 @@ export function ChatOptions({ value, onChange, config }: Props) {
 
   // A choice equal to the server default goes back to "default".
   const set = <K extends keyof RetrievalOverrides>(key: K, next: NonNullable<RetrievalOverrides[K]>) => {
-    const defaults = effectiveOptions(NO_OVERRIDES, config);
+    const defaults = effectiveOptions(NO_OVERRIDES, config, legalCorpus);
     const defaultValue = key === "retrieval_mode" ? defaults.mode : defaults[key as "rerank" | "citations"];
     onChange({ ...value, [key]: next === defaultValue ? null : next });
   };
@@ -125,12 +133,14 @@ export function ChatOptions({ value, onChange, config }: Props) {
             onChange={(on) => set("rerank", on)}
           />
 
-          <Switch
-            label={t("retrieval.citations_label")}
-            description={t("chat.options_citations_hint")}
-            checked={current.citations}
-            onChange={(on) => set("citations", on)}
-          />
+          {legalCorpus ? (
+            <Switch
+              label={t("retrieval.citations_label")}
+              description={t("chat.options_citations_hint")}
+              checked={current.citations}
+              onChange={(on) => set("citations", on)}
+            />
+          ) : null}
 
           <div className="options-foot">
             <span className="options-hint">

@@ -100,6 +100,8 @@ export interface CorpusSummary {
   description: string | null;
   documents_count: number;
   index_runs_count: number;
+  /** legal_citations: the corpus holds law / code articles (article-reference option). */
+  features?: { legal_citations: boolean };
 }
 
 export interface CorpusDocument {

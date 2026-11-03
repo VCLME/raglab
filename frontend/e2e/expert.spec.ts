@@ -74,7 +74,7 @@ test("Retrieval page: the citations option pins the cited article and says which
 
   const row = (label: RegExp) => page.locator(".form-row").filter({ has: page.locator("label", { hasText: label }) });
   await row(/^Question$/).locator("textarea").fill("O que dispõe o art. 49 da Lei nº 8.078?");
-  await row(/^Citations juridiques$/).getByRole("checkbox").check();
+  await row(/^Références d'articles de loi$/).getByRole("checkbox").check();
   await page.getByRole("button", { name: "Exécuter" }).click();
 
   await expect(page.getByText("Citation reconnue : art. 49 — Lei nº 8078")).toBeVisible();

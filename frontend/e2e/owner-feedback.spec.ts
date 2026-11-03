@@ -45,7 +45,7 @@ test("Options switches: pill track, knob inside, on/off positions, role switch",
   await page.goto("/");
   await page.getByRole("button", { name: /^Options/ }).click();
   const dialog = page.getByRole("dialog", { name: /Options de recherche/ });
-  const sw = dialog.getByRole("switch", { name: /Citations juridiques/ });
+  const sw = dialog.getByRole("switch", { name: /Références d'articles de loi/ });
   await expect(sw).toHaveAttribute("aria-checked", "true");
   const geometry = async () =>
     sw.evaluate((el) => {
@@ -123,15 +123,15 @@ test("Learning mode reads as the request's decisions: branch taken highlighted, 
   const decision = (name: string) => route.getByRole("listitem").filter({ hasText: name });
   await expect(decision("Mode de recherche").locator(".edu-option.taken")).toHaveText("vectorielle");
   await expect(decision("Mode de recherche")).toContainText("seule la recherche par le sens tourne");
-  await expect(decision("Citation juridique").locator(".edu-option.taken")).toHaveText("loi citée");
-  await expect(decision("Citation juridique")).toContainText("« Lei 8.078, art. 49 » reconnue");
+  await expect(decision("Référence d'article").locator(".edu-option.taken")).toHaveText("article cité");
+  await expect(decision("Référence d'article")).toContainText("« Lei 8.078, art. 49 » reconnu");
   await expect(decision("Re-ranking").locator(".edu-option.taken")).toHaveText("sauté");
   await expect(decision("Re-ranking")).toContainText("pas de GPU");
 
   // The BM25 lane is dimmed; the citation decision is a node with its own lesson.
   await expect(page.locator(".edu-lane.off")).toContainText("BM25");
-  await page.getByRole("button", { name: /^Citation juridique/ }).click();
-  const lesson = page.getByRole("region", { name: "Citation juridique" });
+  await page.getByRole("button", { name: /^Référence d'article de loi/ }).click();
+  const lesson = page.getByRole("region", { name: "Référence d'article de loi" });
   await expect(lesson.getByText("src/raglab/retrieval/citations.py")).toBeVisible();
 });
 
@@ -154,4 +154,39 @@ test("French learning-mode copy is idiomatic", async ({ page, api }) => {
   const lesson = page.getByRole("region", { name: "BM25" });
   await expect(lesson).toContainText("Recherche par mots-clés");
   await expect(lesson).not.toContainText("plein texte classique");
+});
+
+test("Article references only for corpora of law articles: hidden, unsent and undrawn elsewhere", async ({ page, api }) => {
+  let body: Record<string, unknown> = {};
+  api.set("GET /api/corpora", json([{ ...data.corpora[0], name: "piaf_fr", features: { legal_citations: false } }]));
+  api.set("POST /api/query/stream", async (route) => {
+    body = route.request().postDataJSON();
+    return sse(data.streamEvents())(route);
+  });
+  await page.goto("/");
+  await expect(page.getByRole("combobox", { name: /^Corpus/ })).toContainText("piaf_fr");
+  const trigger = page.getByRole("button", { name: /^Options/ });
+  await expect(trigger).not.toContainText("articles de loi");
+  await trigger.click();
+  const dialog = page.getByRole("dialog", { name: /Options de recherche/ });
+  await expect(dialog.getByRole("switch")).toHaveCount(1);
+  await expect(dialog.getByText("Références d'articles de loi")).toHaveCount(0);
+  await page.keyboard.press("Escape");
+
+  await page.getByRole("button", { name: "Mode pédagogique" }).click();
+  await expect(page.getByRole("button", { name: /^Référence d'article/ })).toHaveCount(0);
+  await expect(page.getByRole("list", { name: /chemin/ }).getByRole("listitem")).toHaveCount(2);
+
+  await page.getByPlaceholder(/Pose ta question/).fill(data.QUESTION);
+  await page.getByRole("button", { name: "Envoyer" }).click();
+  await expect(page.getByText(/Le Président est élu/)).toBeVisible();
+  expect(body).not.toHaveProperty("citations");
+});
+
+test("Legal corpus: the renamed option explains itself with both examples", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: /^Options/ }).click();
+  const sw = page.getByRole("switch", { name: /Références d'articles de loi/ });
+  await expect(sw).toBeVisible();
+  await expect(sw).toHaveAccessibleDescription(/art\. 49 da Lei 8\.078.*article L\. 221-18 du Code de la consommation/);
 });

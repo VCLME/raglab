@@ -1,6 +1,6 @@
 /*
  * raglab design system, light theme.
- * Accent: the owner's portfolio green; neutrals are warm, as on the portfolio.
+ * Accent: the forest green of the owner's dev portfolio; warm neutrals, as there.
  * One accent carries actions,
  * selection and focus. Data series (scores, benchmark metrics) get their own
  * named tokens so new score columns stay consistent across pages.
@@ -23,16 +23,16 @@
   --muted: oklch(0.46 0.012 110);
   --dim: oklch(0.52 0.01 110);
 
-  /* accent: the portfolio green (#a8d298), deepened to stay >= 4.5:1 */
-  --accent: oklch(0.47 0.105 145);
-  --accent-strong: oklch(0.4 0.095 145);
-  --accent-soft: oklch(0.955 0.03 140);
-  --accent-tint: oklch(0.905 0.06 140);
-  --accent-border: oklch(0.8 0.08 140);
-  --accent-brand: oklch(0.82 0.085 140);
-  --on-accent: oklch(0.99 0.006 140);
+  /* accent: the dev portfolio's forest green (devportfolio --accent / --accent-deep) */
+  --accent: oklch(0.48 0.1 158);
+  --accent-strong: oklch(0.42 0.09 160);
+  --accent-soft: oklch(0.95 0.03 155);
+  --accent-tint: oklch(0.88 0.06 155);
+  --accent-border: oklch(0.8 0.07 155);
+  --accent-brand: oklch(0.82 0.08 155);
+  --on-accent: oklch(0.99 0.006 155);
   /* Keyboard focus: a thin ring, >= 3:1 on the page and the surfaces, never a halo. */
-  --focus: oklch(0.58 0.07 145);
+  --focus: oklch(0.58 0.07 158);
 
   /* status: each has a text-safe tone (>= 4.5:1 on surface) and a soft fill */
   --ok: oklch(0.5 0.11 165);
@@ -2406,6 +2406,9 @@ button.switch.on .switch-knob {
   padding-top: 10px;
   border-top: 1px solid var(--border);
 }
+.edu-route.two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
 .edu-route-title {
   grid-column: 1 / -1;
   font-size: 12px;
@@ -2651,7 +2654,7 @@ button.icon-only {
   font-style: italic;
 }
 .tok-string {
-  color: oklch(0.84 0.1 140);
+  color: oklch(0.84 0.1 155);
 }
 .tok-number {
   color: oklch(0.84 0.1 70);
@@ -2926,7 +2929,8 @@ button.icon-only {
   .edu-lesson-grid {
     grid-template-columns: minmax(0, 1fr);
   }
-  .edu-route {
+  .edu-route,
+  .edu-route.two {
     grid-template-columns: minmax(0, 1fr);
   }
 }

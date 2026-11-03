@@ -62,6 +62,7 @@ export const corpora: CorpusSummary[] = [
     description: "Constitution de la Ve République",
     documents_count: 3,
     index_runs_count: 1,
+    features: { legal_citations: true },
   },
 ];
 
