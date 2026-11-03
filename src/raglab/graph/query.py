@@ -50,9 +50,7 @@ class GraphQueryService:
             index_run = get_index_run(self.session, index_run_id)
         else:
             if not corpus_name:
-                raise ValueError(
-                    "corpus_name est obligatoire quand index_run_id n'est pas fourni"
-                )
+                raise ValueError("corpus_name est obligatoire quand index_run_id n'est pas fourni")
             index_run = resolve_latest_index_run(
                 self.session,
                 corpus_name=corpus_name,

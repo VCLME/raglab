@@ -47,15 +47,13 @@ class Corpus(TimestampMixin, Base):
     # search when a document's metadata does not carry its own language.
     language: Mapped[str | None] = mapped_column(String(8), nullable=True)
 
-    documents: Mapped[list["Document"]] = relationship(back_populates="corpus")
-    index_runs: Mapped[list["IndexRun"]] = relationship(back_populates="corpus")
+    documents: Mapped[list[Document]] = relationship(back_populates="corpus")
+    index_runs: Mapped[list[IndexRun]] = relationship(back_populates="corpus")
 
 
 class Document(TimestampMixin, Base):
     __tablename__ = "documents"
-    __table_args__ = (
-        UniqueConstraint("corpus_id", "source_path", name="uq_documents_corpus_source_path"),
-    )
+    __table_args__ = (UniqueConstraint("corpus_id", "source_path", name="uq_documents_corpus_source_path"),)
 
     id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid4()))
     corpus_id: Mapped[str] = mapped_column(ForeignKey("corpora.id", ondelete="CASCADE"), nullable=False)
@@ -68,8 +66,8 @@ class Document(TimestampMixin, Base):
     char_count: Mapped[int] = mapped_column(Integer, nullable=False)
     metadata_json: Mapped[dict] = mapped_column(JSONB, default=dict, nullable=False)
 
-    corpus: Mapped["Corpus"] = relationship(back_populates="documents")
-    chunks: Mapped[list["Chunk"]] = relationship(back_populates="document")
+    corpus: Mapped[Corpus] = relationship(back_populates="documents")
+    chunks: Mapped[list[Chunk]] = relationship(back_populates="document")
 
 
 class EmbeddingSpace(TimestampMixin, Base):
@@ -85,8 +83,8 @@ class EmbeddingSpace(TimestampMixin, Base):
     passage_prefix: Mapped[str] = mapped_column(String(64), nullable=False)
     is_default: Mapped[bool] = mapped_column(default=False, nullable=False)
 
-    index_runs: Mapped[list["IndexRun"]] = relationship(back_populates="embedding_space")
-    chunk_embeddings: Mapped[list["ChunkEmbedding"]] = relationship(back_populates="embedding_space")
+    index_runs: Mapped[list[IndexRun]] = relationship(back_populates="embedding_space")
+    chunk_embeddings: Mapped[list[ChunkEmbedding]] = relationship(back_populates="embedding_space")
 
 
 class IndexRun(Base):
@@ -109,10 +107,10 @@ class IndexRun(Base):
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
-    corpus: Mapped["Corpus"] = relationship(back_populates="index_runs")
-    embedding_space: Mapped["EmbeddingSpace"] = relationship(back_populates="index_runs")
-    chunks: Mapped[list["Chunk"]] = relationship(back_populates="index_run")
-    experiment_results: Mapped[list["ExperimentResult"]] = relationship(back_populates="index_run")
+    corpus: Mapped[Corpus] = relationship(back_populates="index_runs")
+    embedding_space: Mapped[EmbeddingSpace] = relationship(back_populates="index_runs")
+    chunks: Mapped[list[Chunk]] = relationship(back_populates="index_run")
+    experiment_results: Mapped[list[ExperimentResult]] = relationship(back_populates="index_run")
 
 
 class Chunk(TimestampMixin, Base):
@@ -135,16 +133,14 @@ class Chunk(TimestampMixin, Base):
     lexical_tsv: Mapped[str | None] = mapped_column(TSVECTOR, nullable=True, deferred=True)
     lexical_length: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
-    index_run: Mapped["IndexRun"] = relationship(back_populates="chunks")
-    document: Mapped["Document"] = relationship(back_populates="chunks")
-    embedding_records: Mapped[list["ChunkEmbedding"]] = relationship(back_populates="chunk")
+    index_run: Mapped[IndexRun] = relationship(back_populates="chunks")
+    document: Mapped[Document] = relationship(back_populates="chunks")
+    embedding_records: Mapped[list[ChunkEmbedding]] = relationship(back_populates="chunk")
 
 
 class ChunkEmbedding(Base):
     __tablename__ = "chunk_embeddings"
-    __table_args__ = (
-        UniqueConstraint("chunk_id", "embedding_space_id", name="uq_chunk_embeddings_chunk_space"),
-    )
+    __table_args__ = (UniqueConstraint("chunk_id", "embedding_space_id", name="uq_chunk_embeddings_chunk_space"),)
 
     id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid4()))
     chunk_id: Mapped[str] = mapped_column(ForeignKey("chunks.id", ondelete="CASCADE"), nullable=False)
@@ -155,8 +151,8 @@ class ChunkEmbedding(Base):
     embedding: Mapped[list[float]] = mapped_column(VECTOR(), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
-    chunk: Mapped["Chunk"] = relationship(back_populates="embedding_records")
-    embedding_space: Mapped["EmbeddingSpace"] = relationship(back_populates="chunk_embeddings")
+    chunk: Mapped[Chunk] = relationship(back_populates="embedding_records")
+    embedding_space: Mapped[EmbeddingSpace] = relationship(back_populates="chunk_embeddings")
 
 
 class ExperimentRun(Base):
@@ -171,7 +167,7 @@ class ExperimentRun(Base):
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
-    results: Mapped[list["ExperimentResult"]] = relationship(
+    results: Mapped[list[ExperimentResult]] = relationship(
         back_populates="experiment_run",
         cascade="all, delete-orphan",
         passive_deletes=True,
@@ -194,8 +190,8 @@ class ExperimentResult(Base):
     metrics_json: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
-    experiment_run: Mapped["ExperimentRun"] = relationship(back_populates="results")
-    index_run: Mapped["IndexRun"] = relationship(back_populates="experiment_results")
+    experiment_run: Mapped[ExperimentRun] = relationship(back_populates="results")
+    index_run: Mapped[IndexRun] = relationship(back_populates="experiment_results")
 
 
 class LexicalIndexStats(Base):

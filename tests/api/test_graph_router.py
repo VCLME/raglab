@@ -123,9 +123,7 @@ def test_graph_subgraph_empty_chunks_returns_empty_response(client: TestClient):
     assert body == {"chunks": [], "documents": [], "entities": [], "mentions": []}
 
 
-def test_graph_runs_returns_empty_list_when_no_graph_runs(
-    client: TestClient, mock_session
-):
+def test_graph_runs_returns_empty_list_when_no_graph_runs(client: TestClient, mock_session):
     mock_session.execute.return_value.all.return_value = []
     response = client.get("/api/graph/runs")
     assert response.status_code == 200

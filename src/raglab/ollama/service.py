@@ -5,10 +5,10 @@ import time
 from typing import Any
 
 import requests
-from requests import HTTPError
 
 from raglab.config import Settings, get_settings
 from raglab.logging_utils import log_event
+from raglab.ollama.errors import raise_for_ollama_status, translate_transport_errors
 
 LOGGER = logging.getLogger(__name__)
 
@@ -17,8 +17,8 @@ class OllamaService:
     def __init__(self, settings: Settings | None = None):
         self.settings = settings or get_settings()
 
-    def status(self) -> dict[str, Any]:
-        payload = self._get_tags()
+    def status(self, *, timeout: float | None = None) -> dict[str, Any]:
+        payload = self._get_tags(timeout=timeout)
         models = payload.get("models", [])
         installed_names = {model.get("name") for model in models if model.get("name")}
         result = {
@@ -152,11 +152,16 @@ class OllamaService:
         )
 
         started = time.perf_counter()
-        response = requests.post(
-            f"{self.settings.ollama_base_url}/api/chat",
-            json=payload,
-            timeout=effective_timeout,
-        )
+        with translate_transport_errors(
+            base_url=self.settings.ollama_base_url,
+            model=selected_model,
+            timeout_seconds=effective_timeout,
+        ):
+            response = requests.post(
+                f"{self.settings.ollama_base_url}/api/chat",
+                json=payload,
+                timeout=effective_timeout,
+            )
         self._raise_for_status(response, selected_model)
         raw = response.json()
         elapsed_ms = (time.perf_counter() - started) * 1000.0
@@ -180,26 +185,22 @@ class OllamaService:
         }
 
     def _raise_for_status(self, response: requests.Response, model: str | None = None) -> None:
-        try:
-            response.raise_for_status()
-        except HTTPError as exc:
-            response_text = ""
-            try:
-                response_text = response.text
-            except Exception:
-                response_text = ""
-            if response.status_code == 404 and "not found" in response_text.lower():
-                missing_model = model or self.settings.generation_model
-                raise RuntimeError(
-                    "Le modele Ollama demande n'est pas disponible localement. "
-                    f"Telechargez-le avec `raglab ollama pull --model {missing_model}`."
-                ) from exc
-            raise
-
-    def _get_tags(self) -> dict[str, Any]:
-        response = requests.get(
-            f"{self.settings.ollama_base_url}/api/tags",
-            timeout=self.settings.generation_timeout_seconds,
+        raise_for_ollama_status(
+            response,
+            model=model or self.settings.generation_model,
+            retry_after=self.settings.ollama_retry_after_seconds,
         )
+
+    def _get_tags(self, *, timeout: float | None = None) -> dict[str, Any]:
+        effective_timeout = timeout or self.settings.generation_timeout_seconds
+        with translate_transport_errors(
+            base_url=self.settings.ollama_base_url,
+            model=self.settings.generation_model,
+            timeout_seconds=effective_timeout,
+        ):
+            response = requests.get(
+                f"{self.settings.ollama_base_url}/api/tags",
+                timeout=effective_timeout,
+            )
         response.raise_for_status()
         return response.json()

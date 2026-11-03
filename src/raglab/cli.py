@@ -121,6 +121,48 @@ def bench_list() -> None:
     typer.echo(json.dumps(rows, indent=2, ensure_ascii=False))
 
 
+@bench_app.command("all")
+def bench_all(
+    label: str = typer.Option(
+        ..., "--label", help="Nom du run (ex. baseline-v0). Resultat: benchmarks/results/<label>.json"
+    ),
+    suite: list[str] | None = typer.Option(None, "--suite", help="piaf et/ou lexml_fulltext (defaut: les deux)."),
+    strategy: ChunkingStrategy = typer.Option(ChunkingStrategy.TRADITIONAL, "--strategy"),
+    ragas_limit: int = typer.Option(
+        100, "--ragas-limit", min=0, help="Questions generees et notees par suite (0 = retrieval seul)."
+    ),
+    judge_backend: str = typer.Option(
+        "llamacpp", "--judge-backend", help="llamacpp (Gemma, demarre si besoin) ou ollama."
+    ),
+) -> None:
+    """Regenerer tous les chiffres de benchmark (PIAF + LexML) et les ecrire dans benchmarks/results/."""
+    from raglab.benchmarks.suite import render_markdown, run_all
+
+    result = run_all(
+        label=label,
+        strategy=strategy,
+        ragas_limit=ragas_limit or None,
+        judge=JudgeConfig(backend=judge_backend),
+        suites=suite or None,
+    )
+    output = Path("benchmarks/results") / f"{label}.json"
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(json.dumps(result, indent=2, ensure_ascii=False), encoding="utf-8")
+    typer.echo(render_markdown([result]))
+    typer.echo(f"\nResultat: {output}")
+
+
+@bench_app.command("report")
+def bench_report(
+    labels: list[str] = typer.Argument(..., help="Runs a comparer, dans l'ordre des colonnes."),
+) -> None:
+    """Afficher le tableau comparatif Markdown de plusieurs runs de `raglab bench all`."""
+    from raglab.benchmarks.suite import render_markdown
+
+    runs = [json.loads((Path("benchmarks/results") / f"{name}.json").read_text(encoding="utf-8")) for name in labels]
+    typer.echo(render_markdown(runs))
+
+
 @bench_app.command("download")
 def bench_download(
     loader_name: str = typer.Argument(..., help="Nom du loader (ex: fquad). `raglab bench list` pour la liste."),
@@ -265,7 +307,9 @@ def lexml_questions(
         help="llamacpp (serveur compatible OpenAI, demarre si besoin) ou ollama.",
     ),
     model: str | None = typer.Option(None, "--model", help="Modele (defaut: question_model ou generation_model)."),
-    profile: str | None = typer.Option(None, "--profile", help="Profil llama.cpp a demarrer (defaut: question_model_profile)."),
+    profile: str | None = typer.Option(
+        None, "--profile", help="Profil llama.cpp a demarrer (defaut: question_model_profile)."
+    ),
 ) -> None:
     """Generer un jeu de questions typees (paraphrase / reference / entity) sur le corpus LexML."""
     result = generate_questions(
@@ -433,6 +477,17 @@ def query(
         help="Poids du BM25 dans la fusion RRF (0 = dense seul, 1 = BM25 seul). Mode hybrid.",
     ),
     rrf_k: int | None = typer.Option(None, "--rrf-k", min=0, help="Constante k de la fusion RRF (defaut 60)."),
+    stream: bool = typer.Option(
+        False,
+        "--stream",
+        help="Afficher la reponse au fil de la generation sur stderr (comme /api/query/stream) ; "
+        "le JSON final reste sur stdout.",
+    ),
+    llm_model: str | None = typer.Option(
+        None,
+        "--llm-model",
+        help="Modele Ollama pour la generation (defaut : RAGLAB_GENERATION_MODEL).",
+    ),
 ) -> None:
     filters = build_retrieval_filters(
         document_ids=document_ids,
@@ -443,6 +498,27 @@ def query(
     )
     with session_scope() as session:
         service = QueryService(session)
+        if stream and generate:
+            outcome = service.retrieve(
+                question=question,
+                corpus_name=corpus,
+                strategy=strategy,
+                index_run_id=index_run_id,
+                top_k=top_k,
+                filters=filters,
+                retrieval_mode=retrieval_mode,
+                lexical_weight=lexical_weight,
+                rrf_k=rrf_k,
+            )
+            final: dict = {}
+            for event, data in service.stream_answer(outcome, llm_model=llm_model):
+                if event == "token":
+                    typer.echo(data["text"], nl=False, err=True)
+                else:
+                    final = data
+            typer.echo("", err=True)
+            typer.echo(json.dumps(final, indent=2, ensure_ascii=False))
+            return
         response = service.query(
             question=question,
             corpus_name=corpus,
@@ -454,6 +530,7 @@ def query(
             retrieval_mode=retrieval_mode,
             lexical_weight=lexical_weight,
             rrf_k=rrf_k,
+            llm_model=llm_model,
         )
     typer.echo(response.model_dump_json(indent=2))
 
@@ -488,6 +565,35 @@ def experiment_run(
     typer.echo(json.dumps(result, indent=2, ensure_ascii=False))
 
 
+@experiment_app.command("calibrate-judges")
+def experiment_calibrate_judges(
+    ground_truth: Path = typer.Option(Path("benchmarks/piaf/ground_truth.jsonl"), "--ground-truth"),
+    corpus_dir: Path = typer.Option(get_settings().data_dir / "benchmarks" / "piaf" / "corpus", "--corpus-dir"),
+    count: int = typer.Option(30, "--count", min=1, help="Nombre de paragraphes (5 reponses a juger par paragraphe)."),
+    seed: int = typer.Option(7, "--seed"),
+    output: Path | None = typer.Option(None, "--output", help="Ecrire le rapport JSON ici."),
+) -> None:
+    """Mesurer si les juges RAGAS distinguent bonnes et mauvaises reponses (qwen2.5 via Ollama vs Gemma via llama.cpp)."""
+    from raglab.experiments.judge_calibration import calibrate
+
+    report = calibrate(
+        ground_truth_path=ground_truth,
+        corpus_dir=corpus_dir,
+        judges=[JudgeConfig(backend="ollama"), JudgeConfig(backend="llamacpp")],
+        count=count,
+        seed=seed,
+    )
+    text = json.dumps(report, indent=2, ensure_ascii=False)
+    if output:
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(text, encoding="utf-8")
+    typer.echo(
+        json.dumps(
+            [{k: v for k, v in r.items() if k != "rows"} for r in report["results"]], indent=2, ensure_ascii=False
+        )
+    )
+
+
 @experiment_app.command("recall")
 def experiment_recall(
     corpus: str = typer.Option(..., "--corpus", help="Corpus a evaluer."),
@@ -505,7 +611,9 @@ def experiment_recall(
         help="Dossier LexML utilise pour generer le dataset Recall par defaut.",
     ),
     case_limit: int = typer.Option(10, "--case-limit", min=1, help="Nombre max de cas si generation auto."),
-    ragas: bool = typer.Option(False, "--ragas", help="Generer les reponses et les noter (faithfulness, relevancy, correctness)."),
+    ragas: bool = typer.Option(
+        False, "--ragas", help="Generer les reponses et les noter (faithfulness, relevancy, correctness)."
+    ),
     ragas_limit: int | None = typer.Option(None, "--ragas-limit", min=1, help="Noter seulement les N premiers cas."),
     judge_backend: str = typer.Option(
         "llamacpp",

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
 
@@ -195,7 +195,7 @@ def create_custom_dataset(body: BenchCustomRequest) -> BenchCustomResponse:
                 "description": body.description,
                 "case_count": len(body.cases),
                 "source": "user-created",
-                "created_at": datetime.now(timezone.utc).isoformat(),
+                "created_at": datetime.now(UTC).isoformat(),
             },
             ensure_ascii=False,
             indent=2,

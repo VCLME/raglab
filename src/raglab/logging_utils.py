@@ -2,11 +2,17 @@ from __future__ import annotations
 
 import json
 import logging
+from contextvars import ContextVar
 from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
 from raglab.config import Settings
+
+# Correlation id of the HTTP request being served, set by the API middleware.
+# Every log line emitted while the request runs (including threadpool work and
+# streamed responses, which copy the context) carries it.
+request_id_var: ContextVar[str | None] = ContextVar("request_id", default=None)
 
 
 def _serialize_log_value(value: Any) -> Any:
@@ -37,6 +43,10 @@ class JsonLogFormatter(logging.Formatter):
             "environment": self.environment,
         }
 
+        request_id = request_id_var.get()
+        if request_id:
+            payload["request_id"] = request_id
+
         event_name = getattr(record, "event_name", None)
         if event_name:
             payload["event"] = event_name
@@ -49,6 +59,16 @@ class JsonLogFormatter(logging.Formatter):
             payload["exception"] = self.formatException(record.exc_info)
 
         return json.dumps(payload, ensure_ascii=False)
+
+
+class TextLogFormatter(logging.Formatter):
+    def __init__(self) -> None:
+        super().__init__("%(levelname)s %(message)s")
+
+    def format(self, record: logging.LogRecord) -> str:
+        line = super().format(record)
+        request_id = request_id_var.get()
+        return f"{line} request_id={request_id}" if request_id else line
 
 
 def configure_logging(
@@ -70,7 +90,7 @@ def configure_logging(
             )
         )
     else:
-        handler.setFormatter(logging.Formatter("%(levelname)s %(message)s"))
+        handler.setFormatter(TextLogFormatter())
 
     root_logger = logging.getLogger()
     root_logger.handlers.clear()

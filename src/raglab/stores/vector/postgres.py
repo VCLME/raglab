@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pgvector.sqlalchemy import VECTOR
-from sqlalchemy import Float, bindparam, cast, func, select
+from sqlalchemy import Float, bindparam, cast, func, select, text
 from sqlalchemy.orm import Session
 
 from raglab.db.models import Chunk, ChunkEmbedding, Document, IndexRun
@@ -9,6 +9,11 @@ from raglab.domain.schemas import RetrievalFilters, RetrievedChunk
 
 
 class PostgresVectorStore:
+    def __init__(self, *, iterative_scan: bool = True):
+        # Off reproduces the pre-9.1b behaviour (filter after a 40-candidate
+        # ANN scan), measured in baseline-v0.
+        self.iterative_scan = iterative_scan
+
     @staticmethod
     def _apply_filters(stmt, filters: RetrievalFilters | None):
         if filters is None or filters.is_empty():
@@ -62,6 +67,15 @@ class PostgresVectorStore:
         stmt = self._apply_filters(stmt, filters)
         stmt = stmt.order_by(distance).limit(top_k)
 
+        # The HNSW index is shared by every index run of the same dimension,
+        # and pgvector applies the WHERE clause (this run, filters) after the
+        # ANN scan, which stops at hnsw.ef_search (40) candidates. With
+        # several runs in the base, a query could get fewer than top_k chunks,
+        # even none. Iterative scans (pgvector >= 0.8) keep scanning until
+        # enough rows pass the filter; strict_order keeps exact distance order.
+        if self.iterative_scan:
+            session.execute(text("SET LOCAL hnsw.iterative_scan = strict_order"))
+            session.execute(text(f"SET LOCAL hnsw.ef_search = {max(40, int(top_k))}"))
         rows = session.execute(stmt).all()
         results: list[RetrievedChunk] = []
         for rank, (chunk, document, raw_distance) in enumerate(rows, start=1):

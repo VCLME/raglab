@@ -62,12 +62,12 @@ class SpacyEntityExtractor:
             raise RuntimeError(
                 "spaCy n'est pas installé. Lance "
                 "`pip install raglab[graph]` "
-                "(ou `pip install spacy>=3.7`) ou choisis engine=\"llm\"."
+                '(ou `pip install spacy>=3.7`) ou choisis engine="llm".'
             ) from exc
 
         try:
             self._nlp = spacy.load(self.model_name, disable=["parser", "lemmatizer"])
-        except (OSError, IOError) as exc:  # pragma: no cover - depends on env
+        except OSError as exc:  # pragma: no cover - depends on env
             raise RuntimeError(
                 f"Le modèle spaCy {self.model_name!r} n'est pas téléchargé. "
                 f"Lance `python -m spacy download {self.model_name}` ou choisis un autre modèle."

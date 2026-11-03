@@ -9,6 +9,7 @@ from raglab.api.schemas import (
     OllamaChatResponse,
     OllamaPullRequest,
 )
+from raglab.ollama.errors import OllamaError
 from raglab.ollama.service import OllamaService
 
 router = APIRouter(prefix="/api/ollama", tags=["ollama"])
@@ -71,6 +72,10 @@ def ollama_chat(body: OllamaChatRequest) -> OllamaChatResponse:
             system=body.system,
             options=options or None,
         )
+    except OllamaError:
+        # Typed failures (missing model, OOM, timeout...) carry their own
+        # status code; the app-level handler renders them.
+        raise
     except RuntimeError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except Exception as exc:

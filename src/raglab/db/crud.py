@@ -1,13 +1,22 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from raglab.config import get_settings
-from raglab.db.models import Chunk, ChunkEmbedding, Corpus, Document, EmbeddingSpace, ExperimentResult, ExperimentRun, IndexRun
+from raglab.db.models import (
+    Chunk,
+    ChunkEmbedding,
+    Corpus,
+    Document,
+    EmbeddingSpace,
+    ExperimentResult,
+    ExperimentRun,
+    IndexRun,
+)
 from raglab.domain.enums import ChunkingStrategy, ExperimentStatus, IndexStatus
 from raglab.domain.schemas import DocumentPayload
 
@@ -65,11 +74,7 @@ def upsert_document(session: Session, *, corpus: Corpus, payload: DocumentPayloa
 
 
 def list_documents_for_corpus(session: Session, corpus_id: str) -> list[Document]:
-    return list(
-        session.scalars(
-            select(Document).where(Document.corpus_id == corpus_id).order_by(Document.file_name)
-        )
-    )
+    return list(session.scalars(select(Document).where(Document.corpus_id == corpus_id).order_by(Document.file_name)))
 
 
 def get_or_create_embedding_space(
@@ -122,7 +127,7 @@ def create_index_run(
     config_json: dict,
     name: str | None = None,
 ) -> IndexRun:
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+    timestamp = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
     index_run = IndexRun(
         corpus_id=corpus.id,
         embedding_space_id=embedding_space.id,
@@ -142,7 +147,7 @@ def create_index_run(
 
 def complete_index_run(session: Session, index_run: IndexRun, status: IndexStatus) -> None:
     index_run.status = status.value
-    index_run.completed_at = datetime.now(timezone.utc)
+    index_run.completed_at = datetime.now(UTC)
     session.add(index_run)
     session.flush()
 
@@ -281,7 +286,7 @@ def store_experiment_result(
 
 def complete_experiment_run(session: Session, run: ExperimentRun, status: ExperimentStatus) -> None:
     run.status = status.value
-    run.completed_at = datetime.now(timezone.utc)
+    run.completed_at = datetime.now(UTC)
     session.add(run)
     session.flush()
 

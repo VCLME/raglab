@@ -17,7 +17,7 @@ def test_parse_score_reads_valid_json():
 
 
 def test_parse_score_handles_prose_around_json():
-    r = _parse_score("Here is my verdict:\n{\"score\": 1, \"reason\": \"ok\"}\nDone.")
+    r = _parse_score('Here is my verdict:\n{"score": 1, "reason": "ok"}\nDone.')
     assert r.score == 1.0
 
 

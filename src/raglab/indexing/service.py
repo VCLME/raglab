@@ -4,13 +4,12 @@ import logging
 from collections import defaultdict
 from collections.abc import Iterable
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from raglab.chunking.base import ChunkingConfig
 from raglab.chunking.factory import build_chunker
 from raglab.config import Settings, get_settings
-from sqlalchemy import select
-
 from raglab.db.crud import (
     complete_index_run,
     create_index_run,
@@ -287,9 +286,7 @@ class IndexingService:
         # when a user overrides the embedding model without touching
         # RAGLAB_EMBEDDING_DIMENSION.
         space_name = f"{effective_settings.embedding_provider}:{effective_settings.embedding_model_name}"
-        existing_space = self.session.scalar(
-            select(EmbeddingSpace).where(EmbeddingSpace.name == space_name)
-        )
+        existing_space = self.session.scalar(select(EmbeddingSpace).where(EmbeddingSpace.name == space_name))
         if existing_space is not None:
             resolved_dim = int(existing_space.dimension)
         else:
@@ -307,9 +304,7 @@ class IndexingService:
                 )
 
         if resolved_dim != effective_settings.embedding_dimension:
-            effective_settings = effective_settings.model_copy(
-                update={"embedding_dimension": resolved_dim}
-            )
+            effective_settings = effective_settings.model_copy(update={"embedding_dimension": resolved_dim})
 
         embedding_space = get_or_create_embedding_space(
             self.session,
@@ -431,7 +426,7 @@ class IndexingService:
                 self.session.commit()
             raise
 
-        result = {
+        result: dict[str, str | int | bool | None] = {
             "index_run_id": index_run.id,
             "documents": len(documents),
             "chunks": reused_chunks + new_chunks,

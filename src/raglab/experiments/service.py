@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import logging
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from sqlalchemy.orm import Session
@@ -55,7 +55,7 @@ class ExperimentService:
 
     def _write_report(self, name: str, payload: dict) -> Path:
         self.settings.reports_dir.mkdir(parents=True, exist_ok=True)
-        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+        timestamp = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
         report_path = self.settings.reports_dir / f"{name}-{timestamp}.json"
         report_path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
         return report_path
@@ -135,7 +135,7 @@ class ExperimentService:
                         relevance = relevance_flags(
                             response.retrieved_chunks,
                             is_relevant=lambda chunk: self._is_relevant_chunk(
-                                case.expected_substrings,
+                                case.expected_substrings,  # noqa: B023 (called immediately)
                                 chunk.chunk_text,
                             ),
                         )
@@ -217,7 +217,7 @@ class ExperimentService:
             raise
 
         summary: dict[str, dict[str, float | int | None]] = {}
-        for strategy, values in counters.items():
+        for strategy_name, values in counters.items():
             retrieval_rate = None
             if values["retrieval_scored"]:
                 retrieval_rate = values["retrieval_hits"] / values["retrieval_scored"]
@@ -227,15 +227,15 @@ class ExperimentService:
             retrieval_precision = None
             retrieval_mrr = None
             if values["ranked_scored"]:
-                retrieval_precision = precision_sums[strategy] / values["ranked_scored"]
-                retrieval_mrr = reciprocal_rank_sums[strategy] / values["ranked_scored"]
+                retrieval_precision = precision_sums[strategy_name] / values["ranked_scored"]
+                retrieval_mrr = reciprocal_rank_sums[strategy_name] / values["ranked_scored"]
             mean_first_rank = None
-            if first_rank_counts[strategy]:
-                mean_first_rank = first_rank_sums[strategy] / first_rank_counts[strategy]
+            if first_rank_counts[strategy_name]:
+                mean_first_rank = first_rank_sums[strategy_name] / first_rank_counts[strategy_name]
             average_elapsed_ms = None
             if values["elapsed_scored"]:
-                average_elapsed_ms = elapsed_sums[strategy] / values["elapsed_scored"]
-            summary[strategy] = {
+                average_elapsed_ms = elapsed_sums[strategy_name] / values["elapsed_scored"]
+            summary[strategy_name] = {
                 "cases": values["cases"],
                 "retrieval_hit_rate": retrieval_rate,
                 "answer_hit_rate": answer_rate,
@@ -256,7 +256,7 @@ class ExperimentService:
         }
         report_path = self._write_report(name, payload)
 
-        result = {
+        result: dict[str, str | int | dict] = {
             "experiment_run_id": experiment_run.id,
             "cases": len(cases),
             "report_path": str(report_path),

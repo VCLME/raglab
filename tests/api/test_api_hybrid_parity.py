@@ -58,7 +58,8 @@ def test_dense_mode_keeps_the_previous_path_and_tags_dense_scores():
     assert service.vector_store.search.call_args.kwargs["top_k"] == 2
     first = response.retrieved_chunks[0]
     assert (first.dense_score, first.dense_rank, first.lexical_rank, first.fused_score) == (0.9, 1, None, None)
-    assert set(response.timings_ms) == {"embed", "dense", "retrieval"}
+    # Same timing keys as the 9.1 baseline.
+    assert set(response.timings_ms) == {"embed", "retrieval"}
 
 
 def test_lexical_mode_skips_the_embedder():
@@ -124,6 +125,7 @@ def test_api_and_cli_send_the_same_retrieval_parameters(client):
         "top_k": 5,
         "generate_answer": False,
         "filters": None,
+        "llm_model": None,
         "retrieval_mode": RetrievalMode.HYBRID,
         "lexical_weight": 0.3,
         "rrf_k": 20,

@@ -154,7 +154,7 @@ class PostgresLexicalStore:
     ) -> list[RetrievedChunk]:
         """BM25 top-k of the chunks holding one of `candidate_lexemes`, scored on every `idf` term."""
         query_lexemes = list(idf)
-        candidates = select(
+        candidate_query = select(
             Chunk.id.label("chunk_id"),
             # Keep only the query lexemes before unnesting: setweight marks
             # them 'A' (to_tsvector leaves every lexeme at 'D') and ts_filter
@@ -174,10 +174,10 @@ class PostgresLexicalStore:
             Chunk.lexical_tsv.op("@@")(cast(bindparam("tsq", build_or_tsquery(candidate_lexemes)), TSQUERY)),
         )
         if filters is not None and not filters.is_empty():
-            candidates = PostgresVectorStore._apply_filters(
-                candidates.join(Document, Document.id == Chunk.document_id), filters
+            candidate_query = PostgresVectorStore._apply_filters(
+                candidate_query.join(Document, Document.id == Chunk.document_id), filters
             )
-        candidates = candidates.cte("candidates")
+        candidates = candidate_query.cte("candidates")
 
         query_terms = select(
             func.unnest(cast(bindparam("term_lexemes", query_lexemes), ARRAY(Text))).label("lexeme"),

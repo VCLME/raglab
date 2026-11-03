@@ -63,11 +63,7 @@ class RetrievalFilters(BaseModel):
 
     def is_empty(self) -> bool:
         return not (
-            self.document_ids
-            or self.file_names
-            or self.source_path_contains
-            or self.tags
-            or self.metadata_equals
+            self.document_ids or self.file_names or self.source_path_contains or self.tags or self.metadata_equals
         )
 
 

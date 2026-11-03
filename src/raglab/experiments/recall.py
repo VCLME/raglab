@@ -4,7 +4,7 @@ import json
 import logging
 import math
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -55,12 +55,11 @@ class RecallBenchmarkService:
         backend: str = "pgvector",
     ):
         if backend not in SUPPORTED_BACKENDS:
-            raise ValueError(
-                f"Backend inconnu: {backend}. Valeurs supportées: {SUPPORTED_BACKENDS}"
-            )
+            raise ValueError(f"Backend inconnu: {backend}. Valeurs supportées: {SUPPORTED_BACKENDS}")
         self.session = session
         self.settings = settings or get_settings()
         self.backend = backend
+        self.query_service: QueryService | GraphQueryService
         if backend == "neo4j":
             self.query_service = GraphQueryService(session, settings=self.settings)
         else:
@@ -194,7 +193,7 @@ class RecallBenchmarkService:
 
     def _write_report(self, name: str, payload: dict[str, Any]) -> Path:
         self.settings.reports_dir.mkdir(parents=True, exist_ok=True)
-        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+        timestamp = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
         report_path = self.settings.reports_dir / f"{name}-{timestamp}.json"
         report_path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
         return report_path
@@ -237,7 +236,7 @@ class RecallBenchmarkService:
         judge = judge or JudgeConfig()
         retrieval = self._retrieval_config(retrieval_mode, lexical_weight, rrf_k)
         benchmark_label = benchmark_name or _infer_benchmark_name(dataset_path)
-        run_name = f"recall-{benchmark_label}-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}"
+        run_name = f"recall-{benchmark_label}-{datetime.now(UTC).strftime('%Y%m%d-%H%M%S')}"
 
         # Persist the benchmark in the experiment_runs table so the UI can
         # display history and comparisons without scanning report files.
@@ -255,7 +254,9 @@ class RecallBenchmarkService:
                 "backend": self.backend,
                 **retrieval,
                 "compute_ragas": compute_ragas,
-                **({"judge": judge.label(self.settings), "ragas_case_limit": ragas_case_limit} if compute_ragas else {}),
+                **(
+                    {"judge": judge.label(self.settings), "ragas_case_limit": ragas_case_limit} if compute_ragas else {}
+                ),
             },
         )
         self.session.commit()
@@ -298,7 +299,7 @@ class RecallBenchmarkService:
                     query_kwargs.update(retrieval)
                 response = self.query_service.query(**query_kwargs)
                 retrieved = [chunk.model_dump() for chunk in response.retrieved_chunks]
-                flags = relevance_flags(retrieved, is_relevant=lambda chunk: self._is_relevant(case, chunk))
+                flags = relevance_flags(retrieved, is_relevant=lambda chunk: self._is_relevant(case, chunk))  # noqa: B023 (called immediately)
                 first_rank = first_relevant_rank(flags)
                 case_reciprocal_rank = reciprocal_rank(flags)
                 metrics_for_case: dict[str, Any] = {
@@ -355,15 +356,11 @@ class RecallBenchmarkService:
                 )
 
             total_cases = len(cases)
-            summary: dict[str, float | None] = {
-                f"recall@{k}": recall_sums[k] / total_cases for k in k_values
-            }
+            summary: dict[str, float | None] = {f"recall@{k}": recall_sums[k] / total_cases for k in k_values}
             for k in k_values:
                 summary[f"precision@{k}"] = precision_sums[k] / total_cases
             summary["mrr"] = reciprocal_rank_sum / total_cases
-            summary["mean_first_relevant_rank"] = (
-                first_rank_sum / first_rank_count if first_rank_count else None
-            )
+            summary["mean_first_relevant_rank"] = first_rank_sum / first_rank_count if first_rank_count else None
             summary.update(_latency_summary(details))
             for metric, scores in ragas_scores.items():
                 summary[f"{metric}_mean"] = sum(scores) / len(scores) if scores else None
@@ -501,7 +498,11 @@ def _latency_summary(details: list[dict[str, Any]]) -> dict[str, float]:
     for stage, values in sorted(per_stage.items()):
         summary[f"latency_{stage}_p50_ms"] = round(_percentile(values, 0.50), 3)
         summary[f"latency_{stage}_p95_ms"] = round(_percentile(values, 0.95), 3)
-    tps = [d["generation_stats"]["tokens_per_second"] for d in details if d.get("generation_stats", {}).get("tokens_per_second")]
+    tps = [
+        d["generation_stats"]["tokens_per_second"]
+        for d in details
+        if d.get("generation_stats", {}).get("tokens_per_second")
+    ]
     if tps:
         summary["generation_tokens_per_second_p50"] = round(_percentile(tps, 0.50), 2)
     return summary
