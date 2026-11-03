@@ -33,11 +33,11 @@ Two frozen question sets: **PIAF** (500 French questions, 761 Wikipedia paragrap
 | Baseline v0 | original pipeline: dense search only (multilingual-e5-small, pgvector HNSW) | 0.878 | 0.426 | 6% | 3.7 s | 0.845 / 0.723 † |
 | Embedder cache | + embedding model loaded once instead of per question (retrieval only, not judged; still approximate HNSW search) | 0.878 | 0.451 | 8% | 20 ms | not judged |
 | Baseline v1 | + exact vector search per index (the shared HNSW index made recall depend on what else was in the database); answers generated from the top 5 and judged on full chunks (official baseline) | 0.878 | 0.466 | 9% | 23 ms | 0.930 / 0.903 |
-| Hybrid search (phase 9.2) | + BM25 keyword search in PostgreSQL, fused with dense results (RRF) | 0.900 | 0.498 | 9% | 43 ms | 0.915 / 0.888 |
-| BM25 only (phase 9.2, comparison) | BM25 keyword search alone, no embedding (comparison point for 9.2, not kept) | 0.838 | 0.477 | 6% | 7 ms | not judged |
-| Re-ranking (phase 9.3) | + cross-encoder bge-reranker-v2-m3 on the fused candidates | 0.966 | 0.596 | 9% | 461 ms | 0.905 / 0.853 |
-| Dense + re-ranking (phase 9.3, comparison) | cross-encoder on dense candidates only, no BM25 (comparison point for 9.3, retrieval only) | 0.952 | 0.545 | 7% | 409 ms | not judged |
-| Citation resolver (phase 9.3b, comparison) | dense search + legal citations: "art. N da Lei X" is parsed, search is restricted to that law and the cited article is pinned first (comparison point, no BM25 or re-ranking) | 0.878 | 0.697 | 75% | 26 ms | 0.930 / 0.842 |
+| Hybrid search (9.2) | + BM25 keyword search in PostgreSQL, fused with dense results (RRF) | 0.900 | 0.498 | 9% | 43 ms | 0.915 / 0.888 |
+| BM25 only (9.2 · comparison) | BM25 keyword search alone, no embedding (comparison point for 9.2, not kept) | 0.838 | 0.477 | 6% | 7 ms | not judged |
+| Re-ranking (9.3) | + cross-encoder bge-reranker-v2-m3 on the fused candidates | 0.966 | 0.596 | 9% | 461 ms | 0.905 / 0.853 |
+| Dense + re-ranking (9.3 · comparison) | cross-encoder on dense candidates only, no BM25 (comparison point for 9.3, retrieval only) | 0.952 | 0.545 | 7% | 409 ms | not judged |
+| Citation resolver (9.3b · comparison) | dense search + legal citations: "art. N da Lei X" is parsed, search is restricted to that law and the cited article is pinned first (comparison point, no BM25 or re-ranking) | 0.878 | 0.697 | 75% | 26 ms | 0.930 / 0.842 |
 | Full pipeline (judged) | hybrid search + re-ranking + citation resolver (current default) | 0.966 | 0.816 | 72% | 635 ms | 0.907 / 0.895 |
 | Sorted re-ranking batches (default) | + re-ranking pairs sorted by length before batching: same scores, less padding (retrieval only, not judged) | 0.966 | 0.816 | 72% | 537 ms | not judged |
 | Fast re-ranking (option) | 20 re-ranking candidates instead of 40 (latency option, retrieval only) | 0.964 | 0.805 | 73% | 453 ms | not judged |

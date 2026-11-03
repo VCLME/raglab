@@ -305,6 +305,8 @@ def headline(runs: dict[str, dict[str, Any]]) -> dict[str, str]:
     hybrid = runs.get("hybrid-v1")
     cites = runs.get("citations-v1")
     full = runs.get("full-v1")
+    default = runs.get("rerank-sorted-c40")
+    fast = runs.get("rerank-sorted-c20")
     ref_cases = by_type(v0, "lexml_fulltext", "reference", "cases")
     return {
         "piaf_r5_v1": fmt_ratio(metric(v1, "piaf", "recall@5")),
@@ -320,8 +322,10 @@ def headline(runs: dict[str, dict[str, Any]]) -> dict[str, str]:
         "faith_lexml_v1": fmt_ratio(metric(v1, "lexml_fulltext", "faithfulness_mean")),
         "faith_lexml_full": fmt_ratio(metric(full, "lexml_fulltext", "faithfulness_mean")),
         "latency_v1": fmt_ms(metric(v1, "piaf", "latency_query_p50_ms")),
-        "latency_full": fmt_ms(metric(full, "piaf", "latency_query_p50_ms")),
-        "latency_full_lexml": fmt_ms(metric(full, "lexml_fulltext", "latency_query_p50_ms")),
+        "latency_default": fmt_ms(metric(default, "piaf", "latency_query_p50_ms")),
+        "latency_default_lexml": fmt_ms(metric(default, "lexml_fulltext", "latency_query_p50_ms")),
+        "latency_fast": fmt_ms(metric(fast, "piaf", "latency_query_p50_ms")),
+        "lexml_r5_fast": fmt_ratio(metric(fast, "lexml_fulltext", "recall@5")),
         "gpu_full": gpu_label(full),
         "generator_full": model_name(full, "generation_model"),
         "reranker_full": model_name(full, "rerank_model"),

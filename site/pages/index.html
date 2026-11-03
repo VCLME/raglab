@@ -98,6 +98,7 @@ nav: index
     <li><strong>Cross-encoder re-ranking</strong> (9.3): {{reranker_full}} re-reads the fused candidates; the largest single gain, and the largest cost (see <a href="#limits">limits</a>). <a href="{{repo_url}}/blob/main/docs/reranking.md">Details</a>.</li>
     <li><strong>Citation resolver</strong> (9.3b): legal references parsed and resolved before search; article-number questions {{ref_r5_v1}} → {{ref_r5_cites}}. <a href="{{repo_url}}/blob/main/docs/citations.md">Details</a>.</li>
     <li><strong>Hardened API</strong> (9.5): streaming answers, per-stage timeouts, request ids, optional API key, readiness checks.</li>
+    <li><strong>Observability</strong> (9.6): Prometheus metrics per stage, a versioned Grafana dashboard and a drift report between two sets of results. <a href="{{repo_url}}/blob/main/docs/observabilite.md">Details</a>.</li>
   </ul>
 </section>
 
@@ -119,15 +120,13 @@ docker compose exec ollama ollama pull qwen2.5:7b</code></pre>
       <li>LexML questions were written by a model, then filtered and spot-checked by hand.</li>
       <li>Judge calibration covers French only, with synthetic errors: an optimistic bound on its reliability.</li>
       <li>No OCR for scanned PDFs; ingestion and indexing run synchronously.</li>
-      <li>Re-ranking is the price of the gains: search takes {{latency_full}} p50 on PIAF ({{latency_full_lexml}} on LexML), against {{latency_v1}} for dense search alone. Measured on one laptop GPU; latency will differ on your hardware.</li>
+      <li>Re-ranking is the price of the gains: search takes {{latency_default}} p50 on PIAF ({{latency_default_lexml}} on LexML), against {{latency_v1}} for dense search alone. Twenty candidates instead of forty bring PIAF to {{latency_fast}} for a LexML Recall@5 of {{lexml_r5_fast}}. Measured on one laptop GPU; latency will differ on your hardware.</li>
     </ul>
   </div>
   <div>
     <h2 id="next">What I'd do next</h2>
     <ul>
-      <li>Cut re-ranking latency: candidate count, input length and batch size have not been swept yet.</li>
       <li>Query routing and calibrated abstention (phase 9.4), measured on 80 unanswerable questions.</li>
-      <li>Observability: Prometheus metrics, Grafana dashboard, drift report (9.6).</li>
       <li>Weekly quality gate that fails when retrieval regresses (9.7).</li>
       <li>Run the benchmark on a client's own documents before any deployment.</li>
     </ul>
