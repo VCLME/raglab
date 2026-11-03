@@ -383,7 +383,11 @@ div.legend { margin: 0; gap: 2px var(--s-1); }
 /* Question-set switch on the cost chart: points glide (site.js), the new arrows and labels fade in. */
 @media (prefers-reduced-motion: no-preference) {
   .cost-chart .plot .dot { transition: transform 0.36s var(--ease-in-out); }
-  .cost-chart .is-settling .arrow,
+  .cost-chart .arrow.is-morphing {
+    transition: left 0.36s var(--ease-in-out), top 0.36s var(--ease-in-out), width 0.36s var(--ease-in-out),
+      transform 0.36s var(--ease-in-out), opacity 0.2s ease-out;
+  }
+  .cost-chart .arrow.is-arriving { transition: opacity 0.3s var(--ease-out) 0.18s; }
   .cost-chart .is-settling .step-label,
   .cost-chart .is-settling .plot-label,
   .cost-chart .is-settling .plot-y,
