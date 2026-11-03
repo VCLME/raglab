@@ -116,12 +116,12 @@
     "options_mode_hint_lexical": "The question's exact words, weighted by how rare they are (BM25).",
     "options_mode_hint_hybrid": "Both searches, fused by rank (RRF). Best measured recall.",
     "options_rerank_hint": "{{model}} rereads the best candidates together with the question.",
-    "options_rerank_no_gpu": "No GPU detected: by default re-ranking is skipped. Turning it on here runs it on CPU (several seconds).",
+    "options_rerank_no_gpu": "Off for lack of a GPU. Turning it on here runs it on CPU (several seconds per question).",
     "options_citations_hint": "A reference in the question (“art. 49 da Lei 8.078”, “article L. 221-18 du Code de la consommation”) limits the search to that text and puts the article first.",
     "options_defaults": "Server defaults.",
     "options_changed": "Changed for this conversation.",
     "options_reset": "Reset",
-    "rerank_notice_skipped_no_gpu": "Re-ranking skipped: no GPU on the server. The order comes from the search alone.",
+    "rerank_notice_skipped_no_gpu": "Re-ranking off (no GPU): the order comes from the search alone.",
     "rerank_notice_cpu": "Re-ranking ran on CPU for lack of a GPU: slower than usual.",
     "meta_mode": "search",
     "meta_citation": "citation",
@@ -138,7 +138,13 @@
     "stop": "Stop",
     "stopped": "Generation stopped.",
     "options_graph_hint": "Follows the references of the found articles (\"art. 12 desta Lei\") in the Neo4j graph and adds the cited articles. Being measured: off by default.",
-    "options_graph_short": "graph"
+    "options_graph_short": "graph",
+    "options_no_gpu_badge": "(no GPU)",
+    "help_label": "Help: {{option}}",
+    "help_mode": "Vector compares the question's meaning with the passages', keywords (BM25) looks for the exact words, hybrid runs both then fuses their rankings (RRF): the best measured quality.",
+    "help_rerank": "A cross-encoder rereads the first 40 candidates with the question and reorders them: more precise than fusion, about 0.5 s per question on GPU, several seconds on CPU.",
+    "help_citations": "If the question cites an article (“art. 49 da Lei 8.078”, “article L. 221-18 du Code de la consommation”), the search is limited to that text and the cited article goes first.",
+    "help_graph": "Follows in Neo4j the cross-references of the best passages (“nos termos do art. 12”) and adds to the fusion the cited articles the other searches missed."
   },
   "dashboard": {
     "title": "Dashboard",
@@ -682,7 +688,6 @@
       "grouped": "grouped: follows the passage citing it"
     },
     "citation_none": "none",
-    "rerank_skipped": "skipped (no GPU)",
     "route": {
       "title": "The path of this question",
       "title_planned": "The planned path with the current options",
@@ -698,28 +703,27 @@
       "mode_opt_dense": "vector",
       "mode_opt_lexical": "keywords",
       "mode_opt_hybrid": "hybrid",
-      "mode_dense": "Vector: only the meaning-based search runs, BM25 is skipped.",
+      "mode_dense": "Vector: only the meaning-based search runs, not BM25.",
       "mode_lexical": "Keywords: only BM25 runs, the question is not embedded.",
       "mode_hybrid": "Hybrid: both searches run (one after the other, independently), then their rankings are fused with RRF.",
       "rerank": "Re-ranking",
       "rerank_opt_on": "on",
       "rerank_opt_off": "off",
-      "rerank_opt_skipped": "skipped",
       "rerank_on": "On: the cross-encoder rereads the {{count}} best candidates and keeps the most relevant.",
       "rerank_off": "Off: the search order is kept as is.",
-      "rerank_skipped": "Skipped: no GPU on the server (on CPU it would take several seconds).",
       "rerank_cpu": "On, running on CPU for lack of a GPU: slower than usual.",
       "graph": "Citation graph",
       "graph_opt_on": "on",
       "graph_opt_off": "off",
-      "graph_opt_skipped": "skipped",
+      "graph_opt_skipped": "unavailable",
       "graph_on": "On: {{articles}} cited articles followed, {{count}} passages added to the fusion.",
       "graph_on_planned": "On: follows the references (CITES) of the found articles in Neo4j and adds their passages to the fusion.",
       "graph_off": "Off: the fusion only gets the searches' passages.",
-      "graph_skipped": "Skipped: the branch could not run.",
-      "graph_skipped_no_neo4j": "Skipped: Neo4j does not answer, the response says so.",
-      "graph_skipped_no_graph": "Skipped: no graph for this index (Expert → Citation graph).",
-      "graph_failed": "Skipped: Neo4j error (see the logs)."
+      "graph_skipped": "Unavailable: the branch could not run.",
+      "graph_skipped_no_neo4j": "Unavailable: Neo4j does not answer, the response says so.",
+      "graph_skipped_no_graph": "Unavailable: no graph for this index (Expert → Citation graph).",
+      "graph_failed": "Unavailable: Neo4j error (see the logs).",
+      "rerank_off_no_gpu": "Off (no GPU): on CPU it would take several seconds; the Chat option can force it."
     },
     "code": {
       "citation": {
@@ -788,7 +792,8 @@
         "fusion": "these passages join the RRF fusion as a third list"
       }
     },
-    "graph_skipped": "skipped"
+    "graph_skipped": "unavailable",
+    "rerank_off_no_gpu": "off (no GPU)"
   },
   "retrieval": {
     "mode_label": "Search mode",
@@ -820,7 +825,7 @@
     "citation_badge_title": "Pinned: the question cites this passage's law and article.",
     "citation_resolved": "Citation recognised: {{label}}",
     "citation_unresolved": "Citation recognised ({{label}}) but the law is not in the index: normal search.",
-    "rerank_notice_skipped_no_gpu": "Re-ranking skipped: no GPU available (it would take several seconds on CPU). Force it with “on” if needed.",
+    "rerank_notice_skipped_no_gpu": "Re-ranking off (no GPU): on CPU it would take several seconds. Force it with “on” if needed.",
     "rerank_notice_cpu": "Re-ranking ran on CPU, without a GPU: expect several seconds per query.",
     "graph_label": "Citation graph",
     "graph_hint": "Third branch: follows the references (CITES, Neo4j) of the cited article and the best passages, three-source RRF fusion; a cited passage stays next to the one citing it. Needs the index run's graph.",
@@ -828,9 +833,9 @@
     "graph_badge": "reference from {{via}}",
     "graph_badge_pinned": "cited by {{via}}, kept next to it",
     "scores_graph": "graph",
-    "graph_notice_skipped_no_neo4j": "Graph branch skipped: Neo4j does not answer.",
-    "graph_notice_skipped_no_graph": "Graph branch skipped: no graph for this index run (Expert → Graph).",
-    "graph_notice_failed": "Graph branch skipped: Neo4j error (see the logs).",
+    "graph_notice_skipped_no_neo4j": "Graph branch unavailable: Neo4j does not answer.",
+    "graph_notice_skipped_no_graph": "Graph branch unavailable: no graph for this index run (Expert → Graph).",
+    "graph_notice_failed": "Graph branch unavailable: Neo4j error (see the logs).",
     "graph_stats": "Graph: {{seeds}} seed passages, {{articles}} cited articles, {{chunks}} passages added to the fusion",
     "mode_short_dense": "Vector",
     "mode_short_lexical": "Keywords",

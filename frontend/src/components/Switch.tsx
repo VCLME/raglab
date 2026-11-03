@@ -1,4 +1,5 @@
 import { useId } from "react";
+import { HelpTip } from "./HelpTip";
 
 interface Props {
   checked: boolean;
@@ -6,6 +7,10 @@ interface Props {
   label: string;
   description?: string;
   disabled?: boolean;
+  /** Short state note next to the label, e.g. "(pas de GPU)". */
+  badge?: string;
+  /** One-line help on hover / focus, with the accessible name of its "?" button. */
+  help?: { text: string; label: string };
 }
 
 /**
@@ -14,18 +19,24 @@ interface Props {
  * not render the same in every browser), so the track and knob are plain
  * spans.
  */
-export function Switch({ checked, onChange, label, description, disabled }: Props) {
+export function Switch({ checked, onChange, label, description, disabled, badge, help }: Props) {
   const id = useId();
   return (
     <div className="switch-row">
-      <label htmlFor={id} className="switch-text">
-        <span className="switch-label">{label}</span>
+      <div className="switch-text">
+        <span className="switch-head">
+          <label htmlFor={id} className="switch-label">
+            {label}
+          </label>
+          {badge ? <span className="switch-badge">{badge}</span> : null}
+          {help ? <HelpTip text={help.text} label={help.label} /> : null}
+        </span>
         {description ? (
           <span id={`${id}-desc`} className="options-hint">
             {description}
           </span>
         ) : null}
-      </label>
+      </div>
       <button
         id={id}
         type="button"

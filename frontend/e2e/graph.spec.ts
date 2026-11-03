@@ -216,5 +216,5 @@ test("Retrieval page: says when the graph branch was skipped", async ({ page, ap
     .locator("textarea")
     .fill(data.QUESTION);
   await page.getByRole("button", { name: "Exécuter" }).click();
-  await expect(page.getByText("Branche graphe sautée : Neo4j ne répond pas.")).toBeVisible();
+  await expect(page.getByText("Branche graphe indisponible : Neo4j ne répond pas.")).toBeVisible();
 });

@@ -2422,7 +2422,76 @@ button.sm {
   gap: 16px;
 }
 .switch-text {
+  min-width: 0;
+}
+.switch-head {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.switch-head .switch-label {
   cursor: pointer;
+}
+.switch-badge {
+  font-size: 12px;
+  color: var(--muted);
+}
+.options-group legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+/* "?" help next to an option: the bubble shows on hover and keyboard focus. */
+.help-tip {
+  position: relative;
+  display: inline-flex;
+}
+button.help-dot {
+  width: 16px;
+  height: 16px;
+  min-height: 0;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: help;
+}
+button.help-dot:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+button.help-dot:active {
+  transform: none;
+}
+.help-bubble {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 6px);
+  z-index: 50;
+  width: max-content;
+  max-width: 260px;
+  padding: 7px 9px;
+  border-radius: var(--radius-sm);
+  background: var(--text);
+  color: var(--surface);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.45;
+  text-align: left;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, 2px);
+  transition: opacity 120ms var(--ease-out), transform 120ms var(--ease-out);
+}
+.help-tip:hover .help-bubble,
+.help-tip:focus-within .help-bubble {
+  opacity: 1;
+  transform: translate(-50%, 0);
 }
 .switch-row .switch-label {
   margin-bottom: 0;
