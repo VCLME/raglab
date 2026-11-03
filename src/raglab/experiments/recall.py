@@ -571,7 +571,9 @@ def _latency_summary(details: list[dict[str, Any]]) -> dict[str, float]:
         # Lexical-only retrieval has no embed stage: its query path is the
         # search alone. Re-ranking, when it ran, is part of the query path.
         if "retrieval" in timings:
-            query_ms = float(timings.get("embed", 0.0)) + float(timings["retrieval"]) + float(timings.get("rerank", 0.0))
+            query_ms = (
+                float(timings.get("embed", 0.0)) + float(timings["retrieval"]) + float(timings.get("rerank", 0.0))
+            )
             per_stage.setdefault("query", []).append(query_ms)
     summary: dict[str, float] = {}
     for stage, values in sorted(per_stage.items()):
