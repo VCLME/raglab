@@ -192,7 +192,11 @@ def test_hybrid_rerank_keeps_dense_lexical_and_fused_scores():
     assert {"dense", "lexical", "fusion", "rerank"} <= set(response.timings_ms)
 
 
-def test_default_rerank_setting_applies_when_the_request_says_nothing():
+def test_default_rerank_setting_applies_when_the_request_says_nothing(monkeypatch):
+    import raglab.retrieval.service as service_module
+
+    # With a GPU; the no-GPU case is covered by the skip tests below.
+    monkeypatch.setattr(service_module, "rerank_gpu_available", lambda device: True)
     service, scorer = _service(Settings(rerank_candidates=4, default_rerank=True))
     service.query(question="q", corpus_name="c", top_k=2, generate_answer=False)
     assert scorer.calls
