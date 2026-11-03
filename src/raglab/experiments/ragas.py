@@ -103,24 +103,34 @@ def _parse_score(answer: str) -> RagasScore:
 
 
 class _BaseJudge:
+    """A judge talks to any chat client exposing `chat(messages, model=,
+    system=, options=)`: `OllamaService` by default, or an
+    `OpenAICompatibleChat` (llama.cpp) via `client=` with `json_mode=True`.
+    """
+
     def __init__(
         self,
         *,
         settings: Settings | None = None,
         ollama: OllamaService | None = None,
         model: str | None = None,
+        client: Any = None,
+        json_mode: bool = False,
     ) -> None:
         self.settings = settings or get_settings()
-        self.ollama = ollama or OllamaService(self.settings)
+        self.ollama = client or ollama or OllamaService(self.settings)
         self.model = model or self.settings.generation_model
+        self.json_mode = json_mode
 
     def _chat(self, *, system: str, user: str) -> RagasScore:
+        extra = {"json_mode": True} if self.json_mode else {}
         try:
             result = self.ollama.chat(
                 messages=[{"role": "user", "content": user}],
                 model=self.model,
                 system=system,
                 options={"temperature": 0.0, "num_predict": 256},
+                **extra,
             )
         except Exception as exc:
             logger.warning("ragas.chat_failed: %s", exc)
@@ -168,3 +178,52 @@ class AnswerCorrectnessJudge(_BaseJudge):
             "Return JSON only."
         )
         return self._chat(system=_ANSWER_CORRECTNESS_PROMPT, user=user)
+
+
+_ANSWER_RELEVANCY_PROMPT = """You grade ANSWERS for relevancy: does the \
+answer address the QUESTION that was asked, directly and without padding? \
+Do not judge factual correctness, only whether it answers this question. \
+An explicit "I cannot answer from the provided context" is relevant only \
+when the question really cannot be answered; grade it 0.5.
+
+Return a strict JSON object:
+{"score": <float in [0, 1]>, "reason": "<one-sentence rationale>"}
+
+Scoring rubric:
+* 1.0 — answers exactly what was asked.
+* 0.5 — partially on topic, evasive, or answers a neighbouring question.
+* 0.0 — off topic.
+
+Reply with JSON only. No preamble."""
+
+
+class AnswerRelevancyJudge(_BaseJudge):
+    """Rate whether the answer addresses the question (LLM-as-judge variant
+    of RAGAS answer relevancy, which instead embeds questions regenerated
+    from the answer)."""
+
+    def score(self, *, question: str, answer: str) -> RagasScore:
+        if not answer or not answer.strip():
+            return RagasScore(score=None, reason="empty answer")
+        user = f"QUESTION:\n{question}\n\nANSWER:\n{answer}\n\nReturn JSON only."
+        return self._chat(system=_ANSWER_RELEVANCY_PROMPT, user=user)
+
+
+@dataclass(slots=True)
+class JudgeConfig:
+    """Which model grades the answers.
+
+    `backend="llamacpp"` serves the judge from llama-server (started on
+    demand); `"ollama"` reuses the generation model, which then grades its
+    own answers.
+    """
+
+    backend: str = "ollama"
+    model: str | None = None
+    profile: str | None = None
+
+    def label(self, settings: Settings) -> str:
+        if self.backend == "llamacpp":
+            return f"llamacpp:{self.model or settings.judge_model}"
+        return f"ollama:{self.model or settings.generation_model}"
+

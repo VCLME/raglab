@@ -10,6 +10,7 @@ from raglab.benchmarks.lexml_questions import generate_questions, review_questio
 from raglab.config import get_settings
 from raglab.db import initialize_database, session_scope
 from raglab.domain.enums import ChunkingStrategy
+from raglab.experiments.ragas import JudgeConfig
 from raglab.experiments.recall import RecallBenchmarkService
 from raglab.experiments.service import ExperimentService
 from raglab.indexing.service import IndexingService
@@ -459,6 +460,14 @@ def experiment_recall(
         help="Dossier LexML utilise pour generer le dataset Recall par defaut.",
     ),
     case_limit: int = typer.Option(10, "--case-limit", min=1, help="Nombre max de cas si generation auto."),
+    ragas: bool = typer.Option(False, "--ragas", help="Generer les reponses et les noter (faithfulness, relevancy, correctness)."),
+    ragas_limit: int | None = typer.Option(None, "--ragas-limit", min=1, help="Noter seulement les N premiers cas."),
+    judge_backend: str = typer.Option(
+        "llamacpp",
+        "--judge-backend",
+        help="llamacpp (juge independant, demarre si besoin) ou ollama (le generateur se note lui-meme).",
+    ),
+    judge_model: str | None = typer.Option(None, "--judge-model", help="Modele juge (defaut: judge_model)."),
 ) -> None:
     with session_scope() as session:
         service = RecallBenchmarkService(session)
@@ -468,6 +477,9 @@ def experiment_recall(
             dataset_path=dataset_path,
             lexml_documents_dir=lexml_documents_dir,
             case_limit=case_limit,
+            compute_ragas=ragas,
+            ragas_case_limit=ragas_limit,
+            judge=JudgeConfig(backend=judge_backend, model=judge_model),
         )
     typer.echo(json.dumps(result, indent=2, ensure_ascii=False))
 

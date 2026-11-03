@@ -325,3 +325,10 @@ class RecallRequest(BaseModel):
     case_limit: int = 10
     backend: str = "pgvector"
     compute_ragas: bool = False
+    # Grade only the first N cases (retrieval still runs on all of them).
+    ragas_case_limit: int | None = Field(None, ge=1)
+    # "ollama": the generator grades its own answers. "llamacpp": an
+    # independent judge served by llama-server (it must be reachable at
+    # RAGLAB_LLAMACPP_BASE_URL; the API container cannot start it).
+    judge_backend: str = "ollama"
+    judge_model: str | None = None

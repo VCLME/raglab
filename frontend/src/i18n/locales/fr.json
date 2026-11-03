@@ -351,9 +351,9 @@
     "backend_neo4j": "neo4j",
     "backend_both": "les deux (comparer)",
     "ragas_label": "Qualité de génération",
-    "ragas_checkbox": "Évaluer la fidélité et la correction (LLM-as-judge)",
-    "ragas_hint": "Active pour calculer faithfulness (réponse ancrée dans les chunks ?) et answer_correctness (matche le ground truth ?).",
-    "ragas_hint_slow": "⚠ Actif : 3 appels LLM par cas (réponse + 2 juges). Compte ~5-10 s/cas sur CPU, plus rapide sur GPU.",
+    "ragas_checkbox": "Évaluer la fidélité, la pertinence et la correction (LLM-as-judge)",
+    "ragas_hint": "Active pour calculer faithfulness (réponse ancrée dans les chunks ?), answer_relevancy (répond-elle à la question ?) et answer_correctness (matche le ground truth ?).",
+    "ragas_hint_slow": "⚠ Actif : les réponses sont générées, puis notées dans une seconde passe (3 juges par cas).",
     "table_embedding": "Embedding",
     "table_cases": "Cas",
     "table_recall1": "R@1",
@@ -412,7 +412,14 @@
     "custom_add_case": "Ajouter un cas",
     "custom_saving": "Enregistrement…",
     "custom_save": "Enregistrer ({{count}} cas valides)",
-    "custom_saved": "{{count}} cas enregistrés dans {{dir}}. Disponible dans l'onglet Lancer."
+    "custom_saved": "{{count}} cas enregistrés dans {{dir}}. Disponible dans l'onglet Lancer.",
+    "judge_label": "Juge",
+    "judge_hint": "Un juge d'une autre famille évite que le modèle note ses propres réponses. llama.cpp doit être joignable (RAGLAB_LLAMACPP_BASE_URL) : la CLI le démarre seule, pas l'API.",
+    "judge_ollama": "Ollama (le générateur se note lui-même)",
+    "judge_llamacpp": "llama.cpp (Gemma 4, juge indépendant)",
+    "ragas_limit_label": "Cas notés",
+    "ragas_limit_hint": "Vide = tous. Le retrieval porte toujours sur tous les cas.",
+    "table_relevancy": "Answer relevancy"
   },
   "corpus_page": {
     "title": "Corpus",

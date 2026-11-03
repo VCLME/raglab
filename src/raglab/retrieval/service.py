@@ -88,6 +88,7 @@ class QueryService:
 
         started = perf_counter()
         query_embedding = embedder.embed_query(question)
+        embedded = perf_counter()
         retrieved = self.vector_store.search(
             self.session,
             index_run=index_run,
@@ -95,8 +96,16 @@ class QueryService:
             top_k=top_k or self.settings.default_top_k,
             filters=filters,
         )
+        searched = perf_counter()
         answer = self.generator.generate_answer(question, retrieved) if generate_answer else None
-        elapsed_ms = (perf_counter() - started) * 1000
+        finished = perf_counter()
+        elapsed_ms = (finished - started) * 1000
+        timings_ms = {
+            "embed": round((embedded - started) * 1000, 3),
+            "retrieval": round((searched - embedded) * 1000, 3),
+        }
+        if generate_answer:
+            timings_ms["generation"] = round((finished - searched) * 1000, 3)
         log_event(
             LOGGER,
             logging.INFO,
@@ -110,6 +119,7 @@ class QueryService:
             filters=filters.model_dump() if filters else {},
             question_length=len(question),
             elapsed_ms=round(elapsed_ms, 3),
+            timings_ms=timings_ms,
         )
 
         return QueryResponse(
@@ -120,4 +130,6 @@ class QueryService:
             filters=filters,
             answer=answer,
             elapsed_ms=elapsed_ms,
+            timings_ms=timings_ms,
+            generation_stats=dict(self.generator.last_stats) if generate_answer else {},
         )

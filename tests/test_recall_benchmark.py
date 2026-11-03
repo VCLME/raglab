@@ -158,10 +158,11 @@ def test_recall_benchmark_rejects_unknown_backend():
         RecallBenchmarkService(session=session, backend="weaviate")
 
 
+@patch("raglab.experiments.recall.AnswerRelevancyJudge")
 @patch("raglab.experiments.recall.AnswerCorrectnessJudge")
 @patch("raglab.experiments.recall.FaithfulnessJudge")
 def test_recall_benchmark_runs_ragas_judges_when_requested(
-    faith_cls, corr_cls, tmp_path: Path
+    faith_cls, corr_cls, relevancy_cls, tmp_path: Path
 ):
     # Minimal dataset with two cases, one case has a ground_truth_answer
     # and one does not — answer_correctness should skip the latter
@@ -190,6 +191,9 @@ def test_recall_benchmark_runs_ragas_judges_when_requested(
     corr = MagicMock()
     corr.score.return_value = SimpleNamespace(score=0.8, reason="match")
     corr_cls.return_value = corr
+    relevancy = MagicMock()
+    relevancy.score.return_value = SimpleNamespace(score=1.0, reason="on topic")
+    relevancy_cls.return_value = relevancy
 
     session = MagicMock()
     service = RecallBenchmarkService(session=session)
@@ -254,3 +258,79 @@ def test_recall_benchmark_runs_ragas_judges_when_requested(
     assert result["details"][0]["metrics"]["faithfulness"] == 0.9
     assert result["details"][0]["metrics"]["answer_correctness"] == 0.8
     assert "answer_correctness" not in result["details"][1]["metrics"]
+    assert result["summary"]["answer_relevancy_mean"] == 1.0
+    assert result["summary"]["answer_relevancy_judged"] == 2
+
+
+def test_latency_summary_reports_nearest_rank_percentiles():
+    from raglab.experiments.recall import _latency_summary
+
+    details = [
+        {"timings_ms": {"embed": float(i), "retrieval": 10.0}, "generation_stats": {}} for i in range(1, 21)
+    ]
+    summary = _latency_summary(details)
+    assert summary["latency_embed_p50_ms"] == 10.0
+    assert summary["latency_embed_p95_ms"] == 19.0
+    assert summary["latency_query_p95_ms"] == 29.0  # embed + retrieval
+
+
+@patch("raglab.experiments.recall.LocalLLMServer")
+@patch("raglab.experiments.recall.AnswerRelevancyJudge")
+@patch("raglab.experiments.recall.AnswerCorrectnessJudge")
+@patch("raglab.experiments.recall.FaithfulnessJudge")
+def test_llamacpp_judge_grades_in_a_second_pass_inside_the_server(
+    faith_cls, corr_cls, relevancy_cls, server_cls, tmp_path: Path
+):
+    from raglab.experiments.ragas import JudgeConfig
+
+    ds = tmp_path / "gt.jsonl"
+    ds.write_text(
+        "".join(
+            json.dumps({"id": f"c{i}", "question": "Q?", "expected_file_names": ["a.txt"]}) + "\n" for i in range(3)
+        ),
+        encoding="utf-8",
+    )
+    events: list[str] = []
+    for cls, name in ((faith_cls, "faith"), (relevancy_cls, "relevancy"), (corr_cls, "corr")):
+        judge = MagicMock()
+        judge.score.side_effect = lambda name=name, **kwargs: events.append(name) or SimpleNamespace(score=1.0, reason="")
+        cls.return_value = judge
+    server_cls.return_value.__enter__.side_effect = lambda: events.append("server_up")
+    server_cls.return_value.__exit__.side_effect = lambda *args: events.append("server_down")
+
+    chunk = RetrievedChunk(
+        chunk_id="k", document_id="d", file_name="a.txt", source_path="a.txt", chunk_text="t", score=1.0, rank=1
+    )
+
+    class Recording:
+        def __init__(self):
+            self.generate_flags = []
+
+        def query(self, **kwargs):
+            self.generate_flags.append(kwargs["generate_answer"])
+            events.append("query")
+            return SimpleNamespace(retrieved_chunks=[chunk], index_run_id="r", answer="A.", timings_ms={"embed": 1.0})
+
+    session = MagicMock()
+    service = RecallBenchmarkService(session=session)
+    service.query_service = Recording()
+    with patch("raglab.experiments.recall.create_experiment_run", return_value=SimpleNamespace(id="e", config_json={})), patch(
+        "raglab.experiments.recall.store_experiment_result"
+    ), patch("raglab.experiments.recall.complete_experiment_run"):
+        result = service.run(
+            corpus_name="demo",
+            strategy=ChunkingStrategy.TRADITIONAL,
+            dataset_path=ds,
+            k_values=(1,),
+            compute_ragas=True,
+            ragas_case_limit=2,
+            judge=JudgeConfig(backend="llamacpp"),
+        )
+
+    assert service.query_service.generate_flags == [True, True, False]
+    # All retrieval first, then the server, then grading of the 2 answered cases.
+    assert events[:4] == ["query", "query", "query", "server_up"]
+    assert events[-1] == "server_down"
+    assert events.count("faith") == 2
+    assert result["summary"]["faithfulness_judged"] == 2
+    assert result["judge"].startswith("llamacpp:")

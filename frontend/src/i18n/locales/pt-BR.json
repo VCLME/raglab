@@ -351,9 +351,9 @@
     "backend_neo4j": "neo4j",
     "backend_both": "ambos (comparar)",
     "ragas_label": "Qualidade da geração",
-    "ragas_checkbox": "Avaliar fidelidade e correção (LLM-as-judge)",
-    "ragas_hint": "Calcula faithfulness (resposta ancorada nos chunks?) e answer_correctness (combina com o ground truth?).",
-    "ragas_hint_slow": "⚠ Ativo: 3 chamadas LLM por caso (resposta + 2 juízes). Cerca de ~5-10 s/caso em CPU, mais rápido em GPU.",
+    "ragas_checkbox": "Avaliar fidelidade, relevância e correção (LLM-as-judge)",
+    "ragas_hint": "Calcula faithfulness (ancorada nos chunks?), answer_relevancy (responde à pergunta?) e answer_correctness (bate com o ground truth?).",
+    "ragas_hint_slow": "⚠ Ativo: as respostas são geradas e depois avaliadas numa segunda passada (3 juízes por caso).",
     "table_embedding": "Embedding",
     "table_cases": "Casos",
     "table_recall1": "R@1",
@@ -412,7 +412,14 @@
     "custom_add_case": "Adicionar caso",
     "custom_saving": "Salvando…",
     "custom_save": "Salvar ({{count}} casos válidos)",
-    "custom_saved": "{{count}} casos salvos em {{dir}}. Disponível na aba Executar."
+    "custom_saved": "{{count}} casos salvos em {{dir}}. Disponível na aba Executar.",
+    "judge_label": "Juiz",
+    "judge_hint": "Um juiz de outra família evita que o modelo avalie as próprias respostas. O llama.cpp precisa estar acessível (RAGLAB_LLAMACPP_BASE_URL): a CLI o inicia, a API não.",
+    "judge_ollama": "Ollama (o gerador avalia a si mesmo)",
+    "judge_llamacpp": "llama.cpp (Gemma 4, juiz independente)",
+    "ragas_limit_label": "Casos avaliados",
+    "ragas_limit_hint": "Vazio = todos. O retrieval sempre cobre todos os casos.",
+    "table_relevancy": "Answer relevancy"
   },
   "corpus_page": {
     "title": "Corpus",

@@ -28,6 +28,10 @@ class Settings(BaseSettings):
     llamacpp_start_timeout_seconds: int = 300
     question_model_profile: str = "qwen35b-moe"
     question_model: str = "qwen3.6-35b-a3b"
+    # RAGAS judge served by llama.cpp: a different model family from the
+    # generator, so the generator never grades its own answers.
+    judge_model_profile: str = "gemma4-moe"
+    judge_model: str = "gemma4-26b-a4b"
 
     neo4j_uri: str = "bolt://localhost:7687"
     neo4j_user: str = "neo4j"

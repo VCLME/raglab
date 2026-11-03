@@ -70,6 +70,10 @@ class QueryResponse(BaseModel):
     filters: RetrievalFilters | None = None
     answer: str | None = None
     elapsed_ms: float = 0.0
+    # Wall-clock time per pipeline stage: embed, retrieval, generation.
+    timings_ms: dict[str, float] = Field(default_factory=dict)
+    # Generator counters when available (tokens, tokens per second).
+    generation_stats: dict[str, float] = Field(default_factory=dict)
 
 
 class ExperimentCase(BaseModel):

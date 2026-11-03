@@ -85,6 +85,8 @@ function LaunchTab({ onLaunched }: { onLaunched: () => void }) {
   const [caseLimit, setCaseLimit] = useState<string>("20");
   const [backendChoice, setBackendChoice] = useState<BackendChoice>("pgvector");
   const [computeRagas, setComputeRagas] = useState(false);
+  const [ragasLimit, setRagasLimit] = useState("");
+  const [judgeBackend, setJudgeBackend] = useState<"ollama" | "llamacpp">("ollama");
 
   const action = useApiAction((body: unknown) =>
     post<{
@@ -132,6 +134,8 @@ function LaunchTab({ onLaunched }: { onLaunched: () => void }) {
         case_limit: Number(caseLimit) || 10,
         backend,
         compute_ragas: computeRagas,
+        ragas_case_limit: computeRagas && ragasLimit ? Number(ragasLimit) : null,
+        judge_backend: judgeBackend,
       };
       if (resolvedPath) body.dataset_path = resolvedPath;
       await action.run(body);
@@ -221,6 +225,19 @@ function LaunchTab({ onLaunched }: { onLaunched: () => void }) {
           {t("benchmarks.ragas_checkbox")}
         </label>
       </FieldRow>
+      {computeRagas ? (
+        <>
+          <FieldRow label={t("benchmarks.judge_label")} hint={t("benchmarks.judge_hint")}>
+            <select value={judgeBackend} onChange={(e) => setJudgeBackend(e.target.value as "ollama" | "llamacpp")}>
+              <option value="ollama">{t("benchmarks.judge_ollama")}</option>
+              <option value="llamacpp">{t("benchmarks.judge_llamacpp")}</option>
+            </select>
+          </FieldRow>
+          <FieldRow label={t("benchmarks.ragas_limit_label")} hint={t("benchmarks.ragas_limit_hint")}>
+            <input type="number" value={ragasLimit} onChange={(e) => setRagasLimit(e.target.value)} min={1} />
+          </FieldRow>
+        </>
+      ) : null}
       <button onClick={launch} disabled={action.loading || !corpus}>
         {action.loading ? t("benchmarks.running_status") : t("benchmarks.launch_button")}
       </button>
@@ -495,6 +512,7 @@ function ComparisonChart({ runs }: { runs: ExperimentRunSummary[] }) {
     { key: "recall@10", rowClass: "r10", labelKey: "benchmarks.table_recall10" },
     { key: "mrr", rowClass: "mrr", labelKey: "benchmarks.table_mrr" },
     { key: "faithfulness_mean", rowClass: "faith", labelKey: "benchmarks.table_faith" },
+    { key: "answer_relevancy_mean", rowClass: "faith", labelKey: "benchmarks.table_relevancy" },
     { key: "answer_correctness_mean", rowClass: "corr", labelKey: "benchmarks.table_corr" },
   ];
   return (

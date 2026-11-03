@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -17,8 +18,15 @@ from raglab.db.crud import (
 )
 from raglab.domain.enums import ChunkingStrategy, ExperimentStatus
 from raglab.experiments.metrics import first_relevant_rank, hit_at_k, precision_at_k, reciprocal_rank, relevance_flags
-from raglab.experiments.ragas import AnswerCorrectnessJudge, FaithfulnessJudge
+from raglab.experiments.ragas import (
+    AnswerCorrectnessJudge,
+    AnswerRelevancyJudge,
+    FaithfulnessJudge,
+    JudgeConfig,
+)
 from raglab.graph.query import GraphQueryService
+from raglab.llm.local_server import LocalLLMServer
+from raglab.llm.openai_compat import OpenAICompatibleChat
 from raglab.logging_utils import log_event
 from raglab.retrieval.service import QueryService
 
@@ -184,7 +192,19 @@ class RecallBenchmarkService:
         k_values: tuple[int, ...] = (1, 5, 10),
         benchmark_name: str | None = None,
         compute_ragas: bool = False,
+        ragas_case_limit: int | None = None,
+        judge: JudgeConfig | None = None,
+        index_run_id: str | None = None,
     ) -> dict[str, Any]:
+        """Run retrieval on every case, then (optionally) grade answers.
+
+        Grading is a second pass: answers are generated during the retrieval
+        loop (Ollama), then the judge is loaded. With a llama.cpp judge the
+        Ollama model is unloaded and llama-server started for the pass only,
+        since both do not fit in VRAM together. `ragas_case_limit` restricts
+        generation and grading to the first N cases (retrieval still covers
+        all of them).
+        """
         if dataset_path is None:
             dataset_path, cases = self.build_dataset_from_lexml(
                 documents_dir=lexml_documents_dir,
@@ -193,6 +213,7 @@ class RecallBenchmarkService:
         else:
             cases = self._load_cases(dataset_path.resolve())
 
+        judge = judge or JudgeConfig()
         benchmark_label = benchmark_name or _infer_benchmark_name(dataset_path)
         run_name = f"recall-{benchmark_label}-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}"
 
@@ -211,12 +232,10 @@ class RecallBenchmarkService:
                 "k_values": list(k_values),
                 "backend": self.backend,
                 "compute_ragas": compute_ragas,
+                **({"judge": judge.label(self.settings), "ragas_case_limit": ragas_case_limit} if compute_ragas else {}),
             },
         )
         self.session.commit()
-
-        faithfulness_judge = FaithfulnessJudge(settings=self.settings) if compute_ragas else None
-        correctness_judge = AnswerCorrectnessJudge(settings=self.settings) if compute_ragas else None
 
         log_event(
             LOGGER,
@@ -232,23 +251,27 @@ class RecallBenchmarkService:
 
         max_k = max(k_values)
         details: list[dict[str, Any]] = []
+        index_run_ids: list[str] = []
         recall_sums = {k: 0 for k in k_values}
         precision_sums = {k: 0.0 for k in k_values}
         reciprocal_rank_sum = 0.0
         first_rank_sum = 0
         first_rank_count = 0
-        faithfulness_scores: list[float] = []
-        correctness_scores: list[float] = []
+        grade_limit = len(cases) if ragas_case_limit is None else ragas_case_limit
 
         try:
-            for case in cases:
-                response = self.query_service.query(
-                    question=case.question,
-                    corpus_name=corpus_name,
-                    strategy=strategy,
-                    top_k=max_k,
-                    generate_answer=compute_ragas,
-                )
+            for position, case in enumerate(cases):
+                generate = compute_ragas and position < grade_limit
+                query_kwargs: dict[str, Any] = {
+                    "question": case.question,
+                    "corpus_name": corpus_name,
+                    "strategy": strategy,
+                    "top_k": max_k,
+                    "generate_answer": generate,
+                }
+                if index_run_id:
+                    query_kwargs["index_run_id"] = index_run_id
+                response = self.query_service.query(**query_kwargs)
                 retrieved = [chunk.model_dump() for chunk in response.retrieved_chunks]
                 flags = relevance_flags(retrieved, is_relevant=lambda chunk: self._is_relevant(case, chunk))
                 first_rank = first_relevant_rank(flags)
@@ -265,55 +288,40 @@ class RecallBenchmarkService:
                     metrics_for_case[f"recall@{k}"] = hit
                     metrics_for_case[f"precision@{k}"] = precision
 
-                answer_text = response.answer
-                if compute_ragas and faithfulness_judge is not None:
-                    f_score = faithfulness_judge.score(
-                        question=case.question,
-                        answer=answer_text or "",
-                        retrieved_texts=[chunk["chunk_text"] for chunk in retrieved],
-                    )
-                    metrics_for_case["faithfulness"] = f_score.score
-                    metrics_for_case["faithfulness_reason"] = f_score.reason
-                    if f_score.score is not None:
-                        faithfulness_scores.append(f_score.score)
-
-                if compute_ragas and correctness_judge is not None and case.ground_truth_answer:
-                    c_score = correctness_judge.score(
-                        question=case.question,
-                        answer=answer_text or "",
-                        ground_truth=case.ground_truth_answer,
-                    )
-                    metrics_for_case["answer_correctness"] = c_score.score
-                    metrics_for_case["answer_correctness_reason"] = c_score.reason
-                    if c_score.score is not None:
-                        correctness_scores.append(c_score.score)
-
-                case_result = {
-                    "id": case.case_id,
-                    "question": case.question,
-                    "question_type": case.question_type,
-                    "expected_file_names": case.expected_file_names,
-                    "expected_urns": case.expected_urns,
-                    "retrieved_chunks": retrieved,
-                    "answer": answer_text,
-                    "metrics": metrics_for_case,
-                }
                 reciprocal_rank_sum += case_reciprocal_rank
                 if first_rank is not None:
                     first_rank_sum += first_rank
                     first_rank_count += 1
-                details.append(case_result)
+                index_run_ids.append(response.index_run_id)
+                details.append(
+                    {
+                        "id": case.case_id,
+                        "question": case.question,
+                        "question_type": case.question_type,
+                        "expected_file_names": case.expected_file_names,
+                        "expected_urns": case.expected_urns,
+                        "retrieved_chunks": retrieved,
+                        "answer": response.answer if generate else None,
+                        "timings_ms": dict(getattr(response, "timings_ms", {}) or {}),
+                        "generation_stats": dict(getattr(response, "generation_stats", {}) or {}),
+                        "metrics": metrics_for_case,
+                    }
+                )
 
+            ragas_scores = self._grade(cases, details, judge) if compute_ragas else {}
+
+            for case, detail, run_id in zip(cases, details, index_run_ids, strict=True):
                 store_experiment_result(
                     self.session,
                     experiment_run_id=experiment_run.id,
-                    index_run_id=response.index_run_id,
+                    index_run_id=run_id,
                     case_id=case.case_id,
                     question=case.question,
-                    retrieved_chunk_ids=[chunk["chunk_id"] for chunk in retrieved],
-                    answer=answer_text,
+                    retrieved_chunk_ids=[chunk["chunk_id"] for chunk in detail["retrieved_chunks"]],
+                    answer=detail["answer"],
                     metrics_json={
-                        **metrics_for_case,
+                        **detail["metrics"],
+                        "timings_ms": detail["timings_ms"],
                         "expected_file_names": case.expected_file_names,
                         "expected_urns": case.expected_urns,
                         "expected_spans": case.expected_spans,
@@ -331,19 +339,10 @@ class RecallBenchmarkService:
             summary["mean_first_relevant_rank"] = (
                 first_rank_sum / first_rank_count if first_rank_count else None
             )
-            if compute_ragas:
-                summary["faithfulness_mean"] = (
-                    sum(faithfulness_scores) / len(faithfulness_scores)
-                    if faithfulness_scores
-                    else None
-                )
-                summary["faithfulness_judged"] = len(faithfulness_scores)
-                summary["answer_correctness_mean"] = (
-                    sum(correctness_scores) / len(correctness_scores)
-                    if correctness_scores
-                    else None
-                )
-                summary["answer_correctness_judged"] = len(correctness_scores)
+            summary.update(_latency_summary(details))
+            for metric, scores in ragas_scores.items():
+                summary[f"{metric}_mean"] = sum(scores) / len(scores) if scores else None
+                summary[f"{metric}_judged"] = len(scores)
 
             by_type = _summarise_by_type(details, k_values)
             experiment_run.config_json = {
@@ -370,6 +369,7 @@ class RecallBenchmarkService:
             "strategy": strategy.value,
             "dataset_path": str(dataset_path),
             "total_cases": total_cases,
+            "judge": judge.label(self.settings) if compute_ragas else None,
             "summary": summary,
             "by_type": by_type,
             "details": details,
@@ -389,6 +389,96 @@ class RecallBenchmarkService:
             experiment_run_id=experiment_run.id,
         )
         return payload
+
+    def _grade(
+        self,
+        cases: list[RecallBenchmarkCase],
+        details: list[dict[str, Any]],
+        judge: JudgeConfig,
+    ) -> dict[str, list[float]]:
+        """Second pass: grade the generated answers, writing per-case scores
+        into `details[i]["metrics"]`. Returns the scores per metric."""
+        scores: dict[str, list[float]] = {"faithfulness": [], "answer_relevancy": [], "answer_correctness": []}
+        graded = [(case, detail) for case, detail in zip(cases, details, strict=True) if detail["answer"] is not None]
+        if not graded:
+            return scores
+        judges = _build_judges(self.settings, judge)
+
+        def grade_all() -> None:
+            for case, detail in graded:
+                answer = detail["answer"] or ""
+                metrics = detail["metrics"]
+                verdicts = {
+                    "faithfulness": judges["faithfulness"].score(
+                        question=case.question,
+                        answer=answer,
+                        retrieved_texts=[chunk["chunk_text"] for chunk in detail["retrieved_chunks"]],
+                    ),
+                    "answer_relevancy": judges["answer_relevancy"].score(question=case.question, answer=answer),
+                }
+                if case.ground_truth_answer:
+                    verdicts["answer_correctness"] = judges["answer_correctness"].score(
+                        question=case.question,
+                        answer=answer,
+                        ground_truth=case.ground_truth_answer,
+                    )
+                for metric, verdict in verdicts.items():
+                    metrics[metric] = verdict.score
+                    metrics[f"{metric}_reason"] = verdict.reason
+                    if verdict.score is not None:
+                        scores[metric].append(verdict.score)
+
+        if judge.backend == "llamacpp":
+            with LocalLLMServer(self.settings, profile=judge.profile or self.settings.judge_model_profile):
+                grade_all()
+        else:
+            grade_all()
+        return scores
+
+
+def _build_judges(settings: Settings, config: JudgeConfig) -> dict[str, Any]:
+    if config.backend == "llamacpp":
+        common: dict[str, Any] = {
+            "settings": settings,
+            "client": OpenAICompatibleChat(settings),
+            "model": config.model or settings.judge_model,
+            "json_mode": True,
+        }
+    elif config.backend == "ollama":
+        common = {"settings": settings, "model": config.model}
+    else:
+        raise ValueError(f"Backend de juge inconnu: {config.backend}")
+    return {
+        "faithfulness": FaithfulnessJudge(**common),
+        "answer_relevancy": AnswerRelevancyJudge(**common),
+        "answer_correctness": AnswerCorrectnessJudge(**common),
+    }
+
+
+def _percentile(values: list[float], fraction: float) -> float:
+    """Nearest-rank percentile (no interpolation): an observed value."""
+    ordered = sorted(values)
+    index = max(0, min(len(ordered) - 1, math.ceil(fraction * len(ordered)) - 1))
+    return ordered[index]
+
+
+def _latency_summary(details: list[dict[str, Any]]) -> dict[str, float]:
+    """p50 / p95 per pipeline stage, plus the retrieval path (embed + search)."""
+    per_stage: dict[str, list[float]] = {}
+    for detail in details:
+        timings = detail.get("timings_ms") or {}
+        for stage, value in timings.items():
+            per_stage.setdefault(stage, []).append(float(value))
+        if "embed" in timings and "retrieval" in timings:
+            per_stage.setdefault("query", []).append(float(timings["embed"]) + float(timings["retrieval"]))
+    summary: dict[str, float] = {}
+    for stage, values in sorted(per_stage.items()):
+        summary[f"latency_{stage}_p50_ms"] = round(_percentile(values, 0.50), 3)
+        summary[f"latency_{stage}_p95_ms"] = round(_percentile(values, 0.95), 3)
+    tps = [d["generation_stats"]["tokens_per_second"] for d in details if d.get("generation_stats", {}).get("tokens_per_second")]
+    if tps:
+        summary["generation_tokens_per_second_p50"] = round(_percentile(tps, 0.50), 2)
+    return summary
 
 
 def _summarise_by_type(details: list[dict[str, Any]], k_values: tuple[int, ...]) -> dict[str, dict[str, float]]:

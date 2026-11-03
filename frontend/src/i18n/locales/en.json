@@ -351,9 +351,9 @@
     "backend_neo4j": "neo4j",
     "backend_both": "both (compare)",
     "ragas_label": "Generation quality",
-    "ragas_checkbox": "Score faithfulness and correctness (LLM-as-judge)",
-    "ragas_hint": "When on, computes faithfulness (is the answer grounded in the chunks?) and answer_correctness (does it match the ground truth?).",
-    "ragas_hint_slow": "⚠ Enabled: 3 LLM calls per case (answer + 2 judges). Count ~5-10 s/case on CPU, faster on GPU.",
+    "ragas_checkbox": "Grade faithfulness, relevancy and correctness (LLM-as-judge)",
+    "ragas_hint": "Computes faithfulness (grounded in the chunks?), answer_relevancy (does it answer the question?) and answer_correctness (matches the ground truth?).",
+    "ragas_hint_slow": "⚠ On: answers are generated, then graded in a second pass (3 judges per case).",
     "table_embedding": "Embedding",
     "table_cases": "Cases",
     "table_recall1": "R@1",
@@ -412,7 +412,14 @@
     "custom_add_case": "Add case",
     "custom_saving": "Saving…",
     "custom_save": "Save ({{count}} valid cases)",
-    "custom_saved": "{{count}} cases saved in {{dir}}. Available in the Launch tab."
+    "custom_saved": "{{count}} cases saved in {{dir}}. Available in the Launch tab.",
+    "judge_label": "Judge",
+    "judge_hint": "A judge from another model family avoids the model grading its own answers. llama.cpp must be reachable (RAGLAB_LLAMACPP_BASE_URL): the CLI starts it, the API does not.",
+    "judge_ollama": "Ollama (the generator grades itself)",
+    "judge_llamacpp": "llama.cpp (Gemma 4, independent judge)",
+    "ragas_limit_label": "Graded cases",
+    "ragas_limit_hint": "Empty = all. Retrieval always covers every case.",
+    "table_relevancy": "Answer relevancy"
   },
   "corpus_page": {
     "title": "Corpus",

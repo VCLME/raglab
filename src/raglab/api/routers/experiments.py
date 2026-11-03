@@ -16,6 +16,7 @@ from raglab.api.schemas import (
 )
 from raglab.config import get_settings
 from raglab.db.models import EmbeddingSpace, ExperimentResult, ExperimentRun, IndexRun
+from raglab.experiments.ragas import JudgeConfig
 from raglab.experiments.recall import RecallBenchmarkService
 
 router = APIRouter(prefix="/api/experiments", tags=["experiments"])
@@ -37,6 +38,8 @@ def recall(body: RecallRequest, session: Session = Depends(get_db)) -> dict[str,
             lexml_documents_dir=lexml_dir,
             case_limit=body.case_limit,
             compute_ragas=body.compute_ragas,
+            ragas_case_limit=body.ragas_case_limit,
+            judge=JudgeConfig(backend=body.judge_backend, model=body.judge_model),
         )
     finally:
         service.close()
