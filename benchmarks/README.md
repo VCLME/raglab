@@ -8,6 +8,7 @@ Ces fichiers sont la référence des mesures de la phase 9 : toutes les comparai
 | `lexml_fulltext/` | portugais | 277 sur 300 (23 marquées `rejected`) | 252 lois fédérales, `raglab lexml fulltext` ; empreintes dans `corpus_manifest.json` | domaine public (Lei 9.610/1998, art. 8º, IV) |
 | `lexml_references/` (à générer) | portugais | environ 100 (`dev` 30 %, `heldout` 70 %) : l'article A renvoie à l'article B, la réponse est dans B | le corpus LexML ci-dessus ; `raglab lexml reference-questions` | domaine public |
 | `legi_consommation/` | français | à générer (`raglab legifrance questions`) | Code de la consommation avec son historique : 5 998 versions de 3 391 articles, `raglab legifrance fetch` ; empreintes dans `corpus_manifest.json` | Licence Ouverte 2.0 (DILA, via tricoteuses) |
+| `legi_versions/` (à générer) | français | environ 100 questions pièges (`rewritten`, `reused_number`, `moved`, `as_of`), chacune avec la version qui répond (`expected_spans`) et celle qui tromperait (`trap`) ; `dev` 25 %, `heldout` 75 % | le corpus `legi_consommation` ci-dessus ; `raglab legifrance version-questions` | Licence Ouverte 2.0 (DILA, via tricoteuses) |
 | `abstention/` | fr + pt | 80 questions sans réponse dans les corpus (phase 9.4) | — | rédigées pour raglab |
 
 Chaque ligne de `ground_truth.jsonl` porte `expected_spans` (fichier + positions de la réponse dans le texte normalisé) : la pertinence est jugée au niveau du passage, quelle que soit la stratégie de chunking.

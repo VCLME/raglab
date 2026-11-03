@@ -91,7 +91,16 @@ raglab legifrance review-questions --ground-truth benchmarks/legi_consommation/g
 - chaque cas porte une partie `split` tirée avec la graine, par type : un quart `dev` (qu'on peut regarder pendant la mise au point d'une méthode), trois quarts `heldout` (jamais regardés). Le rapport donne Recall@k et MRR par partie (`by_split`), pour vérifier qu'un gain tient sur les questions jamais vues, comme pour le résolveur de citations sur LexML ;
 - `context` note l'article, le nombre de versions de même numéro et si la réponse figure aussi dans une autre version (`answer_in_other_version`) : retrouver une version ancienne compte comme un échec (mauvais fichier), et ce champ permet de mesurer ce piège à part.
 
-La suite `legi_consommation` ne tourne que sur demande (`raglab bench all --suite legi_consommation`).
+La suite `legi_consommation` ne tourne que sur demande (`raglab bench all --suite legi_consommation`). Depuis 9.10, la recherche ne voit par défaut que les versions en vigueur (`--versions in_force`) : la référence « RAG classique » se mesure avec `--versions all`.
+
+### Le jeu « versions » (9.10)
+
+```bash
+raglab legifrance version-questions --count 100 --seed 42 --output-dir benchmarks/legi_versions
+raglab legifrance review-questions --ground-truth benchmarks/legi_versions/ground_truth.jsonl
+```
+
+Environ 100 questions dont la réponse naïve vient d'une version qui ne s'applique plus : ligne réécrite (`rewritten`, 40 %), numéro réutilisé (`reused_number`, 20 %), article déplacé (`moved`, 20 %), question sur le passé (`as_of`, 20 %, la version attendue est l'ancienne). Les paires sont trouvées par des règles dans l'historique ; une question n'est gardée que si la réponse est copiée de la version attendue et, pour `rewritten` et `as_of`, la réponse périmée copiée du piège, chacune absente de l'autre version. Chaque cas porte `expected_spans` sur la version attendue, `trap` (fichiers, article, réponse périmée) et `context.as_of` pour les questions sur le passé ; partie `dev` / `heldout` comme ci-dessus. Métriques en plus du Recall@k : `outdated_hit@k` (une version périmée classée au-dessus de la bonne dans le top-k) et `outdated_answer_rate` (réponse générée qui reprend la version périmée). Détail dans [versions.md](../versions.md). Suite `legi_versions`, sur demande.
 
 ## Changer de générateur
 
