@@ -17,7 +17,7 @@ nav: index
       <div><dt>PIAF Recall@5</dt><dd>{{piaf_r5_v1}} → <strong>{{piaf_r5_full}}</strong></dd></div>
       <div><dt>Answer correctness, LexML</dt><dd>{{correct_lexml_v1}} → <strong>{{correct_lexml_full}}</strong></dd></div>
     </dl>
-    <p class="headline-note">Full pipeline against baseline v1 on the same frozen questions; faithfulness holds ({{faith_lexml_v1}} → {{faith_lexml_full}} on LexML). <a href="results.html">Every run</a> · <a href="method.html">how it's measured</a></p>
+    <p class="headline-note">Full pipeline against baseline v1 on the same frozen questions; faithfulness holds ({{faith_lexml_v1}} → {{faith_lexml_full}} on LexML). <a href="results.html#runs">Every run</a> · <a href="method.html">how it's measured</a></p>
     </div>
   </div>
 </section>
@@ -25,7 +25,7 @@ nav: index
 <section class="wrap shot">
   <figure>
     <img class="shot-media" src="assets/chat-welcome.png" width="1440" height="900" alt="The raglab chat screen: pick a corpus, an index and a local model, then ask a question; answers cite the passages they come from.">
-    <figcaption>The chat: pick a corpus, an index and a local model. Answers cite the passages they use.</figcaption>
+    <figcaption>The chat: pick a corpus, an index and a local model. Answers cite the passages they use. Shown with the Brazilian federal-law corpus.</figcaption>
   </figure>
 </section>
 
@@ -49,7 +49,7 @@ nav: index
       <h3>Versions</h3>
       <p>A revoked or rewritten article is quoted as if it were in force (“Revogado”, “Redação dada pela Lei nº 14.026”).</p>
       <p class="failure-brick">Version status per passage (9.10)</p>
-      <p class="state">Planned</p>
+      <p class="state">In progress</p>
     </li>
     <li>
       <h3>Out of scope</h3>
@@ -113,6 +113,7 @@ nav: index
     <li><strong>Cross-encoder re-ranking</strong> (9.3): {{reranker_full}} re-reads the fused candidates; the largest single gain, and the largest cost (see <a href="#limits">limits</a>). <a href="{{repo_url}}/blob/main/docs/reranking.md">Details</a>.</li>
     <li><strong>Citation resolver</strong> (9.3b): legal references parsed and resolved before search; article-number questions {{ref_r5_v1}} → {{ref_r5_cites}}. <a href="{{repo_url}}/blob/main/docs/citations.md">Details</a>.</li>
     <li><strong>Hardened API</strong> (9.5): streaming answers, per-stage timeouts, request ids, optional API key, readiness checks.</li>
+    <li><strong>Quality gate</strong> (9.7): a weekly CI job re-runs retrieval on the frozen PIAF and LexML sets and fails when Recall@5 or MRR regresses; answer quality is gated locally, where the judge model runs.</li>
     <li><strong>Observability</strong> (9.6): Prometheus metrics per stage, a versioned Grafana dashboard and a drift report between two sets of results. <a href="{{repo_url}}/blob/main/docs/observabilite.md">Details</a>.</li>
   </ul>
 </section>
@@ -131,7 +132,7 @@ docker compose exec ollama ollama pull qwen2.5:7b</code></pre>
   <div>
     <h2 id="limits">Limits</h2>
     <ul>
-      <li>Benchmarked on two corpora (French Wikipedia, Brazilian federal law); your documents may behave differently, which is why the benchmark tooling ships with it.</li>
+      <li>Measured on two corpora so far: French Wikipedia and Brazilian federal law. The Code de la consommation (French, with every article's version history) is collected and indexed, its question set and runs are pending; EU compliance texts from EUR-Lex (GDPR, AI Act, DORA, NIS2, in English, French and Portuguese) are in progress. Your documents may behave differently, which is why the benchmark tooling ships with it.</li>
       <li>LexML questions were written by a model, then filtered and spot-checked by hand.</li>
       <li>Judge calibration covers French only, with synthetic errors: an optimistic bound on its reliability.</li>
       <li>No OCR for scanned PDFs; ingestion and indexing run synchronously.</li>
@@ -141,10 +142,9 @@ docker compose exec ollama ollama pull qwen2.5:7b</code></pre>
   <div>
     <h2 id="next">What I'd do next</h2>
     <ul>
-      <li>Cross-references: a citation graph as a third search branch (9.9), measured on a frozen set of questions whose answer is in a cited article.</li>
-      <li>Versions: flag revoked and rewritten articles at indexing time (9.10).</li>
+      <li>Cross-references: the citation graph is built and wired as a third search branch (9.9); it is in measurement on a frozen set of questions whose answer is in a cited article.</li>
+      <li>Versions: flag revoked and rewritten articles at indexing time (9.10, in progress), measured on the Code de la consommation's version history.</li>
       <li>Re-measure the router and abstention (9.4) on the current pipeline, with its 80 unanswerable questions.</li>
-      <li>Weekly quality gate that fails when retrieval regresses (9.7).</li>
       <li>Run the benchmark on a client's own documents before any deployment.</li>
     </ul>
   </div>

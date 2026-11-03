@@ -7,6 +7,26 @@
   document.documentElement.classList.add("js");
   var reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
 
+  // Arriving from another page on an anchor: start at the top and glide to the section, as an
+  // in-page link does. Reloads and back/forward keep the browser's own position.
+  var nav = performance.getEntriesByType && performance.getEntriesByType("navigation")[0];
+  var anchor = location.hash && document.getElementById(decodeURIComponent(location.hash.slice(1)));
+  if (anchor && !reduce.matches && nav && nav.type === "navigate" && document.referrer.indexOf(location.origin) === 0) {
+    window.scrollTo({ top: 0, behavior: "instant" });
+    // Glide once the page is shown: after the view transition when there is one, else after load.
+    var glided = false;
+    var glide = function () {
+      if (glided) return;
+      glided = true;
+      setTimeout(function () { anchor.scrollIntoView({ behavior: "smooth" }); }, 60);
+    };
+    window.addEventListener("pagereveal", function (e) {
+      if (e.viewTransition) e.viewTransition.finished.then(glide, glide);
+      else glide();
+    });
+    window.addEventListener("load", function () { setTimeout(glide, 400); });
+  }
+
   // ── Results chart ───────────────────────────────────────────────────────────
   // The generator renders the default view; this redraws it from the embedded data
   // and tweens every value when the question set changes, from wherever it stands.

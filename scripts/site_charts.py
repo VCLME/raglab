@@ -406,16 +406,15 @@ def tradeoff_chart(runs: dict[str, dict[str, Any]], stages: list[Any]) -> str:
         ylabel="LexML Recall@5",
         height="300px",
     )
-    steps: list[tuple[float, float]] = []
-    for i, (lat, r5, _, _) in enumerate(frontier):
-        if i:
-            steps.append((lx(lat), frontier[i - 1][1]))
-        steps.append((lx(lat), r5))
-    plot.lines.append(("main", steps, "frontier"))
+    # Straight segments between measured runs, as in ML papers: no fitted curve, nothing invented between them.
+    plot.lines.append(("main", [(lx(lat), r5) for lat, r5, _, _ in frontier], "frontier"))
     # Direct labels only on the frontier. Near the right edge they end at their dot, alternating above and
-    # below from the last run so close neighbours never collide; elsewhere they sit above, clear of the steps.
+    # below from the last run so close neighbours never collide; the first run's label sits under it, the
+    # others above, away from the segments.
     place = {
-        p[3]: ("above-end" if (len(frontier) - 1 - i) % 2 == 0 else "below-end") if lx(p[0]) > 70 else "above"
+        p[3]: ("above-end" if (len(frontier) - 1 - i) % 2 == 0 else "below-end")
+        if lx(p[0]) > 70
+        else ("below" if i == 0 else "above")
         for i, p in enumerate(frontier)
     }
     for lat, r5, name, label in points:
@@ -425,7 +424,7 @@ def tradeoff_chart(runs: dict[str, dict[str, Any]], stages: list[Any]) -> str:
                 lx(lat),
                 r5,
                 "main" if front else "base",
-                f"{name}: Recall@5 {r5:.3f}, {ms(lat)} p50" + (" (on the frontier)" if front else ""),
+                f"{name}: Recall@5 {r5:.3f}, {ms(lat)} p50" + (" (on the frontier)" if front else " (dominated)"),
                 name if front else "",
                 place.get(label, "above"),
             )
@@ -434,11 +433,17 @@ def tradeoff_chart(runs: dict[str, dict[str, Any]], stages: list[Any]) -> str:
     return (
         '<figure class="chart" data-chart="tradeoff">'
         '<p class="chart-title">What each gain costs in search time</p>'
-        + legend([("main", "On the frontier: nothing is both faster and better"), ("base", "Dominated run")])
+        + legend(
+            [
+                ("main", "Frontier: no other run is both faster and more accurate"),
+                ("base is-hollow", "Dominated: another run is both faster and more accurate"),
+            ]
+        )
         + plot.render()
-        + "<figcaption>Each dot is a recorded run. The step line joins the runs no other run beats on both "
-        "axes; moving right along it buys recall with latency. Re-ranking is the expensive step: twenty "
-        "candidates instead of forty is clearly faster for a small loss in recall.</figcaption>"
+        + "<figcaption>Each point is a recorded run; hover or focus one for its name and values. The line "
+        "joins the frontier runs: moving right along it buys recall with latency. Points between two runs are "
+        "not measured. Re-ranking is the expensive step: twenty candidates instead of forty is clearly faster "
+        "for a small loss in recall.</figcaption>"
         + sr_table(
             "Every run: LexML Recall@5 against search latency",
             ["Run", "LexML Recall@5", "Search p50", "Frontier"],
@@ -551,23 +556,36 @@ def pipeline(runs: dict[str, dict[str, Any]], repo_url: str) -> str:
 
     def node(sid: str, name: str) -> str:
         chip = '<span class="stage-chip">in measurement</span>' if sid == "graph" else ""
+        label = esc(name).replace("-", "\u2011")  # non-breaking hyphen: "Re-ranking" never splits at it
         return (
             f'<button type="button" class="stage" id="stage-btn-{sid}" data-stage="{sid}" aria-expanded="false" '
-            f'aria-controls="stage-{sid}">{esc(name)}{chip}</button>'
+            f'aria-controls="stage-{sid}">{label}{chip}</button>'
         )
 
-    flow, parallel = [], []
+    arrow = '<span class="flow-arrow" aria-hidden="true"></span>'
+    # Two lanes, finding the passages then writing the answer; the layout (one line, stacked lanes or a
+    # vertical flow) is chosen by container queries in style.css, so nothing ever wraps by accident.
+    lanes: list[tuple[str, list[str]]] = [
+        ("Retrieval: find the passages", []),
+        ("Generation: answer from them", []),
+    ]
+    parallel: list[str] = []
     for sid, name, kind, *_ in stages:
+        items = lanes[1 if sid in ("prompt", "llm", "answer") else 0][1]
         if kind == "parallel":
             parallel.append(node(sid, name))
             continue
         if parallel:
-            flow.append(
+            items.append(
                 '<div class="flow-parallel" role="group" aria-label="Run in parallel">' + "".join(parallel) + "</div>"
             )
             parallel = []
-        flow.append(node(sid, name))
-    arrow = '<span class="flow-arrow" aria-hidden="true"></span>'
+        items.append(node(sid, name))
+    flow = '<span class="flow-arrow flow-link" aria-hidden="true"></span>'.join(
+        f'<div class="flow-lane" role="group" aria-label="{title}"><p class="flow-label" aria-hidden="true">{title}</p>'
+        f'<div class="flow-items">{arrow.join(items)}</div></div>'
+        for title, items in lanes
+    )
     panels = "".join(
         f'<section class="stage-panel" id="stage-{sid}" aria-labelledby="stage-btn-{sid}">'
         f"<h3>{esc(name)}</h3><dl>"
@@ -579,6 +597,6 @@ def pipeline(runs: dict[str, dict[str, Any]], repo_url: str) -> str:
     )
     return (
         '<div class="pipeline" data-pipeline>'
-        f'<div class="flow">{arrow.join(flow)}</div>'
+        f'<div class="flow">{flow}</div>'
         f'<div class="stage-panels">{panels}</div></div>'
     )
