@@ -20,7 +20,7 @@ test("Retrieval page: a query lists chunk cards with file name and score", async
     await expect(card).toBeVisible();
     await expect(card).toContainText(`score ${chunk.score.toFixed(3)}`);
   }
-  await expect(page.getByRole("heading", { name: "Réponse" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Réponse", exact: true })).toBeVisible();
 });
 
 test("Retrieval page: hybrid mode sends its settings and shows dense / BM25 / RRF per chunk", async ({ page, api }) => {

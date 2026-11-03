@@ -1,6 +1,6 @@
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { DIAGRAM_NODES, type NodeId, type NodeState, type PipelineState } from "../edu/pipeline";
+import { DIAGRAM_NODES, prefersReducedMotion, type NodeId, type NodeState, type PipelineState } from "../edu/pipeline";
 import { SNIPPETS } from "../edu/snippets";
 import { CloseIcon } from "./Icon";
 import { JsonViewer } from "./JsonViewer";
@@ -42,6 +42,25 @@ export function PipelineStrip({ state, question, lexemes = [], rrfK, lexicalWeig
   const [selected, setSelected] = useState<NodeId | null>(null);
   const [announce, setAnnounce] = useState("");
   const previous = useRef<PipelineState | null>(null);
+  const stripRef = useRef<HTMLElement | null>(null);
+  const lessonRef = useRef<HTMLElement | null>(null);
+
+  // The lesson sits under the strip, at the top of the page: after a long
+  // conversation it would open off-screen. Bring it just below the (sticky)
+  // strip when a stage is picked.
+  useLayoutEffect(() => {
+    const lesson = lessonRef.current;
+    const strip = stripRef.current;
+    if (!selected || !lesson || !strip) return;
+    // On phones the strip is not sticky and may be scrolled away (bottom < 0).
+    const floor = Math.max(strip.getBoundingClientRect().bottom, 0);
+    const top = lesson.getBoundingClientRect().top;
+    if (top >= floor && top < window.innerHeight - 120) return;
+    window.scrollTo({
+      top: window.scrollY + top - floor - 12,
+      behavior: prefersReducedMotion() ? "auto" : "smooth",
+    });
+  }, [selected]);
 
   // Screen readers hear each stage finishing, not every token.
   useEffect(() => {
@@ -103,7 +122,7 @@ export function PipelineStrip({ state, question, lexemes = [], rrfK, lexicalWeig
 
   return (
     <>
-      <section className="edu-strip" aria-label={t("edu.title")}>
+      <section ref={stripRef} className="edu-strip" aria-label={t("edu.title")}>
         <div className="edu-strip-head">
           <h2>{t("edu.title")}</h2>
           <p>{selected ? t("edu.hint_selected") : t("edu.hint")}</p>
@@ -150,6 +169,7 @@ export function PipelineStrip({ state, question, lexemes = [], rrfK, lexicalWeig
 
       {selected ? (
         <StageLesson
+          sectionRef={lessonRef}
           id={selected}
           node={state.nodes[selected]}
           question={question}
@@ -164,6 +184,7 @@ export function PipelineStrip({ state, question, lexemes = [], rrfK, lexicalWeig
 }
 
 interface LessonProps {
+  sectionRef: React.Ref<HTMLElement>;
   id: NodeId;
   node: NodeState;
   question?: string;
@@ -175,7 +196,7 @@ interface LessonProps {
 
 const RENDERED_KEYS = new Set(["head", "dimension", "norm", "top_chunks", "system_prompt", "user_prompt", "truncated", "model", "provider"]);
 
-function StageLesson({ id, node, question, lexemes, rrfK, lexicalWeight, onClose }: LessonProps) {
+function StageLesson({ sectionRef, id, node, question, lexemes, rrfK, lexicalWeight, onClose }: LessonProps) {
   const { t } = useTranslation();
   const counts = Object.entries(node.counts ?? {}).filter(([, value]) => value != null);
   const data = node.data ?? {};
@@ -217,7 +238,7 @@ function StageLesson({ id, node, question, lexemes, rrfK, lexicalWeight, onClose
   }
 
   return (
-    <section id="edu-lesson" className="edu-lesson" aria-labelledby="edu-lesson-title">
+    <section ref={sectionRef} id="edu-lesson" className="edu-lesson" aria-labelledby="edu-lesson-title">
       <header className="edu-lesson-head">
         <div>
           <h3 id="edu-lesson-title">{t(`edu.stages.${id}.name`)}</h3>

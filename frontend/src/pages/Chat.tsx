@@ -12,8 +12,8 @@ import type {
 } from "../api/types";
 import { ChatOptions, NO_OVERRIDES, type RetrievalOverrides } from "../components/ChatOptions";
 import { ChunkCard } from "../components/ChunkCard";
-import { Citation } from "../components/Citation";
-import { SendIcon } from "../components/Icon";
+import { extractCitedRanks, renderAnswer } from "../components/AnswerText";
+import { SendIcon, StopIcon } from "../components/Icon";
 import { PipelineStrip } from "../components/PipelineStrip";
 import { FieldLabelContext, Select } from "../components/Select";
 import { SourceList } from "../components/SourcePill";
@@ -24,6 +24,7 @@ import {
   applyPlan,
   applyStage,
   failPipeline,
+  stopPipeline,
   finishPipeline,
   idlePipeline,
   prefersReducedMotion,
@@ -46,6 +47,8 @@ interface ChatTurn {
   first_token_ms?: number | null;
   streaming?: boolean;
   error?: { message: string; detail: string | null };
+  // Stopped with the « Arrêter » button; a partial answer stays visible.
+  stopped?: boolean;
   // Stage-by-stage view of the request, drawn by the educational mode.
   pipeline?: PipelineState;
   retrieval_mode?: RetrievalMode | null;
@@ -81,60 +84,6 @@ function formatRunLabel(run: IndexRunSummary): string {
 // Pause before closing each replayed stage, so the diagram can be followed.
 const REPLAY_STEP_MS = 280;
 
-const CITATION_REGEX = /\[(?:Rank|rank|Source\s+rank\s*=)\s*(\d+)\]/g;
-const TRAILING_SOURCES_REGEX = /\n+\s*Sources?\s*:[\s\S]*$/i;
-
-function stripTrailingSources(answer: string): string {
-  return answer.replace(TRAILING_SOURCES_REGEX, "").trimEnd();
-}
-
-function extractCitedRanks(answer: string): number[] {
-  const cleaned = stripTrailingSources(answer);
-  const ranks = new Set<number>();
-  CITATION_REGEX.lastIndex = 0;
-  let match: RegExpExecArray | null;
-  while ((match = CITATION_REGEX.exec(cleaned)) !== null) {
-    ranks.add(Number(match[1]));
-  }
-  return Array.from(ranks);
-}
-
-function renderAnswer(
-  answer: string,
-  chunks: RetrievedChunk[],
-  activeFile: string | null,
-  onSelectFile: (fileName: string) => void
-): React.ReactNode[] {
-  const cleaned = stripTrailingSources(answer);
-  const parts: React.ReactNode[] = [];
-  let lastIndex = 0;
-  CITATION_REGEX.lastIndex = 0;
-  let match: RegExpExecArray | null;
-  while ((match = CITATION_REGEX.exec(cleaned)) !== null) {
-    if (match.index > lastIndex) {
-      parts.push(cleaned.slice(lastIndex, match.index));
-    }
-    const rank = Number(match[1]);
-    const chunk = chunks.find((c) => c.rank === rank);
-    parts.push(
-      <Citation
-        key={`c-${match.index}-${rank}`}
-        rank={rank}
-        fileName={chunk?.file_name}
-        active={chunk ? activeFile === chunk.file_name : false}
-        onClick={() => {
-          if (chunk) onSelectFile(chunk.file_name);
-        }}
-      />
-    );
-    lastIndex = match.index + match[0].length;
-  }
-  if (lastIndex < cleaned.length) {
-    parts.push(cleaned.slice(lastIndex));
-  }
-  return parts.length > 0 ? parts : [cleaned];
-}
-
 // While the API is not up yet (UI started first), lists are fetched again on this period.
 const RETRY_MS = 3000;
 
@@ -166,6 +115,7 @@ export function Chat() {
   const streamRef = useRef<HTMLDivElement | null>(null);
   const [educational] = useEducationalMode();
   const schedulerRef = useRef<StageScheduler | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     if (!corpus && corpora.data && corpora.data.length > 0) {
@@ -244,6 +194,8 @@ export function Chat() {
     schedulerRef.current?.cancel();
     const scheduler = new StageScheduler(prefersReducedMotion() ? 0 : REPLAY_STEP_MS);
     schedulerRef.current = scheduler;
+    const controller = new AbortController();
+    abortRef.current = controller;
     const patchPipeline = (update: (state: PipelineState) => PipelineState) =>
       patchTurn((tn) => ({ pipeline: update(tn.pipeline ?? startPipeline()) }));
     const fromResponse = (r: QueryResponse): Partial<ChatTurn> => ({
@@ -265,6 +217,7 @@ export function Chat() {
           patchTurn((tn) => ({ answer: (tn.answer ?? "") + text, streaming: true })),
         onPipeline: (stages) => scheduler.push(() => patchPipeline((state) => applyPlan(state, stages))),
         onStage: (event) => scheduler.push(() => patchPipeline((state) => applyStage(state, event)), event),
+        signal: controller.signal,
       });
       scheduler.push(() => patchPipeline((state) => finishPipeline(state, result)));
       patchTurn(() => ({
@@ -275,6 +228,11 @@ export function Chat() {
         streaming: false,
       }));
     } catch (e) {
+      if (controller.signal.aborted) {
+        patchTurn(() => ({ streaming: false, stopped: true }));
+        scheduler.push(() => patchPipeline(stopPipeline));
+        return;
+      }
       const message =
         e instanceof ApiError
           ? e.message
@@ -285,19 +243,35 @@ export function Chat() {
       // A partial streamed answer stays visible above the error.
       patchTurn(() => ({ streaming: false, error: { message, detail } }));
       scheduler.push(() => patchPipeline(failPipeline));
+    } finally {
+      if (abortRef.current === controller) abortRef.current = null;
     }
   };
 
+  const stop = () => abortRef.current?.abort();
+
+  // Follow the conversation (new turn, answer growing, sources arriving), but
+  // not the learning-mode stage updates: they would pull the page away from a
+  // lesson the user just opened.
+  const latest = turns[turns.length - 1];
+  const followKey = `${turns.length}:${latest?.answer?.length ?? 0}:${latest?.chunks.length ?? 0}:${latest?.error ? 1 : 0}`;
   useEffect(() => {
     if (streamRef.current) {
       streamRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
     }
-  }, [turns]);
+  }, [followKey]);
 
-  useEffect(() => () => schedulerRef.current?.cancel(), []);
+  useEffect(
+    () => () => {
+      schedulerRef.current?.cancel();
+      abortRef.current?.abort();
+    },
+    []
+  );
 
   const reset = () => {
     schedulerRef.current?.cancel();
+    abortRef.current?.abort();
     setTurns([]);
     setExpanded({});
     setHighlight({});
@@ -366,11 +340,10 @@ export function Chat() {
 
         <div className="settings-actions">
           <ChatOptions value={options} onChange={setOptions} config={config} />
-          {turns.length > 0 ? (
-            <button className="ghost sm" onClick={reset}>
-              {t("chat.new_conversation")}
-            </button>
-          ) : null}
+          {/* Always there (disabled when empty) so the bar does not reflow at the first answer. */}
+          <button className="ghost sm" onClick={reset} disabled={turns.length === 0}>
+            {t("chat.new_conversation")}
+          </button>
         </div>
       </div>
 
@@ -452,25 +425,23 @@ export function Chat() {
                 </optgroup>
               ))}
             </Select>
-            <span className="dim composer-index">
-              {resolvedRun
-                ? t("chat.composer_on_index", {
-                    strategy: resolvedRun.strategy,
-                    model: resolvedRun.embedding_model_name ?? "—",
-                  })
-                : corpus
-                ? t("chat.composer_no_index")
-                : t("chat.composer_no_corpus")}
-            </span>
           </div>
-          <button
-            className="send"
-            onClick={() => send()}
-            disabled={action.loading || !question.trim() || !corpus || noRuns}
-          >
-            {t("common.submit")}
-            <SendIcon size={15} />
-          </button>
+          {/* While a request runs, the same place stops it. */}
+          {action.loading ? (
+            <button className="send ghost" onClick={stop}>
+              {t("chat.stop")}
+              <StopIcon size={13} />
+            </button>
+          ) : (
+            <button
+              className="send"
+              onClick={() => send()}
+              disabled={!question.trim() || !corpus || noRuns}
+            >
+              {t("common.submit")}
+              <SendIcon size={15} />
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -519,7 +490,7 @@ function ChatTurnView({
         {turn.question}
       </div>
 
-      {(turn.answer === null || turn.answer === "") && !turn.error ? (
+      {(turn.answer === null || turn.answer === "") && !turn.error && !turn.stopped ? (
         <div className="inline-status" role="status">
           <span className="dots">
             <span />
@@ -527,6 +498,12 @@ function ChatTurnView({
             <span />
           </span>
           {t("chat.loading")}
+        </div>
+      ) : null}
+
+      {turn.stopped && !turn.answer ? (
+        <div className="inline-status" role="status">
+          {t("chat.stopped")}
         </div>
       ) : null}
 
@@ -553,10 +530,11 @@ function ChatTurnView({
       {turn.answer ? (
         <div className="bubble assistant" aria-busy={turn.streaming ? true : undefined}>
           <div className="role">{t("chat.assistant_role")}</div>
-          <div style={{ whiteSpace: "pre-wrap" }}>
-            {renderAnswer(turn.answer, turn.chunks, highlight, onSelectSource)}
+          <div className="answer-text" style={{ whiteSpace: "pre-wrap" }}>
+            {renderAnswer(turn.answer, turn.chunks, highlight, (chunk) => onSelectSource(chunk.file_name))}
             {turn.streaming ? <span className="stream-caret" aria-hidden="true" /> : null}
           </div>
+          {turn.stopped ? <p className="answer-stopped">{t("chat.stopped")}</p> : null}
           {turn.chunks.length > 0 ? (
             <div className="sources">
               <div className="sources-label">
@@ -571,15 +549,9 @@ function ChatTurnView({
                 citedRanks={turn.answer ? extractCitedRanks(turn.answer) : undefined}
               />
               <button className="details-toggle" onClick={onToggleDetails}>
-                {expanded
-                  ? t("chat.chunks_hide", {
-                      count: visibleChunks.length,
-                      filtered: highlight ? t("chat.chunks_filtered_suffix") : "",
-                    })
-                  : t("chat.chunks_show", {
-                      count: visibleChunks.length,
-                      filtered: highlight ? t("chat.chunks_filtered_suffix") : "",
-                    })}
+                {t(`chat.chunks_${expanded ? "hide" : "show"}${highlight ? "_filtered" : ""}`, {
+                  count: visibleChunks.length,
+                })}
               </button>
               {expanded ? (
                 <div style={{ marginTop: 12 }}>

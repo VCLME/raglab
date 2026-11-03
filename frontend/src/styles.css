@@ -903,6 +903,38 @@ button.sm {
   color: var(--text);
   font-weight: 600;
 }
+.chunk.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+.chunk:focus {
+  outline: none;
+}
+.chunk .score-bar.dense,
+.score-type.dense {
+  --series: var(--score-dense);
+}
+.chunk .score-bar.lexical,
+.score-type.lexical {
+  --series: var(--score-bm25);
+}
+.chunk .score-bar.fused,
+.score-type.fused {
+  --series: var(--score-fused);
+}
+.chunk .score-bar.rerank,
+.score-type.rerank {
+  --series: var(--score-rerank);
+}
+.score-type {
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: var(--radius-pill);
+  border: 1px solid currentColor;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--series);
+}
 .chunk .score-bar {
   height: 4px;
   background: var(--surface-2);
@@ -910,10 +942,11 @@ button.sm {
   overflow: hidden;
   margin: 6px 0 10px;
 }
+/* The bar shows the final score, in the colour of the stage that produced it. */
 .chunk .score-bar > span {
   display: block;
   height: 100%;
-  background: var(--score-dense);
+  background: var(--series, var(--score-dense));
   border-radius: 2px;
 }
 .chunk-scores {
@@ -1001,6 +1034,10 @@ button.sm {
   white-space: pre-wrap;
   font-size: 14.5px;
   line-height: 1.6;
+}
+/* Answer prose keeps a readable measure, whatever the column width. */
+.answer-text {
+  max-width: 78ch;
 }
 .bubble.user {
   background: var(--accent-soft);
@@ -1363,12 +1400,12 @@ button.sm {
   outline: none;
   box-shadow: none;
 }
+/* Model picker on the left, Send on the right, at every width. */
 .composer-row {
   display: flex;
   align-items: center;
   gap: 10px;
   justify-content: space-between;
-  flex-wrap: wrap;
 }
 .composer-row .model-pick {
   display: flex;
@@ -1379,12 +1416,12 @@ button.sm {
   font-size: 12.5px;
   min-width: 0;
 }
-.composer-index {
-  font-size: 12px;
-  overflow-wrap: anywhere;
-}
 .composer-row .send {
+  flex-shrink: 0;
   padding: 6px 14px 6px 16px;
+}
+.composer-row .model-pick .select-trigger {
+  max-width: 100%;
 }
 
 /* ——— tables ——— */
@@ -2033,6 +2070,11 @@ input.switch:focus-visible {
   margin: 0;
 }
 
+.answer-stopped {
+  margin: 8px 0 0;
+  font-size: 12.5px;
+  color: var(--muted);
+}
 .answer-notice {
   margin: 12px 0 0;
   padding: 7px 10px;
@@ -2120,9 +2162,12 @@ input.switch:focus-visible {
   max-width: 1240px;
   margin: 0 auto;
 }
-/* Auto margins would shrink the chat to its min-content (long index labels). */
+/* One column for strip, lesson and chat, so every left edge lines up.
+ * (A width is also needed: auto margins would shrink the chat to its
+ * min-content, e.g. a long index label.) */
 .edu-shell > .chat-page {
   width: 100%;
+  max-width: none;
 }
 .edu-strip {
   position: sticky;
@@ -2204,7 +2249,7 @@ input.switch:focus-visible {
 }
 .edu-arrow {
   position: relative;
-  flex: 0 0 26px;
+  flex: 0 0 22px;
   height: 2px;
   background: var(--border-strong);
   transition: background var(--dur) var(--ease-out);
@@ -2230,7 +2275,7 @@ input.switch:focus-visible {
   gap: 7px;
   height: 34px;
   min-height: 0;
-  padding: 0 12px;
+  padding: 0 11px;
   white-space: nowrap;
   background: var(--surface);
   color: var(--text);

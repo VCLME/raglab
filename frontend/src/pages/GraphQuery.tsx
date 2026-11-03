@@ -7,8 +7,11 @@ import type {
   CorpusSummary,
   IndexRunSummary,
   QueryResponse,
+  RetrievedChunk,
 } from "../api/types";
+import { renderAnswer } from "../components/AnswerText";
 import { ChunkCard } from "../components/ChunkCard";
+import { prefersReducedMotion } from "../edu/pipeline";
 import { ErrorBanner } from "../components/ErrorBanner";
 import { ExplainBanner } from "../components/ExplainBanner";
 import { FieldRow } from "../components/FieldRow";
@@ -22,6 +25,14 @@ const STRATEGIES: ("" | ChunkingStrategy)[] = ["", "traditional", "slide", "late
 
 export function GraphQuery() {
   const { t } = useTranslation();
+  const [citedRank, setCitedRank] = useState<number | null>(null);
+  // A [Rank N] citation in the answer jumps to that chunk's card.
+  const showCitedChunk = (chunk: RetrievedChunk) => {
+    setCitedRank(chunk.rank);
+    const card = document.getElementById(`chunk-rank-${chunk.rank}`);
+    card?.scrollIntoView({ block: "center", behavior: prefersReducedMotion() ? "auto" : "smooth" });
+    card?.focus({ preventScroll: true });
+  };
   const config = useConfig();
   const corpora = useApiLoad<CorpusSummary[]>(() => get("/api/corpora"));
   const [corpus, setCorpus] = useState("");
@@ -312,9 +323,9 @@ export function GraphQuery() {
                   })}
                 </div>
                 {action.data.answer ? (
-                  <pre style={{ whiteSpace: "pre-wrap", margin: 0, fontFamily: "inherit" }}>
-                    {action.data.answer}
-                  </pre>
+                  <div className="answer-text" style={{ whiteSpace: "pre-wrap" }}>
+                    {renderAnswer(action.data.answer, action.data.retrieved_chunks, null, showCitedChunk)}
+                  </div>
                 ) : (
                   <p className="muted">{t("query.no_generation")}</p>
                 )}
@@ -323,7 +334,12 @@ export function GraphQuery() {
               <div className="card">
                 <h3>{t("query.chunks_header", { count: action.data.retrieved_chunks.length })}</h3>
                 {action.data.retrieved_chunks.map((c) => (
-                  <ChunkCard key={c.chunk_id} chunk={c} />
+                  <ChunkCard
+                    key={c.chunk_id}
+                    chunk={c}
+                    anchorId={`chunk-rank-${c.rank}`}
+                    active={citedRank === c.rank}
+                  />
                 ))}
               </div>
               <div className="card">
