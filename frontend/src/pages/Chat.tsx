@@ -465,7 +465,12 @@ export function Chat() {
     known: answered,
     mode: (answered ? lastTurn?.retrieval_mode : null) ?? planned.mode,
     rerank: (answered ? lastTurn?.rerank : null) ?? planned.rerank,
-    rerankNotice: answered ? lastTurn?.rerank_notice ?? null : null,
+    // Before a question, a re-ranking left off for lack of GPU already says why.
+    rerankNotice: answered
+      ? lastTurn?.rerank_notice ?? null
+      : config?.rerank_gpu === false && !planned.rerank
+      ? "skipped_no_gpu"
+      : null,
     rerankCandidates: config?.rerank_candidates ?? 40,
     legalCorpus,
     citationsOn: planned.citations,

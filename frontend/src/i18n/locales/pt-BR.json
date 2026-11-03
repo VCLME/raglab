@@ -116,12 +116,12 @@
     "options_mode_hint_lexical": "Busca por palavras-chave: os trechos que contêm as palavras da pergunta (BM25).",
     "options_mode_hint_hybrid": "As duas buscas, depois a fusão dos rankings (RRF). A configuração mais confiável medida.",
     "options_rerank_hint": "{{model}} relê os melhores candidatos junto com a pergunta.",
-    "options_rerank_no_gpu": "Nenhuma GPU detectada: por padrão o re-ranking é pulado. Ativá-lo aqui o roda na CPU (vários segundos).",
+    "options_rerank_no_gpu": "Desativado por falta de GPU. Ativá-lo aqui o roda na CPU (vários segundos por pergunta).",
     "options_citations_hint": "Uma referência na pergunta (“art. 49 da Lei 8.078”, “article L. 221-18 du Code de la consommation”) limita a busca a esse texto e coloca o artigo no topo.",
     "options_defaults": "Padrões do servidor.",
     "options_changed": "Alterado para esta conversa.",
     "options_reset": "Restaurar",
-    "rerank_notice_skipped_no_gpu": "Re-ranking ignorado: nenhuma GPU no servidor. A ordem vem só da busca.",
+    "rerank_notice_skipped_no_gpu": "Re-ranking desativado (sem GPU): a ordem vem só da busca.",
     "rerank_notice_cpu": "Re-ranking executado na CPU por falta de GPU: mais lento que o normal.",
     "meta_mode": "busca",
     "meta_citation": "citação",
@@ -138,7 +138,13 @@
     "stop": "Parar",
     "stopped": "Geração interrompida.",
     "options_graph_hint": "Segue as remissões dos artigos encontrados (\"art. 12 desta Lei\") no grafo Neo4j e adiciona os artigos citados. Em medição: desativado por padrão.",
-    "options_graph_short": "grafo"
+    "options_graph_short": "grafo",
+    "options_no_gpu_badge": "(sem GPU)",
+    "help_label": "Ajuda: {{option}}",
+    "help_mode": "Vetorial compara o sentido da pergunta com o dos trechos, palavras-chave (BM25) busca as palavras exatas, híbrida roda as duas e funde os rankings (RRF): a melhor qualidade medida.",
+    "help_rerank": "Um cross-encoder relê os 40 primeiros candidatos com a pergunta e os reordena: mais preciso que a fusão, cerca de 0,5 s por pergunta na GPU, vários segundos na CPU.",
+    "help_citations": "Se a pergunta cita um artigo (“art. 49 da Lei 8.078”, “article L. 221-18 du Code de la consommation”), a busca se limita a esse texto e o artigo citado vai para o topo.",
+    "help_graph": "Segue no Neo4j as remissões dos melhores trechos (“nos termos do art. 12”) e acrescenta à fusão os artigos citados que as outras buscas perderam."
   },
   "dashboard": {
     "title": "Painel",
@@ -682,7 +688,6 @@
       "grouped": "agrupado: segue o trecho que o cita"
     },
     "citation_none": "nenhuma",
-    "rerank_skipped": "pulado (sem GPU)",
     "route": {
       "title": "O caminho desta pergunta",
       "title_planned": "O caminho previsto com as opções atuais",
@@ -698,28 +703,27 @@
       "mode_opt_dense": "vetorial",
       "mode_opt_lexical": "palavras-chave",
       "mode_opt_hybrid": "híbrida",
-      "mode_dense": "Vetorial: só a busca por significado roda, o BM25 é pulado.",
+      "mode_dense": "Vetorial: só a busca por significado roda, não o BM25.",
       "mode_lexical": "Palavras-chave: só o BM25 roda, a pergunta não é vetorizada.",
       "mode_hybrid": "Híbrida: as duas buscas rodam (uma depois da outra, de forma independente) e seus rankings são fundidos por RRF.",
       "rerank": "Re-ranking",
       "rerank_opt_on": "ativado",
       "rerank_opt_off": "desativado",
-      "rerank_opt_skipped": "pulado",
       "rerank_on": "Ativado: o cross-encoder relê os {{count}} melhores candidatos e fica com os mais relevantes.",
       "rerank_off": "Desativado: a ordem da busca é mantida.",
-      "rerank_skipped": "Pulado: sem GPU no servidor (na CPU levaria vários segundos).",
       "rerank_cpu": "Ativado na CPU, por falta de GPU: mais lento que o normal.",
       "graph": "Grafo de remissões",
       "graph_opt_on": "ativado",
       "graph_opt_off": "desativado",
-      "graph_opt_skipped": "ignorado",
+      "graph_opt_skipped": "indisponível",
       "graph_on": "Ativado: {{articles}} artigos citados seguidos, {{count}} trechos adicionados à fusão.",
       "graph_on_planned": "Ativado: segue as remissões (CITES) dos artigos encontrados no Neo4j e adiciona seus trechos à fusão.",
       "graph_off": "Desativado: a fusão recebe só os trechos das buscas.",
-      "graph_skipped": "Ignorado: o ramo não pôde rodar.",
-      "graph_skipped_no_neo4j": "Ignorado: o Neo4j não responde, a resposta informa.",
-      "graph_skipped_no_graph": "Ignorado: sem grafo para este índice (Expert → Grafo de remissões).",
-      "graph_failed": "Ignorado: erro do Neo4j (ver os logs)."
+      "graph_skipped": "Indisponível: o ramo não pôde rodar.",
+      "graph_skipped_no_neo4j": "Indisponível: o Neo4j não responde, a resposta informa.",
+      "graph_skipped_no_graph": "Indisponível: sem grafo para este índice (Expert → Grafo de remissões).",
+      "graph_failed": "Indisponível: erro do Neo4j (ver os logs).",
+      "rerank_off_no_gpu": "Desativado (sem GPU): na CPU levaria vários segundos; a opção do Chat pode forçá-lo."
     },
     "code": {
       "citation": {
@@ -788,7 +792,8 @@
         "fusion": "esses trechos entram na fusão RRF como terceira lista"
       }
     },
-    "graph_skipped": "ignorado"
+    "graph_skipped": "indisponível",
+    "rerank_off_no_gpu": "desativado (sem GPU)"
   },
   "retrieval": {
     "mode_label": "Modo de busca",
@@ -820,7 +825,7 @@
     "citation_badge_title": "Fixado: a pergunta cita a lei e o artigo deste trecho.",
     "citation_resolved": "Citação reconhecida: {{label}}",
     "citation_unresolved": "Citação reconhecida ({{label}}), mas a lei não está no índice: busca normal.",
-    "rerank_notice_skipped_no_gpu": "Re-ranking ignorado: nenhuma GPU disponível (levaria vários segundos na CPU). Force com “ativado” se precisar.",
+    "rerank_notice_skipped_no_gpu": "Re-ranking desativado (sem GPU): na CPU levaria vários segundos. Force-o com “ativado” se precisar.",
     "rerank_notice_cpu": "Re-ranking executado na CPU, sem GPU: conte vários segundos por consulta.",
     "graph_label": "Grafo de remissões",
     "graph_hint": "Terceiro ramo: segue as remissões (CITES, Neo4j) do artigo citado e dos melhores trechos, fusão RRF de três fontes; um trecho citado fica ao lado do que o cita. Requer o grafo do index run.",
@@ -828,9 +833,9 @@
     "graph_badge": "remissão de {{via}}",
     "graph_badge_pinned": "citado por {{via}}, mantido ao lado",
     "scores_graph": "grafo",
-    "graph_notice_skipped_no_neo4j": "Ramo do grafo ignorado: o Neo4j não responde.",
-    "graph_notice_skipped_no_graph": "Ramo do grafo ignorado: sem grafo para este index run (Expert → Grafo).",
-    "graph_notice_failed": "Ramo do grafo ignorado: erro do Neo4j (ver os logs).",
+    "graph_notice_skipped_no_neo4j": "Ramo do grafo indisponível: o Neo4j não responde.",
+    "graph_notice_skipped_no_graph": "Ramo do grafo indisponível: sem grafo para este index run (Expert → Grafo).",
+    "graph_notice_failed": "Ramo do grafo indisponível: erro do Neo4j (ver os logs).",
     "graph_stats": "Grafo: {{seeds}} trechos de partida, {{articles}} artigos citados, {{chunks}} trechos adicionados à fusão",
     "mode_short_dense": "Vetorial",
     "mode_short_lexical": "Palavras-chave",

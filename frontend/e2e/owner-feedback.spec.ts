@@ -129,7 +129,10 @@ test("Learning mode reads as the request's decisions: branch taken highlighted, 
   await expect(decision("Mode de recherche")).toContainText("seule la recherche par le sens tourne");
   await expect(decision("Référence d'article").locator(".edu-option.taken")).toHaveText("article cité");
   await expect(decision("Référence d'article")).toContainText("« Lei 8.078, art. 49 » reconnu");
-  await expect(decision("Re-ranking").locator(".edu-option.taken")).toHaveText("sauté");
+  // No GPU is shown as "off", with the reason, never as "skipped".
+  await expect(decision("Re-ranking").locator(".edu-option.taken")).toHaveText("désactivé");
+  await expect(decision("Re-ranking").locator(".edu-option")).toHaveText(["activé", "désactivé"]);
+  await expect(page.getByRole("button", { name: "Re-ranking — désactivé (pas de GPU)" })).toBeVisible();
   await expect(decision("Re-ranking")).toContainText("pas de GPU");
 
   // The BM25 and graph lanes are dimmed; the reference decision is a node with its own lesson.
