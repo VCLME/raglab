@@ -93,6 +93,25 @@ raglab legifrance review-questions --ground-truth benchmarks/legi_consommation/g
 
 La suite `legi_consommation` ne tourne que sur demande (`raglab bench all --suite legi_consommation`).
 
+## Actes de l'UE (conformité)
+
+```bash
+raglab eurlex fetch
+raglab eurlex questions --count 300 --seed 42 --output-dir benchmarks/eurlex_compliance
+raglab eurlex review-questions --ground-truth benchmarks/eurlex_compliance/ground_truth.jsonl
+```
+
+**Corpus.** 15 actes (RGPD, AI Act, DORA, NIS 2, sept actes de niveau 2 de DORA, le règlement d'exécution de NIS 2, le règlement sur le groupe scientifique de l'AI Act, l'omnibus numérique sur l'IA, les clauses contractuelles types), en français, anglais et portugais, un document par considérant, article ou annexe, par langue et par version : 4 236 documents, 7,9 millions de caractères. Source : CELLAR (Office des publications, sans compte), versions consolidées figées ; `benchmarks/eurlex_compliance/corpus_manifest.json` donne l'empreinte de chaque texte et de chaque fichier téléchargé. Détails dans [corpus-eurlex.md](../corpus-eurlex.md).
+
+**Questions.** Même méthode que LexML et le Code de la consommation, avec ces différences :
+
+- les passages sont tirés dans les unités **en vigueur** (considérants, articles, annexes), une unité à la fois toutes langues confondues, dans une langue tirée avec la graine ;
+- cinq types : `paraphrase`, `reference` (l'unité citée comme un juriste, lue par le résolveur), `entity`, `cross_reference` (la question cite l'unité A, la réponse est dans l'unité B que A cite ; pertinence sur B seule, la phrase de A dans `citing_spans`) et `cross_language` (question dans une autre langue que le passage) ;
+- les filtres de formulation couvrent les trois langues (« this Article », « cet article », « este artigo », « mentioned », « ci-dessus ») ; la langue de la question est vérifiée ;
+- `context` note l'unité, les langues, les fichiers de la même unité dans les autres langues, le nombre de versions et si la réponse figure aussi dans une version ancienne (`answer_in_other_version`) ; partie `split` tirée avec la graine (un quart `dev`, le reste `heldout`).
+
+La pertinence reste au niveau du passage du fichier tiré : retrouver le même article dans une autre langue ne compte pas (les autres fichiers sont dans `context.same_unit_files`, pour une analyse à part). La suite `eurlex_compliance` ne tourne que sur demande (`raglab bench all --suite eurlex_compliance`).
+
 ## Limites connues
 
 - Les questions LexML sont écrites par un modèle (Qwen3.6 MoE). Elles servent à évaluer le retrieval, pas les réponses : elles ne favorisent pas un générateur, mais elles héritent des tournures du rédacteur. Le juge RAGAS (phase 9.1b) sera un modèle d'une autre famille, Gemma 4, pour éviter qu'un modèle note ses propres réponses.
