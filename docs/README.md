@@ -10,6 +10,7 @@ Par où commencer selon ce que vous voulez faire. Le [README du dépôt](../READ
 | [architecture.md](architecture.md) | les composants, le chemin d'une requête, la chaîne de mesure (diagrammes) |
 | [technical-choices.md](technical-choices.md) | pourquoi pgvector, Ollama, e5-small, Typer… |
 | [data-model.md](data-model.md) | le schéma PostgreSQL (corpus, documents, index runs, espaces d'embedding) |
+| [modes-de-recherche.md](modes-de-recherche.md) | les modes de recherche (vectoriel, mots-clés, hybride, graphe), le re-ranking, les références d'articles : chaque option, son défaut et son effet mesuré |
 | [graphe.md](graphe.md) | le graphe des renvois dans Neo4j : lois, articles, `CITES`, `AMENDS`, `REVOKES`, précision mesurée |
 | [roadmap.md](roadmap.md) | ce qui est livré, phase par phase, et ce qui vient |
 
