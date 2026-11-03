@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import math
+import random
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -352,6 +353,7 @@ class RecallBenchmarkService:
                 summary[f"precision@{k}"] = precision_sums[k] / total_cases
             summary["mrr"] = reciprocal_rank_sum / total_cases
             summary["mean_first_relevant_rank"] = first_rank_sum / first_rank_count if first_rank_count else None
+            summary.update(_confidence_intervals(details, k_values))
             summary.update(_latency_summary(details))
             for metric, scores in ragas_scores.items():
                 summary[f"{metric}_mean"] = sum(scores) / len(scores) if scores else None
@@ -470,6 +472,29 @@ def _build_judges(settings: Settings, config: JudgeConfig) -> dict[str, Any]:
         "answer_relevancy": AnswerRelevancyJudge(**common),
         "answer_correctness": AnswerCorrectnessJudge(**common),
     }
+
+
+def _bootstrap_ci(values: list[float], *, resamples: int = 2000, seed: int = 0) -> tuple[float, float]:
+    """95% percentile-bootstrap interval of the mean (seeded, reproducible)."""
+    rng = random.Random(seed)
+    count = len(values)
+    means = sorted(sum(values[rng.randrange(count)] for _ in range(count)) / count for _ in range(resamples))
+    return means[int(0.025 * resamples)], means[int(0.975 * resamples) - 1]
+
+
+def _confidence_intervals(details: list[dict[str, Any]], k_values: tuple[int, ...]) -> dict[str, float]:
+    """Bounds for Recall@k and MRR: with a few hundred questions, a 2-3 point
+    difference between two runs can be noise."""
+    if len(details) < 2:
+        return {}
+    metrics = {f"recall@{k}": [float(d["metrics"][f"recall@{k}"]) for d in details] for k in k_values}
+    metrics["mrr"] = [float(d["metrics"]["reciprocal_rank"]) for d in details]
+    bounds: dict[str, float] = {}
+    for name, values in metrics.items():
+        low, high = _bootstrap_ci(values)
+        bounds[f"{name}_ci_low"] = round(low, 4)
+        bounds[f"{name}_ci_high"] = round(high, 4)
+    return bounds
 
 
 def _percentile(values: list[float], fraction: float) -> float:

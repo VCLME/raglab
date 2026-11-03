@@ -129,6 +129,36 @@ def _gpu() -> str:
         return "none"
 
 
+def _total_ram() -> str:
+    """Physical memory in GiB, without extra dependencies."""
+    try:
+        if sys.platform == "win32":
+            import ctypes
+
+            class _MemoryStatus(ctypes.Structure):
+                _fields_ = [
+                    ("dwLength", ctypes.c_ulong),
+                    ("dwMemoryLoad", ctypes.c_ulong),
+                    ("ullTotalPhys", ctypes.c_ulonglong),
+                    ("ullAvailPhys", ctypes.c_ulonglong),
+                    ("ullTotalPageFile", ctypes.c_ulonglong),
+                    ("ullAvailPageFile", ctypes.c_ulonglong),
+                    ("ullTotalVirtual", ctypes.c_ulonglong),
+                    ("ullAvailVirtual", ctypes.c_ulonglong),
+                    ("ullAvailExtendedVirtual", ctypes.c_ulonglong),
+                ]
+
+            status = _MemoryStatus()
+            status.dwLength = ctypes.sizeof(_MemoryStatus)
+            ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(status))  # type: ignore[attr-defined]
+            total = status.ullTotalPhys
+        else:
+            total = os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES")
+        return f"{total / 2**30:.0f} GiB"
+    except (OSError, ValueError, AttributeError):
+        return "unknown"
+
+
 def environment_report(settings: Settings, session: Any, judge: JudgeConfig | None) -> dict[str, Any]:
     """Machine, versions and models: what a reader needs to reproduce."""
     ollama_digest = "unknown"
@@ -142,12 +172,7 @@ def environment_report(settings: Settings, session: Any, judge: JudgeConfig | No
         pass
     pgvector = session.execute(text("SELECT extversion FROM pg_extension WHERE extname = 'vector'")).scalar()
     postgres = session.execute(text("SHOW server_version")).scalar()
-    try:
-        import psutil  # type: ignore[import-untyped]
-
-        ram = f"{psutil.virtual_memory().total / 2**30:.0f} Go"
-    except ImportError:
-        ram = "unknown"
+    ram = _total_ram()
     return {
         "date": datetime.now(UTC).isoformat(timespec="seconds"),
         "git_commit": _git("rev-parse", "--short", "HEAD"),
@@ -168,6 +193,20 @@ def environment_report(settings: Settings, session: Any, judge: JudgeConfig | No
         "judge": judge.label(settings) if judge else None,
         "command": " ".join(["raglab", *sys.argv[1:]]) if sys.argv else "raglab bench all",
     }
+
+
+def _reusable_index_run(session: Any, corpus_name: str, strategy: ChunkingStrategy, settings: Settings):
+    from raglab.db.crud import resolve_latest_index_run
+
+    run = resolve_latest_index_run(session, corpus_name=corpus_name, strategy=strategy, backend="pgvector")
+    if run is None:
+        return None
+    space = run.embedding_space
+    if (space.provider, space.model_name) != (settings.embedding_provider, settings.embedding_model_name):
+        return None
+    if (run.chunk_size, run.chunk_overlap) != (settings.chunk_size, settings.chunk_overlap):
+        return None
+    return run
 
 
 def run_suite(
@@ -197,9 +236,18 @@ def run_suite(
             suite.corpus_dir, corpus_name=suite.corpus_name, description=f"Benchmark {suite.name} (fige)"
         )
     with session_scope() as session:
-        indexing = IndexingService(session).index_corpus(
-            corpus_name=suite.corpus_name, strategy=strategy, incremental=True
-        )
+        reusable = None
+        if not ingestion.get("ingested") and not ingestion.get("updated"):
+            reusable = _reusable_index_run(session, suite.corpus_name, strategy, settings)
+        if reusable is not None:
+            # Same documents, same chunking and embedding: re-indexing would
+            # only duplicate embeddings, which bloats the shared HNSW index
+            # and slows every search a little more on each benchmark run.
+            indexing = {"index_run_id": reusable.id, "chunks": len(reusable.chunks), "reused_run": True}
+        else:
+            indexing = IndexingService(session).index_corpus(
+                corpus_name=suite.corpus_name, strategy=strategy, incremental=True
+            )
         documents = session.execute(
             text("SELECT count(*) FROM documents d JOIN corpora c ON c.id = d.corpus_id WHERE c.name = :name"),
             {"name": suite.corpus_name},
@@ -285,6 +333,14 @@ def _ms(value: Any) -> str:
     return f"{value:,.0f} ms".replace(",", " ") if value >= 100 else f"{value:.1f} ms"
 
 
+def _with_ci(fmt: Any, summary: dict[str, Any], key: str) -> str:
+    text = fmt(summary.get(key))
+    low, high = summary.get(f"{key}_ci_low"), summary.get(f"{key}_ci_high")
+    if low is None or high is None or text == "—":
+        return text
+    return f"{text} [{low:.2f}–{high:.2f}]"
+
+
 def render_markdown(results: list[dict[str, Any]]) -> str:
     """Comparison table across runs (one column per run label), per suite."""
     lines: list[str] = []
@@ -314,7 +370,7 @@ def render_markdown(results: list[dict[str, Any]]) -> str:
         lines.append("| Métrique | " + " | ".join(labels) + " |")
         lines.append("|---|" + "---|" * len(labels))
         for title, key, fmt in rows:
-            values = [fmt(s["summary"].get(key)) if s else "—" for s in per_run]
+            values = [_with_ci(fmt, s["summary"], key) if s else "—" for s in per_run]
             if all(v == "—" for v in values):
                 continue
             lines.append(f"| {title} | " + " | ".join(values) + " |")

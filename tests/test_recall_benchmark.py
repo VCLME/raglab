@@ -401,3 +401,16 @@ def test_faithfulness_judge_reads_chunks_in_full():
     long_chunk = "début " + "x" * 800 + " FIN-DU-CHUNK"
     judge.score(question="Q?", answer="A.", retrieved_texts=[long_chunk])
     assert "FIN-DU-CHUNK" in client.chat.call_args.kwargs["messages"][0]["content"]
+
+
+def test_bootstrap_interval_brackets_the_mean_and_is_reproducible():
+    from raglab.experiments.recall import _bootstrap_ci, _confidence_intervals
+
+    values = [1.0] * 70 + [0.0] * 30
+    low, high = _bootstrap_ci(values)
+    assert low < 0.7 < high
+    assert 0.55 < low and high < 0.85
+    assert _bootstrap_ci(values) == (low, high)
+    details = [{"metrics": {"recall@5": v == 1.0, "reciprocal_rank": v}} for v in values]
+    bounds = _confidence_intervals(details, (5,))
+    assert set(bounds) == {"recall@5_ci_low", "recall@5_ci_high", "mrr_ci_low", "mrr_ci_high"}
