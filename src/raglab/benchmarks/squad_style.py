@@ -71,8 +71,7 @@ class SquadStyleLoader(BenchmarkLoader):
             from datasets import load_dataset
         except ImportError as exc:
             raise ImportError(
-                "The 'datasets' package is required for benchmark loaders. "
-                "Install it with: pip install datasets"
+                "The 'datasets' package is required for benchmark loaders. Install it with: pip install datasets"
             ) from exc
 
         output_dir = Path(output_dir).resolve()
@@ -140,8 +139,7 @@ class SquadStyleLoader(BenchmarkLoader):
 
         if not cases:
             raise RuntimeError(
-                f"No cases produced from {self.name}. Check the HF split "
-                f"'{self.hf_split}' for '{self.hf_dataset}'."
+                f"No cases produced from {self.name}. Check the HF split '{self.hf_split}' for '{self.hf_dataset}'."
             )
 
         if limit is not None and limit < len(cases):

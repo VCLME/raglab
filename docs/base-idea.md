@@ -46,7 +46,7 @@ raglab n'est pas un framework pour mettre un RAG en production. C'est une **plat
    raglab index --corpus fquad_fr --strategy late
 4. raglab experiment recall --corpus fquad_fr --strategy <each>
 5. raglab experiment run --corpus fquad_fr --strategy traditional --strategy slide --strategy late
-6. Ouverture de la page « Benchmarks » du front (à venir)
+6. Ouverture de la page « Benchmarks » du front
    pour visualiser recall@K, MRR, latence, faithfulness côte à côte
 ```
 

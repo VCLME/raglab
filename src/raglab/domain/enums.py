@@ -23,3 +23,9 @@ class ExperimentStatus(StrEnum):
     RUNNING = "running"
     COMPLETED = "completed"
     FAILED = "failed"
+
+
+class RetrievalMode(StrEnum):
+    DENSE = "dense"
+    LEXICAL = "lexical"
+    HYBRID = "hybrid"

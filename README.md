@@ -1,175 +1,147 @@
 # raglab
 
-**Un banc d'essai RAG local pour comparer stratégies de chunking, modèles d'embedding et stratégies de retrieval sur tes propres documents.**
+[![CI](https://github.com/VCLME/raglab/actions/workflows/ci.yml/badge.svg)](https://github.com/VCLME/raglab/actions/workflows/ci.yml)
+[![Licence: MIT](https://img.shields.io/badge/licence-MIT-blue.svg)](LICENSE)
 
-PostgreSQL + pgvector pour le stockage. Ollama pour la génération locale. React + FastAPI pour l'UI. Tout tourne sur ta machine, sans appel externe.
+**Private RAG you can measure.** raglab answers questions from your documents without them ever leaving your servers, proves its quality with before/after numbers on frozen benchmarks, and says "not in your documents" instead of inventing.
 
-![Chat raglab](docs/images/chat-welcome.png)
+<!-- Demo GIF (20 s): record and save as docs/images/demo.gif, then replace the screenshot below with:
+![raglab demo](docs/images/demo.gif) -->
+![The raglab chat: pick a corpus, an index and a local model; answers cite the passages they use](docs/images/chat-welcome.png)
 
-*Mode Chat : choix du corpus, de l'index, du LLM. Les suggestions viennent directement du dataset de validation associé au corpus — ici PIAF pour `piaf_fr`.*
-
----
-
-## Pourquoi raglab
-
-Quand tu montes un pipeline RAG, les décisions qui comptent sont :
-
-- Quelle **stratégie de chunking** ? (`traditional` fenêtre fixe, `slide` glissant, `late` avec contexte)
-- Quel **modèle d'embedding** et quelle dimension ?
-- Quel **top-K** et quels filtres de retrieval ?
-- Quel **LLM** pour la génération, avec quel prompt ?
-
-raglab te laisse lancer chaque combinaison, la mesurer contre un jeu de vérité terrain (PIAF, datasets custom, LexML), visualiser les Recall@K / MRR côte à côte et comparer.
-
-Plus de détails : **[docs/base-idea.md](docs/base-idea.md)**.
+Website: **[vclme.github.io/raglab](https://vclme.github.io/raglab/)** · Technical report (French): [PDF](docs/rapport/raglab-rapport.pdf) · Documentation (French): [docs/](docs/README.md)
 
 ---
 
-## Aperçu de l'UI
+## Why it matters
 
-La nav Expert est groupée en trois familles repliables (Vecteur / Graphe / LLM), avec Dashboard, Corpus et Benchmarks au top-level :
+- **Your data stays on your infrastructure.** Documents, embeddings, the search index and the language model all run on your machines: PostgreSQL + pgvector, a local embedding model, Ollama for generation. No external API call, so contracts, patient files or case law never leave the building.
+- **Quality is measured, not claimed.** Every component is kept only if it improves frozen benchmarks with passage-level ground truth. Generated answers are scored by a judge from another model family, whose own reliability was measured.
+- **It says when it doesn't know.** The model answers only from retrieved passages, cites each one inline, and replies with a fixed "not in your documents" message when the context is insufficient.
 
-<table>
-<tr>
-<td><a href="docs/images/expert-dashboard.png"><img src="docs/images/expert-dashboard.png" alt="Dashboard" /></a></td>
-<td><a href="docs/images/expert-corpus.png"><img src="docs/images/expert-corpus.png" alt="Corpus" /></a></td>
-</tr>
-<tr>
-<td><b>Dashboard</b> — santé des services, modèle par défaut, corpus et derniers index runs.</td>
-<td><b>Corpus</b> — ingère un dossier local, télécharge un benchmark (PIAF), charge LexML Brasil, supprime un corpus.</td>
-</tr>
-<tr>
-<td><a href="docs/images/expert-index.png"><img src="docs/images/expert-index.png" alt="Indexation" /></a></td>
-<td><a href="docs/images/expert-retrieval.png"><img src="docs/images/expert-retrieval.png" alt="Retrieval" /></a></td>
-</tr>
-<tr>
-<td><b>Indexation</b> — chunk + embed + stocke dans pgvector. Une stratégie × un embedding = un index run.</td>
-<td><b>Retrieval</b> — version détaillée du Chat avec filtres fins (tags, file_name, metadata) et payload JSON brut.</td>
-</tr>
-<tr>
-<td><a href="docs/images/expert-playground.png"><img src="docs/images/expert-playground.png" alt="Playground" /></a></td>
-<td><a href="docs/images/expert-ollama.png"><img src="docs/images/expert-ollama.png" alt="Modèles Ollama" /></a></td>
-</tr>
-<tr>
-<td><b>Playground</b> — chat direct avec Ollama, sans retrieval. Calibrer un modèle, tester un system prompt.</td>
-<td><b>Modèles Ollama</b> — statut, liste, pull, suppression des modèles LLM installés localement.</td>
-</tr>
-<tr>
-<td><a href="docs/images/expert-graph-index.png"><img src="docs/images/expert-graph-index.png" alt="Indexation graphe" /></a></td>
-<td><a href="docs/images/expert-graph-query.png"><img src="docs/images/expert-graph-query.png" alt="Retrieval graphe" /></a></td>
-</tr>
-<tr>
-<td><b>Indexation graphe (Neo4j)</b> — chunks écrits comme <code>(:Chunk)</code> avec <code>embedding_d{N}</code>, un vector index Neo4j 5 par dimension. Comparable direct avec pgvector.</td>
-<td><b>Retrieval graphe (Neo4j)</b> — KNN via <code>db.index.vector.queryNodes</code>. Les filtres corpus / file_name / source_path / tags sont supportés ; metadata_equals arrive en phase 8.2.</td>
-</tr>
-</table>
-
-### Benchmarks
-
-La page Benchmarks a trois onglets pour le cycle complet évaluer → mesurer → itérer :
-
-| Lancer | Historique | Créer un dataset |
-|---|---|---|
-| [![Launch](docs/images/expert-benchmarks-launch.png)](docs/images/expert-benchmarks-launch.png) | [![History](docs/images/expert-benchmarks-history.png)](docs/images/expert-benchmarks-history.png) | [![Custom](docs/images/expert-benchmarks-custom.png)](docs/images/expert-benchmarks-custom.png) |
-| Choisis un corpus, une stratégie et un dataset de vérité terrain. Le dropdown auto-détecte les datasets présents sur disque et prévient quand corpus et dataset ne matchent pas. | Coche jusqu'à 5 runs pour comparer R@1 / R@5 / R@10 / MRR sur un graphe partagé. Clique une ligne pour voir le détail cas par cas. Delete pour purger un run foiré. | Écris tes propres questions + fichiers attendus (+ réponse optionnelle). Sauvegardé en `data/benchmarks/custom_<nom>/ground_truth.jsonl`. Apparaît immédiatement dans l'onglet Lancer. |
+Built for teams whose documents cannot go to a cloud API (legal, compliance, insurance, healthcare, public-sector suppliers) and for the tech leads who have to justify an AI choice with numbers.
 
 ---
 
-## Démarrage rapide (Docker)
+## Results
+
+Two frozen question sets: **PIAF** (500 French questions, 761 Wikipedia paragraphs) and **LexML** (277 Portuguese questions on the full text of 252 Brazilian federal laws). Each row adds one component to the previous one; *measuring* means the code exists but no run has been recorded yet.
+
+<!-- results:start -->
+| Stage | What changes | PIAF Recall@5 | LexML Recall@5 | Article-number questions Recall@5 | Search latency p50 | Faithfulness (PIAF / LexML) |
+|---|---|---|---|---|---|---|
+| Baseline v0 | original pipeline: dense search only (multilingual-e5-small, pgvector HNSW) | 0.878 | 0.426 | 6% | 3.7 s | 0.845 / 0.723 † |
+| Embedder cache | + embedding model loaded once instead of per question (retrieval only, not judged; still approximate HNSW search) | 0.878 | 0.451 | 8% | 20 ms | not judged |
+| Baseline v1 | + exact vector search per index (the shared HNSW index made recall depend on what else was in the database); answers generated from the top 5 and judged on full chunks (official baseline) | 0.878 | 0.466 | 9% | 23 ms | 0.930 / 0.903 |
+| Hybrid search (phase 9.2) | + BM25 keyword search in PostgreSQL, fused with dense results (RRF) | 0.900 | 0.498 | 9% | 43 ms | 0.915 / 0.888 |
+| BM25 only (phase 9.2, comparison) | BM25 keyword search alone, no embedding (comparison point for 9.2, not kept) | 0.838 | 0.477 | 6% | 7 ms | not judged |
+| Re-ranking (phase 9.3) | + cross-encoder bge-reranker-v2-m3 on the fused candidates | 0.966 | 0.596 | 9% | 461 ms | 0.905 / 0.853 |
+| Dense + re-ranking (phase 9.3, comparison) | cross-encoder on dense candidates only, no BM25 (comparison point for 9.3, retrieval only) | 0.952 | 0.545 | 7% | 409 ms | not judged |
+| Citation resolver (phase 9.3b, comparison) | dense search + legal citations: "art. N da Lei X" is parsed, search is restricted to that law and the cited article is pinned first (comparison point, no BM25 or re-ranking) | 0.878 | 0.697 | 75% | 26 ms | 0.930 / 0.842 |
+| Full pipeline (default) | hybrid search + re-ranking + citation resolver (current default) | 0.966 | 0.816 | 72% | 635 ms | 0.907 / 0.895 |
+
+*Generated by `python scripts/build_site.py --readme` from [`benchmarks/results/`](benchmarks/results/). Search latency is embedding + vector search for one question, generation excluded. Faithfulness is scored on 100 answers per corpus by an independent judge (Gemma 4 26B-A4B). † Earlier judging protocol (answers from 10 chunks, judge reading truncated chunks), fixed before baseline-v1: not comparable.*
+<!-- results:end -->
+
+### The article-number problem
+
+Lawyers ask "what does art. 49 of Law 8.078 say?". At baseline, dense retrieval put the right passage in the top five for **only 6% of the 97 LexML questions that cite an article number** (Recall@5 0.062, `baseline-v0`; 9% in the official `baseline-v1`), against 75% for questions naming an acronym or entity. Embeddings capture meaning, not identifiers: "art. 49" and "art. 94" look almost the same to them. Hybrid search and re-ranking did not help (still 9%): BM25 finds the right law but not the right article, since "art. 2" appears in every law.
+
+A citation is structured data, not natural language, so raglab now reads it as such: it parses "art. 49 da Lei nº 8.078", restricts search to that law and pins the cited article first. Article-number questions went from **9% to 72%** in the full pipeline (+61 questions won, 0 lost, p < 0.001), and the method was checked on 72 questions never looked at while tuning it (8% to 72%). Over all 277 LexML questions, Recall@5 went from 0.466 to 0.816 and answer correctness from 0.45 to 0.60, with faithfulness unchanged. Method and limits: [docs/citations.md](docs/citations.md).
+
+---
+
+## Try it
+
+Needs Docker. A GPU is optional.
 
 ```bash
+git clone https://github.com/VCLME/raglab.git && cd raglab
 docker compose up -d postgres ollama adminer neo4j
 docker compose --profile app up -d api frontend
 docker compose exec ollama ollama pull qwen2.5:7b
 ```
 
-Puis :
+Then open the UI at <http://localhost:8081>: Expert → Corpus to add a folder of `.txt` / `.pdf` / `.docx`, Indexation to build an index, then Chat. The API is documented at <http://localhost:8000/docs>.
 
-- **UI** : [http://localhost:8081](http://localhost:8081)
-- **API Swagger** : [http://localhost:8000/docs](http://localhost:8000/docs)
-- **Adminer** (explorateur PostgreSQL) : [http://localhost:8080](http://localhost:8080) — serveur `postgres`, user/pwd `raglab`, base `raglab`
-- **Neo4j Browser** : [http://localhost:7474](http://localhost:7474) — user `neo4j` / pwd `raglab_neo4j` (store graphe en cours, voir [docs/roadmap.md](docs/roadmap.md))
+With an Nvidia GPU (`nvidia-container-toolkit`), start Ollama with the override: `docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d ollama`.
 
-Pour ingérer tes premiers documents : Expert → Corpus → Dossier local, pointe sur un dossier contenant des `.txt`, `.pdf`, `.docx`. Puis Indexation pour créer un index run, puis Chat pour interroger.
-
-### Version CLI
+Command line, after `pip install -e .[dev]` and copying `.env.example` to `.env`:
 
 ```bash
 raglab db init
 raglab ingest data/documents --corpus demo
 raglab index --corpus demo --strategy traditional
-raglab query "Que dit le document sur la maintenance ?" --corpus demo
-raglab experiment recall --corpus demo --strategy traditional \
-  --dataset-path data/benchmarks/piaf/ground_truth.jsonl
+raglab query "What does the contract say about maintenance?" --corpus demo
 ```
 
-Installation Python : `pip install -e .[dev]` après `copy .env.example .env`.
-
 ---
 
-## Ce que tu peux mesurer
+## How it's built
 
-| Axe | Options disponibles |
-|---|---|
-| **Chunking** | `traditional` (900/150), `slide` (900/300), `late` (700 focal + 500 ctx) |
-| **Embedding** | n'importe quel modèle transformers ou `nomic-embed-text` via Ollama. Dimensions variables supportées (pgvector ≥ 0.7, un index HNSW partiel par dim) |
-| **Retrieval** | top-K configurable, filtres par tag, file_name, source_path, metadata JSON |
-| **Generation** | tout modèle Ollama (qwen2.5:7b par défaut). Température, top_p, num_ctx, seed, options avancées |
-| **Ground truth** | PIAF (≈30k Q/R français), FQuAD (si disponible), LexML auto-gen (smoke test), ou ton propre dataset via l'onglet « Créer un dataset » |
-| **Metrics** | Recall@1/5/10, MRR, Precision@K, mean_first_relevant_rank, durée |
-
----
-
-## Corpus LexML Brasil
-
-Pipeline tout-en-un qui collecte des fiches juridiques publiques, ingère, indexe :
-
-```bash
-raglab lexml load --corpus lexml_real --strategy traditional --page-limit 1
+```mermaid
+flowchart LR
+  D[Documents<br/>txt · pdf · docx] --> C[Chunk + embed<br/>multilingual-e5-small]
+  C --> P[(PostgreSQL<br/>pgvector HNSW)]
+  Q[Question<br/>UI · API · CLI] --> R[Dense search<br/>+ BM25, RRF fusion*]
+  P --> R
+  Q -.-> X[Legal citation<br/>parser]
+  X -.-> R
+  R --> K[Cross-encoder<br/>re-ranking*]
+  K --> L[Local LLM via Ollama<br/>qwen2.5:7b]
+  L --> A[Cited answer, or<br/>'not in your documents']
 ```
 
-Détails (limites de taille, sidecars metadata, reprise de collecte) : **[docs/real-rag-lexml-load.md](docs/real-rag-lexml-load.md)**.
+<sub>Default pipeline: legal citations resolved first, then hybrid search (BM25 + dense, RRF) and cross-encoder re-ranking, the best measured configuration. Without a GPU, default re-ranking is skipped (it would take seconds on CPU) and the response says so. The Docker `api` container ships without a GPU and turns re-ranking off; set `RAGLAB_DEFAULT_RERANK=false` and `RAGLAB_DEFAULT_RETRIEVAL_MODE=dense` for the fastest path (~25-40 ms search instead of ~0.5 s).</sub>
+
+One line per component, with its measured effect:
+
+- **Passage-level benchmarks** (9.1): frozen question sets, full corpus indexed, a hit counts only if the chunk overlaps the exact answer passage. This is what makes every line below measurable.
+- **Embedder cache**: the embedding model was reloaded from disk for every question; loading it once took search latency from 3.7 s to 20 ms p50 on PIAF.
+- **Exact vector search**: one HNSW index was shared by every index in the database; once a corpus had been indexed several times, its duplicate vectors and the post-search filter made recall depend on the rest of the database (Recall@5 0.09 to 0.63 for two copies of PIAF, 0.91 exact on the same 150 questions). Exact search over the selected index takes 11-25 ms p50 at this scale and is now the default (`baseline-v1`); HNSW stays available for large corpora.
+- **Hybrid BM25 + RRF** (9.2): keyword search in PostgreSQL, fused with dense results. Effect: PIAF Recall@10 0.90 to 0.94 and LexML 0.50 to 0.56 (significant), Recall@5 not significant; +20 ms search.
+- **Cross-encoder re-ranking** (9.3): bge-reranker-v2-m3 re-scores the 40 fused candidates. Effect: PIAF Recall@5 0.88 to 0.97, LexML 0.47 to 0.60, significant on both (paired tests in [docs/reranking.md](docs/reranking.md)); costs ~0.6 s of search latency on a laptop GPU, over the 200 ms budget.
+- **Legal citation resolver**: parses "art. N da Lei X", restricts search to that law, pins the article. Effect: article-number questions 9% to 72%, LexML Recall@5 0.60 to 0.82 on top of re-ranking ([docs/citations.md](docs/citations.md)).
+- **Hardened API** (9.5): streamed answers (SSE), per-stage timeouts, request ids, optional API key, `/health` and `/ready`. Not a quality brick; no benchmark effect expected.
+
+Stack: Python 3.12, FastAPI, SQLAlchemy, PostgreSQL 16 + pgvector 0.8, transformers, Ollama, React + Vite. Optional Neo4j graph store for comparison.
 
 ---
 
-## GPU Nvidia (optionnel)
+## How it's measured
 
-Override Compose prêt pour `nvidia-container-toolkit` :
+1. **Frozen questions**: 500 PIAF and 277 LexML questions are committed in [`benchmarks/`](benchmarks/), sampled with a fixed seed, never regenerated between runs.
+2. **Full haystack**: the whole corpus is indexed, so the answer has to be found among thousands of chunks, not among the sampled questions' own paragraphs.
+3. **Passage-level relevance**: each question carries the character span of its answer; the right law but the wrong article is a miss.
+4. **Independent, calibrated judge**: answers from qwen2.5:7b are scored by Gemma 4 26B-A4B; on 150 answers with known verdicts it recognised 90% of faithful answers and caught 97% of invented details.
+5. **One change per run**: each run file records its exact command, commit, models and hardware ([`benchmarks/results/`](benchmarks/results/)).
 
-```bash
-docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d ollama
-```
-
-Gain observé sur RTX 3070 Ti Laptop avec `qwen2.5:7b` Q4 : **~10.7 tok/s CPU → ~38 tok/s GPU (3.6×)**. VRAM ≈ 4.7 GiB.
+Details (French): [protocol](docs/benchmarks/protocole.md) · [judges and calibration](docs/benchmarks/juges.md) · [baseline](docs/benchmarks/baseline.md).
 
 ---
 
-## Paramètres par défaut
+## Limits
 
-- génération : `qwen2.5:7b` (fallback explicite si contexte insuffisant, citations `[Rank N]` inline)
-- embeddings : `intfloat/multilingual-e5-small` (384d)
-- top-K : 5
-- chunking : voir tableau ci-dessus
+- Benchmarked on two corpora (French Wikipedia, Brazilian federal law). Your documents may behave differently, which is why the benchmark tooling ships with the pipeline.
+- LexML questions were written by a model (Qwen3.6-35B-A3B), then filtered automatically and spot-checked by hand (40 reviewed, 23 of 300 rejected).
+- Judge calibration is French-only and uses synthetic errors: an optimistic bound on the judge's reliability.
+- No OCR for scanned PDFs; ingestion and indexing run synchronously in the API, without a job queue.
+- Measured on one laptop GPU (RTX 3070 Ti, 8 GB); latency will differ on your hardware.
+
+## What I'd do next
+
+- Record `baseline-v1`, hybrid and re-ranking runs and publish them in the table above.
+- Query routing and calibrated abstention (9.4), measured on 80 questions the corpora cannot answer.
+- Observability: Prometheus metrics, Grafana dashboard, drift report (9.6).
+- A weekly quality gate that fails when retrieval regresses (9.7).
+- Run the same benchmark on a client's own documents before any deployment.
 
 ---
 
 ## Documentation
 
-- [docs/base-idea.md](docs/base-idea.md) — mission et axes de comparaison
-- [docs/architecture.md](docs/architecture.md) — architecture logicielle
-- [docs/technical-choices.md](docs/technical-choices.md) — choix techniques (pgvector, Ollama, etc.)
-- [docs/data-model.md](docs/data-model.md) — modèle de données PostgreSQL
-- [docs/experimentation-plan.md](docs/experimentation-plan.md) — plan d'expé rigoureux
-- [docs/roadmap.md](docs/roadmap.md) — ce qui est livré, ce qui vient
-- [docs/frontend-ui.md](docs/frontend-ui.md) — détail des pages React
-- [docs/run-and-test.md](docs/run-and-test.md) — commandes pour lancer / tester / rejouer
+Detailed documentation is in French: **[docs/README.md](docs/README.md)** (run, measure, extend, operate), and the [technical report](docs/rapport/README.md). The site is built from [`site/`](site/) by `python scripts/build_site.py`.
 
----
+## Licence
 
-## Limites actuelles
-
-- pas d'OCR pour PDF images
-- pas de reranker (cross-encoder en roadmap)
-- Neo4j est branché, l'indexation et le retrieval graphe sont fonctionnels (vector-in-graph, un vector index Neo4j 5 par dimension). Les filtres `metadata_equals` sur le store graphe et l'extraction d'entités arrivent en phase 8.2 — voir [docs/roadmap.md](docs/roadmap.md)
-- l'API exécute ingest/index/lexml load en synchrone, sans file de jobs
-- la collecte LexML V1 sauvegarde des fiches structurées, sans suivre encore les liens de texte intégral
+[MIT](LICENSE) © Luc Melaye

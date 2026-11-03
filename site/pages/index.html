@@ -1,0 +1,126 @@
+title: raglab · Private RAG you can measure
+description: A retrieval-augmented generation pipeline that runs entirely on your own infrastructure, proves its quality with before/after numbers on frozen benchmarks, and says when the answer is not in your documents.
+nav: index
+---
+<section class="hero">
+  <div class="wrap">
+    <p class="eyebrow">Open-source RAG pipeline · MIT</p>
+    <h1>Private RAG you can measure.</h1>
+    <p class="lede">raglab answers questions from your documents without them ever leaving your servers. Every component is kept only if it improves the numbers on frozen benchmarks, scored by an independent, calibrated judge. When the answer is not in your documents, it says so.</p>
+    <p class="cta">
+      <a class="button" href="results.html">See the results</a>
+      <a class="button secondary" href="{{repo_url}}">Read the code</a>
+    </p>
+  </div>
+</section>
+
+<section class="wrap shot">
+  <figure>
+    <img src="assets/chat-welcome.png" width="1440" height="900" alt="The raglab chat screen: pick a corpus, an index and a local model, then ask a question; answers cite the passages they come from.">
+    <figcaption>The chat: pick a corpus, an index and a local model. Answers cite the passages they use.</figcaption>
+  </figure>
+</section>
+
+<section class="wrap" aria-labelledby="why">
+  <h2 id="why">Why it matters</h2>
+  <div class="cards">
+    <article class="card">
+      <h3>Your data stays on your infrastructure</h3>
+      <p>Documents, embeddings, the search index and the language model all run on your machines: PostgreSQL with pgvector, a local embedding model, Ollama for generation. No call to an external API, so contracts, patient files or case law never leave the building.</p>
+    </article>
+    <article class="card">
+      <h3>Quality is measured, not claimed</h3>
+      <p>Two frozen question sets with passage-level ground truth: {{piaf_r5_v0}} Recall@5 on French Wikipedia at baseline, and a harder Brazilian-law set. Generated answers are scored by a judge from another model family whose reliability was itself measured.</p>
+    </article>
+    <article class="card">
+      <h3>It says when it doesn't know</h3>
+      <p>The model is instructed to answer only from retrieved passages, cite each one, and reply with a fixed “not in your documents” message when the context is insufficient. Faithfulness at baseline: {{faith_piaf_v0}} on French questions.</p>
+    </article>
+  </div>
+</section>
+
+<section class="wrap story" aria-labelledby="story">
+  <h2 id="story">The article-number problem</h2>
+  <div class="story-grid">
+    <p class="big-number" aria-hidden="true">{{ref_r5_v0}}</p>
+    <div>
+      <p>Lawyers ask things like “what does art. 49 of Law 8.078 say?”. On 252 Brazilian federal laws, plain dense retrieval found the right passage in the top five only <strong>{{ref_r5_v0}}</strong> of the time for the {{ref_cases}} questions that cite an article number (baseline v0). The same system finds questions naming an acronym or entity {{entity_r5_v0}} of the time.</p>
+      <p>Embeddings capture meaning, not identifiers: “art. 49” and “art. 94” look almost the same to them. Hybrid search adds exact keyword matching (BM25) and fuses both rankings. Its effect is being measured on the same frozen questions and will appear in the table below, whatever it turns out to be.</p>
+    </div>
+  </div>
+</section>
+
+<section class="wrap" aria-labelledby="results">
+  <h2 id="results">Results, before and after</h2>
+  <p>Each row adds one component to the previous one. Rows marked <em>measuring</em> have code but no recorded run yet.</p>
+  {{results_table}}
+  <p class="note">The embedder cache cut search latency from {{latency_v0}} to {{latency_cache}} per question (the model was being reloaded from disk for every question). Details per run on the <a href="results.html">results page</a>.</p>
+</section>
+
+<section class="wrap" aria-labelledby="built">
+  <h2 id="built">How it's built</h2>
+  <figure class="diagram">
+    <svg viewBox="0 0 880 210" role="img" aria-labelledby="diagram-title diagram-desc">
+      <title id="diagram-title">raglab architecture</title>
+      <desc id="diagram-desc">Documents are chunked and embedded into PostgreSQL with pgvector. A question is embedded, searched densely and by keywords, fused, re-ranked, then answered by a local model through Ollama with citations, or refused when the context is insufficient.</desc>
+      <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="arrowhead"/></marker></defs>
+      <g class="node"><rect x="10" y="20" width="150" height="56" rx="8"/><text x="85" y="45">Documents</text><text x="85" y="63" class="sub">txt · pdf · docx</text></g>
+      <g class="node"><rect x="200" y="20" width="150" height="56" rx="8"/><text x="275" y="45">Chunk + embed</text><text x="275" y="63" class="sub">e5-small, local</text></g>
+      <g class="node store"><rect x="390" y="20" width="170" height="56" rx="8"/><text x="475" y="45">PostgreSQL</text><text x="475" y="63" class="sub">pgvector HNSW + BM25</text></g>
+      <g class="node"><rect x="10" y="134" width="150" height="56" rx="8"/><text x="85" y="159">Question</text><text x="85" y="177" class="sub">UI · API · CLI</text></g>
+      <g class="node"><rect x="200" y="134" width="150" height="56" rx="8"/><text x="275" y="159">Dense + keyword</text><text x="275" y="177" class="sub">fused with RRF</text></g>
+      <g class="node"><rect x="390" y="134" width="170" height="56" rx="8"/><text x="475" y="159">Re-rank</text><text x="475" y="177" class="sub">cross-encoder</text></g>
+      <g class="node accent"><rect x="600" y="134" width="270" height="56" rx="8"/><text x="735" y="159">Local LLM (Ollama)</text><text x="735" y="177" class="sub">cited answer, or “not in your documents”</text></g>
+      <path d="M160 48 H196" marker-end="url(#arrow)"/>
+      <path d="M350 48 H386" marker-end="url(#arrow)"/>
+      <path d="M160 162 H196" marker-end="url(#arrow)"/>
+      <path d="M350 162 H386" marker-end="url(#arrow)"/>
+      <path d="M560 162 H596" marker-end="url(#arrow)"/>
+      <path d="M475 76 V100 H275 V130" marker-end="url(#arrow)"/>
+      <text x="610" y="45" class="sub left">Everything runs on your machines.</text>
+      <text x="610" y="63" class="sub left">No external API call.</text>
+    </svg>
+    <figcaption>Keyword search and re-ranking are in review (phases 9.2 and 9.3); the merged pipeline is dense search only.</figcaption>
+  </figure>
+  <ul class="bricks">
+    <li><strong>Passage-level benchmarks</strong> (phase 9.1): frozen PIAF and LexML question sets; a hit counts only if the retrieved chunk overlaps the exact answer passage.</li>
+    <li><strong>Embedder cache</strong>: model loaded once; search latency {{latency_v0}} → {{latency_cache}} p50.</li>
+    <li><strong>Complete top-k</strong>: pgvector iterative scan so a filtered search always returns k chunks; effect measuring (baseline v1).</li>
+    <li><strong>Hybrid BM25 + RRF</strong> (9.2, in review): targets identifier questions; effect measuring.</li>
+    <li><strong>Cross-encoder re-ranking</strong> (9.3, in review): effect measuring.</li>
+    <li><strong>Hardened API</strong> (9.5): streaming answers, per-stage timeouts, request ids, optional API key, readiness checks.</li>
+  </ul>
+</section>
+
+<section class="wrap" aria-labelledby="try">
+  <h2 id="try">Try it</h2>
+  <p>Needs Docker. A GPU is optional (an override file enables it for Ollama).</p>
+<pre><code>git clone {{repo_url}}.git &amp;&amp; cd raglab
+docker compose up -d postgres ollama adminer neo4j
+docker compose --profile app up -d api frontend
+docker compose exec ollama ollama pull qwen2.5:7b</code></pre>
+  <p>Open <code>http://localhost:8081</code>, add a folder of documents under Expert → Corpus, build an index, then ask questions in Chat. The API is documented at <code>http://localhost:8000/docs</code>.</p>
+</section>
+
+<section class="wrap two-col" aria-label="Limits and next steps">
+  <div>
+    <h2 id="limits">Limits</h2>
+    <ul>
+      <li>Benchmarked on two corpora (French Wikipedia, Brazilian federal law); your documents may behave differently, which is why the benchmark tooling ships with it.</li>
+      <li>LexML questions were written by a model, then filtered and spot-checked by hand.</li>
+      <li>Judge calibration covers French only, with synthetic errors: an optimistic bound on its reliability.</li>
+      <li>No OCR for scanned PDFs; ingestion and indexing run synchronously.</li>
+      <li>Measured on one laptop GPU (8 GB); latency will differ on your hardware.</li>
+    </ul>
+  </div>
+  <div>
+    <h2 id="next">What I'd do next</h2>
+    <ul>
+      <li>Record baseline v1, hybrid and re-ranking runs and publish them here.</li>
+      <li>Query routing and calibrated abstention (phase 9.4), measured on 80 unanswerable questions.</li>
+      <li>Observability: Prometheus metrics, Grafana dashboard, drift report (9.6).</li>
+      <li>Weekly quality gate that fails when retrieval regresses (9.7).</li>
+      <li>Run the benchmark on a client's own documents before any deployment.</li>
+    </ul>
+  </div>
+</section>

@@ -16,6 +16,7 @@ from raglab.api.schemas import (
 )
 from raglab.config import get_settings
 from raglab.db.models import EmbeddingSpace, ExperimentResult, ExperimentRun, IndexRun
+from raglab.experiments.ragas import JudgeConfig
 from raglab.experiments.recall import RecallBenchmarkService
 
 router = APIRouter(prefix="/api/experiments", tags=["experiments"])
@@ -25,9 +26,7 @@ router = APIRouter(prefix="/api/experiments", tags=["experiments"])
 def recall(body: RecallRequest, session: Session = Depends(get_db)) -> dict[str, Any]:
     settings = get_settings()
     dataset_path = Path(body.dataset_path) if body.dataset_path else None
-    lexml_dir = (
-        Path(body.lexml_documents_dir) if body.lexml_documents_dir else settings.lexml_documents_dir
-    )
+    lexml_dir = Path(body.lexml_documents_dir) if body.lexml_documents_dir else settings.lexml_documents_dir
     service = RecallBenchmarkService(session, backend=body.backend)
     try:
         return service.run(
@@ -36,7 +35,14 @@ def recall(body: RecallRequest, session: Session = Depends(get_db)) -> dict[str,
             dataset_path=dataset_path,
             lexml_documents_dir=lexml_dir,
             case_limit=body.case_limit,
+            retrieval_mode=body.retrieval_mode,
+            lexical_weight=body.lexical_weight,
+            rrf_k=body.rrf_k,
+            rerank=body.rerank,
+            citations=body.citations,
             compute_ragas=body.compute_ragas,
+            ragas_case_limit=body.ragas_case_limit,
+            judge=JudgeConfig(backend=body.judge_backend, model=body.judge_model),
         )
     finally:
         service.close()
@@ -48,9 +54,7 @@ def _duration_ms(run: ExperimentRun) -> float | None:
     return (run.completed_at - run.started_at).total_seconds() * 1000.0
 
 
-def _resolve_embedding_space(
-    session: Session, run: ExperimentRun
-) -> EmbeddingSpace | None:
+def _resolve_embedding_space(session: Session, run: ExperimentRun) -> EmbeddingSpace | None:
     """Take the embedding_space of the first ExperimentResult's index_run.
 
     A recall run targets exactly one index_run, but the schema allows
@@ -67,9 +71,7 @@ def _resolve_embedding_space(
     return session.execute(stmt).scalar_one_or_none()
 
 
-def _build_summary(
-    session: Session, run: ExperimentRun
-) -> ExperimentRunSummary:
+def _build_summary(session: Session, run: ExperimentRun) -> ExperimentRunSummary:
     cfg = run.config_json or {}
     embedding_space = _resolve_embedding_space(session, run)
     return ExperimentRunSummary(
@@ -91,6 +93,12 @@ def _build_summary(
         summary=cfg.get("summary"),
         duration_ms=_duration_ms(run),
         backend=cfg.get("backend"),
+        retrieval_mode=cfg.get("retrieval_mode"),
+        lexical_weight=cfg.get("lexical_weight"),
+        rrf_k=cfg.get("rrf_k"),
+        rerank=cfg.get("rerank"),
+        rerank_model=cfg.get("rerank_model"),
+        rerank_candidates=cfg.get("rerank_candidates"),
     )
 
 

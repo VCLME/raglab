@@ -57,6 +57,7 @@ class LexMLLoadService:
                 corpus_name=corpus_name,
                 description=description,
                 tags=tags,
+                language="pt",
             )
 
         with session_scope() as session:

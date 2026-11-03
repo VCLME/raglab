@@ -61,9 +61,7 @@ class GraphIndexingService:
             }
         )
         space_name = f"{effective.embedding_provider}:{effective.embedding_model_name}"
-        existing = self.session.scalar(
-            select(EmbeddingSpace).where(EmbeddingSpace.name == space_name)
-        )
+        existing = self.session.scalar(select(EmbeddingSpace).where(EmbeddingSpace.name == space_name))
         if existing is not None:
             resolved_dim = int(existing.dimension)
         else:
@@ -115,15 +113,9 @@ class GraphIndexingService:
         )
         chunk_config = self._helper._build_chunk_config(strategy)
 
-        resolved_engine = (
-            extraction_engine or self.settings.entity_extraction_engine
-            if extract_entities
-            else None
-        )
+        resolved_engine = (extraction_engine or self.settings.entity_extraction_engine) if extract_entities else None
         entity_extractor = (
-            build_entity_extractor(resolved_engine, settings=self.settings)
-            if extract_entities
-            else None
+            build_entity_extractor(resolved_engine, settings=self.settings) if resolved_engine is not None else None
         )
 
         index_run = create_index_run(
@@ -183,9 +175,7 @@ class GraphIndexingService:
                     entities_per_chunk = []
                     for chunk in created_chunks:
                         entities = entity_extractor.extract(chunk.text)
-                        entities_per_chunk.append(
-                            [{"name": e.name, "type": e.type} for e in entities]
-                        )
+                        entities_per_chunk.append([{"name": e.name, "type": e.type} for e in entities])
                         total_mentions += len(entities)
 
                 self.store.upsert_chunks(
@@ -222,7 +212,7 @@ class GraphIndexingService:
                 self.session.commit()
             raise
 
-        result = {
+        result: dict[str, str | int | None] = {
             "index_run_id": index_run.id,
             "documents": len(documents),
             "chunks": total_chunks,

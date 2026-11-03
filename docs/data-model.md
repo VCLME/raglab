@@ -95,7 +95,13 @@ Champs principaux :
 - `char_end`
 - `token_estimate`
 - `metadata_json`
+- `lexical_tsv` : `tsvector` du texte pour la recherche BM25 (index GIN), configuration choisie selon la langue du document ou du corpus
+- `lexical_length` : nombre de tokens du chunk (|d| de BM25)
 - `created_at`
+
+### `lexical_index_stats` et `lexical_term_stats`
+
+Statistiques BM25 par `index_run` : `doc_count`, `avg_length`, `ts_configs` d'une part, `doc_freq` par lexème d'autre part. Voir [retrieval-hybrid.md](retrieval-hybrid.md).
 
 ### `chunk_embeddings`
 
@@ -181,14 +187,20 @@ Conséquence :
 
 Cela évite la dérive quand l'utilisateur change `embedding_model_name` sans toucher à `RAGLAB_EMBEDDING_DIMENSION`.
 
-### Réconciliation au démarrage
+### Migrations (Alembic)
 
-`initialize_database()` ([src/raglab/db/init_db.py](../src/raglab/db/init_db.py)) exécute deux migrations idempotentes au démarrage :
+Le schéma est versionné par Alembic ([src/raglab/db/migrations](../src/raglab/db/migrations)). `initialize_database()` ([src/raglab/db/init_db.py](../src/raglab/db/init_db.py)), appelé par `raglab db init`, délègue à `upgrade_database` ([src/raglab/db/migrate.py](../src/raglab/db/migrate.py)) :
+
+- base vide : `upgrade head` depuis `0001_baseline` ;
+- base créée avant Alembic (tables présentes, pas de table `alembic_version`) : application des deux correctifs ci-dessous, estampille `0001_baseline`, puis `upgrade head` ;
+- base déjà sous Alembic : `upgrade head`.
+
+Les deux correctifs, idempotents, restent dans [src/raglab/db/indexes.py](../src/raglab/db/indexes.py) :
 
 1. `migrate_chunk_embeddings_to_variable_dim` : si la colonne `embedding` est encore `vector(N)` (legacy), l'ALTER vers `vector`, supprime l'ancien index HNSW fixe et crée les index partiels pour toutes les dimensions déjà présentes
 2. `reconcile_embedding_space_dimensions` : pour chaque `embedding_space`, échantillonne une ligne `chunk_embeddings` et met à jour `dimension` si divergence. Crée aussi le partial HNSW manquant. C'est le filet de sécurité contre les bases créées avec un `RAGLAB_EMBEDDING_DIMENSION` faux.
 
-Les deux helpers sont exposés dans [src/raglab/db/indexes.py](../src/raglab/db/indexes.py).
+Pour une nouvelle révision : `alembic -c alembic.ini revision -m "..."` (la connexion vient de `RAGLAB_DATABASE_URL`).
 
 ## 5. Préparation Neo4j
 
@@ -217,6 +229,7 @@ ou projeter ces objets directement dans Neo4j en gardant PostgreSQL comme source
 - index sur `chunks.index_run_id`
 - index sur `chunks.document_id`
 - index sur `chunk_embeddings.embedding_space_id`
+- index GIN sur `chunks.lexical_tsv` (recherche BM25)
 
 ### Vectoriels
 

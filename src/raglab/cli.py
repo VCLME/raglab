@@ -4,12 +4,16 @@ import json
 from pathlib import Path
 
 import typer
+from sqlalchemy import select
 
 from raglab.benchmarks import AVAILABLE_LOADERS, get_loader
 from raglab.benchmarks.lexml_questions import generate_questions, review_question_set
 from raglab.config import get_settings
 from raglab.db import initialize_database, session_scope
-from raglab.domain.enums import ChunkingStrategy
+from raglab.db.lexical import refresh_lexical_index
+from raglab.db.models import Corpus, IndexRun
+from raglab.domain.enums import ChunkingStrategy, RetrievalMode
+from raglab.experiments.ragas import JudgeConfig
 from raglab.experiments.recall import RecallBenchmarkService
 from raglab.experiments.service import ExperimentService
 from raglab.indexing.service import IndexingService
@@ -57,6 +61,25 @@ def db_init() -> None:
     typer.echo("Base initialisee avec pgvector.")
 
 
+@db_app.command("refresh-lexical")
+def db_refresh_lexical(
+    corpus: str | None = typer.Option(None, "--corpus", help="Limiter aux runs de ce corpus."),
+    index_run_ids: list[str] | None = typer.Option(None, "--index-run-id", help="Run(s) a recalculer."),
+) -> None:
+    """Recalculer tsvector et statistiques BM25 (apres un changement de langue), sans re-embedder."""
+    with session_scope() as session:
+        stmt = select(IndexRun.id)
+        if index_run_ids:
+            stmt = stmt.where(IndexRun.id.in_(index_run_ids))
+        if corpus:
+            stmt = stmt.join(Corpus, Corpus.id == IndexRun.corpus_id).where(Corpus.name == corpus)
+        results = {
+            run_id: refresh_lexical_index(session, run_id, default_language=get_settings().default_language)
+            for run_id in session.scalars(stmt).all()
+        }
+    typer.echo(json.dumps(results, indent=2, ensure_ascii=False))
+
+
 @ollama_app.command("status")
 def ollama_status() -> None:
     service = OllamaService()
@@ -96,6 +119,127 @@ def bench_list() -> None:
         for loader_cls in AVAILABLE_LOADERS.values()
     ]
     typer.echo(json.dumps(rows, indent=2, ensure_ascii=False))
+
+
+@bench_app.command("all")
+def bench_all(
+    label: str = typer.Option(
+        ..., "--label", help="Nom du run (ex. baseline-v0). Resultat: benchmarks/results/<label>.json"
+    ),
+    suite: list[str] | None = typer.Option(None, "--suite", help="piaf et/ou lexml_fulltext (defaut: les deux)."),
+    strategy: ChunkingStrategy = typer.Option(ChunkingStrategy.TRADITIONAL, "--strategy"),
+    ragas_limit: int = typer.Option(
+        100, "--ragas-limit", min=0, help="Questions generees et notees par suite (0 = retrieval seul)."
+    ),
+    judge_backend: str = typer.Option(
+        "llamacpp", "--judge-backend", help="llamacpp (Gemma, demarre si besoin) ou ollama."
+    ),
+    retrieval_mode: RetrievalMode | None = typer.Option(
+        None,
+        "--retrieval-mode",
+        help="dense (KNN cosinus), lexical (BM25) ou hybrid (fusion RRF). Defaut: RAGLAB_DEFAULT_RETRIEVAL_MODE.",
+    ),
+    lexical_weight: float | None = typer.Option(
+        None, "--lexical-weight", min=0.0, max=1.0, help="Poids du BM25 dans la fusion RRF (mode hybrid)."
+    ),
+    rrf_k: int | None = typer.Option(None, "--rrf-k", min=0, help="Constante k de la fusion RRF (defaut 60)."),
+    rerank: bool | None = typer.Option(
+        None,
+        "--rerank/--no-rerank",
+        help="Re-ranking cross-encoder des candidats (defaut: RAGLAB_DEFAULT_RERANK).",
+    ),
+    citations: bool | None = typer.Option(
+        None,
+        "--citations/--no-citations",
+        help="Reconnaitre les citations juridiques (art. N da Lei X) : restreindre a la loi citee, epingler l'article. Defaut: RAGLAB_CITATION_RESOLVER.",
+    ),
+) -> None:
+    """Regenerer tous les chiffres de benchmark (PIAF + LexML) et les ecrire dans benchmarks/results/."""
+    from raglab.benchmarks.suite import render_markdown, run_all
+
+    result = run_all(
+        label=label,
+        strategy=strategy,
+        ragas_limit=ragas_limit or None,
+        judge=JudgeConfig(backend=judge_backend),
+        suites=suite or None,
+        retrieval_mode=retrieval_mode,
+        lexical_weight=lexical_weight,
+        rrf_k=rrf_k,
+        rerank=rerank,
+        citations=citations,
+    )
+    output = Path("benchmarks/results") / f"{label}.json"
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(json.dumps(result, indent=2, ensure_ascii=False), encoding="utf-8")
+    typer.echo(render_markdown([result]))
+    typer.echo(f"\nResultat: {output}")
+
+
+@app.command("gate")
+def gate(
+    results: Path | None = typer.Option(None, "--results", help="Resultat de `raglab bench all` a verifier."),
+    run: bool = typer.Option(False, "--run", help="Lancer `raglab bench all` puis verifier son resultat."),
+    ragas_limit: int = typer.Option(
+        100, "--ragas-limit", min=0, help="Avec --run : questions notees (0 = retrieval seul)."
+    ),
+    judge_backend: str = typer.Option("llamacpp", "--judge-backend", help="Avec --run : juge RAGAS."),
+    thresholds: Path = typer.Option(Path("benchmarks/thresholds.json"), "--thresholds"),
+    require_all: bool = typer.Option(False, "--require-all", help="Echouer aussi si une metrique n'a pas ete mesuree."),
+    summary_file: Path | None = typer.Option(
+        None, "--summary-file", help="Ecrire le tableau Markdown ici (ex. $GITHUB_STEP_SUMMARY)."
+    ),
+) -> None:
+    """Echouer (code 1) si Recall@5, MRR ou faithfulness passent sous les seuils versionnes."""
+    from datetime import UTC, datetime
+
+    from raglab.benchmarks.gate import evaluate, failed, load_thresholds, render
+
+    if run == (results is not None):
+        raise typer.BadParameter("Donner soit --results, soit --run.")
+    if run:
+        from raglab.benchmarks.suite import run_all
+
+        label = f"gate-{datetime.now(UTC).strftime('%Y%m%d-%H%M%S')}"
+        result = run_all(label=label, ragas_limit=ragas_limit or None, judge=JudgeConfig(backend=judge_backend))
+        results = Path("benchmarks/results") / f"{label}.json"
+        results.parent.mkdir(parents=True, exist_ok=True)
+        results.write_text(json.dumps(result, indent=2, ensure_ascii=False), encoding="utf-8")
+    else:
+        assert results is not None
+        result = json.loads(results.read_text(encoding="utf-8"))
+    checks = evaluate(result, load_thresholds(thresholds))
+    table = render(checks, label=result.get("label", str(results)))
+    typer.echo(table)
+    if summary_file:
+        with summary_file.open("a", encoding="utf-8") as handle:
+            handle.write(table + "\n")
+    if failed(checks, require_all=require_all):
+        raise typer.Exit(code=1)
+
+
+@bench_app.command("compare")
+def bench_compare(
+    before: str = typer.Argument(..., help="Run de reference (ex. baseline-v1)."),
+    after: str = typer.Argument(..., help="Run compare (ex. hybrid-v1)."),
+    k: int = typer.Option(5, "--k", help="Recall@k compare."),
+) -> None:
+    """Comparer deux runs question par question (McNemar sur le recall, bootstrap apparie sur le MRR)."""
+    from raglab.benchmarks.compare import compare_runs, render
+
+    load = lambda name: json.loads((Path("benchmarks/results") / f"{name}.json").read_text(encoding="utf-8"))  # noqa: E731
+    typer.echo(render(compare_runs(load(before), load(after), k=k), k=k))
+
+
+@bench_app.command("report")
+def bench_report(
+    labels: list[str] = typer.Argument(..., help="Runs a comparer, dans l'ordre des colonnes."),
+) -> None:
+    """Afficher le tableau comparatif Markdown de plusieurs runs de `raglab bench all`."""
+    from raglab.benchmarks.suite import render_markdown
+
+    runs = [json.loads((Path("benchmarks/results") / f"{name}.json").read_text(encoding="utf-8")) for name in labels]
+    typer.echo(render_markdown(runs))
 
 
 @bench_app.command("download")
@@ -165,10 +309,17 @@ def ingest(
     corpus: str = typer.Option(get_settings().default_corpus_name, "--corpus", help="Nom du corpus cible."),
     description: str | None = typer.Option(None, "--description", help="Description optionnelle du corpus."),
     tags: list[str] | None = typer.Option(None, "--tag", help="Tag a appliquer a tous les documents ingeres."),
+    language: str | None = typer.Option(
+        None,
+        "--language",
+        help="Langue du corpus (fr, pt) pour la recherche lexicale. Defaut: metadata.json du loader, sinon RAGLAB_DEFAULT_LANGUAGE.",
+    ),
 ) -> None:
     with session_scope() as session:
         service = IngestionService(session)
-        summary = service.ingest_folder(folder, corpus_name=corpus, description=description, tags=tags)
+        summary = service.ingest_folder(
+            folder, corpus_name=corpus, description=description, tags=tags, language=language
+        )
     typer.echo(json.dumps({"corpus": corpus, **summary}, indent=2, ensure_ascii=False))
 
 
@@ -235,7 +386,9 @@ def lexml_questions(
         help="llamacpp (serveur compatible OpenAI, demarre si besoin) ou ollama.",
     ),
     model: str | None = typer.Option(None, "--model", help="Modele (defaut: question_model ou generation_model)."),
-    profile: str | None = typer.Option(None, "--profile", help="Profil llama.cpp a demarrer (defaut: question_model_profile)."),
+    profile: str | None = typer.Option(
+        None, "--profile", help="Profil llama.cpp a demarrer (defaut: question_model_profile)."
+    ),
 ) -> None:
     """Generer un jeu de questions typees (paraphrase / reference / entity) sur le corpus LexML."""
     result = generate_questions(
@@ -277,7 +430,7 @@ def lexml_ingest(
 ) -> None:
     with session_scope() as session:
         service = IngestionService(session)
-        summary = service.ingest_folder(folder, corpus_name=corpus, description=description, tags=tags)
+        summary = service.ingest_folder(folder, corpus_name=corpus, description=description, tags=tags, language="pt")
     typer.echo(json.dumps({"corpus": corpus, **summary}, indent=2, ensure_ascii=False))
 
 
@@ -390,6 +543,40 @@ def query(
         "--metadata-eq",
         help="Filtre metadata exact, repetable, au format cle=valeur.",
     ),
+    retrieval_mode: RetrievalMode | None = typer.Option(
+        None,
+        "--retrieval-mode",
+        help="dense (KNN cosinus), lexical (BM25) ou hybrid (fusion RRF). Defaut: RAGLAB_DEFAULT_RETRIEVAL_MODE.",
+    ),
+    lexical_weight: float | None = typer.Option(
+        None,
+        "--lexical-weight",
+        min=0.0,
+        max=1.0,
+        help="Poids du BM25 dans la fusion RRF (0 = dense seul, 1 = BM25 seul). Mode hybrid.",
+    ),
+    rrf_k: int | None = typer.Option(None, "--rrf-k", min=0, help="Constante k de la fusion RRF (defaut 60)."),
+    rerank: bool | None = typer.Option(
+        None,
+        "--rerank/--no-rerank",
+        help="Re-ranking cross-encoder de RAGLAB_RERANK_CANDIDATES candidats (defaut: RAGLAB_DEFAULT_RERANK).",
+    ),
+    citations: bool | None = typer.Option(
+        None,
+        "--citations/--no-citations",
+        help="Reconnaitre les citations juridiques (art. N da Lei X) : restreindre a la loi citee, epingler l'article. Defaut: RAGLAB_CITATION_RESOLVER.",
+    ),
+    stream: bool = typer.Option(
+        False,
+        "--stream",
+        help="Afficher la reponse au fil de la generation sur stderr (comme /api/query/stream) ; "
+        "le JSON final reste sur stdout.",
+    ),
+    llm_model: str | None = typer.Option(
+        None,
+        "--llm-model",
+        help="Modele Ollama pour la generation (defaut : RAGLAB_GENERATION_MODEL).",
+    ),
 ) -> None:
     filters = build_retrieval_filters(
         document_ids=document_ids,
@@ -400,6 +587,29 @@ def query(
     )
     with session_scope() as session:
         service = QueryService(session)
+        if stream and generate:
+            outcome = service.retrieve(
+                question=question,
+                corpus_name=corpus,
+                strategy=strategy,
+                index_run_id=index_run_id,
+                top_k=top_k,
+                filters=filters,
+                retrieval_mode=retrieval_mode,
+                lexical_weight=lexical_weight,
+                rrf_k=rrf_k,
+                rerank=rerank,
+                citations=citations,
+            )
+            final: dict = {}
+            for event, data in service.stream_answer(outcome, llm_model=llm_model):
+                if event == "token":
+                    typer.echo(data["text"], nl=False, err=True)
+                elif event == "done":
+                    final = data
+            typer.echo("", err=True)
+            typer.echo(json.dumps(final, indent=2, ensure_ascii=False))
+            return
         response = service.query(
             question=question,
             corpus_name=corpus,
@@ -408,6 +618,12 @@ def query(
             top_k=top_k,
             generate_answer=generate,
             filters=filters,
+            retrieval_mode=retrieval_mode,
+            lexical_weight=lexical_weight,
+            rrf_k=rrf_k,
+            rerank=rerank,
+            citations=citations,
+            llm_model=llm_model,
         )
     typer.echo(response.model_dump_json(indent=2))
 
@@ -442,6 +658,35 @@ def experiment_run(
     typer.echo(json.dumps(result, indent=2, ensure_ascii=False))
 
 
+@experiment_app.command("calibrate-judges")
+def experiment_calibrate_judges(
+    ground_truth: Path = typer.Option(Path("benchmarks/piaf/ground_truth.jsonl"), "--ground-truth"),
+    corpus_dir: Path = typer.Option(get_settings().data_dir / "benchmarks" / "piaf" / "corpus", "--corpus-dir"),
+    count: int = typer.Option(30, "--count", min=1, help="Nombre de paragraphes (5 reponses a juger par paragraphe)."),
+    seed: int = typer.Option(7, "--seed"),
+    output: Path | None = typer.Option(None, "--output", help="Ecrire le rapport JSON ici."),
+) -> None:
+    """Mesurer si les juges RAGAS distinguent bonnes et mauvaises reponses (qwen2.5 via Ollama vs Gemma via llama.cpp)."""
+    from raglab.experiments.judge_calibration import calibrate
+
+    report = calibrate(
+        ground_truth_path=ground_truth,
+        corpus_dir=corpus_dir,
+        judges=[JudgeConfig(backend="ollama"), JudgeConfig(backend="llamacpp")],
+        count=count,
+        seed=seed,
+    )
+    text = json.dumps(report, indent=2, ensure_ascii=False)
+    if output:
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(text, encoding="utf-8")
+    typer.echo(
+        json.dumps(
+            [{k: v for k, v in r.items() if k != "rows"} for r in report["results"]], indent=2, ensure_ascii=False
+        )
+    )
+
+
 @experiment_app.command("recall")
 def experiment_recall(
     corpus: str = typer.Option(..., "--corpus", help="Corpus a evaluer."),
@@ -459,6 +704,39 @@ def experiment_recall(
         help="Dossier LexML utilise pour generer le dataset Recall par defaut.",
     ),
     case_limit: int = typer.Option(10, "--case-limit", min=1, help="Nombre max de cas si generation auto."),
+    ragas: bool = typer.Option(
+        False, "--ragas", help="Generer les reponses et les noter (faithfulness, relevancy, correctness)."
+    ),
+    ragas_limit: int | None = typer.Option(None, "--ragas-limit", min=1, help="Noter seulement les N premiers cas."),
+    judge_backend: str = typer.Option(
+        "llamacpp",
+        "--judge-backend",
+        help="llamacpp (juge independant, demarre si besoin) ou ollama (le generateur se note lui-meme).",
+    ),
+    judge_model: str | None = typer.Option(None, "--judge-model", help="Modele juge (defaut: judge_model)."),
+    retrieval_mode: RetrievalMode | None = typer.Option(
+        None,
+        "--retrieval-mode",
+        help="dense (KNN cosinus), lexical (BM25) ou hybrid (fusion RRF). Defaut: RAGLAB_DEFAULT_RETRIEVAL_MODE.",
+    ),
+    lexical_weight: float | None = typer.Option(
+        None,
+        "--lexical-weight",
+        min=0.0,
+        max=1.0,
+        help="Poids du BM25 dans la fusion RRF (0 = dense seul, 1 = BM25 seul). Mode hybrid.",
+    ),
+    rrf_k: int | None = typer.Option(None, "--rrf-k", min=0, help="Constante k de la fusion RRF (defaut 60)."),
+    rerank: bool | None = typer.Option(
+        None,
+        "--rerank/--no-rerank",
+        help="Re-ranking cross-encoder des candidats (defaut: RAGLAB_DEFAULT_RERANK).",
+    ),
+    citations: bool | None = typer.Option(
+        None,
+        "--citations/--no-citations",
+        help="Reconnaitre les citations juridiques (art. N da Lei X) : restreindre a la loi citee, epingler l'article. Defaut: RAGLAB_CITATION_RESOLVER.",
+    ),
 ) -> None:
     with session_scope() as session:
         service = RecallBenchmarkService(session)
@@ -468,6 +746,14 @@ def experiment_recall(
             dataset_path=dataset_path,
             lexml_documents_dir=lexml_documents_dir,
             case_limit=case_limit,
+            retrieval_mode=retrieval_mode,
+            lexical_weight=lexical_weight,
+            rrf_k=rrf_k,
+            rerank=rerank,
+            citations=citations,
+            compute_ragas=ragas,
+            ragas_case_limit=ragas_limit,
+            judge=JudgeConfig(backend=judge_backend, model=judge_model),
         )
     typer.echo(json.dumps(result, indent=2, ensure_ascii=False))
 

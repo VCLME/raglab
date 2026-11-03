@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=69", "wheel"]
+requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -7,8 +7,10 @@ name = "raglab"
 version = "0.1.0"
 description = "RAG local orienté expérimentation avec PostgreSQL, pgvector et Ollama."
 readme = "README.md"
+license = "MIT"
 requires-python = ">=3.12"
 dependencies = [
+  "alembic>=1.13.0",
   "datasets>=2.20.0",
   "fastapi>=0.115.0",
   "neo4j>=5.20.0",
@@ -30,7 +32,9 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
   "httpx>=0.27.0",
+  "mypy>=2.4,<3",
   "pytest>=8.3.0",
+  "ruff>=0.17,<0.18",  # minor pinned: format output changes between minors
 ]
 graph = [
   "spacy>=3.7.0",
@@ -45,6 +49,40 @@ package-dir = {"" = "src"}
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+"raglab.db" = ["migrations/*.py", "migrations/*.mako", "migrations/versions/*.py"]
+
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+# Long string literals (fixtures, help texts) are left as they are; the
+# formatter keeps code lines within line-length.
+ignore = ["E501"]
+
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI and Typer declare parameters through calls in defaults by design.
+# get_settings() is lru_cached and feeds the CLI --help defaults.
+extend-immutable-calls = [
+  "fastapi.Depends",
+  "typer.Argument",
+  "typer.Option",
+  "raglab.config.get_settings",
+]
+
+[tool.mypy]
+python_version = "3.12"
+files = ["src"]
+# Lenient start: default (non-strict) checks, untyped defs are not checked.
+
+# `datasets` ships no type information.
+[[tool.mypy.overrides]]
+module = ["datasets", "datasets.*"]
+ignore_missing_imports = true

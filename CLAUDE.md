@@ -21,7 +21,14 @@ If a tool or template adds one automatically, strip it before submitting.
 ## Tone
 
 French for user-facing copy (UI labels, i18n French locale). English for
-commit messages, PR bodies, code comments, and test names. Keep commit
+commit messages, PR bodies, code comments, and test names.
+
+`README.md` and the GitHub Pages site (`site/`) are in English: they are the
+public, landing-page face of the project. Detailed documentation (`docs/`,
+including `docs/benchmarks/` and the LaTeX report) stays in French. The README
+results table and the site's numbers are generated from
+`benchmarks/results/*.json` by `python scripts/build_site.py --readme`: never
+type a number in by hand, and map new run labels in `site/stages.json`. Keep commit
 subjects in the imperative and under ~72 characters; PR bodies may use a
 Summary / Test plan structure.
 
@@ -55,3 +62,19 @@ Rules for that work:
   starts/stops llama-server via `RAGLAB_LLAMACPP_START_COMMAND` /
   `RAGLAB_LLAMACPP_STOP_COMMAND`; the owner does not want to start servers by
   hand.
+
+## API conventions (phase 9.5)
+
+- Keep `POST /api/query` backward compatible; streaming lives in
+  `POST /api/query/stream` (SSE: `retrieval`, `token`, `done` | `error`).
+- Map failures through `src/raglab/api/errors.py` (`describe_error`), used by
+  both the exception handlers and the SSE `error` event. Ollama failures are
+  typed in `src/raglab/ollama/errors.py`; a timeout must name its stage
+  (`embed`, `retrieval`, `generation`).
+- Limits and budgets are settings (`RAGLAB_*_TIMEOUT_SECONDS`,
+  `RAGLAB_API_RATE_LIMIT_*`), never constants in routes. `RAGLAB_API_KEY`
+  empty means auth off; never log the key.
+- Middlewares are plain ASGI (no `BaseHTTPMiddleware`): it must not buffer
+  streamed responses. Log through `log_event` so lines carry `request_id`.
+- `/health` touches no dependency; `/ready` checks Postgres + Ollama + the
+  default model; `/api/health` stays for the Dashboard.

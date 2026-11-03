@@ -1,20 +1,32 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ApiError, extractErrorDetail, get, post } from "../api/client";
+import { ApiError, extractErrorDetail, get, queryWithStreaming } from "../api/client";
 import type {
   CorpusSummary,
   IndexRunSummary,
   OllamaModelsResponse,
-  QueryResponse,
   RetrievedChunk,
 } from "../api/types";
 import { ChunkCard } from "../components/ChunkCard";
 import { Citation } from "../components/Citation";
 import { SendIcon } from "../components/Icon";
 import { SourceList } from "../components/SourcePill";
+import { PipelineDiagram } from "../components/PipelineDiagram";
 import { SuggestionChips } from "../components/SuggestionChips";
+import {
+  StageScheduler,
+  applyPlan,
+  applyStage,
+  failPipeline,
+  finishPipeline,
+  idlePipeline,
+  prefersReducedMotion,
+  startPipeline,
+  type PipelineState,
+} from "../edu/pipeline";
 import { useApiAction, useApiLoad } from "../hooks/useApi";
 import { useConfig } from "../hooks/useConfig";
+import { useEducationalMode } from "../hooks/useEducationalMode";
 
 interface ChatTurn {
   id: string;
@@ -24,7 +36,12 @@ interface ChatTurn {
   index_run_id: string | null;
   strategy: string | null;
   elapsed_ms: number | null;
+  // Time from the start of generation to the first streamed token.
+  first_token_ms?: number | null;
+  streaming?: boolean;
   error?: { message: string; detail: string | null };
+  // Stage-by-stage view of the request, drawn by the educational mode.
+  pipeline?: PipelineState;
 }
 
 function newTurnId(): string {
@@ -48,6 +65,9 @@ function formatRunLabel(run: IndexRunSummary): string {
   const parts = [run.strategy, run.embedding_model_name ?? "—", shortDate(run.started_at)];
   return parts.join(" · ");
 }
+
+// Pause before closing each replayed stage, so the diagram can be followed.
+const REPLAY_STEP_MS = 280;
 
 const CITATION_REGEX = /\[(?:Rank|rank|Source\s+rank\s*=)\s*(\d+)\]/g;
 const TRAILING_SOURCES_REGEX = /\n+\s*Sources?\s*:[\s\S]*$/i;
@@ -118,6 +138,9 @@ export function Chat() {
   const [highlight, setHighlight] = useState<Record<string, string | null>>({});
 
   const streamRef = useRef<HTMLDivElement | null>(null);
+  const [educational] = useEducationalMode();
+  const [diagramOpen, setDiagramOpen] = useState(true);
+  const schedulerRef = useRef<StageScheduler | null>(null);
 
   useEffect(() => {
     if (!corpus && corpora.data && corpora.data.length > 0) {
@@ -142,9 +165,7 @@ export function Chat() {
   const resolvedRun =
     runsForCorpus.find((r) => r.id === indexRunId) ?? runsForCorpus[0] ?? null;
 
-  const action = useApiAction((body: unknown) =>
-    post<QueryResponse>("/api/query", body)
-  );
+  const action = useApiAction(queryWithStreaming);
 
   const suggestionsLoad = useApiLoad<string[]>(
     () =>
@@ -169,6 +190,7 @@ export function Chat() {
         index_run_id: null,
         strategy: null,
         elapsed_ms: null,
+        pipeline: startPipeline(),
       },
     ]);
     setQuestion("");
@@ -181,22 +203,40 @@ export function Chat() {
       generate: true,
     };
     if (llmModel) body.llm_model = llmModel;
+    const patchTurn = (update: (tn: ChatTurn) => Partial<ChatTurn>) =>
+      setTurns((prev) => prev.map((tn) => (tn.id === id ? { ...tn, ...update(tn) } : tn)));
+    // Stage events go through a queue so replayed stages light up one by one;
+    // the answer itself is never held back.
+    schedulerRef.current?.cancel();
+    const scheduler = new StageScheduler(prefersReducedMotion() ? 0 : REPLAY_STEP_MS);
+    schedulerRef.current = scheduler;
+    const patchPipeline = (update: (state: PipelineState) => PipelineState) =>
+      patchTurn((tn) => ({ pipeline: update(tn.pipeline ?? startPipeline()) }));
     try {
-      const result = await action.run(body);
-      setTurns((prev) =>
-        prev.map((tn) =>
-          tn.id === id
-            ? {
-                ...tn,
-                answer: result.answer ?? t("chat.no_answer_generated"),
-                chunks: result.retrieved_chunks,
-                index_run_id: result.index_run_id,
-                strategy: result.strategy,
-                elapsed_ms: result.elapsed_ms,
-              }
-            : tn
-        )
-      );
+      // Sources show up as soon as retrieval is done, then the answer grows
+      // token by token (falls back to a single response without streaming).
+      const result = await action.run(body, {
+        onRetrieval: (partial) =>
+          patchTurn(() => ({
+            chunks: partial.retrieved_chunks,
+            index_run_id: partial.index_run_id,
+            strategy: partial.strategy,
+          })),
+        onToken: (text) =>
+          patchTurn((tn) => ({ answer: (tn.answer ?? "") + text, streaming: true })),
+        onPipeline: (stages) => scheduler.push(() => patchPipeline((state) => applyPlan(state, stages))),
+        onStage: (event) => scheduler.push(() => patchPipeline((state) => applyStage(state, event)), event),
+      });
+      scheduler.push(() => patchPipeline((state) => finishPipeline(state, result)));
+      patchTurn(() => ({
+        answer: result.answer ?? t("chat.no_answer_generated"),
+        chunks: result.retrieved_chunks,
+        index_run_id: result.index_run_id,
+        strategy: result.strategy,
+        elapsed_ms: result.elapsed_ms,
+        first_token_ms: result.first_token_ms ?? null,
+        streaming: false,
+      }));
     } catch (e) {
       const message =
         e instanceof ApiError
@@ -205,9 +245,9 @@ export function Chat() {
           ? e.message
           : "Erreur inconnue";
       const detail = e instanceof ApiError ? extractErrorDetail(e) : null;
-      setTurns((prev) =>
-        prev.map((tn) => (tn.id === id ? { ...tn, error: { message, detail } } : tn))
-      );
+      // A partial streamed answer stays visible above the error.
+      patchTurn(() => ({ streaming: false, error: { message, detail } }));
+      scheduler.push(() => patchPipeline(failPipeline));
     }
   };
 
@@ -217,7 +257,10 @@ export function Chat() {
     }
   }, [turns]);
 
+  useEffect(() => () => schedulerRef.current?.cancel(), []);
+
   const reset = () => {
+    schedulerRef.current?.cancel();
     setTurns([]);
     setExpanded({});
     setHighlight({});
@@ -237,8 +280,10 @@ export function Chat() {
 
   const empty = turns.length === 0;
   const noRuns = !indexRuns.loading && runsForCorpus.length === 0;
+  const lastTurn = turns[turns.length - 1];
+  const lastPipeline = lastTurn?.pipeline ?? idlePipeline();
 
-  return (
+  const page = (
     <div className="chat-page">
       <div className="settings-bar">
         <div className="compact-field">
@@ -366,6 +411,23 @@ export function Chat() {
       </div>
     </div>
   );
+
+  if (!educational) return page;
+  return (
+    <div className="edu-layout">
+      {page}
+      <aside className={`edu-aside${diagramOpen ? "" : " collapsed"}`} aria-label={t("edu.title")}>
+        <button
+          className="ghost sm edu-collapse"
+          aria-expanded={diagramOpen}
+          onClick={() => setDiagramOpen((open) => !open)}
+        >
+          {diagramOpen ? t("edu.hide") : t("edu.show")}
+        </button>
+        {diagramOpen ? <PipelineDiagram key={lastTurn?.id ?? "idle"} state={lastPipeline} /> : null}
+      </aside>
+    </div>
+  );
 }
 
 interface TurnProps {
@@ -396,7 +458,7 @@ function ChatTurnView({
         {turn.question}
       </div>
 
-      {turn.answer === null && !turn.error ? (
+      {(turn.answer === null || turn.answer === "") && !turn.error ? (
         <div className="inline-status" role="status">
           <span className="dots">
             <span />
@@ -427,11 +489,12 @@ function ChatTurnView({
         </>
       ) : null}
 
-      {turn.answer !== null ? (
-        <div className="bubble assistant">
+      {turn.answer ? (
+        <div className="bubble assistant" aria-busy={turn.streaming ? true : undefined}>
           <div className="role">{t("chat.assistant_role")}</div>
           <div style={{ whiteSpace: "pre-wrap" }}>
             {renderAnswer(turn.answer, turn.chunks, highlight, onSelectSource)}
+            {turn.streaming ? <span className="stream-caret" aria-hidden="true" /> : null}
           </div>
           {turn.chunks.length > 0 ? (
             <div className="sources">
@@ -476,6 +539,11 @@ function ChatTurnView({
               <span title={turn.index_run_id}>
                 {t("chat.meta_index_run")}{" "}
                 <code>{turn.index_run_id.slice(0, 8)}</code>
+              </span>
+            ) : null}
+            {turn.first_token_ms != null ? (
+              <span title={t("chat.meta_first_token_title")}>
+                {t("chat.meta_first_token", { ms: turn.first_token_ms.toFixed(0) })}
               </span>
             ) : null}
             {turn.elapsed_ms != null ? (

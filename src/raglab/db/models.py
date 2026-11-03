@@ -4,8 +4,19 @@ from datetime import datetime
 from uuid import uuid4
 
 from pgvector.sqlalchemy import VECTOR
-from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint, func
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy import (
+    ARRAY,
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+    func,
+)
+from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from raglab.db.base import Base
@@ -32,16 +43,17 @@ class Corpus(TimestampMixin, Base):
     name: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     root_path: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # ISO 639-1 code ("fr", "pt") picking the text-search config for lexical
+    # search when a document's metadata does not carry its own language.
+    language: Mapped[str | None] = mapped_column(String(8), nullable=True)
 
-    documents: Mapped[list["Document"]] = relationship(back_populates="corpus")
-    index_runs: Mapped[list["IndexRun"]] = relationship(back_populates="corpus")
+    documents: Mapped[list[Document]] = relationship(back_populates="corpus")
+    index_runs: Mapped[list[IndexRun]] = relationship(back_populates="corpus")
 
 
 class Document(TimestampMixin, Base):
     __tablename__ = "documents"
-    __table_args__ = (
-        UniqueConstraint("corpus_id", "source_path", name="uq_documents_corpus_source_path"),
-    )
+    __table_args__ = (UniqueConstraint("corpus_id", "source_path", name="uq_documents_corpus_source_path"),)
 
     id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid4()))
     corpus_id: Mapped[str] = mapped_column(ForeignKey("corpora.id", ondelete="CASCADE"), nullable=False)
@@ -54,8 +66,8 @@ class Document(TimestampMixin, Base):
     char_count: Mapped[int] = mapped_column(Integer, nullable=False)
     metadata_json: Mapped[dict] = mapped_column(JSONB, default=dict, nullable=False)
 
-    corpus: Mapped["Corpus"] = relationship(back_populates="documents")
-    chunks: Mapped[list["Chunk"]] = relationship(back_populates="document")
+    corpus: Mapped[Corpus] = relationship(back_populates="documents")
+    chunks: Mapped[list[Chunk]] = relationship(back_populates="document")
 
 
 class EmbeddingSpace(TimestampMixin, Base):
@@ -71,8 +83,8 @@ class EmbeddingSpace(TimestampMixin, Base):
     passage_prefix: Mapped[str] = mapped_column(String(64), nullable=False)
     is_default: Mapped[bool] = mapped_column(default=False, nullable=False)
 
-    index_runs: Mapped[list["IndexRun"]] = relationship(back_populates="embedding_space")
-    chunk_embeddings: Mapped[list["ChunkEmbedding"]] = relationship(back_populates="embedding_space")
+    index_runs: Mapped[list[IndexRun]] = relationship(back_populates="embedding_space")
+    chunk_embeddings: Mapped[list[ChunkEmbedding]] = relationship(back_populates="embedding_space")
 
 
 class IndexRun(Base):
@@ -95,10 +107,10 @@ class IndexRun(Base):
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
-    corpus: Mapped["Corpus"] = relationship(back_populates="index_runs")
-    embedding_space: Mapped["EmbeddingSpace"] = relationship(back_populates="index_runs")
-    chunks: Mapped[list["Chunk"]] = relationship(back_populates="index_run")
-    experiment_results: Mapped[list["ExperimentResult"]] = relationship(back_populates="index_run")
+    corpus: Mapped[Corpus] = relationship(back_populates="index_runs")
+    embedding_space: Mapped[EmbeddingSpace] = relationship(back_populates="index_runs")
+    chunks: Mapped[list[Chunk]] = relationship(back_populates="index_run")
+    experiment_results: Mapped[list[ExperimentResult]] = relationship(back_populates="index_run")
 
 
 class Chunk(TimestampMixin, Base):
@@ -116,17 +128,19 @@ class Chunk(TimestampMixin, Base):
     char_end: Mapped[int] = mapped_column(Integer, nullable=False)
     token_estimate: Mapped[int] = mapped_column(Integer, nullable=False)
     metadata_json: Mapped[dict] = mapped_column(JSONB, default=dict, nullable=False)
+    # Filled by raglab.db.lexical.refresh_lexical_index once the run's chunks
+    # are written; lexical_length is the token count (|d| in BM25).
+    lexical_tsv: Mapped[str | None] = mapped_column(TSVECTOR, nullable=True, deferred=True)
+    lexical_length: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
-    index_run: Mapped["IndexRun"] = relationship(back_populates="chunks")
-    document: Mapped["Document"] = relationship(back_populates="chunks")
-    embedding_records: Mapped[list["ChunkEmbedding"]] = relationship(back_populates="chunk")
+    index_run: Mapped[IndexRun] = relationship(back_populates="chunks")
+    document: Mapped[Document] = relationship(back_populates="chunks")
+    embedding_records: Mapped[list[ChunkEmbedding]] = relationship(back_populates="chunk")
 
 
 class ChunkEmbedding(Base):
     __tablename__ = "chunk_embeddings"
-    __table_args__ = (
-        UniqueConstraint("chunk_id", "embedding_space_id", name="uq_chunk_embeddings_chunk_space"),
-    )
+    __table_args__ = (UniqueConstraint("chunk_id", "embedding_space_id", name="uq_chunk_embeddings_chunk_space"),)
 
     id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid4()))
     chunk_id: Mapped[str] = mapped_column(ForeignKey("chunks.id", ondelete="CASCADE"), nullable=False)
@@ -137,8 +151,8 @@ class ChunkEmbedding(Base):
     embedding: Mapped[list[float]] = mapped_column(VECTOR(), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
-    chunk: Mapped["Chunk"] = relationship(back_populates="embedding_records")
-    embedding_space: Mapped["EmbeddingSpace"] = relationship(back_populates="chunk_embeddings")
+    chunk: Mapped[Chunk] = relationship(back_populates="embedding_records")
+    embedding_space: Mapped[EmbeddingSpace] = relationship(back_populates="chunk_embeddings")
 
 
 class ExperimentRun(Base):
@@ -153,7 +167,7 @@ class ExperimentRun(Base):
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
-    results: Mapped[list["ExperimentResult"]] = relationship(
+    results: Mapped[list[ExperimentResult]] = relationship(
         back_populates="experiment_run",
         cascade="all, delete-orphan",
         passive_deletes=True,
@@ -176,14 +190,43 @@ class ExperimentResult(Base):
     metrics_json: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
-    experiment_run: Mapped["ExperimentRun"] = relationship(back_populates="results")
-    index_run: Mapped["IndexRun"] = relationship(back_populates="experiment_results")
+    experiment_run: Mapped[ExperimentRun] = relationship(back_populates="results")
+    index_run: Mapped[IndexRun] = relationship(back_populates="experiment_results")
+
+
+class LexicalIndexStats(Base):
+    """Per index run BM25 collection statistics (N, avgdl, configs used)."""
+
+    __tablename__ = "lexical_index_stats"
+
+    index_run_id: Mapped[str] = mapped_column(
+        ForeignKey("index_runs.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    doc_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    avg_length: Mapped[float] = mapped_column(Float, nullable=False)
+    ts_configs: Mapped[list[str]] = mapped_column(ARRAY(Text), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+
+class LexicalTermStats(Base):
+    """Document frequency of each lexeme within an index run (BM25 IDF)."""
+
+    __tablename__ = "lexical_term_stats"
+
+    index_run_id: Mapped[str] = mapped_column(
+        ForeignKey("index_runs.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    lexeme: Mapped[str] = mapped_column(Text, primary_key=True)
+    doc_freq: Mapped[int] = mapped_column(Integer, nullable=False)
 
 
 Index("ix_documents_corpus_id", Document.corpus_id)
 Index("ix_chunks_index_run_id", Chunk.index_run_id)
 Index("ix_chunks_document_id", Chunk.document_id)
 Index("ix_chunk_embeddings_embedding_space_id", ChunkEmbedding.embedding_space_id)
+Index("ix_chunks_lexical_tsv", Chunk.lexical_tsv, postgresql_using="gin")
 
 # HNSW indexes on chunk_embeddings.embedding are partial, one per embedding
 # dimension encountered at indexing time, created on demand via

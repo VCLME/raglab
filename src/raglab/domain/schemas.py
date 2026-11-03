@@ -5,7 +5,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from raglab.domain.enums import ChunkingStrategy
+from raglab.domain.enums import ChunkingStrategy, RetrievalMode
 
 
 class DocumentPayload(BaseModel):
@@ -43,6 +43,23 @@ class RetrievedChunk(BaseModel):
     # because the graph store does not return them.
     char_start: int | None = None
     char_end: int | None = None
+    # Intermediate scores of hybrid retrieval. `score` / `rank` above are
+    # those of the requested mode (cosine similarity, BM25 or fused RRF);
+    # these keep each retriever's own view of the chunk. None when the
+    # retriever did not run or did not return the chunk in its candidates.
+    dense_score: float | None = None
+    dense_rank: int | None = None
+    lexical_score: float | None = None
+    lexical_rank: int | None = None
+    fused_score: float | None = None
+    fused_rank: int | None = None
+    # Cross-encoder re-ranking (rerank=true). `score` / `rank` above are then
+    # these; the first-stage view stays in the fields above.
+    rerank_score: float | None = None
+    rerank_rank: int | None = None
+    # True when the chunk was pinned because the question cites its law and
+    # article (see raglab.retrieval.citations).
+    citation_match: bool | None = None
 
 
 class RetrievalFilters(BaseModel):
@@ -54,11 +71,7 @@ class RetrievalFilters(BaseModel):
 
     def is_empty(self) -> bool:
         return not (
-            self.document_ids
-            or self.file_names
-            or self.source_path_contains
-            or self.tags
-            or self.metadata_equals
+            self.document_ids or self.file_names or self.source_path_contains or self.tags or self.metadata_equals
         )
 
 
@@ -67,9 +80,25 @@ class QueryResponse(BaseModel):
     index_run_id: str
     strategy: ChunkingStrategy
     retrieved_chunks: list[RetrievedChunk]
+    retrieval_mode: RetrievalMode = RetrievalMode.DENSE
+    # Legal citation parsed from the question when the citations option is
+    # on: label, law_number, article, law_found, article_found.
+    citation: dict[str, Any] | None = None
+    # Lexemes the question was reduced to for BM25 (lexical / hybrid modes).
+    query_lexemes: list[str] = Field(default_factory=list)
+    rerank: bool = False
+    # Re-ranking counters for this request: candidates, pairs actually
+    # scored, score-cache hits and hit rates (this request / since start).
+    rerank_stats: dict[str, float] = Field(default_factory=dict)
+    # Set when re-ranking could not use a GPU: "skipped_no_gpu" or "cpu".
+    rerank_notice: str | None = None
     filters: RetrievalFilters | None = None
     answer: str | None = None
     elapsed_ms: float = 0.0
+    # Wall-clock time per pipeline stage: embed, retrieval, generation.
+    timings_ms: dict[str, float] = Field(default_factory=dict)
+    # Generator counters when available (tokens, tokens per second).
+    generation_stats: dict[str, float] = Field(default_factory=dict)
 
 
 class ExperimentCase(BaseModel):

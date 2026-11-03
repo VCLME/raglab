@@ -20,13 +20,13 @@ def test_lexml_load_service_orchestrates_collection_ingestion_and_indexing(tmp_p
         "new_chunks": 12,
     }
 
-    with patch("raglab.lexml.load.getDataFromLexML", return_value={"status": "completed"}) as get_data, patch(
-        "raglab.lexml.load.initialize_database"
-    ) as initialize_database, patch("raglab.lexml.load.session_scope") as session_scope, patch(
-        "raglab.lexml.load.IngestionService"
-    ) as ingestion_service_cls, patch(
-        "raglab.lexml.load.IndexingService"
-    ) as indexing_service_cls:
+    with (
+        patch("raglab.lexml.load.getDataFromLexML", return_value={"status": "completed"}) as get_data,
+        patch("raglab.lexml.load.initialize_database") as initialize_database,
+        patch("raglab.lexml.load.session_scope") as session_scope,
+        patch("raglab.lexml.load.IngestionService") as ingestion_service_cls,
+        patch("raglab.lexml.load.IndexingService") as indexing_service_cls,
+    ):
         ingestion_session = Mock()
         indexing_session = Mock()
         session_scope.side_effect = [

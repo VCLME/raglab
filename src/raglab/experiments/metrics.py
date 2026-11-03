@@ -1,12 +1,9 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import TypeVar
-
-T = TypeVar("T")
 
 
-def relevance_flags(items: list[T], *, is_relevant: Callable[[T], bool]) -> list[bool]:
+def relevance_flags[T](items: list[T], *, is_relevant: Callable[[T], bool]) -> list[bool]:
     return [bool(is_relevant(item)) for item in items]
 
 
@@ -34,4 +31,3 @@ def precision_at_k(flags: list[bool], k: int) -> float:
     if k < 1:
         raise ValueError("k doit etre >= 1")
     return sum(flags[:k]) / k
-

@@ -22,9 +22,7 @@ class StubQueryService:
 
 
 def _response(chunks):
-    return SimpleNamespace(
-        retrieved_chunks=chunks, index_run_id="stub-index-run-id", answer=None
-    )
+    return SimpleNamespace(retrieved_chunks=chunks, index_run_id="stub-index-run-id", answer=None)
 
 
 def _write_lexml_sidecar(base_dir: Path, stem: str, *, title: str, urn: str, summary: str) -> None:
@@ -62,55 +60,59 @@ def test_recall_benchmark_generates_cases_and_metrics(tmp_path: Path):
     service = RecallBenchmarkService(session=session)
     service.query_service = StubQueryService(
         [
-            _response([
-                RetrievedChunk(
-                    chunk_id="c1",
-                    document_id="d1",
-                    file_name="doc1.txt",
-                    source_path="doc1.txt",
-                    chunk_text="URN: urn:lex:br:federal:lei:1990-09-11;8078",
-                    score=0.9,
-                    rank=1,
-                ),
-                RetrievedChunk(
-                    chunk_id="c2",
-                    document_id="d2",
-                    file_name="other.txt",
-                    source_path="other.txt",
-                    chunk_text="other",
-                    score=0.2,
-                    rank=2,
-                ),
-            ]),
-            _response([
-                RetrievedChunk(
-                    chunk_id="c3",
-                    document_id="d3",
-                    file_name="other.txt",
-                    source_path="other.txt",
-                    chunk_text="other",
-                    score=0.7,
-                    rank=1,
-                ),
-                RetrievedChunk(
-                    chunk_id="c4",
-                    document_id="d4",
-                    file_name="doc2.txt",
-                    source_path="doc2.txt",
-                    chunk_text="URN: urn:lex:br:federal:lei:2006-08-07;11340",
-                    score=0.6,
-                    rank=2,
-                ),
-            ]),
+            _response(
+                [
+                    RetrievedChunk(
+                        chunk_id="c1",
+                        document_id="d1",
+                        file_name="doc1.txt",
+                        source_path="doc1.txt",
+                        chunk_text="URN: urn:lex:br:federal:lei:1990-09-11;8078",
+                        score=0.9,
+                        rank=1,
+                    ),
+                    RetrievedChunk(
+                        chunk_id="c2",
+                        document_id="d2",
+                        file_name="other.txt",
+                        source_path="other.txt",
+                        chunk_text="other",
+                        score=0.2,
+                        rank=2,
+                    ),
+                ]
+            ),
+            _response(
+                [
+                    RetrievedChunk(
+                        chunk_id="c3",
+                        document_id="d3",
+                        file_name="other.txt",
+                        source_path="other.txt",
+                        chunk_text="other",
+                        score=0.7,
+                        rank=1,
+                    ),
+                    RetrievedChunk(
+                        chunk_id="c4",
+                        document_id="d4",
+                        file_name="doc2.txt",
+                        source_path="doc2.txt",
+                        chunk_text="URN: urn:lex:br:federal:lei:2006-08-07;11340",
+                        score=0.6,
+                        rank=2,
+                    ),
+                ]
+            ),
         ]
     )
 
     experiment_run = SimpleNamespace(id="run-test", config_json={})
-    with patch("raglab.experiments.recall.create_experiment_run", return_value=experiment_run) as create_run, patch(
-        "raglab.experiments.recall.store_experiment_result"
-    ) as store_result, patch(
-        "raglab.experiments.recall.complete_experiment_run"
-    ) as complete_run:
+    with (
+        patch("raglab.experiments.recall.create_experiment_run", return_value=experiment_run) as create_run,
+        patch("raglab.experiments.recall.store_experiment_result") as store_result,
+        patch("raglab.experiments.recall.complete_experiment_run") as complete_run,
+    ):
         result = service.run(
             corpus_name="lexml",
             strategy=ChunkingStrategy.TRADITIONAL,
@@ -158,28 +160,31 @@ def test_recall_benchmark_rejects_unknown_backend():
         RecallBenchmarkService(session=session, backend="weaviate")
 
 
+@patch("raglab.experiments.recall.AnswerRelevancyJudge")
 @patch("raglab.experiments.recall.AnswerCorrectnessJudge")
 @patch("raglab.experiments.recall.FaithfulnessJudge")
-def test_recall_benchmark_runs_ragas_judges_when_requested(
-    faith_cls, corr_cls, tmp_path: Path
-):
+def test_recall_benchmark_runs_ragas_judges_when_requested(faith_cls, corr_cls, relevancy_cls, tmp_path: Path):
     # Minimal dataset with two cases, one case has a ground_truth_answer
     # and one does not — answer_correctness should skip the latter
     # without erroring.
     ds = tmp_path / "gt.jsonl"
     ds.write_text(
-        json.dumps({
-            "id": "c1",
-            "question": "Where was Böhme born?",
-            "expected_file_names": ["böhme.txt"],
-            "ground_truth_answer": "Görlitz",
-        })
+        json.dumps(
+            {
+                "id": "c1",
+                "question": "Where was Böhme born?",
+                "expected_file_names": ["böhme.txt"],
+                "ground_truth_answer": "Görlitz",
+            }
+        )
         + "\n"
-        + json.dumps({
-            "id": "c2",
-            "question": "When did he die?",
-            "expected_file_names": ["böhme.txt"],
-        })
+        + json.dumps(
+            {
+                "id": "c2",
+                "question": "When did he die?",
+                "expected_file_names": ["böhme.txt"],
+            }
+        )
         + "\n",
         encoding="utf-8",
     )
@@ -190,6 +195,9 @@ def test_recall_benchmark_runs_ragas_judges_when_requested(
     corr = MagicMock()
     corr.score.return_value = SimpleNamespace(score=0.8, reason="match")
     corr_cls.return_value = corr
+    relevancy = MagicMock()
+    relevancy.score.return_value = SimpleNamespace(score=1.0, reason="on topic")
+    relevancy_cls.return_value = relevancy
 
     session = MagicMock()
     service = RecallBenchmarkService(session=session)
@@ -229,10 +237,10 @@ def test_recall_benchmark_runs_ragas_judges_when_requested(
     )
 
     experiment_run = SimpleNamespace(id="run-1", config_json={})
-    with patch(
-        "raglab.experiments.recall.create_experiment_run", return_value=experiment_run
-    ), patch("raglab.experiments.recall.store_experiment_result"), patch(
-        "raglab.experiments.recall.complete_experiment_run"
+    with (
+        patch("raglab.experiments.recall.create_experiment_run", return_value=experiment_run),
+        patch("raglab.experiments.recall.store_experiment_result"),
+        patch("raglab.experiments.recall.complete_experiment_run"),
     ):
         result = service.run(
             corpus_name="demo",
@@ -254,3 +262,155 @@ def test_recall_benchmark_runs_ragas_judges_when_requested(
     assert result["details"][0]["metrics"]["faithfulness"] == 0.9
     assert result["details"][0]["metrics"]["answer_correctness"] == 0.8
     assert "answer_correctness" not in result["details"][1]["metrics"]
+    assert result["summary"]["answer_relevancy_mean"] == 1.0
+    assert result["summary"]["answer_relevancy_judged"] == 2
+
+
+def test_latency_summary_reports_nearest_rank_percentiles():
+    from raglab.experiments.recall import _latency_summary
+
+    details = [{"timings_ms": {"embed": float(i), "retrieval": 10.0}, "generation_stats": {}} for i in range(1, 21)]
+    summary = _latency_summary(details)
+    assert summary["latency_embed_p50_ms"] == 10.0
+    assert summary["latency_embed_p95_ms"] == 19.0
+    assert summary["latency_query_p95_ms"] == 29.0  # embed + retrieval
+
+
+@patch("raglab.experiments.recall.LocalLLMServer")
+@patch("raglab.experiments.recall.AnswerRelevancyJudge")
+@patch("raglab.experiments.recall.AnswerCorrectnessJudge")
+@patch("raglab.experiments.recall.FaithfulnessJudge")
+def test_llamacpp_judge_grades_in_a_second_pass_inside_the_server(
+    faith_cls, corr_cls, relevancy_cls, server_cls, tmp_path: Path
+):
+    from raglab.experiments.ragas import JudgeConfig
+
+    ds = tmp_path / "gt.jsonl"
+    ds.write_text(
+        "".join(
+            json.dumps({"id": f"c{i}", "question": "Q?", "expected_file_names": ["a.txt"]}) + "\n" for i in range(3)
+        ),
+        encoding="utf-8",
+    )
+    events: list[str] = []
+    for cls, name in ((faith_cls, "faith"), (relevancy_cls, "relevancy"), (corr_cls, "corr")):
+        judge = MagicMock()
+        judge.score.side_effect = lambda name=name, **kwargs: (
+            events.append(name) or SimpleNamespace(score=1.0, reason="")
+        )
+        cls.return_value = judge
+    server_cls.return_value.__enter__.side_effect = lambda: events.append("server_up")
+    server_cls.return_value.__exit__.side_effect = lambda *args: events.append("server_down")
+
+    chunk = RetrievedChunk(
+        chunk_id="k", document_id="d", file_name="a.txt", source_path="a.txt", chunk_text="t", score=1.0, rank=1
+    )
+
+    class Recording:
+        def __init__(self):
+            self.generate_flags = []
+
+        def query(self, **kwargs):
+            self.generate_flags.append(kwargs["generate_answer"])
+            events.append("query")
+            return SimpleNamespace(retrieved_chunks=[chunk], index_run_id="r", answer="A.", timings_ms={"embed": 1.0})
+
+    session = MagicMock()
+    service = RecallBenchmarkService(session=session)
+    service.query_service = Recording()
+    with (
+        patch("raglab.experiments.recall.create_experiment_run", return_value=SimpleNamespace(id="e", config_json={})),
+        patch("raglab.experiments.recall.store_experiment_result"),
+        patch("raglab.experiments.recall.complete_experiment_run"),
+    ):
+        result = service.run(
+            corpus_name="demo",
+            strategy=ChunkingStrategy.TRADITIONAL,
+            dataset_path=ds,
+            k_values=(1,),
+            compute_ragas=True,
+            ragas_case_limit=2,
+            judge=JudgeConfig(backend="llamacpp"),
+        )
+
+    assert service.query_service.generate_flags == [True, True, False]
+    # All retrieval first, then the server, then grading of the 2 answered cases.
+    assert events[:4] == ["query", "query", "query", "server_up"]
+    assert events[-1] == "server_down"
+    assert events.count("faith") == 2
+    assert result["summary"]["faithfulness_judged"] == 2
+    assert result["judge"].startswith("llamacpp:")
+
+
+@patch("raglab.experiments.recall.AnswerRelevancyJudge")
+@patch("raglab.experiments.recall.AnswerCorrectnessJudge")
+@patch("raglab.experiments.recall.FaithfulnessJudge")
+def test_answers_use_the_production_top_k_and_the_judge_sees_that_context(
+    faith_cls, corr_cls, relevancy_cls, tmp_path: Path
+):
+    ds = tmp_path / "gt.jsonl"
+    ds.write_text(json.dumps({"id": "c1", "question": "Q?", "expected_file_names": ["a.txt"]}) + "\n", encoding="utf-8")
+    for cls in (faith_cls, corr_cls, relevancy_cls):
+        cls.return_value.score.return_value = SimpleNamespace(score=1.0, reason="")
+    chunks = [
+        RetrievedChunk(
+            chunk_id=f"k{i}",
+            document_id="d",
+            file_name="a.txt",
+            source_path="a.txt",
+            chunk_text=f"t{i}",
+            score=1.0,
+            rank=i,
+        )
+        for i in range(1, 11)
+    ]
+    calls = []
+
+    class Recording:
+        def query(self, **kwargs):
+            calls.append(kwargs)
+            return SimpleNamespace(retrieved_chunks=chunks, index_run_id="r", answer="A.")
+
+    service = RecallBenchmarkService(session=MagicMock())
+    service.query_service = Recording()
+    with (
+        patch("raglab.experiments.recall.create_experiment_run", return_value=SimpleNamespace(id="e", config_json={})),
+        patch("raglab.experiments.recall.store_experiment_result"),
+        patch("raglab.experiments.recall.complete_experiment_run"),
+    ):
+        service.run(
+            corpus_name="demo",
+            strategy=ChunkingStrategy.TRADITIONAL,
+            dataset_path=ds,
+            k_values=(1, 5, 10),
+            compute_ragas=True,
+        )
+
+    assert calls[0]["top_k"] == 10
+    assert calls[0]["generation_top_k"] == service.settings.default_top_k == 5
+    judged_context = faith_cls.return_value.score.call_args.kwargs["retrieved_texts"]
+    assert judged_context == ["t1", "t2", "t3", "t4", "t5"]
+
+
+def test_faithfulness_judge_reads_chunks_in_full():
+    from raglab.experiments.ragas import FaithfulnessJudge
+
+    client = MagicMock()
+    client.chat.return_value = {"answer": '{"score": 1.0, "reason": "ok"}'}
+    judge = FaithfulnessJudge(settings=MagicMock(generation_model="m"), client=client)
+    long_chunk = "début " + "x" * 800 + " FIN-DU-CHUNK"
+    judge.score(question="Q?", answer="A.", retrieved_texts=[long_chunk])
+    assert "FIN-DU-CHUNK" in client.chat.call_args.kwargs["messages"][0]["content"]
+
+
+def test_bootstrap_interval_brackets_the_mean_and_is_reproducible():
+    from raglab.experiments.recall import _bootstrap_ci, _confidence_intervals
+
+    values = [1.0] * 70 + [0.0] * 30
+    low, high = _bootstrap_ci(values)
+    assert low < 0.7 < high
+    assert 0.55 < low and high < 0.85
+    assert _bootstrap_ci(values) == (low, high)
+    details = [{"metrics": {"recall@5": v == 1.0, "reciprocal_rank": v}} for v in values]
+    bounds = _confidence_intervals(details, (5,))
+    assert set(bounds) == {"recall@5_ci_low", "recall@5_ci_high", "mrr_ci_low", "mrr_ci_high"}

@@ -1,17 +1,31 @@
 from __future__ import annotations
 
+import json
 import logging
 from pathlib import Path
 
 from sqlalchemy.orm import Session
 
-from raglab.document_metadata import build_document_metadata
 from raglab.db.crud import get_or_create_corpus, upsert_document
+from raglab.db.lexical import normalize_language
+from raglab.document_metadata import build_document_metadata
 from raglab.domain.schemas import DocumentPayload
 from raglab.ingestion.readers import SUPPORTED_EXTENSIONS, compute_checksum, extract_text, guess_mime_type
 from raglab.logging_utils import log_event
 
 LOGGER = logging.getLogger(__name__)
+
+
+def detect_corpus_language(root: Path) -> str | None:
+    """Language declared by a benchmark loader's metadata.json next to the corpus."""
+    for candidate in (root / "metadata.json", root.parent / "metadata.json"):
+        try:
+            payload = json.loads(candidate.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if isinstance(payload, dict) and payload.get("language"):
+            return normalize_language(payload["language"])
+    return None
 
 
 class IngestionService:
@@ -25,8 +39,10 @@ class IngestionService:
         corpus_name: str,
         description: str | None = None,
         tags: list[str] | None = None,
+        language: str | None = None,
     ) -> dict[str, int]:
         root = folder.resolve()
+        corpus_language = normalize_language(language) or detect_corpus_language(root)
         log_event(
             LOGGER,
             logging.INFO,
@@ -34,12 +50,14 @@ class IngestionService:
             corpus_name=corpus_name,
             folder=root,
             tags=tags or [],
+            language=corpus_language,
         )
         corpus = get_or_create_corpus(
             self.session,
             name=corpus_name,
             root_path=str(root),
             description=description,
+            language=corpus_language,
         )
 
         ingested = 0
