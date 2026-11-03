@@ -38,6 +38,17 @@ class Settings(BaseSettings):
     neo4j_password: str = "raglab_neo4j"
     neo4j_database: str = "neo4j"
 
+    # Structured graph (phase 9.9): built from each index run's chunks right
+    # after indexing when Neo4j answers (skipped otherwise, the index stays
+    # usable). graph_profiles forces a profile per corpus, e.g.
+    # RAGLAB_GRAPH_PROFILES='{"bench_lexml_pt": "laws"}'; "auto" otherwise.
+    graph_build_on_index: bool = True
+    graph_profiles: dict[str, str] = Field(default_factory=dict)
+    graph_timeout_seconds: float = 3.0
+    # Phase-8 entity store (chunks + LLM/spaCy entities in Neo4j), never
+    # measured: its Expert pages are hidden unless this flag is on.
+    entity_graph_enabled: bool = False
+
     entity_extraction_engine: str = "llm"
     entity_spacy_model: str = "xx_ent_wiki_sm"
 

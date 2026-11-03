@@ -56,6 +56,8 @@ class ConfigResponse(BaseModel):
     rerank_gpu: bool = False
     rerank_model_name: str = ""
     rerank_candidates: int = 0
+    # Phase-8 entity store pages (Expert flag).
+    entity_graph_enabled: bool = False
 
 
 class OllamaPullRequest(BaseModel):
@@ -358,6 +360,66 @@ class SubgraphResponse(BaseModel):
     documents: list[SubgraphDocument]
     entities: list[SubgraphEntity]
     mentions: list[SubgraphEdge]
+
+
+class GraphBuildRequest(BaseModel):
+    # One of corpus (latest pgvector index run) or index_run_id.
+    corpus: str | None = None
+    index_run_id: str | None = None
+    # laws, generic or auto; None = RAGLAB_GRAPH_PROFILES, else auto.
+    profile: str | None = Field(None, pattern="^(auto|laws|generic)$")
+
+
+class GraphStatusResponse(BaseModel):
+    index_run_id: str
+    corpus: str | None = None
+    # False when Neo4j does not answer (the graph is optional).
+    available: bool
+    graph: dict[str, Any] | None = None
+    counts: dict[str, dict[str, int]] = Field(default_factory=dict)
+
+
+class GraphLaw(BaseModel):
+    uid: str
+    key: str | None = None
+    number: str | None = None
+    year: int | None = None
+    title: str | None = None
+    ementa: str | None = None
+    document_id: str | None = None
+    articles: int = 0
+    cited: int = 0
+    citing: int = 0
+
+
+class GraphNode(BaseModel):
+    id: str
+    kind: str
+    label: str | None = None
+    number: str | None = None
+    law_uid: str | None = None
+    law_key: str | None = None
+    title: str | None = None
+    preview: str | None = None
+    revoked: bool = False
+    focus: bool = False
+
+
+class GraphEdge(BaseModel):
+    source: str
+    target: str
+    type: str
+    mentions: int = 1
+    snippet: str | None = None
+    kind: str | None = None
+    articles: list[str] = Field(default_factory=list)
+
+
+class GraphNeighbourhoodResponse(BaseModel):
+    nodes: list[GraphNode]
+    edges: list[GraphEdge]
+    # Articles of the law that neither cite nor are cited (not drawn).
+    isolated_articles: int = 0
 
 
 class RecallRequest(BaseModel):

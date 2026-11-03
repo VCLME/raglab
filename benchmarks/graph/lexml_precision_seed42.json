@@ -1,0 +1,1262 @@
+{
+  "corpus": "bench_lexml_pt",
+  "index_run_id": "63b704a5-04e9-494d-ac6b-9e813a8a9e1c",
+  "seed": 42,
+  "population": {
+    "CITES": 1103,
+    "AMENDS_REVOKES": 1393
+  },
+  "items": [
+    {
+      "id": "cites-001",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 2º — Lei nº 7.691/1988",
+      "target": "Art. 1º — Lei nº 7.691/1988",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "N, declarado pela Secretaria da Receita Federal, vigente nas datas fixadas neste artigo. § 2º O valor do imposto ou da contribuição, em cruzados, será apurado pela multiplicação da quantidade de OTN pelo valor unitário diário desta na data do efetivo pagamento. Art. 2º Os impostos e contribuições recolhidos nos prazos do artigo anterior não estão sujeitos a correção monetária ou a qualquer outro acréscimo. Art. 3º Ficará sujeito exclusivamente à correção monetária, na forma do art. 1º, o recolhimento que vier a ser efetuado nos seguintes prazos: I - IPI: a) até o décimo dia subseqüente à quinzena em que ocorrerem os fatos geradores,",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-002",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 23 — Lei nº 14.995/2024",
+      "target": "Art. 21 — Lei nº 14.995/2024",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "de falência ou de liquidação extrajudicial do agente financeiro a que se refere o caput do art. 20 desta Lei, o valor do crédito presumido corresponderá ao saldo total dos créditos decorrentes de diferenças temporárias existente na data de decretação da falência ou da liquidação extrajudicial, observado o disposto nos arts. 20, 21 e 22 desta Lei. Parágrafo único. O disposto no caput deste artigo aplica-se somente às pessoas jurídicas cuja falência ou liquidação extrajudicial tenha sido decretada após a data de entrada em vigor da Medida Provisória nº 1.213, de 22 de abril de 2024. Art. 24. Os saldos contábeis a que se referem os art",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-003",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 20 — Lei nº 10.826/2003",
+      "target": "Art. 7º — Lei nº 10.826/2003",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "e 18, a pena é aumentada da metade se a arma de fogo, acessório ou munição forem de uso proibido ou restrito. Art. 20. Nos crimes previstos nos arts. 14, 15, 16, 17 e 18, a pena é aumentada da metade se: (Redação dada pela Lei nº 13.964, de 2019) I - forem praticados por integrante dos órgãos e empresas referidas nos arts. 6º, 7º e 8º desta Lei; ou (Incluído pela Lei nº 13.964, de 2019) II - o agente for reincidente específico em crimes dessa natureza. (Incluído pela Lei nº 13.964, de 2019) Art. 21. Os crimes previstos nos arts. 16, 17 e 18 são insuscetíveis de liberdade provisória. (Vide Adin 3.112-1) Art. 21-A. Nos crimes previst",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-004",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 26 — Lei nº 9.514/1997",
+      "target": "Art. 26-A — Lei nº 9.514/1997",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "ncluído pela Lei nº 14.711, de 2023) § 3º A intimação será feita pessoalmente ao devedor e, se for o caso, ao terceiro fiduciante, que por esse ato serão cientificados de que, se a mora não for purgada no prazo legal, a propriedade será consolidada no patrimônio do credor e o imóvel será levado a leilão nos termos dos arts. 26-A, 27 e 27-A desta Lei, conforme o caso, hipótese em que a intimação poderá ser promovida por solicitação do oficial do registro de imóveis, por oficial de registro de títulos e documentos da comarca da situação do imóvel ou do domicílio de quem deva recebê-la, ou pelo correio, com aviso de recebimento, situaç",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-005",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 4º — Lei nº 8.352/1991",
+      "target": "Art. 3º — Lei nº 8.352/1991",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "sados, no ato do requerimento do seguro-desemprego, da comprovação do critério de habilitação de que trata o inciso II do art. 3º da Lei nº 7.998, de 11 de janeiro de 1990. (Vide Lei nº 8.845, de 1994) Art. 4º O benefício do seguro-desemprego, para o trabalhador desempregado que se enquadre nas condições estabelecidas no artigo anterior, será concedido por um período máximo de três meses, de forma contínua, independentemente do período aquisitivo mencionado no parágrafo único do art. 4º da Lei nº 7.998, de 11 de janeiro de 1990. Art. 5º Compete ao Banco do Brasil S.A. a execução, em caráter complementar à rede de atendimento do Mini",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-006",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 113 — Lei nº 13.043/2014",
+      "target": "Art. 28 — Lei nº 13.043/2014",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "tará o disposto nos arts. 1º a 3º e 6º a 15 desta Lei. Art. 112. A Secretaria da Receita Federal do Brasil e a Comissão de Valores Mobiliários, no âmbito de suas competências, regulamentarão a aplicação do disposto nos arts. 16 a 19 desta Lei. Art. 113. Esta Lei entra em vigor na data de sua publicação, exceto: I - os arts. 21 a 28, que entram em vigor a partir da data de publicação do ato do Poder Executivo que estabelecer o percentual de que trata o caput do art. 22 ; II - os arts. 1º a 15, 30 a 32, 97, 106 e os artigos da Seção XXI do Capítulo I, que entram em vigor a partir de 1º de janeiro de 2015; III - os arts. 16-A a 16-C da",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-007",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 4º-D — Lei nº 11.484/2007",
+      "target": "Art. 4º-A — Lei nº 11.484/2007",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "o, que conterá, no mínimo: (Incluído pela Lei nº 13.969, de 2019) (Produção de efeito) (Vide) (Vide Lei nº 14.302, de 2022) I - a identificação da pessoa jurídica e o respectivo ato de habilitação ao programa; (Incluído pela Lei nº 13.969, de 2019) (Produção de efeito) II - o valor do crédito financeiro de que trata o art. 4º-A desta Lei, com a respectiva memória de cálculo e o dispêndio efetivamente aplicado em atividades de pesquisa, desenvolvimento e inovação; (Incluído pela Lei nº 13.969, de 2019) (Produção de efeito) III - o valor do faturamento bruto; e (Incluído pela Lei nº 13.969, de 2019) (Produção de efeito) IV - o período",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-008",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 15 — Lei nº 14.193/2021",
+      "target": "Art. 10 — Lei nº 14.193/2021",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "u pessoa jurídica original comprovar a adimplência de ao menos 60% (sessenta por cento) do seu passivo original ao final do prazo previsto no caput deste artigo, será permitida a prorrogação do Regime Centralizado de Execuções por mais 4 (quatro) anos, período em que o percentual a que se refere o inciso I do caput do art. 10 desta Lei poderá, a pedido do interessado, ser reduzido pelo juízo centralizador das execuções a 15% (quinze por cento) das suas receitas correntes mensais. § 3º O pagamento referido no caput deste artigo deverá ser feito mensalmente, com observância do disposto no inciso I do art. 10 desta Lei, exceto se o pla",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-009",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 83 — Lei nº 9.069/1995",
+      "target": "Art. 53 — Lei nº 9.069/1995",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "maio de 1994, o art. 59 da Lei nº 8.884, de 11 de junho de 1994, e demais disposições em contrário. Parágrafo único. Aplicam-se somente aos fatos geradores ocorridos até 31 de dezembro de 1994 os seguintes dispositivos: I - art. 10, inciso III, da Lei nº 8.383, de 1991, com a redação dada pelo art. 58 desta Lei; II - arts. 38, 48 a 51, 53, 55 a 57 desta Lei, este último no que diz respeito apenas às Contribuições para o Programa de Integração Social e para o Programa de Formação do Patrimônio do Servidor Público - PIS/PASEP. Art. 84. Ficam convalidados os atos praticados com base nas Medidas Provisórias nº 542, de 30 de junho de 19",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-010",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 5º — Lei nº 11.697/2008",
+      "target": "Art. 4º — Lei nº 11.697/2008",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "o corregedor pelo desembargador mais antigo, observado o disposto no parágrafo único do art. 102 da Lei Complementar no 35, de 14 de março de 1979 – Lei Orgânica da Magistratura Nacional. § 2o A eleição do Segundo Vice-Presidente proceder-se-á somente quando da composição total do número de desembargadores definido no art. 4o desta Lei. Art. 6o A substituição de desembargador processar-se-á na forma da Lei Orgânica da Magistratura Nacional e do Regimento Interno. Parágrafo único. A convocação de juízes far-se-á dentre os Juízes de Direito do Distrito Federal, nos termos da Lei Orgânica da Magistratura Nacional e do Regimento Interno",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-011",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 27 — Lei nº 9.514/1997",
+      "target": "Art. 24 — Lei nº 9.514/1997",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "ra a alienação do imóvel, no prazo de 60 (sessenta) dias, contado da data do registro de que trata o § 7º do art. 26 desta Lei. (Redação dada pela Lei nº 14.711, de 2023) § 1o Se no primeiro leilão público o maior lance oferecido for inferior ao valor do imóvel, estipulado na forma do inciso VI e do parágrafo único do art. 24 desta Lei, será realizado o segundo leilão nos quinze dias seguintes. (Redação dada pela Lei nº 13.465, de 2017) § 2º No segundo leilão, será aceito o maior lance oferecido, desde que seja igual ou superior ao valor integral da dívida garantida pela alienação fiduciária, das despesas, inclusive emolumentos cart",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-012",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 8º — Lei nº 9.019/1995",
+      "target": "Art. 7º — Lei nº 9.019/1995",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "moratórios. (Incluído pela Lei nº 10.833, de 29.12.2003) § 2o Vencido o prazo previsto no § 1o, sem que tenha havido o pagamento dos direitos, a Secretaria da Receita Federal deverá exigi-los de ofício, mediante a lavratura de auto de infração, aplicando-se a multa e os juros de mora previstos no inciso II do § 3o do art. 7o, a partir do término do prazo de 30 (trinta) dias previsto no § 1o deste artigo. (Incluído pela Lei nº 10.833, de 29.12.2003) Art. 9º Os direitos terão vigência temporária, a ser definida no ato de seu estabelecimento, observado que: I - os provisórios terão vigência não superior a cento e vinte dias, salvo no",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-013",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 2º-C — Lei nº 10.484/2002",
+      "target": "Art. 2º — Lei nº 10.484/2002",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "para órgão diverso da administração pública federal direta, autárquica ou fundacional. (Incluído pela Lei nº 13.328, de 2016) § 2o A avaliação individual do servidor alcançado pelo inciso I do caput será realizada somente pela chefia imediata quando a sistemática para avaliação de desempenho a que se refere o § 5o do art. 2o não for igual à aplicável ao órgão ou entidade de exercício do servidor. (Incluído pela Lei nº 13.328, de 2016) Art. 2o-D. Ocorrendo exoneração do cargo em comissão com manutenção do cargo efetivo, o servidor que faça jus à GDATFA continuará a percebê-la em valor correspondente ao da última pontuação que lhe fo",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-014",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 3º — Lei nº 9.322/1996",
+      "target": "Art. 1º — Lei nº 9.322/1996",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "996, e a partir de fevereiro de 1997. Art. 3o Fica, ainda, autorizada a alocação de R$ 1.200.000.000,00 (um bilhão e duzentos milhões de reais), observada a Reserva Mínima de Liquidez prevista no art. 9o da Lei no 8.019, de 1990, com a redação dada pela Lei no 8.352, de 1991, para empréstimo nas condições previstas no art. 1o desta Lei, com remuneração nominal pela Taxa de Juros de Longo Prazo - TJLP, acrescida de cinco por cento ao ano, e pagamento em 24 prestações mensais, a iniciar-se no primeiro dia útil de fevereiro de 1997. § 1o Os recursos referentes ao empréstimo de que trata o caput serão destinados, preferencialmente, ao p",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-015",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 38 — Lei nº 8.541/1992",
+      "target": "Art. 23 — Lei nº 8.541/1992",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "esmas normas de pagamento estabelecidas por esta lei para o Imposto de Renda das pessoas jurídicas, mantida a base de cálculo e alíquotas previstas na legislação em vigor, com as alterações introduzidas por esta lei. § 1° A base de cálculo da contribuição social para as empresas que exercerem a opção a que se refere o art. 23 desta lei será o valor correspondente a dez por cento da receita bruta mensal, acrescido dos demais resultados e ganhos de capital. § 2° A base de cálculo da contribuição social será convertida em quantidade de Ufir diária pelo valor desta no último dia do período-base. § 3° A contribuição será paga até o últim",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-016",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 9º — Lei nº 9.019/1995",
+      "target": "Art. 1º — Lei nº 9.019/1995",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "er definida no ato de seu estabelecimento, observado que: I - os provisórios terão vigência não superior a cento e vinte dias, salvo no caso de direitos antidumping, quando, por decisão da CAMEX, poderão vigorar por um período de até duzentos e setenta dias, observado o disposto nos Acordos Antidumping, mencionados no art. 1o; (Redação dada pela Medida Provisória nº 2.158-35, de 2001) II - os definitivos ou compromisso homologado só permanecerão em vigor durante o tempo e na medida necessária para eliminar ou neutralizar as práticas de dumping e a concessão de subsídios que estejam causando dano. Em nenhuma hipótese, vigorarão por m",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-017",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 11 — Lei nº 13.445/2017",
+      "target": "Art. 45 — Lei nº 13.445/2017",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "visto ou de ingresso no País; ou III - a menor de 18 (dezoito) anos desacompanhado ou sem autorização de viagem por escrito dos responsáveis legais ou de autoridade competente. Art. 11. Poderá ser denegado visto a quem se enquadrar em pelo menos um dos casos de impedimento definidos nos incisos I, II, III, IV e IX do art. 45. Parágrafo único. A pessoa que tiver visto brasileiro denegado será impedida de ingressar no País enquanto permanecerem as condições que ensejaram a denegação. Subseção II Dos Tipos de Visto Art. 12. Ao solicitante que pretenda ingressar ou permanecer em território nacional poderá ser concedido visto: I - de vi",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-018",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 14 — Lei nº 13.325/2016",
+      "target": "Art. 16 — Lei nº 13.325/2016",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "s pensionistas que estejam sujeitos ao disposto nos arts. 3º , 6º ou 6º -A da Emenda Constitucional nº 41, de 19 de dezembro de 2003 , ou no art. 3º da Emenda Constitucional nº 47, de 5 de julho de 2005 , optar pela incorporação de gratificações de desempenho aos proventos de aposentadoria ou de pensão, nos termos dos arts. 15 e 16, relativamente aos seguintes cargos, planos e carreiras: I - Carreira de Financiamento e Execução de Programas e Projetos Educacionais, Carreira de Suporte Técnico ao Financiamento e Execução de Programas e Projetos Educacionais e Plano Especial de Cargos do FNDE, de que trata a Lei nº 11.357, de 19 de ou",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-019",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 40 — Lei nº 11.090/2005",
+      "target": "Art. 1º — Lei nº 11.090/2005",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "tualização decorrente de revisão geral da remuneração dos servidores públicos federais. Art. 39. Revogam-se o caput do art. 2º e o parágrafo único do art. 3º da Lei nº 10.432, de 24 de abril de 2002. Art. 40. Os efeitos financeiros decorrentes da aplicação desta Lei retroagem a: I - 1º de agosto de 2004 em relação aos arts. 1º a 24 e 26; e II - 1º de julho de 2004 em relação aos arts. 27, 28 e 29 e aos Anexos VII, VIII, IX e X. Art. 41. Esta Lei entra em vigor na data de sua publicação. Brasília, 7 de janeiro de 2005; 184º da Independência e 117º da República. LUIZ INÁCIO LULA DA SILVA Roberto Rodrigues Nelson Machado Miguel Soldate",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-020",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 7º — Lei nº 13.281/2016",
+      "target": "Art. 3º — Lei nº 13.281/2016",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": ".........................................................................” (NR) Art. 6º Revogam-se o inciso IV do art. 256 , o § 1º do art. 258 , o art. 262 e o § 2º do art. 302, todos da Lei nº 9.503, de 23 de setembro de 1997 . (Vigência) Art. 7º Esta Lei entra em vigor: I - na data de sua publicação, em relação aos arts. 3º e 4º ; e II - após decorridos 180 (cento e oitenta) dias de sua publicação oficial, em relação aos demais artigos. Brasília, 4 de maio de 2016; 195º da Independência e 128º da República. DILMA ROUSSEFF Eugênio José Guilherme de Aragão Inês da Silva Magalhães Este texto não substitui o publicado no DOU de 5.5.2",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-021",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 16 — Lei nº 13.325/2016",
+      "target": "Art. 15 — Lei nº 13.325/2016",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "parcela complementar, de natureza provisória, até a implantação das parcelas subsequentes. Art. 16. Para as aposentadorias e pensões já instituídas na data de vigência desta Lei, a opção, em caráter irretratável, pela incorporação de gratificações de desempenho aos proventos nos termos dos incisos I a III do caput do art. 15 deverá ser feita até 31 de outubro de 2018. § 1º O termo de opção assinado pelo aposentado condiciona a pensão que vier a ser instituída. § 2º Na hipótese de haver mais de um pensionista de um mesmo instituidor, aplica-se o disposto no § 4º do art. 15. § 3º Eventual diferença entre o valor que o aposentado ou o",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-022",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 50 — Lei nº 11.484/2007",
+      "target": "Art. 48 — Lei nº 11.484/2007",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "zo de 60 (sessenta) dias, findo o qual, sem manifestação do titular, considerar-se-á aceita a proposta nas condições oferecidas. § 2o O requerente de licença que invocar prática comercial anticompetitiva ou desleal deverá juntar documentação que a comprove. § 3o Quando a licença compulsória requerida com fundamento no art. 48 desta Lei envolver alegação de ausência de exploração ou exploração ineficaz, caberá ao titular do registro comprovar a improcedência dessa alegação. § 4o Em caso de contestação, o Inpi realizará as diligências indispensáveis à solução da controvérsia, podendo, se necessário, designar comissão de especialistas,",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-023",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 7º — Lei nº 7.713/1988",
+      "target": "Art. 25 — Lei nº 7.713/1988",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "nciso XXII do caput deste artigo não se aplica aos prêmios recebidos por meio de sorteios, em espécie, bens ou serviços, no âmbito dos referidos programas. (Incluído pela Lei nº 11.945, de 2009) (Produção de efeitos) Art. 7º Ficam sujeito à incidência do imposto de renda na fonte, calculado de acordo com o disposto no art. 25 desta Lei: (Vide Lei nº 8.134, de 1990) (Vide Lei nº 8.383, de 1991) (Vide Lei nº 8.848, de 1994) (Vide Lei nº 9.250, de 1995) ) I - os rendimentos do trabalho assalariado, pagos ou creditados por pessoas físicas ou jurídicas; (Vide Lei complementar nº 150, de 2015) II - os demais rendimentos percebidos por pes",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-024",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 11 — Lei nº 11.129/2005",
+      "target": "Art. 17 — Lei nº 11.129/2005",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "ovens na faixa etária entre 15 (quinze) e 29 (vinte e nove) anos, ressalvado o disposto na Lei nº 8.069, de 13 de julho de 1990 - Estatuto da Criança e do Adolescente. Parágrafo único. Fica assegurada a participação da Secretaria de que trata o caput deste artigo no controle e no acompanhamento das ações previstas nos arts. 13 a 18 desta Lei. Art. 12. Ficam criados, no âmbito do Poder Executivo Federal, para atender às necessidades da Secretaria-Geral da Presidência da República, 25 (vinte e cinco) cargos em comissão do Grupo-Direção e Assessoramento Superiores - DAS, sendo 1 (um) DAS-6, 1 (um) DAS-5, 11 (onze) DAS-4, 4 (quatro) DAS",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-025",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 23 — Lei nº 14.026/2020",
+      "target": "Art. 4º — Lei nº 14.026/2020",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "445, de 5 de janeiro de 2007 : a) os §§ 1º e 2º do art. 10 ; b) os arts. 14, 15 e 16; c) os incisos I e II do caput do art. 21; d) o inciso I do caput do art. 31; e) o inciso I do caput do art. 35; V - os seguintes dispositivos da Lei nº 13.529, de 4 de dezembro de 2017 : a) o parágrafo único do art. 1º ; b) o § 3º do art. 4º. Art. 24. Esta Lei entra em vigor na data de sua publicação. Brasília, 15 de julho de 2020; 199º da Independência e 132º da República. JAIR MESSIAS BOLSONARO André Luiz de Almeida Mendonça Paulo Guedes Tarcisio Gomes de Freitas Ricardo de Aquino Salles Rogério Marinho Este texto não substitui o publicado no DOU",
+      "verdict": "incorrect",
+      "note": "Revocation list 'V - os seguintes dispositivos da Lei nº 13.529, de 2017: ... b) o § 3º do art. 4º': art. 4 belongs to Lei 13.529, not to this law (list header not recognised)."
+    },
+    {
+      "id": "cites-026",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 7º — Lei nº 11.484/2007",
+      "target": "Art. 6º — Lei nº 11.484/2007",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "ao regulamento do Ministério da Ciência, Tecnologia, Inovações e Comunicações. (Incluído pela Lei nº 13.969, de 2019) (Produção de efeito) § 2º O relatório e o parecer previstos no inciso II do caput deste artigo poderão ser dispensados para as empresas cuja base de cálculo do PD&I anual, calculada conforme o caput do art. 6º desta Lei, seja inferior a R$ 10.000.000,00 (dez milhões de reais). (Incluído pela Lei nº 13.969, de 2019) (Produção de efeito) § 3º O pagamento da auditoria a que se refere o inciso II do caput deste artigo poderá ser integralmente deduzido do complemento de 4% (quatro por cento) da base de cálculo do PD&I men",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-027",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 113 — Lei nº 13.043/2014",
+      "target": "Art. 27 — Lei nº 13.043/2014",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "tará o disposto nos arts. 1º a 3º e 6º a 15 desta Lei. Art. 112. A Secretaria da Receita Federal do Brasil e a Comissão de Valores Mobiliários, no âmbito de suas competências, regulamentarão a aplicação do disposto nos arts. 16 a 19 desta Lei. Art. 113. Esta Lei entra em vigor na data de sua publicação, exceto: I - os arts. 21 a 28, que entram em vigor a partir da data de publicação do ato do Poder Executivo que estabelecer o percentual de que trata o caput do art. 22 ; II - os arts. 1º a 15, 30 a 32, 97, 106 e os artigos da Seção XXI do Capítulo I, que entram em vigor a partir de 1º de janeiro de 2015; III - os arts. 16-A a 16-C da",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-028",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 22 — Lei nº 9.514/1997",
+      "target": "Art. 26 — Lei nº 9.514/1997",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "mento constitutivo da alienação fiduciária na forma do § 3º deve conter cláusula com a previsão de que trata o § 6º deste artigo. (Incluído pela Lei nº 14.711, de 2023) § 9º Na hipótese de o fiduciário optar por exercer a faculdade de que trata o § 6º deste artigo, deverá informá-lo na intimação de que trata o § 1º do art. 26 desta Lei. (Incluído pela Lei nº 14.711, de 2023) § 10. O disposto no § 3º do art. 49 da Lei nº 11.101, de 9 de fevereiro de 2005, beneficia todos os credores fiduciários, mesmo aqueles decorrentes da alienação fiduciária da propriedade superveniente. (Incluído pela Lei nº 14.711, de 2023) Art. 23. Constitui-se",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-029",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 3º — Lei nº 7.713/1988",
+      "target": "Art. 16 — Lei nº 7.713/1988",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "como ganho de capital, o resultado da soma dos ganhos auferidos no mês, decorrentes de alienação de bens ou direitos de qualquer natureza, considerando-se como ganho a diferença positiva entre o valor de transmissão do bem ou direito e o respectivo custo de aquisição corrigido monetariamente, observado o disposto nos arts. 15 a 22 desta Lei. § 3º Na apuração do ganho de capital serão consideradas as operações que importem alienação, a qualquer título, de bens ou direitos ou cessão ou promessa de cessão de direitos à sua aquisição, tais como as realizadas por compra e venda, permuta, adjudicação, desapropriação, dação em pagamento,",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-030",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 5º — Lei nº 8.846/1994",
+      "target": "Art. 1º — Lei nº 8.846/1994",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "missão com valor inferior ao da operação. (Revogado pela Lei nº 9.532, de 10.12.1997) (Revogado pela Lei nº 9.430, de 1996) (Revogado pela Lei nº 9.532, de 10.12.1997) Art. 5º Em todo local onde se proceda à venda de bens ou à prestação de serviços, deverão ser afixados, em lugar visível e de fácil leitura, o teor dos arts. 1º a 4º desta lei, além de cartazes informativos elaborados pela Secretaria da Receita Federal. § 1º A pessoa física ou jurídica que descumprir o disposto neste artigo ficará sujeita à multa correspondente a CR$200.000,00 (duzentos mil cruzeiros reais), atualizados monetariamente pela variação da Unidade Fiscal d",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-031",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 51 — Lei nº 9.473/1997",
+      "target": "Art. 50 — Lei nº 9.473/1997",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "erados os cargos transformados, previstos no § 2º do mesmo artigo; II - houver vacância, após 31 de agosto de 1997, dos cargos ocupados constantes da referida tabela; III - houver prévia dotação orçamentária suficiente para o atendimento da despesa, observado o disposto no art. 52; IV - for observado o limite previsto no artigo anterior. Parágrafo único. No exercício financeiro de 1998 fica autorizada a criação de: I - até cento e dezesseis funções comissionadas de Chefe de Zona Eleitoral da Justiça Eleitoral das capitais dos Estados e Distrito Federal; II - até dez funções comissionadas de Assessor de Orçamento e Fiscalização Finan",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-032",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 8º — Lei nº 7.998/1990",
+      "target": "Art. 3º — Lei nº 7.998/1990",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "dois) anos, ressalvado o prazo de carência, o direito do trabalhador à percepção do seguro-desemprego, dobrando-se este período em caso de reincidência. (Incluído pela Lei nº 12.513, de 2011) § 2o O benefício poderá ser cancelado na hipótese de o beneficiário deixar de cumprir a condicionalidade de que trata o § 1o do art. 3o desta Lei, na forma do regulamento. (Incluído pela Lei nº 12.513, de 2011) Art. 8o-A. O benefício da bolsa de qualificação profissional será cancelado nas seguintes situações: (Incluído pela Medida Provisória nº 2.164-41, de 2001) I - fim da suspensão contratual e retorno ao trabalho; (Incluído pela Medida Prov",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-033",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 6º — Lei nº 14.990/2024",
+      "target": "Art. 3º — Lei nº 14.990/2024",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "nsação, a Secretaria Especial da Receita Federal do Brasil efetuará o seu ressarcimento no prazo de até 12 (doze) meses, contado da data do pedido. § 4º A Secretaria Especial da Receita Federal do Brasil poderá editar instrução normativa para disciplinar o disposto neste artigo. Art. 6º O crédito fiscal de que trata o art. 3º desta Lei somente poderá ser concedido para as operações de comercialização de hidrogênio de baixa emissão de carbono e seus derivados produzidos no território nacional ocorridas no período de 1º de janeiro de 2030 a 31 de dezembro de 2034. (Redação dada pela Lei nº 15.269, de 2025) Art. 7º O Poder Executivo pu",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-034",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 113 — Lei nº 13.043/2014",
+      "target": "Art. 30 — Lei nº 13.043/2014",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "ompetências, regulamentarão a aplicação do disposto nos arts. 16 a 19 desta Lei. Art. 113. Esta Lei entra em vigor na data de sua publicação, exceto: I - os arts. 21 a 28, que entram em vigor a partir da data de publicação do ato do Poder Executivo que estabelecer o percentual de que trata o caput do art. 22 ; II - os arts. 1º a 15, 30 a 32, 97, 106 e os artigos da Seção XXI do Capítulo I, que entram em vigor a partir de 1º de janeiro de 2015; III - os arts. 16-A a 16-C da Lei nº 12.431, de 24 de junho de 2011, incluídos pelo art. 86, que entram em vigor a partir de 1º de janeiro de 2015; IV - os seguintes dispositivos, que entram e",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-035",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 20-F — Lei nº 8.668/1993",
+      "target": "Art. 16-A — Lei nº 8.668/1993",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "iagro deverão ser previamente avaliados por profissional ou por empresa especializada, nos termos de regulamento. (Incluído pela Lei nº 14.130, de 2021) Art. 20-F. Aplicam-se aos Fiagro o disposto nos arts. 3º, 4º, 5º, 6º, 7º, 8º e 9º, nos incisos I, II, III, IV, V, VI, VII, VIII, IX, X e XI do caput do art. 10, e nos arts. 11, 12, 13, 14, 15, 16, 16-A, 19 e 20 desta Lei. (Incluído pela Lei nº 14.130, de 2021) Art. 21. Esta lei entra em vigor na data de sua publicação. Art. 22. Revogam-se as disposições em contrário. Brasília, 25 de junho de 1993, 172º da Independência e 105º da República. ITAMAR FRANCO Fernando Henrique Cardoso Est",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-036",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 18 — Lei nº 14.193/2021",
+      "target": "Art. 10 — Lei nº 14.193/2021",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "alho com o clube ou pessoa jurídica original; VI - credores com os quais haja acordo que preveja redução da dívida original em pelo menos 30% (trinta por cento). Parágrafo único. Na hipótese de concorrência entre os créditos, os processos mais antigos terão preferência. Art. 18. O pagamento das obrigações previstas no art. 10 desta Lei privilegiará os créditos trabalhistas, e cumprirá ao plano de pagamento dos credores, apresentado pelo clube ou pessoa jurídica original, definir a sua destinação. Parágrafo único. A partir da centralização das execuções, as dívidas de natureza cível e trabalhista serão corrigidas somente pela taxa re",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-037",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 24 — Lei nº 8.541/1992",
+      "target": "Art. 16 — Lei nº 8.541/1992",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "ar, este será recolhido, corrigido, monetariamente, na forma da legislação aplicável. SUBSEÇÃO II Da Tributação por Estimativa Art. 24. No cálculo do imposto mensal por estimativa aplicar-se-ão as disposições pertinentes à apuração do lucro presumido e dos demais resultados positivos e ganhos de capital, previstas nos arts. 13 a 17 desta lei, observado o seguinte: (Revogada pela Lei nº 9.069, de 1995) b) as pessoas jurídicas e equiparadas que explorem atividades imobiliárias, tais como loteamento de terrenos, incorporação imobiliária ou construção de prédios destinados à venda, deverão considerar como receita bruta o montante efetiv",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-038",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 4º — Lei nº 13.572/2017",
+      "target": "Art. 5º — Lei nº 13.572/2017",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "cela do Imposto sobre Operações Relativas à Circulação de Mercadorias e sobre Prestações de Serviços de Transporte Interestadual e Intermunicipal e de Comunicação (ICMS) dos respectivos Estados, aplicados no exercício de 2017. Art. 4º Para a entrega dos recursos ao ente federativo, a ser realizada na forma prevista no art. 5º desta Lei, serão obrigatoriamente deduzidos até o montante total apurado no período os valores das dívidas vencidas e não pagas do ente federativo, na seguinte ordem: I - primeiro, as contraídas com a União, depois, as contraídas com garantia da União, inclusive dívida externa, e, somente após, as contraídas co",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-039",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 37 — Lei nº 9.069/1995",
+      "target": "Art. 36 — Lei nº 9.069/1995",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "e o mês do efetivo recolhimento, sem prejuízo da multa e de acréscimos legais pertinentes. § 6º O disposto no caput deste artigo não se aplica aos débitos incluídos em parcelamento. Art. 37. No caso de tributos, contribuições e outros débitos para com a Fazenda Nacional pagos indevidamente, dentro do prazo previsto no art. 36 desta Lei, a compensação ou restituição será efetuada com base na variação da UFIR calculada a partir do mês seguinte ao pagamento. Art. 38. Nas situações de que tratam os §§ 3º, 4º e 5º do artigo 36 desta Lei, os juros de mora serão equivalentes, a partir de 1º de julho de 1994, ao excedente da variação acumul",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-040",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 3º — Lei nº 9.143/1995",
+      "target": "Art. 2º — Lei nº 9.143/1995",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "ojeto original. Art. 2o É a União autorizada a receber, em pagamento do crédito decorrente da assunção das obrigações da CEEE, os equipamentos já adquiridos para a Usina Termelétrica de Candiota III. (Redação dada Medida Provisória nº 2.181-45, de 2001) Art. 3º Os bens e direitos recebidos pela União na forma prevista no artigo anterior poderão ser utilizados em futuro aumento do capital social da Centrais Elétricas Brasileiras S.A. - ELETROBRÁS. Art. 4o A assunção, pela União, dos direitos e obrigações referidos no art. 1o, terá como condição a ocorrência dos eventos a seguir indicados: (Redação dada Medida Provisória nº 2.181-45,",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-041",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 24 — Lei nº 14.995/2024",
+      "target": "Art. 21 — Lei nº 14.995/2024",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "os arts. 20, 21 e 22 desta Lei. Parágrafo único. O disposto no caput deste artigo aplica-se somente às pessoas jurídicas cuja falência ou liquidação extrajudicial tenha sido decretada após a data de entrada em vigor da Medida Provisória nº 1.213, de 22 de abril de 2024. Art. 24. Os saldos contábeis a que se referem os arts. 20, 21, 22 e 23 desta Lei serão fornecidos pelo Banco Central do Brasil à Secretaria Especial da Receita Federal do Brasil do Ministério da Fazenda, quando solicitados, com base nos dados disponíveis em seus sistemas de informação, para fins de apuração dos créditos presumidos. Art. 25. O disposto no art. 21 dest",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-042",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 9º — Lei nº 13.846/2019",
+      "target": "Art. 3º — Lei nº 13.846/2019",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "to e o controle da realização das análises dos processos para fins de pagamento do BMOB, observado o cumprimento da meta do processo de monitoramento; II - a forma de realização de mutirões para análise dos processos; III - os critérios de ordem de prioridade das análises dos processos, observado o disposto no § 3º do art. 3º desta Lei; IV - os requisitos que caracterizem acréscimo real à capacidade operacional regular de realização de atividades do INSS; V - os critérios de revisão da meta de análise dos processos de monitoramento; e VI - outros critérios para caracterização de processos com indícios de irregularidade. Art. 10. O B",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-043",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 23 — Lei nº 8.541/1992",
+      "target": "Art. 3º — Lei nº 8.541/1992",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "erá ser exercida em qualquer dos outros meses do ano-calendário uma única vez, vedada a prerrogativa prevista no art. 26 desta lei. § 3° A pessoa jurídica que optar pelo disposto no caput, deste artigo, poderá alterar sua opção e passar a recolher o imposto com base no lucro real mensal, desde que cumpra o disposto no art. 3° desta lei. § 4° O imposto recolhido por estimativa, exercida a opção prevista no § 3° deste artigo, será deduzido do apurado com base no lucro real dos meses correspondentes e os eventuais excessos serão compensados, corrigidos, monetariamente, nos meses subseqüentes. § 5° Se do cálculo previsto no § 4° deste a",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-044",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 18 — Lei nº 9.532/1997",
+      "target": "Art. 12 — Lei nº 9.532/1997",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "cacionais; II - de assistência à saúde; III - de administração de planos de saúde; IV - de prática desportiva, de caráter profissional; V - de administração do desporto. Parágrafo único. O disposto neste artigo não elide a fruição, conforme o caso, de imunidade ou isenção por entidade que se enquadrar nas condições do art. 12 ou do art. 15. (Revogado pela Lei nº 9.779, de 1999) (Revogado pela Lei nº 9.779, de 1999) (Revogado pela Lei nº 9.779, de 1999) (Revogado pela Lei nº 9.779, de 1999) (Revogado pela Lei nº 9.779, de 1999) (Revogado pela Lei nº 9.779, de 1999) (Revogado pela Lei nº 9.779, de 1999) (Revogado pela Lei nº 9.779, de",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-045",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 32 — Lei nº 9.474/1997",
+      "target": "Art. 3º — Lei nº 9.474/1997",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "úgio, ficará o solicitante sujeito à legislação de estrangeiros, não devendo ocorrer sua transferência para o seu país de nacionalidade ou de residência habitual, enquanto permanecerem as circunstâncias que põem em risco sua vida, integridade física e liberdade, salvo nas situações determinadas nos incisos III e IV do art. 3º desta Lei. TÍTULO V Dos Efeitos do Estatuto de Refugiados Sobre a Extradição e a Expulsão CAPÍTULO I Da Extradição Art. 33. O reconhecimento da condição de refugiado obstará o seguimento de qualquer pedido de extradição baseado nos fatos que fundamentaram a concessão de refúgio. Art. 34. A solicitação de refúgi",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-046",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 21 — Lei nº 14.995/2024",
+      "target": "Art. 20 — Lei nº 14.995/2024",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "2024, nos termos estabelecidos no regulamento editado por ato do Ministro de Estado da Fazenda. Subseção II Da Apuração do Crédito Presumido Art. 21. A apuração do crédito presumido poderá ser realizada a partir do ano-calendário de 2025 até o ano-calendário de 2029 pelos agentes financeiros a que se refere o caput do art. 20 desta Lei que apresentarem, de forma cumulativa: I – créditos decorrentes de diferenças temporárias oriundos de registros existentes no ano-calendário anterior; e II – prejuízo fiscal apurado no ano-calendário anterior. Art. 22. O valor do crédito presumido de que trata o art. 21 desta Lei será apurado com base",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-047",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 113 — Lei nº 13.043/2014",
+      "target": "Art. 32 — Lei nº 13.043/2014",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "ompetências, regulamentarão a aplicação do disposto nos arts. 16 a 19 desta Lei. Art. 113. Esta Lei entra em vigor na data de sua publicação, exceto: I - os arts. 21 a 28, que entram em vigor a partir da data de publicação do ato do Poder Executivo que estabelecer o percentual de que trata o caput do art. 22 ; II - os arts. 1º a 15, 30 a 32, 97, 106 e os artigos da Seção XXI do Capítulo I, que entram em vigor a partir de 1º de janeiro de 2015; III - os arts. 16-A a 16-C da Lei nº 12.431, de 24 de junho de 2011, incluídos pelo art. 86, que entram em vigor a partir de 1º de janeiro de 2015; IV - os seguintes dispositivos, que entram e",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-048",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 44 — Lei nº 7.713/1988",
+      "target": "Art. 47 — Lei nº 7.713/1988",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "igo anterior será considerado: Vigência encerrada I - antecipação do devido na declaração de rendimentos, quando o beneficiário for pessoa jurídica tributada com base no lucro real; II - devido exclusivamente na fonte nos demais casos, inclusive quando o beneficiário for pessoa jurídica isenta, observado o disposto no art. 47 desta lei. (Revogado pela Lei nº 8.134, de 1990) (Revogado pela Lei nº 8.134, de 1990) (Revogado pela Lei nº 8.134, de 1990) (Revogado pela Lei nº 8.134, de 1990) (Revogado pela Lei nº 8.134, de 1990) (Revogado pela Lei 7.730, de 1989) (Revogado pela Lei 7.730, de 1989) Art. 47. Fica sujeito à incidência do imp",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-049",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 10 — Lei nº 9.438/1997",
+      "target": "Art. 9º — Lei nº 9.438/1997",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "E ASSISTÊNCIA SOCIAL 22.000.000 MINISTÉRIO DA SAÚDE 17.332.969 MINISTÉRIO DOS TRANSPORTES 438.010.538 MINISTÉRIO DAS COMUNICAÇÕES 8.225.700.000 MINISTÉRIO DO PLANEJAMENTO E ORÇAMENTO 12.748.000 TOTAL 15.770.245.984 Capítulo II DAS FONTES DE FINANCIAMENTO Art. 10. As fontes de receita, para cobertura da despesa fixada no artigo anterior, decorrentes da geração de recursos próprios, de recursos destinados ao aumento do patrimônio líquido e de operações de crédito, internas e externas, vedado o endividamento junto a empreiteiras, fornecedores ou instituições financeiras para compensar frustração de receita, são estimadas com o seguint",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-050",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "cross_law",
+      "source": "Art. 1º — Lei nº 8.019/1990",
+      "target": "Art. 10 — Lei nº 7.998/1990",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "ibuição Social sobre Bens e Serviços - CBS e a decorrente da contribuição para o Programa de Formação do Patrimônio do Servidor Público, criado pela Lei Complementar nº 8, de 3 de dezembro de 1970, será destinada, a cada ano, à cobertura integral das necessidades do Fundo de Amparo ao Trabalhador (FAT), de que trata o art. 10 da Lei nº 7.998, de 11 de janeiro de 1990. Art. 2º Conforme estabelece o § 1º do art. 239 da Constituição Federal, pelo menos 28% (vinte e oito por cento) da arrecadação mencionada no artigo anterior serão repassados ao Banco Nacional de Desenvolvimento Econômico e Social (BNDES), para aplicação em programas de",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-051",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 2º — Lei nº 13.705/2018",
+      "target": "Art. 1º — Lei nº 13.705/2018",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "as Federal, Eleitoral e do Trabalho, e do Ministério Público da União, crédito especial no valor de R$ 92.216.527,00 (noventa e dois milhões, duzentos e dezesseis mil, quinhentos e vinte e sete reais), para atender à programação constante do Anexo I. Art. 2º Os recursos necessários à abertura do crédito de que trata o art. 1º decorrem de anulação de dotações orçamentárias, conforme indicado no Anexo II. Art. 3º Esta Lei entra em vigor na data de sua publicação. Brasília, 13 de agosto de 2018; 197º da Independência e 130º da República. MICHEL TEMER Esteves Pedro Colnago Junior Este texto não substitui o publicado no DOU de 14.8.2018",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-052",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 30 — Lei nº 10.826/2003",
+      "target": "Art. 5º — Lei nº 10.826/2003",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "do caput do art. 4o desta Lei. (Redação dada pela Lei nº 11.706, de 2008) (Prorrogação de prazo) Parágrafo único. Para fins do cumprimento do disposto no caput deste artigo, o proprietário de arma de fogo poderá obter, no Departamento de Polícia Federal, certificado de registro provisório, expedido na forma do § 4o do art. 5o desta Lei. (Incluído pela Lei nº 11.706, de 2008) Art. 31. Os possuidores e proprietários de armas de fogo adquiridas regularmente poderão, a qualquer tempo, entregá-las à Polícia Federal, mediante recibo e indenização, nos termos do regulamento desta Lei. Art. 32. Os possuidores e proprietários de arma de fogo",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-053",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 19 — Lei nº 8.662/1993",
+      "target": "Art. 9º — Lei nº 8.662/1993",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "organizações que se registrarem nos CRESS receberão um certificado que as habilitará a atuar na área de Serviço Social. Art. 19. O Conselho Federal de Serviço Social (CFESS) será mantido: I - por contribuições, taxas e emolumentos arrecadados pelos CRESS, em percentual a ser definido pelo fórum máximo instituído pelo art. 9º desta lei; II - por doações e legados; III - por outras rendas. Art. 20. O Conselho Federal de Serviço Social (CFESS) e os Conselhos Regionais de Serviço Social (CRESS) contarão cada um com nove membros efetivos: Presidente, Vice-Presidente, dois Secretários, dois Tesoureiros e três membros do Conselho Fiscal,",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-054",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 4º — Lei nº 8.866/1994",
+      "target": "Art. 2º — Lei nº 8.866/1994",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "petentes; no caso do Instituto Nacional de Seguridade Social (INSS), a iniciativa caberá ao seu presidente, competindo ao representante judicial da autarquia processual de que trata este artigo. Art. 4º. Na petição inicial, instruída com a cópia autenticada, pela repartição, da prova literal do depósito de que trata o art. 2º., o representante judicial da Fazenda Nacional ou, conforme o caso, o representante judicial dos Estados, Distrito Federal ou do INSS requererá ao juízo a citação do depositário para, em dez dias: I - recolher ou depositar a importância correspondente ao valor do imposto, taxa ou contribuição descontado ou rece",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-055",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 3º — Lei nº 7.711/1988",
+      "target": "Art. 6º — Lei nº 7.711/1988",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": ", de 11 de dezembro de 1978, e art. 12 do Decreto-Lei nº 2.163, de 19 de setembro de 1984, será recolhido ao Fundo a que se refere o art. 4º, em subconta especial, destinada a atender a despesa com o programa previsto neste artigo e que será gerida pelo Procurador-Geral da Fazenda Nacional, de acordo com o disposto no art. 6º desta Lei. Art. 4º A partir do exercício de 1989, o produto da arrecadação de multas, inclusive as que fazem parte do valor pago por execução da dívida ativa e de sua respectiva correção monetária, incidentes sobre os tributos e contribuições administrados pela Secretaria da Receita Federal e próprios da União,",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-056",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 9º — Lei nº 9.995/2000",
+      "target": "Art. 8º — Lei nº 9.995/2000",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "e lei orçamentária demonstrará a estimativa da margem de expansão das despesas obrigatórias de caráter continuado para 2001, em valores correntes e em termos de percentual da receita corrente líquida, destacando-se pelo menos aquela relativa aos gastos com pessoal e encargos sociais. Art. 9o Para efeito do disposto no art. 8o, os Poderes Legislativo, Judiciário e o Ministério Público da União encaminharão ao Órgão Central do Sistema de Planejamento Federal e de Orçamento, por meio do Sidor, até 10 de agosto, suas respectivas propostas orçamentárias, para fins de consolidação do projeto de lei orçamentária. Art. 10. No projeto de lei",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-057",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "cross_law",
+      "source": "Art. 28 — Lei nº 9.473/1997",
+      "target": "Art. 31 — Lei nº 8.171/1991",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "específica. Parágrafo único. Ressalvam-se do disposto neste artigo: I - aquisição, por autarquias e empresas públicas federais, de produtos agropecuários destinados à execução da Política de Garantia de Preços Mínimos, de que trata o Decreto-lei nº 79, de 19 de dezembro de 1966, e à formação de estoques, nos termos do art. 31 da Lei nº 8.171, de 17 de janeiro de 1991; II - o custeio agropecuário e a comercialização de produtos agropecuários, desde que as suas condições tenham sido aprovadas pelo Conselho Monetário Nacional; III - os programas de investimentos agropecuários ou agroindustriais que contam com fontes de recursos de orig",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-058",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 11 — Lei nº 10.826/2003",
+      "target": "Art. 6º — Lei nº 10.826/2003",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "lores arrecadados destinam-se ao custeio e à manutenção das atividades do Sinarm, da Polícia Federal e do Comando do Exército, no âmbito de suas respectivas responsabilidades. § 2o São isentas do pagamento das taxas previstas neste artigo as pessoas e as instituições a que se referem os incisos I a VII e X e o § 5o do art. 6o desta Lei. (Redação dada pela Lei nº 11.706, de 2008) (Vide Medida Provisória nº 390, de 2007) (Vide Medida Provisória nº 390, de 2007) (Vide Medida Provisória nº 390, de 2007) (Vide Medida Provisória nº 390, de 2007) Art. 11-A. O Ministério da Justiça disciplinará a forma e as condições do credenciamento de pr",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-059",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 4º-D — Lei nº 11.484/2007",
+      "target": "Art. 4º-C — Lei nº 11.484/2007",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "sabilidade exclusiva da pessoa jurídica, e não cabe ao Ministério da Ciência, Tecnologia, Inovações e Comunicações atestar sua veracidade por ocasião da certificação prevista no § 4º deste artigo. (Incluído pela Lei nº 13.969, de 2019) (Produção de efeito) § 6º Para fins da compensação prevista no inciso I do caput do art. 4º-C desta Lei, o Ministério da Ciência, Tecnologia, Inovações e Comunicações encaminhará a declaração apresentada pela pessoa jurídica, juntamente com a certificação de que trata o § 4º deste artigo, para a Secretaria Especial da Receita Federal do Brasil, com cópia para a pessoa jurídica solicitante e para a Sec",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "cites-060",
+      "group": "CITES",
+      "relation": "CITES",
+      "kind": "same_law",
+      "source": "Art. 14 — Lei nº 9.069/1995",
+      "target": "Art. 16 — Lei nº 9.069/1995",
+      "target_articles": [],
+      "scopes": [],
+      "evidence": "de 1994, inclusive, serão, em 1º de julho de 1994, obrigatoriamente convertidas em REAL, de acordo com as normas desta Lei. Parágrafo único. O disposto no caput deste artigo aplica-se às obrigações que tenham sido mantidas em Cruzeiros Reais por força do contido na Lei nº 8.880, de 27 de maio de 1994, inclusive em seu art. 16. Art. 15. Serão convertidos em REAL, em 1º de julho de 1994, segundo a paridade fixada para aquela data: I - as contas-correntes; II - os depósitos à vista nas instituições financeiras; III - os depósitos compulsórios em espécie sobre depósitos à vista, mantidos pelo sistema bancário junto ao Banco Central do B",
+      "verdict": "incorrect",
+      "note": "'por força do contido na Lei nº 8.880, de 1994, inclusive em seu art. 16': 'seu art. 16' is art. 16 of Lei 8.880 (possessive anaphora not handled)."
+    },
+    {
+      "id": "amends_revokes-001",
+      "group": "AMENDS_REVOKES",
+      "relation": "AMENDS",
+      "kind": "amends_law",
+      "source": "Lei nº 12.034/2009",
+      "target": "Lei nº 9.096/1995 (hors corpus)",
+      "target_articles": [],
+      "scopes": [
+        "law"
+      ],
+      "evidence": ", e 4.737, de 15 de julho de 1965 - Código Eleitoral. O PRESIDENTE DA REPÚBLICA Faço saber que o Congresso Nacional decreta e eu sanciono a seguinte Lei: Art. 1o Esta Lei altera as Leis nos 9.096, de 19 de setembro de 1995, 9.504, de 30 de setembro de 1997, e 4.737, de 15 de julho de 1965 - Código Eleitoral. Art. 2o A Lei nº 9.096, de 19 de setembro de 1995, passa a vigorar com as seguintes alterações: “Art. 15-A. A responsabilidade, inclusive civil e trabalhista, cabe exclusivamente ao órgão partidário municipal, estadual ou nacional que tiver dado causa ao não cumprimento da obrigação, à violação de direito, a dano a outrem ou a q",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "amends_revokes-002",
+      "group": "AMENDS_REVOKES",
+      "relation": "AMENDS",
+      "kind": "rewritten",
+      "source": "Lei nº 12.400/2011 (hors corpus)",
+      "target": "Art. 7º — Lei nº 11.668/2008",
+      "target_articles": [],
+      "scopes": [
+        "paragraph"
+      ],
+      "evidence": "tratos de franquia postal celebrados de acordo com o estabelecido nesta Lei, continuarão com eficácia aqueles firmados com as Agências de Correios Franqueadas que estiverem em vigor em 27 de novembro de 2007. Parágrafo único. A ECT deverá concluir as contratações a que se refere este artigo até 30 de setembro de 2012. (Redação dada pela Lei nº 12.400, de 2011). Art. 7o-A. As novas Agências de Correios Franqueadas - ACF terão prazo de 12 (doze) meses para fazer as adequações e padronizações definidas pelas normas técnicas e manuais da ECT. (Incluído pela Lei nº 12.400, de 2011). Art. 8o O Poder Executivo regulamentará o disposto nest",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "amends_revokes-003",
+      "group": "AMENDS_REVOKES",
+      "relation": "AMENDS",
+      "kind": "rewritten",
+      "source": "Lei nº 8.776/1993 (hors corpus)",
+      "target": "Art. 43 — Lei nº 8.447/1992",
+      "target_articles": [],
+      "scopes": [
+        "article"
+      ],
+      "evidence": "inclusive mediante participação acionária, observará o valor e a destinação constante do orçamento original. SEÇÃO V Da Dívida Pública Federal Art. 43. A receita decorrente da emissão de títulos da dívida pública federal, pelo Tesouro Nacional, será destinada, preferencialmente, ao atendimento das seguintes despesas: (Redação dada pela Lei nº 8.776, de 1993) I - amortização, juros e outros encargos da dívida pública federal; II - refinanciamento da dívida externa do setor público brasileiro que seja, ou venha a ser, de responsabilidade da União, nos termos da Resolução n° 20, de 20 de junho de 1991, do Senado Federal, e de outras r",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "amends_revokes-004",
+      "group": "AMENDS_REVOKES",
+      "relation": "AMENDS",
+      "kind": "amends_law",
+      "source": "Lei nº 11.960/2009",
+      "target": "Lei nº 11.452/2007 (hors corpus)",
+      "target_articles": [
+        "13"
+      ],
+      "scopes": [
+        "article"
+      ],
+      "evidence": "mora, haverá a incidência uma única vez, até o efetivo pagamento, dos índices oficiais de remuneração básica e juros aplicados à caderneta de poupança.” (NR) (Vide ADIN 5348 - Decisão do STF declaração parcial de inconstitucionalidade) Art. 6o O art. 19 da Lei no 11.314, de 3 de julho de 2006, alterado pelo art. 13 da Lei no 11.452, de 27 de fevereiro de 2007, passa a vigorar com a seguinte redação: “Art. 19. Fica o Departamento Nacional de Infra-Estrutura de Transportes – DNIT, em apoio à transferência definitiva do domínio da malha rodoviária federal para os Estados, que estava prevista na Medida Provisória no 82, de 7 de dezembro",
+      "verdict": "incorrect",
+      "note": "'O art. 19 da Lei nº 11.314, alterado pelo art. 13 da Lei nº 11.452, passa a vigorar...': Lei 11.452 is the earlier amender, not an amended law."
+    },
+    {
+      "id": "amends_revokes-005",
+      "group": "AMENDS_REVOKES",
+      "relation": "REVOKES",
+      "kind": "revoked",
+      "source": "Lei nº 10.865/2004 (hors corpus)",
+      "target": "Art. 1º — Lei nº 10.147/2000",
+      "target_articles": [],
+      "scopes": [
+        "text"
+      ],
+      "evidence": "o poderá, nas hipóteses e condições que estabelecer, excluir, da incidência de que trata o inciso I, produtos indicados no caput, exceto os classificados na posição 3004. § 3o Na hipótese do § 2o, aplica-se, em relação à receita bruta decorrente da venda dos produtos excluídos, as alíquotas estabelecidas no inciso II. (Revogado pela lei nº 10.865, de 2004) Art. 2o São reduzidas a zero as alíquotas da contribuição para o PIS/Pasep e da Cofins incidentes sobre a receita bruta decorrente da venda dos produtos tributados na forma do inciso I do art. 1o, pelas pessoas jurídicas não enquadradas na condição de industrial ou de importador.",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "amends_revokes-006",
+      "group": "AMENDS_REVOKES",
+      "relation": "AMENDS",
+      "kind": "amends_law",
+      "source": "Lei nº 8.019/1990",
+      "target": "Lei nº 7.799/1989 (hors corpus)",
+      "target_articles": [
+        "69"
+      ],
+      "scopes": [
+        "article"
+      ],
+      "evidence": ") (Produção de efeito) (Revogado pela Lei nº 13.483, de 2017) (Produção de efeito) Art. 4° A arrecadação das contribuições ao PIS a ao Pasep será efetuada através de Documento de Arrecadação de Receitas Federais (Darf), nas condições estabelecidas pela legislação em vigor. Art. 5° A alínea b do inciso IV do art. 69 da Lei n° 7.799, de 10 de julho de 1989, passa a vigorar com a seguinte redação: \"b) para o PIS e o Pasep, até o dia cinco do terceiro mês subseqüente ao da ocorrência do fato gerador, exceção feita às modalidades especiais (Decreto-Lei n° 2.445, de 29 de junho de 1988, arts. 7° e 8°), cujo prazo será o dia quinze do mês",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "amends_revokes-007",
+      "group": "AMENDS_REVOKES",
+      "relation": "REVOKES",
+      "kind": "revokes_law",
+      "source": "Lei nº 12.716/2012",
+      "target": "Lei nº 7.827/1989 (hors corpus)",
+      "target_articles": [
+        "4"
+      ],
+      "scopes": [
+        "article"
+      ],
+      "evidence": "nº 11.314, de 3 de julho de 2006, da concessão de reajuste ou vantagem de qualquer natureza e estará sujeita exclusivamente à atualização decorrente de revisão geral da remuneração dos servidores públicos federais. Art. 15. Esta Lei entra em vigor na data de sua publicação. Art. 16. Fica revogado o § 3º do art. 4º da Lei nº 7.827, de 27 de setembro de 1989. Brasília, 21 de setembro de 2012; 191º da Independência e 124º da República. DILMA ROUSSEFF Nelson Henrique Barbosa Filho Miriam Belchior Fernando Bezerra Coelho Gilberto José Spier Vargas Este texto não substitui o publicado no DOU de 24.9.2012",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "amends_revokes-008",
+      "group": "AMENDS_REVOKES",
+      "relation": "AMENDS",
+      "kind": "amends_law",
+      "source": "Lei nº 13.081/2015",
+      "target": "Lei nº 10.233/2001 (hors corpus)",
+      "target_articles": [],
+      "scopes": [
+        "law"
+      ],
+      "evidence": "ização de uso de potencial de energia hidráulica ou que for responsável pela construção e operação de eclusa ou de outro dispositivo de transposição hidroviária de níveis. § 4º A declaração de reserva de disponibilidade hídrica obedecerá ao disposto no art. 13 da Lei nº 9.433, de 8 de janeiro de 1997 .” (NR) Art. 6º A Lei nº 10.233, de 5 de junho de 2001 , passa a vigorar com as seguintes alterações: “Art. 27. ....................................................................... ............................................................................................. XXVIII - publicar os editais, julgar as licitações e celebra",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "amends_revokes-009",
+      "group": "AMENDS_REVOKES",
+      "relation": "AMENDS",
+      "kind": "rewritten",
+      "source": "Lei nº 13.047 (hors corpus)",
+      "target": "Art. 2º-C — Lei nº 9.266/1996",
+      "target_articles": [],
+      "scopes": [
+        "article"
+      ],
+      "evidence": "rasil, é privativo de bacharel em Direito e exige 3 (três) anos de atividade jurídica ou policial, comprovados no ato de posse. (Redação dada pela Lei nº 13.047. de 2014) Art. 2o-C. O cargo de Diretor-Geral, nomeado pelo Presidente da República, é privativo de delegado de Polícia Federal integrante da classe especial. (Redação dada pela Lei nº 13.047. de 2014) Art. 2o-D. Os ocupantes do cargo de Perito Criminal Federal são responsáveis pela direção das atividades periciais do órgão. (Incluído pela Lei nº 13.047. de 2014) Parágrafo único. É assegurada aos ocupantes do cargo de Perito Criminal Federal autonomia técnica e científica no",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "amends_revokes-010",
+      "group": "AMENDS_REVOKES",
+      "relation": "REVOKES",
+      "kind": "revoked",
+      "source": "Lei nº 15.141/2025 (hors corpus)",
+      "target": "Art. 24-D — Lei nº 11.090/2005",
+      "target_articles": [],
+      "scopes": [
+        "text"
+      ],
+      "evidence": "mento Agrário - GTERDA, a partir de 1º de janeiro de 2009, ficará incorporado ao vencimento básico dos titulares de cargos de provimento efetivo integrantes do Plano de Carreira dos Cargos de Reforma e Desenvolvimento Agrário, conforme valores estabelecidos no Anexo II desta Lei. (Incluído pela Lei nº 11,784, de 2008) (Revogado pela Lei nº 15.141, de 2025) (Revogado pela Lei nº 11.784, de 2008) Art. 27. Os cargos efetivos de Agente de Inspeção Sanitária e Industrial de Produtos de Origem Animal e de Agente de Atividades Agropecuárias do Quadro de Pessoal do Ministério da Agricultura, Pecuária e Abastecimento são reestruturados em cl",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "amends_revokes-011",
+      "group": "AMENDS_REVOKES",
+      "relation": "AMENDS",
+      "kind": "inserted",
+      "source": "Lei nº 10.228/2001 (hors corpus)",
+      "target": "Art. 21-A — Lei nº 8.171/1991",
+      "target_articles": [],
+      "scopes": [
+        "article",
+        "paragraph"
+      ],
+      "evidence": "rt. 21-A. O Poder Público procederá à identificação, em todo o território nacional, das áreas desertificadas, as quais somente poderão ser exploradas mediante a adoção de adequado plano de manejo, com o emprego de tecnologias capazes de interromper o processo de desertificação e de promover a recuperação dessas áreas. (Incluído pela Lei nº 10.228, de 29.5.2001) § 1o O Poder Público estabelecerá cadastros das áreas sujeitas a processos de desertificação, em âmbito estadual ou municipal. ((Incluído pela Lei nº 10.228, de 29.5.2001)) § 2o O Poder Público, por intermédio dos órgãos competentes, promoverá a pesquisa, a geração e a difusã",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "amends_revokes-012",
+      "group": "AMENDS_REVOKES",
+      "relation": "AMENDS",
+      "kind": "rewritten",
+      "source": "Lei nº 14.026/2020",
+      "target": "Art. 17 — Lei nº 11.445/2007",
+      "target_articles": [],
+      "scopes": [
+        "article",
+        "paragraph"
+      ],
+      "evidence": "020) (Revogado pela Lei nº 14.026, de 2020) (Revogado pela Lei nº 14.026, de 2020) (Revogado pela Lei nº 14.026, de 2020) (Revogado pela Lei nº 14.026, de 2020) Art. 17. O serviço regionalizado de saneamento básico poderá obedecer a plano regional de saneamento básico elaborado para o conjunto de Municípios atendidos. (Redação dada pela Lei nº 14.026, de 2020) § 1º O plano regional de saneamento básico poderá contemplar um ou mais componentes do saneamento básico, com vistas à otimização do planejamento e da prestação dos serviços. (Redação dada pela Lei nº 14.026, de 2020) § 2º As disposições constantes do plano regional de saneame",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "amends_revokes-013",
+      "group": "AMENDS_REVOKES",
+      "relation": "AMENDS",
+      "kind": "amends_law",
+      "source": "Lei nº 9.782/1999",
+      "target": "Lei nº 6.360/1976 (hors corpus)",
+      "target_articles": [
+        "20"
+      ],
+      "scopes": [
+        "article"
+      ],
+      "evidence": "respectiva alienação judicial, observado, no que couber, o disposto no art. 34 da Lei nº 6.368, de 21 de outubro de 1976, bem como requerer, em juízo, o bloqueio de contas bancárias de titularidade da empresa e de seus proprietários e dirigentes, responsáveis pela autoria daqueles delitos. Art. 44. Os arts. 20 e 21 da Lei n 6.360, de 23 de setembro de 1976, passam a vigorar com a seguinte redação: \"Art. 20. .......................................................................\" \"Parágrafo único. Não poderá ser registrado o medicamento que não tenha em sua composição substância reconhecidamente benéfica do ponto de vista clínico ou",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "amends_revokes-014",
+      "group": "AMENDS_REVOKES",
+      "relation": "AMENDS",
+      "kind": "inserted",
+      "source": "Lei nº 12.973/2014 (hors corpus)",
+      "target": "Art. 64 — Lei nº 9.532/1997",
+      "target_articles": [],
+      "scopes": [
+        "paragraph"
+      ],
+      "evidence": "deste artigo. (Incluído pela Lei nº 11.941, de 2009) § 11. Os órgãos de registro público onde os bens e direitos foram arrolados possuem o prazo de 30 (trinta) dias para liberá-los, contados a partir do protocolo de cópia do documento comprobatório da comunicação aos órgãos fazendários, referido no § 3o deste artigo. (Incluído pela Lei nº 12.973, de 2014) § 12. A autoridade fiscal competente poderá, a requerimento do sujeito passivo, substituir bem ou direito arrolado por outro que seja de valor igual ou superior, desde que respeitada a ordem de prioridade de bens a serem arrolados definida pela Secretaria da Receita Federal do Bra",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "amends_revokes-015",
+      "group": "AMENDS_REVOKES",
+      "relation": "AMENDS",
+      "kind": "rewritten",
+      "source": "Lei nº 7.751/1989 (hors corpus)",
+      "target": "Art. 40 — Lei nº 7.713/1988",
+      "target_articles": [],
+      "scopes": [
+        "article"
+      ],
+      "evidence": "eto-Lei nº 2.397, de 21 de dezembro de 1987. Art 40. Fica sujeita ao pagamento do imposto de renda à alíquota de dez por cento, a pessoa física que auferir ganhos líquidos nas operações realizadas nas bolsas de valores, de mercadorias, de futuros e assemelhadas, ressalvado o disposto no inciso II do art. 22 desta Lei. (Redação dada pela Lei nº 7.751, de 1989) (Vide Lei nº 8.012, de 1990) Vigência encerrada § 1º Considera-se ganho líquido o resultado positivo auferido nas operações ou contratos liquidados em cada mês, admitida a dedução dos custos e despesas efetivamente incorridos, necessários à realização das operações, e à compens",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "amends_revokes-016",
+      "group": "AMENDS_REVOKES",
+      "relation": "AMENDS",
+      "kind": "inserted",
+      "source": "Lei nº 15.232/2025 (hors corpus)",
+      "target": "Art. 6º — Lei nº 13.819/2019",
+      "target_articles": [],
+      "scopes": [
+        "paragraph"
+      ],
+      "evidence": "entre o conselho tutelar e a autoridade sanitária, de forma a integrar suas ações nessa área. § 7º Os conselhos de defesa dos direitos da pessoa com deficiência que tomarem conhecimento de casos de violência autoprovocada relativos a essa população deverão comunicá-los imediatamente à autoridade sanitária competente. (Incluído pela Lei nº 15.232, de 2025) Art. 7º Nos casos que envolverem investigação de suspeita de suicídio, a autoridade competente deverá comunicar à autoridade sanitária a conclusão do inquérito policial que apurou as circunstâncias da morte. Art. 8º (VETADO). Art. 9º Aplica-se, no que couber, à notificação compuls",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "amends_revokes-017",
+      "group": "AMENDS_REVOKES",
+      "relation": "AMENDS",
+      "kind": "rewritten",
+      "source": "Lei nº 14.026/2020",
+      "target": "Art. 9º — Lei nº 11.445/2007",
+      "target_articles": [],
+      "scopes": [
+        "inciso"
+      ],
+      "evidence": "a pública de saneamento básico, devendo, para tanto: I - elaborar os planos de saneamento básico, nos termos desta Lei, bem como estabelecer metas e indicadores de desempenho e mecanismos de aferição de resultados, a serem obrigatoriamente observados na execução dos serviços prestados de forma direta ou por concessão; (Redação dada pela Lei nº 14.026, de 2020) II - prestar diretamente os serviços, ou conceder a prestação deles, e definir, em ambos os casos, a entidade responsável pela regulação e fiscalização da prestação dos serviços públicos de saneamento básico; (Redação dada pela Lei nº 14.026, de 2020) III - definir os parâmetr",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "amends_revokes-018",
+      "group": "AMENDS_REVOKES",
+      "relation": "AMENDS",
+      "kind": "amends_law",
+      "source": "Lei nº 12.716/2012",
+      "target": "Lei nº 10.954/2004 (hors corpus)",
+      "target_articles": [
+        "1"
+      ],
+      "scopes": [
+        "article"
+      ],
+      "evidence": ".......... h) assistir, mediante a doação de alimentos disponíveis em seus estoques, às comunidades e famílias atingidas por desastres naturais em Municípios em situação de emergência ou estado de calamidade pública reconhecidos pelo Poder Executivo federal, na forma do regulamento.” (NR) Art. 12. O § 3º do art. 1º da Lei nº 10.954, de 29 de setembro de 2004, passa a vigorar com a seguinte redação: “Art. 1º ....................................................................... ............................................................................................. § 3º O valor do Auxílio a que se refere o caput não excederá a",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "amends_revokes-019",
+      "group": "AMENDS_REVOKES",
+      "relation": "AMENDS",
+      "kind": "amends_law",
+      "source": "Lei nº 14.026/2020",
+      "target": "Lei nº 10.768/2003 (hors corpus)",
+      "target_articles": [],
+      "scopes": [
+        "law"
+      ],
+      "evidence": "e eu sanciono a seguinte Lei: Art. 1º Esta Lei atualiza o marco legal do saneamento básico e altera a Lei nº 9.984, de 17 de julho de 2000 , para atribuir à Agência Nacional de Águas e Saneamento Básico (ANA) competência para instituir normas de referência para a regulação dos serviços públicos de saneamento básico, a Lei nº 10.768, de 19 de novembro de 2003 , para alterar o nome e as atribuições do cargo de Especialista em Recursos Hídricos, a Lei nº 11.107, de 6 de abril de 2005 , para vedar a prestação por contrato de programa dos serviços públicos de que trata o art. 175 da Constituição Federal , a Lei nº 11.445, de 5 de janeiro",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "amends_revokes-020",
+      "group": "AMENDS_REVOKES",
+      "relation": "AMENDS",
+      "kind": "amends_law",
+      "source": "Lei nº 14.995/2024",
+      "target": "Lei nº 13.340/2016 (hors corpus)",
+      "target_articles": [],
+      "scopes": [
+        "law"
+      ],
+      "evidence": "o Monetário Nacional e do Banco Central do Brasil a elas aplicável. § 6º Os limites de financiamento, os prazos e as demais condições negociais serão regulamentados pelo Conselho Monetário Nacional. CAPÍTULO VIII DA DILAÇÃO DE PRAZOS PARA RENEGOCIAÇÃO DE DÍVIDAS NO ÂMBITO DOS FUNDOS CONSTITUCIONAIS E OUTROS Art. 43. A Lei nº 13.340, de 28 de setembro de 2016, passa a vigorar com as seguintes alterações: “Art. 1º-B. É autorizada a concessão de rebate para liquidação, até 31 de dezembro de 2025, nos termos dos arts. 1º e 1º-A desta Lei, de débitos de responsabilidade de miniprodutores rurais e de pequenos produtores rurais, conforme d",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "amends_revokes-021",
+      "group": "AMENDS_REVOKES",
+      "relation": "REVOKES",
+      "kind": "revokes_law",
+      "source": "Lei nº 9.019/1995",
+      "target": "Lei nº 1.578/1977 (hors corpus)",
+      "target_articles": [],
+      "scopes": [
+        "law"
+      ],
+      "evidence": "solução nº 1.582, de 17 de fevereiro de 1989, ambas da extinta Comissão de Política Aduaneira (CPA). Art. 13. Ficam convalidados os atos praticados com base na Medida Provisória nº 879, de 30 de janeiro de 1995. Art. 14. Esta Lei entra em vigor na data de sua publicação. Art. 15. Revoga-se o § 2º do art. 1º do Decreto-lei nº 1.578, de 11 de outubro de 1977. Senado Federal, em 30 de março de 1995; 174º da Independência e 107º da República SENADOR JOSÉ SARNEY Presidente Este texto não substitui o publicado no D.O.U. de 31.3.1995 *",
+      "verdict": "incorrect",
+      "note": "'Revoga-se o § 2º do art. 1º do Decreto-lei nº 1.578': a decree-law read as 'Lei nº 1.578'."
+    },
+    {
+      "id": "amends_revokes-022",
+      "group": "AMENDS_REVOKES",
+      "relation": "AMENDS",
+      "kind": "amends_law",
+      "source": "Lei nº 14.673/2023",
+      "target": "Lei nº 11.344/2006 (hors corpus)",
+      "target_articles": [],
+      "scopes": [
+        "law"
+      ],
+      "evidence": "pectivamente, na forma dos Anexos XLIV e XLV desta Lei. Estrutura Remuneratória de Cargos Específicos Art. 21. Os Anexos XIII e XIV da Lei nº 12.277, de 30 de junho de 2010, passam a vigorar, respectivamente, na forma dos Anexos XLVI e XLVII desta Lei. Área de Auditoria do Sistema Único de Saúde Art. 22. O Anexo XV da Lei nº 11.344, de 8 de setembro de 2006, passa a vigorar na forma do Anexo XLVIII desta Lei. Servidores do Instituto Nacional de Meteorologia (Inmet) e Servidores da Comissão Executiva do Plano da Lavoura Cacaueira (Ceplac) Art. 23. Os Anexos I e II da Lei nº 12.702, de 7 de agosto de 2012, passam a vigorar, respectiva",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "amends_revokes-023",
+      "group": "AMENDS_REVOKES",
+      "relation": "AMENDS",
+      "kind": "amends_law",
+      "source": "Lei nº 12.010/2009",
+      "target": "Lei nº 8.560/1992 (hors corpus)",
+      "target_articles": [
+        "2"
+      ],
+      "scopes": [
+        "article"
+      ],
+      "evidence": "cujos pais forem desconhecidos, falecidos ou que tiverem sido suspensos ou destituídos do poder familiar terão tutores nomeados pelo Juiz ou serão incluídos em programa de colocação familiar, na forma prevista pela Lei no 8.069, de 13 de julho de 1990 - Estatuto da Criança e do Adolescente.” (NR) Art. 5o O art. 2o da Lei no 8.560, de 29 de dezembro de 1992, fica acrescido do seguinte § 5o, renumerando-se o atual § 5o para § 6o, com a seguinte redação: “Art. 2o ................................................. ......................................................................................... § 5º Nas hipóteses previstas no §",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "amends_revokes-024",
+      "group": "AMENDS_REVOKES",
+      "relation": "AMENDS",
+      "kind": "rewritten",
+      "source": "Lei nº 15.526/2026 (hors corpus)",
+      "target": "Art. 55 — Lei nº 8.171/1991",
+      "target_articles": [],
+      "scopes": [
+        "text"
+      ],
+      "evidence": "dito rural levará sempre em conta o zoneamento agroecológico. Art. 51. (Vetado). Art. 52. O Poder Público assegurará crédito rural especial e diferenciado aos produtores rurais assentados em áreas de reforma agrária. Art. 53. (Vetado). Art. 54. (Vetado). CAPÍTULO XIV Do Crédito Fundiário Art. 55. (Vetado). CAPÍTULO XV (Redação dada pela Lei nº 15.526, de 2026) DO SEGURO RURAL Art. 56. É instituído o seguro rural destinado a cobrir prejuízos decorrentes de: (Redação dada pela Lei nº 15.526, de 2026) I – sinistros que afetem interesse legítimo do segurado relativo a bens fixos e semifixos ou semoventes utilizados na atividade rural; (",
+      "verdict": "incorrect",
+      "note": "Marker '(Redação dada pela Lei nº 15.526)' sits on the 'CAPÍTULO XV' heading after 'Art. 55. (Vetado).': it rewrites the chapter heading, not art. 55."
+    },
+    {
+      "id": "amends_revokes-025",
+      "group": "AMENDS_REVOKES",
+      "relation": "AMENDS",
+      "kind": "rewritten",
+      "source": "Lei nº 13.105/2015 (hors corpus)",
+      "target": "Art. 83 — Lei nº 9.099/1995",
+      "target_articles": [],
+      "scopes": [
+        "article",
+        "paragraph"
+      ],
+      "evidence": "do art. 65 desta Lei. § 4º As partes serão intimadas da data da sessão de julgamento pela imprensa. § 5º Se a sentença for confirmada pelos próprios fundamentos, a súmula do julgamento servirá de acórdão. Art. 83. Cabem embargos de declaração quando, em sentença ou acórdão, houver obscuridade, contradição ou omissão. (Redação dada pela Lei nº 13.105, de 2015) (Vigência) § 1º Os embargos de declaração serão opostos por escrito ou oralmente, no prazo de cinco dias, contados da ciência da decisão. § 2o Os embargos de declaração interrompem o prazo para a interposição de recurso. (Redação dada pela Lei nº 13.105, de 2015) (Vigência) §",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "amends_revokes-026",
+      "group": "AMENDS_REVOKES",
+      "relation": "AMENDS",
+      "kind": "amends_law",
+      "source": "Lei nº 9.779/1999",
+      "target": "Lei nº 9.317/1996 (hors corpus)",
+      "target_articles": [
+        "9"
+      ],
+      "scopes": [
+        "article"
+      ],
+      "evidence": "as, nos mercados de derivativos. (Vide Lei nº 11.033, de 2004) Vigência encerrada Parágrafo único. A retenção na fonte de que trata este artigo não se aplica no caso de beneficiário referido no inciso I do art. 77 da Lei n 8.981, de 1995, com redação dada pela Lei nº 9.065, de 20 de junho de 1995. Art. 6o O art. 9o da Lei nº 9.317, de 5 de dezembro de 1996, passa a vigorar com a seguinte redação: \"Art.9o ......................................................................\" \"I - na condição de empresa de pequeno porte, que tenha auferido, no ano-calendário imediatamente anterior, receita bruta superior a R$ 1.200.000,00 (um milhão",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "amends_revokes-027",
+      "group": "AMENDS_REVOKES",
+      "relation": "AMENDS",
+      "kind": "amends_law",
+      "source": "Lei nº 12.722/2012",
+      "target": "Lei nº 11.977/2009 (hors corpus)",
+      "target_articles": [],
+      "scopes": [
+        "law"
+      ],
+      "evidence": ".......... ............................................................................................. § 3º Além das hipóteses previstas no caput , o RDC também é aplicável às licitações e contratos necessários à realização de obras e serviços de engenharia no âmbito dos sistemas públicos de ensino.” (NR) Art. 15. A Lei nº 11.977, de 7 de julho de 2009, passa a vigorar acrescida do seguinte art. 82-D: “ Art. 82-D. No âmbito do PMCMV, no caso de empreendimentos construídos com recursos do FAR, poderá ser custeada a edificação de equipamentos de educação, saúde e outros complementares à habitação, inclusive em terrenos de propriedad",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "amends_revokes-028",
+      "group": "AMENDS_REVOKES",
+      "relation": "AMENDS",
+      "kind": "inserted",
+      "source": "Lei nº 7.959/1989 (hors corpus)",
+      "target": "Art. 17 — Lei nº 7.713/1988",
+      "target_articles": [],
+      "scopes": [
+        "inciso"
+      ],
+      "evidence": ". Vigência encerrada Art. 17. O valor de aquisição de cada bem ou direito, expresso em cruzados novos, apurado de acordo com o artigo anterior, deverá ser corrigido monetariamente, a partir da data do pagamento, da seguinte forma: (Redação dada pela Lei nº 7.959, de 1989) I - até janeiro de 1989, pela variação da OTN; (Incluído pela Lei nº 7.959, de 1989) II - nos meses de fevereiro a abril de 1989, pelas seguintes variações: em fevereiro, 31,2025%; em março, 30,5774%; e em abril, 9,2415%; (Incluído pela Lei nº 7.959, de 1989) III - a partir de maio de 1989, pela variação do BTN. (Incluído pela Lei nº 7.959, de 1989) § 1° Na falta d",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "amends_revokes-029",
+      "group": "AMENDS_REVOKES",
+      "relation": "AMENDS",
+      "kind": "rewritten",
+      "source": "Lei nº 12.126/2009 (hors corpus)",
+      "target": "Art. 8º — Lei nº 9.099/1995",
+      "target_articles": [],
+      "scopes": [
+        "paragraph"
+      ],
+      "evidence": "o desempenho de suas funções. Seção III Das Partes Art. 8º Não poderão ser partes, no processo instituído por esta Lei, o incapaz, o preso, as pessoas jurídicas de direito público, as empresas públicas da União, a massa falida e o insolvente civil. § 1o Somente serão admitidas a propor ação perante o Juizado Especial: (Redação dada pela Lei nº 12.126, de 2009) I - as pessoas físicas capazes, excluídos os cessionários de direito de pessoas jurídicas; (Incluído pela Lei nº 12.126, de 2009) II - as pessoas enquadradas como microempreendedores individuais, microempresas e empresas de pequeno porte na forma da Lei Complementar no 123, de",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "id": "amends_revokes-030",
+      "group": "AMENDS_REVOKES",
+      "relation": "AMENDS",
+      "kind": "inserted",
+      "source": "Lei Complementar nº 187/2021 (hors corpus)",
+      "target": "Art. 64 — Lei nº 9.532/1997",
+      "target_articles": [],
+      "scopes": [
+        "paragraph"
+      ],
+      "evidence": "do § 2o do art. 64-A. (Incluído pela Lei nº 13.043, de 2014) § 13. No caso de fundações que prevejam em seu estatuto social que a alienação de imóveis depende de autorização do Ministério Público, serão contabilizados no limite de que trata o caput deste artigo apenas os créditos tributários inscritos em dívida ativa. (Incluído pela Lei Complementar nº 187, de 2021) Art. 64-A. O arrolamento de que trata o art. 64 recairá sobre bens e direitos suscetíveis de registro público, com prioridade aos imóveis, e em valor suficiente para cobrir o montante do crédito tributário de responsabilidade do sujeito passivo. .(Incluído pela Medida Pr",
+      "verdict": "correct",
+      "note": ""
+    }
+  ],
+  "review": {
+    "reviewer": "manual reading of each edge's evidence against the law text",
+    "rules": "raglab.graph.legal as of this commit; frozen before the sample was drawn (development samples used seeds 7 and 11)"
+  }
+}
