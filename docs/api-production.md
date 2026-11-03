@@ -267,7 +267,9 @@ chiffre ci-dessus ne mesure que ce que l'API ajoute ou retire.
 ## Ce qui reste pour la phase 9.5
 
 - Migrations Alembic : prévues au périmètre 9.5 dans la feuille de route,
-  non traitées ici (aucun changement de schéma n'était nécessaire). Elles
-  feront l'objet d'une PR séparée, validée avec le propriétaire.
+  elles arrivent avec la phase 9.2 (branche `feature/hybrid-retrieval` :
+  `src/raglab/db/migrations/`, révision de base `0001_baseline`, appliquées
+  par `raglab db init`). Cette PR ne change pas le schéma et n'ajoute aucune
+  migration ; une évolution future se chaînera après la dernière révision.
 - Limitation de débit partagée entre workers / nœuds (Redis) si l'API est un
   jour déployée sur plusieurs instances.

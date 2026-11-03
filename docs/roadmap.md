@@ -156,6 +156,6 @@ Objectif : passer du laboratoire à un pipeline RAG prêt pour la production, ch
 - `/health` (liveness, sans dépendance) et `/ready` (Postgres, Ollama, modèle par défaut installé) ; `/api/health` conservé pour le Dashboard
 - erreurs Ollama typées : modèle absent 424 (message actionnable), mémoire saturée 503 + `Retry-After`, injoignable 502, timeout 504
 - mesuré sans GPU (`scripts/bench_api_hardening.py`) : sources affichées après ~65 ms au lieu de ~3,4 s, premier token à 366 ms (préremplissage simulé 300 ms) ; middlewares +0,16 ms par requête ; TTFT réel sur GPU à mesurer
-- reste : migrations Alembic (PR séparée)
+- migrations Alembic : introduites avec 9.2 (`feature/hybrid-retrieval`), aucune migration dans cette PR
 
-**À venir** : 9.2 retrieval hybride BM25 + RRF · 9.3 re-ranking cross-encoder · 9.4 compréhension de la requête et abstention · 9.5 migrations Alembic · 9.6 observabilité (Prometheus, Grafana, dérive) · 9.7 portes de qualité · 9.8 vitrine
+**À venir** : 9.2 retrieval hybride BM25 + RRF · 9.3 re-ranking cross-encoder · 9.4 compréhension de la requête et abstention · 9.6 observabilité (Prometheus, Grafana, dérive) · 9.7 portes de qualité · 9.8 vitrine
