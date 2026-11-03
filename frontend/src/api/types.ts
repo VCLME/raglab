@@ -38,6 +38,27 @@ export interface ConfigResponse {
   rerank_gpu?: boolean;
   rerank_model_name?: string;
   rerank_candidates?: number;
+  citation_resolver?: boolean;
+  llm_providers?: string[];
+  default_llm_provider?: string;
+}
+
+/** One generation backend of GET /api/llm/models. */
+export interface LlmProvider {
+  name: string;
+  label: string;
+  /** "ollama" or "openai" (OpenAI-compatible: llama.cpp, vLLM). */
+  kind: string;
+  base_url: string;
+  available: boolean;
+  error: string | null;
+  models: string[];
+}
+
+export interface LlmModelsResponse {
+  default_provider: string;
+  default_model: string;
+  providers: LlmProvider[];
 }
 
 export interface OllamaStatus {

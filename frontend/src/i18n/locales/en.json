@@ -41,7 +41,9 @@
     "hide_explanation": "Hide",
     "api_down_title": "raglab API unreachable",
     "api_down_hint": "Check that the backend is running (<code>raglab serve --dev</code>), then refresh the page.",
-    "api_down_short": "Unavailable until the API responds."
+    "api_down_short": "Unavailable until the API responds.",
+    "other": "Other…",
+    "default_paren": "(default)"
   },
   "topbar": {
     "brand": "raglab",
@@ -49,18 +51,12 @@
     "expert": "Expert",
     "chat_title": "Chat mode: ask questions to the RAG simply",
     "expert_title": "Expert mode: ingestion, indexing, Ollama, benchmarks",
-    "api_label": "API {{api}} · PostgreSQL {{postgres}} · Ollama {{ollama}}",
-    "api_unreachable": "API unreachable",
     "language": "Language",
-    "api_key": "API key",
-    "api_key_title": "Key sent in the X-API-Key header (required when the API sets RAGLAB_API_KEY)",
-    "api_key_set": "API key set",
-    "api_key_placeholder": "Paste the API key",
-    "api_key_save": "Save",
-    "api_key_clear": "Clear",
-    "api_key_hint": "Stored in this browser only.",
     "edu": "Learning mode",
-    "edu_title": "Show the RAG pipeline diagram and follow the query stage by stage"
+    "edu_title": "Show the RAG pipeline diagram and follow the query stage by stage",
+    "api_down": "API unreachable",
+    "api_degraded": "Services degraded",
+    "api_label": "API {{api}} · PostgreSQL {{postgres}} · Ollama {{ollama}}"
   },
   "nav": {
     "expert_section": "Expert mode",
@@ -79,7 +75,7 @@
   },
   "chat": {
     "welcome_title": "Ask a question about your documents",
-    "welcome_subtitle": "The model searches the selected index, cites the excerpts used and produces an answer. Pick a suggestion below or type your question.",
+    "welcome_subtitle": "The model searches the selected index, cites the excerpts it used and writes an answer.",
     "no_corpus_indexed": "— no indexed corpus —",
     "corpus_label": "Corpus",
     "corpus_option": "{{name}} · {{count}} docs",
@@ -110,7 +106,31 @@
     "llm_title": "Model used for the final generation",
     "no_answer_generated": "(No generated answer)",
     "meta_first_token": "1st token {{ms}} ms",
-    "meta_first_token_title": "Time from the start of generation to the first answer fragment received"
+    "meta_first_token_title": "Time from the start of generation to the first answer fragment received",
+    "welcome_pick": "Pick a suggestion below or type your question.",
+    "api_waiting": "Waiting for the API…",
+    "api_waiting_hint": "The API is not answering yet. The lists fill in as soon as it is ready, no reload needed.",
+    "question_label": "Question",
+    "llm_default": "{{model}} · {{provider}} (default)",
+    "llm_no_models": "no model served",
+    "llm_unreachable": "server unreachable",
+    "options": "Options",
+    "options_title": "Search options for this conversation",
+    "options_rerank_short": "rerank",
+    "options_citations_short": "citations",
+    "options_mode_hint_dense": "Meaning similarity between the question and the passages (embeddings).",
+    "options_mode_hint_lexical": "The question's exact words, weighted by how rare they are (BM25).",
+    "options_mode_hint_hybrid": "Both searches, fused by rank (RRF). Best measured recall.",
+    "options_rerank_hint": "{{model}} rereads the best candidates together with the question.",
+    "options_rerank_no_gpu": "No GPU detected: by default re-ranking is skipped. Turning it on here runs it on CPU (several seconds).",
+    "options_citations_hint": "“art. 49 da Lei 8.078”: restricts the search to the cited law and puts the article first.",
+    "options_defaults": "Server defaults.",
+    "options_changed": "Changed for this conversation.",
+    "options_reset": "Reset",
+    "rerank_notice_skipped_no_gpu": "Re-ranking skipped: no GPU on the server. The order comes from the search alone.",
+    "rerank_notice_cpu": "Re-ranking ran on CPU for lack of a GPU: slower than usual.",
+    "meta_mode": "search",
+    "meta_citation": "citation"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -489,9 +509,7 @@
     "title": "The pipeline, live",
     "subtitle": "Ask a question: each stage lights up as it runs. Click a stage to learn what it does.",
     "diagram_label": "RAG architecture diagram: from question to answer",
-    "hide": "Hide diagram",
-    "show": "Show diagram",
-    "hint": "Click a stage of the diagram to see what it does and its intermediate data.",
+    "hint": "Click a stage to see what it does, the code that runs it and the values of your question.",
     "status_running": "running…",
     "status_disabled": "disabled",
     "status_error": "failed",
@@ -499,8 +517,6 @@
     "what": "What it does:",
     "why": "Why it exists:",
     "duration": "Duration",
-    "follow_live": "Follow live",
-    "following": "Following live",
     "replayed": "This stage runs before the stream opens: its duration is real, its animation is replayed.",
     "from_timings": "The API answered without streaming: the diagram is rebuilt from the response timings.",
     "announce_running": "{{stage}} running",
@@ -535,64 +551,95 @@
     "stages": {
       "question": {
         "name": "Question",
-        "what": "The text typed in the Chat, sent to the API with the chosen corpus and index.",
+        "what": "The text typed in the Chat, sent to the API with the chosen corpus and index. A legal citation (“art. 49 da Lei 8.078”) is spotted in it with regular expressions.",
         "why": "Everything starts here: the same question goes through every stage, and the diagram shows what each one does with it.",
-        "disabled": ""
+        "disabled": "",
+        "short": "Question"
       },
       "routing": {
         "name": "Router",
         "what": "Detects language and intent, picks the corpus, and may decline to answer when no document covers the question.",
         "why": "Avoid searching in the wrong place and inventing an off-topic answer: abstaining beats hallucinating.",
-        "disabled": "The router is not enabled for this request: the question goes straight to the chosen corpus."
+        "disabled": "The router is not enabled for this request: the question goes straight to the chosen corpus.",
+        "short": "Router"
       },
       "embed": {
         "name": "Embedding",
         "what": "An embedding model turns the question into a vector of numbers that encodes its meaning.",
         "why": "Texts with similar meaning get close vectors: that is what makes search by meaning, not just by words, possible.",
-        "disabled": "No vector search for this request, hence no embedding."
+        "disabled": "No vector search for this request, hence no embedding.",
+        "short": "Embedding"
       },
       "retrieval": {
         "name": "Vector search",
-        "what": "Compares the question vector with the vectors of the indexed passages (pgvector, HNSW index) and keeps the closest ones.",
+        "what": "Compares the question vector with the indexed passages' vectors (pgvector, exact cosine distance by default) and keeps the closest.",
         "why": "Find, in milliseconds and among thousands of passages, those about the topic even without the same words.",
-        "disabled": "Search is lexical only for this request."
+        "disabled": "Search is lexical only for this request.",
+        "short": "Vectors"
       },
       "lexical": {
         "name": "BM25",
         "what": "Classic full-text search: scores passages by the exact words of the question and how rare they are.",
         "why": "Embeddings sometimes miss precise terms (article numbers, acronyms, proper names) that BM25 always finds.",
-        "disabled": "Hybrid search disabled: only vector search is used."
+        "disabled": "Hybrid search disabled: only vector search is used.",
+        "short": "BM25"
       },
       "fusion": {
         "name": "Fusion",
         "what": "Merges the two rankings (vector and BM25) into one with Reciprocal Rank Fusion.",
         "why": "Get the strengths of both searches without comparing scores on different scales.",
-        "disabled": "No fusion: only one search ran."
+        "disabled": "No fusion: only one search ran.",
+        "short": "Fusion"
       },
       "rerank": {
         "name": "Re-ranking",
         "what": "A cross-encoder reads each (question, passage) pair and re-orders them precisely.",
         "why": "More accurate than search but too slow for the whole corpus: it only runs on the best candidates.",
-        "disabled": "Re-ranking disabled: the search order is kept."
+        "disabled": "Re-ranking disabled: the search order is kept.",
+        "short": "Re-ranking"
       },
       "prompt": {
         "name": "Prompt",
         "what": "Assembles the instructions, the question and the retrieved passages (with their rank) into the message sent to the LLM.",
         "why": "The prompt is what forces the model to answer only from the sources and to cite them [Rank X].",
-        "disabled": "No generation requested: no prompt is built."
+        "disabled": "No generation requested: no prompt is built.",
+        "short": "Prompt"
       },
       "generation": {
         "name": "LLM",
-        "what": "The local language model (Ollama) reads the prompt and writes the answer, token by token.",
+        "what": "The language model (Ollama, llama.cpp or vLLM) reads the prompt and writes the answer, token by token.",
         "why": "Turn raw passages into a clear, sourced answer; it is the most expensive stage in time and GPU.",
-        "disabled": "No generation requested for this request."
+        "disabled": "No generation requested for this request.",
+        "short": "LLM"
       },
       "answer": {
         "name": "Answer",
         "what": "The answer shown in the Chat, with clickable citations to the sources.",
         "why": "Every claim can be checked against the cited passage: that is what makes a RAG trustworthy.",
-        "disabled": ""
+        "disabled": "",
+        "short": "Answer"
       }
+    },
+    "hint_selected": "Click the active stage again to close its explanation.",
+    "close": "Close the explanation",
+    "replayed_tag": "replayed",
+    "not_run_yet": "Ask a question to see this stage's real values.",
+    "how": "How it is done",
+    "fig": {
+      "query": "question",
+      "space_label": "The question and its nearest passages in the embedding space",
+      "space_caption": "Distance to the centre follows 1 − cosine (this request's values); the angles only spread the points.",
+      "lexemes": "Question lexemes:",
+      "lexical_caption": "BM25 score of each passage: term frequency, weighted by rarity and passage length.",
+      "passage": "Passage",
+      "rank_dense": "Vector rank",
+      "rank_bm25": "BM25 rank",
+      "rrf_formula": "Computation",
+      "fused": "Fused score",
+      "rrf_caption": "Only ranks count (k = {{k}}, BM25 weight = {{weight}}): no need to compare a cosine with a BM25 score.",
+      "before": "Before (first search)",
+      "after": "After (cross-encoder)",
+      "rerank_caption": "Each line joins a passage's position before and after the cross-encoder reread it."
     }
   },
   "retrieval": {
@@ -626,6 +673,22 @@
     "citation_resolved": "Citation recognised: {{label}}",
     "citation_unresolved": "Citation recognised ({{label}}) but the law is not in the index: normal search.",
     "rerank_notice_skipped_no_gpu": "Re-ranking skipped: no GPU available (it would take several seconds on CPU). Force it with “on” if needed.",
-    "rerank_notice_cpu": "Re-ranking ran on CPU, without a GPU: expect several seconds per query."
+    "rerank_notice_cpu": "Re-ranking ran on CPU, without a GPU: expect several seconds per query.",
+    "mode_short_dense": "Vector",
+    "mode_short_lexical": "BM25",
+    "mode_short_hybrid": "Hybrid"
+  },
+  "connection": {
+    "title": "API connection",
+    "lead": "Key protecting the raglab API itself (X-API-Key header). Only needed when the server sets RAGLAB_API_KEY. This is not an LLM provider key.",
+    "label": "raglab API key",
+    "placeholder": "Paste the key",
+    "set": "A key is stored in this browser.",
+    "unset": "No key: requests are sent without an X-API-Key header.",
+    "save": "Save",
+    "clear": "Clear key",
+    "saved": "Key saved.",
+    "cleared": "Key cleared.",
+    "hint": "Stored in this browser only (localStorage), never sent anywhere but this API."
   }
 }

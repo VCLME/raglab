@@ -12,6 +12,7 @@ import { ExplainBanner } from "../components/ExplainBanner";
 import { FieldRow } from "../components/FieldRow";
 import { JsonViewer } from "../components/JsonViewer";
 import { Spinner } from "../components/Spinner";
+import { Select } from "../components/Select";
 
 export function Playground() {
   const { t } = useTranslation();
@@ -92,7 +93,7 @@ export function Playground() {
               label={t("playground.model_label")}
               hint={t("playground.model_default_hint", { value: defaultModel })}
             >
-              <select value={model} onChange={(e) => setModel(e.target.value)}>
+              <Select value={model} onChange={(e) => setModel(e.target.value)}>
                 <option value="">
                   {t("playground.model_default_option", { value: defaultModel })}
                 </option>
@@ -101,7 +102,7 @@ export function Playground() {
                     {m.name}
                   </option>
                 ))}
-              </select>
+              </Select>
             </FieldRow>
             <FieldRow label={t("playground.system_label")} hint={t("playground.system_hint")}>
               <textarea value={system} onChange={(e) => setSystem(e.target.value)} rows={4} />

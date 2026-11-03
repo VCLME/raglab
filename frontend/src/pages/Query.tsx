@@ -17,6 +17,7 @@ import { JsonViewer } from "../components/JsonViewer";
 import { Spinner } from "../components/Spinner";
 import { useConfig } from "../hooks/useConfig";
 import { useLocalHistory } from "../hooks/useLocalHistory";
+import { Select } from "../components/Select";
 
 const STRATEGIES: ("" | ChunkingStrategy)[] = ["", "traditional", "slide", "late"];
 const RETRIEVAL_MODES: RetrievalMode[] = ["dense", "lexical", "hybrid"];
@@ -156,36 +157,36 @@ export function Query() {
               <textarea value={question} onChange={(e) => setQuestion(e.target.value)} rows={3} />
             </FieldRow>
             <FieldRow label={t("common.corpus")} hint={t("query.corpus_hint")}>
-              <select value={corpus} onChange={(e) => setCorpus(e.target.value)}>
+              <Select value={corpus} onChange={(e) => setCorpus(e.target.value)}>
                 <option value="">{t("common.selected_placeholder")}</option>
                 {(corpora.data ?? []).map((c) => (
                   <option key={c.id} value={c.name}>
                     {c.name}
                   </option>
                 ))}
-              </select>
+              </Select>
             </FieldRow>
             <FieldRow label={t("common.strategy")}>
-              <select value={strategy} onChange={(e) => setStrategy(e.target.value as "" | ChunkingStrategy)}>
+              <Select value={strategy} onChange={(e) => setStrategy(e.target.value as "" | ChunkingStrategy)}>
                 {STRATEGIES.map((s) => (
                   <option key={s} value={s}>
                     {s || t("query.strategy_auto")}
                   </option>
                 ))}
-              </select>
+              </Select>
             </FieldRow>
             <FieldRow label={t("query.index_run")} hint={t("query.index_run_hint")}>
-              <select value={indexRunId} onChange={(e) => setIndexRunId(e.target.value)}>
+              <Select value={indexRunId} onChange={(e) => setIndexRunId(e.target.value)}>
                 <option value="">{t("query.index_run_auto")}</option>
                 {(indexRuns.data ?? []).map((r) => (
                   <option key={r.id} value={r.id}>
                     {r.name} — {r.strategy}
                   </option>
                 ))}
-              </select>
+              </Select>
             </FieldRow>
             <FieldRow label={t("retrieval.mode_label")} hint={t("retrieval.mode_hint")}>
-              <select
+              <Select
                 value={retrievalMode}
                 onChange={(e) => setRetrievalMode(e.target.value as "" | RetrievalMode)}
               >
@@ -198,7 +199,7 @@ export function Query() {
                     {t(`retrieval.mode_${m}`)}
                   </option>
                 ))}
-              </select>
+              </Select>
             </FieldRow>
             <FieldRow
               label={t("retrieval.rerank_label")}
@@ -207,7 +208,7 @@ export function Query() {
                 model: config?.rerank_model_name ?? "BAAI/bge-reranker-v2-m3",
               })}
             >
-              <select value={rerank} onChange={(e) => setRerank(e.target.value as RerankChoice)}>
+              <Select value={rerank} onChange={(e) => setRerank(e.target.value as RerankChoice)}>
                 <option value="">
                   {t("retrieval.mode_default")}
                   {config?.default_rerank != null
@@ -216,7 +217,7 @@ export function Query() {
                 </option>
                 <option value="on">{t("retrieval.rerank_on")}</option>
                 <option value="off">{t("retrieval.rerank_off")}</option>
-              </select>
+              </Select>
             </FieldRow>
             <FieldRow label={t("retrieval.citations_label")} hint={t("retrieval.citations_hint")}>
               <label className="inline" style={{ gap: 4 }}>

@@ -41,7 +41,9 @@
     "hide_explanation": "Masquer",
     "api_down_title": "API raglab injoignable",
     "api_down_hint": "Vérifie que le backend tourne (<code>raglab serve --dev</code>), puis rafraîchis la page.",
-    "api_down_short": "Indisponible tant que l'API ne répond pas."
+    "api_down_short": "Indisponible tant que l'API ne répond pas.",
+    "other": "Autre…",
+    "default_paren": "(défaut)"
   },
   "topbar": {
     "brand": "raglab",
@@ -49,18 +51,12 @@
     "expert": "Expert",
     "chat_title": "Mode chat : poser des questions au RAG simplement",
     "expert_title": "Mode expert : ingestion, indexation, Ollama, benchmarks",
-    "api_label": "API {{api}} · PostgreSQL {{postgres}} · Ollama {{ollama}}",
-    "api_unreachable": "API injoignable",
     "language": "Langue",
-    "api_key": "Clé d'API",
-    "api_key_title": "Clé envoyée dans l'en-tête X-API-Key (requise si l'API définit RAGLAB_API_KEY)",
-    "api_key_set": "Clé d'API définie",
-    "api_key_placeholder": "Coller la clé d'API",
-    "api_key_save": "Enregistrer",
-    "api_key_clear": "Effacer",
-    "api_key_hint": "Stockée dans ce navigateur uniquement.",
     "edu": "Mode pédagogique",
-    "edu_title": "Afficher le schéma du pipeline RAG et suivre la requête étape par étape"
+    "edu_title": "Afficher le schéma du pipeline RAG et suivre la requête étape par étape",
+    "api_down": "API injoignable",
+    "api_degraded": "Services dégradés",
+    "api_label": "API {{api}} · PostgreSQL {{postgres}} · Ollama {{ollama}}"
   },
   "nav": {
     "expert_section": "Mode expert",
@@ -79,7 +75,7 @@
   },
   "chat": {
     "welcome_title": "Pose une question à tes documents",
-    "welcome_subtitle": "Le modèle cherche dans l'index sélectionné, cite les extraits utilisés et produit une réponse. Choisis une suggestion ci-dessous ou écris ta question.",
+    "welcome_subtitle": "Le modèle cherche dans l'index sélectionné, cite les extraits utilisés et produit une réponse.",
     "no_corpus_indexed": "— aucun corpus indexé —",
     "corpus_label": "Corpus",
     "corpus_option": "{{name}} · {{count}} docs",
@@ -110,7 +106,31 @@
     "llm_title": "Modèle utilisé pour la génération finale",
     "no_answer_generated": "(Pas de réponse générée)",
     "meta_first_token": "1er token {{ms}} ms",
-    "meta_first_token_title": "Temps entre le début de la génération et le premier fragment de réponse reçu"
+    "meta_first_token_title": "Temps entre le début de la génération et le premier fragment de réponse reçu",
+    "welcome_pick": "Choisis une suggestion ci-dessous ou écris ta question.",
+    "api_waiting": "En attente de l'API…",
+    "api_waiting_hint": "L'API ne répond pas encore. Les listes se rempliront dès qu'elle sera prête, sans recharger la page.",
+    "question_label": "Question",
+    "llm_default": "{{model}} · {{provider}} (défaut)",
+    "llm_no_models": "aucun modèle servi",
+    "llm_unreachable": "serveur injoignable",
+    "options": "Options",
+    "options_title": "Options de recherche de cette conversation",
+    "options_rerank_short": "rerank",
+    "options_citations_short": "citations",
+    "options_mode_hint_dense": "Similarité de sens entre la question et les passages (embeddings).",
+    "options_mode_hint_lexical": "Mots exacts de la question, pondérés par leur rareté (BM25).",
+    "options_mode_hint_hybrid": "Les deux recherches, fusionnées par rang (RRF). Meilleur rappel mesuré.",
+    "options_rerank_hint": "{{model}} relit les meilleurs candidats avec la question.",
+    "options_rerank_no_gpu": "Pas de GPU détecté : par défaut le re-ranking est ignoré. L'activer ici le lance sur CPU (plusieurs secondes).",
+    "options_citations_hint": "« art. 49 da Lei 8.078 » : limite la recherche à la loi citée et place l'article en tête.",
+    "options_defaults": "Valeurs par défaut du serveur.",
+    "options_changed": "Modifié pour cette conversation.",
+    "options_reset": "Réinitialiser",
+    "rerank_notice_skipped_no_gpu": "Re-ranking ignoré : aucun GPU disponible côté serveur. L'ordre vient de la recherche seule.",
+    "rerank_notice_cpu": "Re-ranking exécuté sur CPU, faute de GPU : plus lent que d'habitude.",
+    "meta_mode": "recherche",
+    "meta_citation": "citation"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -489,9 +509,7 @@
     "title": "Le pipeline en direct",
     "subtitle": "Posez une question : chaque étape s'allume quand elle s'exécute. Cliquez sur une étape pour comprendre son rôle.",
     "diagram_label": "Schéma de l'architecture RAG : de la question à la réponse",
-    "hide": "Masquer le schéma",
-    "show": "Afficher le schéma",
-    "hint": "Cliquez sur une étape du schéma pour voir ce qu'elle fait et ses données intermédiaires.",
+    "hint": "Cliquez sur une étape pour voir ce qu'elle fait, le code qui l'exécute et les valeurs de votre question.",
     "status_running": "en cours…",
     "status_disabled": "désactivé",
     "status_error": "échec",
@@ -499,8 +517,6 @@
     "what": "Ce qu'elle fait :",
     "why": "Pourquoi elle existe :",
     "duration": "Durée",
-    "follow_live": "Suivre en direct",
-    "following": "Suivi en direct",
     "replayed": "Cette étape s'exécute avant l'ouverture du flux : sa durée est réelle, son animation est rejouée.",
     "from_timings": "L'API a répondu sans streaming : le schéma est reconstruit à partir des durées de la réponse.",
     "announce_running": "{{stage}} en cours",
@@ -535,64 +551,95 @@
     "stages": {
       "question": {
         "name": "Question",
-        "what": "Le texte saisi dans le Chat, envoyé à l'API avec le corpus et l'index choisis.",
+        "what": "Le texte saisi dans le Chat, envoyé à l'API avec le corpus et l'index choisis. Une citation juridique (« art. 49 da Lei 8.078 ») y est repérée par expressions régulières.",
         "why": "Tout part de là : la même question traverse chaque étape, et le schéma montre ce que chacune en fait.",
-        "disabled": ""
+        "disabled": "",
+        "short": "Question"
       },
       "routing": {
         "name": "Routeur",
         "what": "Détecte la langue et l'intention, choisit le corpus, et peut refuser de répondre si aucun document ne couvre la question.",
         "why": "Éviter de chercher au mauvais endroit et d'inventer une réponse hors sujet : mieux vaut s'abstenir que d'halluciner.",
-        "disabled": "Le routeur n'est pas activé pour cette requête : la question va directement au corpus choisi."
+        "disabled": "Le routeur n'est pas activé pour cette requête : la question va directement au corpus choisi.",
+        "short": "Routeur"
       },
       "embed": {
         "name": "Embedding",
         "what": "Un modèle d'embedding transforme la question en vecteur de nombres qui encode son sens.",
         "why": "Deux textes de sens proche donnent des vecteurs proches : c'est ce qui permet de chercher par le sens et pas seulement par les mots.",
-        "disabled": "Pas de recherche vectorielle pour cette requête, donc pas d'embedding."
+        "disabled": "Pas de recherche vectorielle pour cette requête, donc pas d'embedding.",
+        "short": "Embedding"
       },
       "retrieval": {
         "name": "Recherche vectorielle",
-        "what": "Compare le vecteur de la question aux vecteurs des passages indexés (pgvector, index HNSW) et garde les plus proches.",
+        "what": "Compare le vecteur de la question à ceux des passages indexés (pgvector, distance cosinus exacte par défaut) et garde les plus proches.",
         "why": "Retrouver en quelques millisecondes, parmi des milliers de passages, ceux qui parlent du sujet même sans les mêmes mots.",
-        "disabled": "La recherche est uniquement lexicale pour cette requête."
+        "disabled": "La recherche est uniquement lexicale pour cette requête.",
+        "short": "Vecteurs"
       },
       "lexical": {
         "name": "BM25",
         "what": "Recherche plein texte classique : score les passages selon les mots exacts de la question et leur rareté.",
         "why": "Les embeddings ratent parfois les termes précis (numéros d'article, sigles, noms propres) que BM25 trouve à coup sûr.",
-        "disabled": "Recherche hybride désactivée : seule la recherche vectorielle est utilisée."
+        "disabled": "Recherche hybride désactivée : seule la recherche vectorielle est utilisée.",
+        "short": "BM25"
       },
       "fusion": {
         "name": "Fusion",
         "what": "Combine les deux classements (vectoriel et BM25) en un seul, par Reciprocal Rank Fusion.",
         "why": "Profiter des forces des deux recherches sans avoir à comparer des scores d'échelles différentes.",
-        "disabled": "Pas de fusion : une seule recherche a tourné."
+        "disabled": "Pas de fusion : une seule recherche a tourné.",
+        "short": "Fusion"
       },
       "rerank": {
         "name": "Re-ranking",
         "what": "Un cross-encoder relit chaque paire (question, passage) et les reclasse finement.",
         "why": "Plus précis que la recherche, mais trop lent pour tout le corpus : on ne l'applique qu'aux meilleurs candidats.",
-        "disabled": "Re-ranking désactivé : l'ordre de la recherche est conservé."
+        "disabled": "Re-ranking désactivé : l'ordre de la recherche est conservé.",
+        "short": "Re-ranking"
       },
       "prompt": {
         "name": "Prompt",
         "what": "Assemble les consignes, la question et les passages retrouvés (avec leur rang) dans le message envoyé au LLM.",
         "why": "C'est le prompt qui oblige le modèle à répondre uniquement à partir des sources et à les citer [Rank X].",
-        "disabled": "Pas de génération demandée : aucun prompt n'est construit."
+        "disabled": "Pas de génération demandée : aucun prompt n'est construit.",
+        "short": "Prompt"
       },
       "generation": {
         "name": "LLM",
-        "what": "Le modèle de langage local (Ollama) lit le prompt et rédige la réponse, token par token.",
+        "what": "Le modèle de langage (Ollama, llama.cpp ou vLLM) lit le prompt et rédige la réponse, token par token.",
         "why": "Transformer des passages bruts en une réponse claire et sourcée ; c'est l'étape la plus coûteuse en temps et en GPU.",
-        "disabled": "Pas de génération demandée pour cette requête."
+        "disabled": "Pas de génération demandée pour cette requête.",
+        "short": "LLM"
       },
       "answer": {
         "name": "Réponse",
         "what": "La réponse affichée dans le Chat, avec ses citations cliquables vers les sources.",
         "why": "Chaque affirmation peut être vérifiée dans le passage cité : c'est ce qui rend un RAG digne de confiance.",
-        "disabled": ""
+        "disabled": "",
+        "short": "Réponse"
       }
+    },
+    "hint_selected": "Recliquez sur l'étape active pour refermer son explication.",
+    "close": "Fermer l'explication",
+    "replayed_tag": "rejouée",
+    "not_run_yet": "Posez une question pour voir les valeurs réelles de cette étape.",
+    "how": "Comment c'est fait",
+    "fig": {
+      "query": "question",
+      "space_label": "La question et ses plus proches passages dans l'espace des embeddings",
+      "space_caption": "Distance au centre proportionnelle à 1 − cosinus (valeurs de cette requête) ; les angles servent seulement à écarter les points.",
+      "lexemes": "Lexèmes de la question :",
+      "lexical_caption": "Score BM25 de chaque passage : fréquence des termes, pondérée par leur rareté et la longueur du passage.",
+      "passage": "Passage",
+      "rank_dense": "Rang vectoriel",
+      "rank_bm25": "Rang BM25",
+      "rrf_formula": "Calcul",
+      "fused": "Score fusionné",
+      "rrf_caption": "Seuls les rangs comptent (k = {{k}}, poids BM25 = {{weight}}) : pas besoin de comparer un cosinus à un score BM25.",
+      "before": "Avant (1re recherche)",
+      "after": "Après (cross-encoder)",
+      "rerank_caption": "Chaque ligne relie la place d'un passage avant et après la relecture par le cross-encoder."
     }
   },
   "retrieval": {
@@ -626,6 +673,22 @@
     "citation_resolved": "Citation reconnue : {{label}}",
     "citation_unresolved": "Citation reconnue ({{label}}) mais loi absente de l'index : recherche normale.",
     "rerank_notice_skipped_no_gpu": "Re-ranking ignoré : aucun GPU disponible (il prendrait plusieurs secondes sur CPU). Forcez-le avec « activé » si besoin.",
-    "rerank_notice_cpu": "Re-ranking exécuté sur CPU, sans GPU : comptez plusieurs secondes par requête."
+    "rerank_notice_cpu": "Re-ranking exécuté sur CPU, sans GPU : comptez plusieurs secondes par requête.",
+    "mode_short_dense": "Vectorielle",
+    "mode_short_lexical": "BM25",
+    "mode_short_hybrid": "Hybride"
+  },
+  "connection": {
+    "title": "Connexion à l'API",
+    "lead": "Clé qui protège l'API raglab elle-même (en-tête X-API-Key), à renseigner seulement si le serveur définit RAGLAB_API_KEY. Ce n'est pas une clé de fournisseur LLM.",
+    "label": "Clé d'API raglab",
+    "placeholder": "Coller la clé",
+    "set": "Une clé est enregistrée dans ce navigateur.",
+    "unset": "Aucune clé : les requêtes partent sans en-tête X-API-Key.",
+    "save": "Enregistrer",
+    "clear": "Effacer la clé",
+    "saved": "Clé enregistrée.",
+    "cleared": "Clé effacée.",
+    "hint": "Stockée dans ce navigateur uniquement (localStorage), jamais envoyée ailleurs qu'à cette API."
   }
 }

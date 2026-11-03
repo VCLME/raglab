@@ -16,6 +16,7 @@ import { JsonViewer } from "../components/JsonViewer";
 import { Spinner } from "../components/Spinner";
 import { SubgraphView, type SubgraphPayload } from "../components/SubgraphView";
 import { useConfig } from "../hooks/useConfig";
+import { Select } from "../components/Select";
 
 const STRATEGIES: ("" | ChunkingStrategy)[] = ["", "traditional", "slide", "late"];
 
@@ -150,17 +151,17 @@ export function GraphQuery() {
               <textarea value={question} onChange={(e) => setQuestion(e.target.value)} rows={3} />
             </FieldRow>
             <FieldRow label={t("common.corpus")} hint={t("query.corpus_hint")}>
-              <select value={corpus} onChange={(e) => setCorpus(e.target.value)}>
+              <Select value={corpus} onChange={(e) => setCorpus(e.target.value)}>
                 <option value="">{t("common.selected_placeholder")}</option>
                 {(corpora.data ?? []).map((c) => (
                   <option key={c.id} value={c.name}>
                     {c.name}
                   </option>
                 ))}
-              </select>
+              </Select>
             </FieldRow>
             <FieldRow label={t("common.strategy")}>
-              <select
+              <Select
                 value={strategy}
                 onChange={(e) => setStrategy(e.target.value as "" | ChunkingStrategy)}
               >
@@ -169,17 +170,17 @@ export function GraphQuery() {
                     {s || t("query.strategy_auto")}
                   </option>
                 ))}
-              </select>
+              </Select>
             </FieldRow>
             <FieldRow label={t("query.index_run")} hint={t("query.index_run_hint")}>
-              <select value={indexRunId} onChange={(e) => setIndexRunId(e.target.value)}>
+              <Select value={indexRunId} onChange={(e) => setIndexRunId(e.target.value)}>
                 <option value="">{t("query.index_run_auto")}</option>
                 {(indexRuns.data ?? []).map((r) => (
                   <option key={r.id} value={r.id}>
                     {r.name} — {r.strategy}
                   </option>
                 ))}
-              </select>
+              </Select>
             </FieldRow>
             <FieldRow
               label={t("query.top_k")}
@@ -212,13 +213,13 @@ export function GraphQuery() {
               label={t("graph_query.mode_label")}
               hint={t("graph_query.mode_hint")}
             >
-              <select
+              <Select
                 value={mode}
                 onChange={(e) => setMode(e.target.value as "vector" | "hybrid")}
               >
                 <option value="vector">{t("graph_query.mode_vector")}</option>
                 <option value="hybrid">{t("graph_query.mode_hybrid")}</option>
-              </select>
+              </Select>
             </FieldRow>
             {mode === "hybrid" ? (
               <>
@@ -318,6 +319,7 @@ export function GraphQuery() {
                   <p className="muted">{t("query.no_generation")}</p>
                 )}
               </div>
+              <div className="results-pair">
               <div className="card">
                 <h3>{t("query.chunks_header", { count: action.data.retrieved_chunks.length })}</h3>
                 {action.data.retrieved_chunks.map((c) => (
@@ -362,6 +364,7 @@ export function GraphQuery() {
                     />
                   </div>
                 )}
+              </div>
               </div>
               <div className="card">
                 <h3>{t("query.raw_payload")}</h3>

@@ -16,6 +16,7 @@ import { FieldRow } from "../components/FieldRow";
 import { JsonViewer } from "../components/JsonViewer";
 import { Spinner } from "../components/Spinner";
 import { StatusBadge } from "../components/StatusBadge";
+import { Select } from "../components/Select";
 
 const MAX_COMPARED = 5;
 const STRATEGIES: ChunkingStrategy[] = ["traditional", "slide", "late"];
@@ -179,41 +180,41 @@ function LaunchTab({ onLaunched }: { onLaunched: () => void }) {
   return (
     <div className="card">
       <FieldRow label={t("common.corpus")} hint={t("query.corpus_hint")}>
-        <select value={corpus} onChange={(e) => setCorpus(e.target.value)}>
+        <Select value={corpus} onChange={(e) => setCorpus(e.target.value)}>
           <option value="">{t("common.selected_placeholder")}</option>
           {(corpora.data ?? []).map((c) => (
             <option key={c.id} value={c.name}>
               {c.name} · {c.documents_count} docs
             </option>
           ))}
-        </select>
+        </Select>
       </FieldRow>
       <FieldRow label={t("common.strategy")}>
-        <select value={strategy} onChange={(e) => setStrategy(e.target.value as ChunkingStrategy)}>
+        <Select value={strategy} onChange={(e) => setStrategy(e.target.value as ChunkingStrategy)}>
           {STRATEGIES.map((s) => (
             <option key={s} value={s}>{s}</option>
           ))}
-        </select>
+        </Select>
       </FieldRow>
       <FieldRow label={t("benchmarks.backend_label")} hint={t("benchmarks.backend_hint")}>
-        <select
+        <Select
           value={backendChoice}
           onChange={(e) => setBackendChoice(e.target.value as BackendChoice)}
         >
           <option value="pgvector">{t("benchmarks.backend_pgvector")}</option>
           <option value="neo4j">{t("benchmarks.backend_neo4j")}</option>
           <option value="both">{t("benchmarks.backend_both")}</option>
-        </select>
+        </Select>
       </FieldRow>
       {backendChoice !== "neo4j" ? (
         <FieldRow label={t("retrieval.mode_label")} hint={t("retrieval.mode_hint")}>
-          <select value={retrievalMode} onChange={(e) => setRetrievalMode(e.target.value as RetrievalMode)}>
+          <Select value={retrievalMode} onChange={(e) => setRetrievalMode(e.target.value as RetrievalMode)}>
             {RETRIEVAL_MODES.map((m) => (
               <option key={m} value={m}>
                 {t(`retrieval.mode_${m}`)}
               </option>
             ))}
-          </select>
+          </Select>
         </FieldRow>
       ) : null}
       {backendChoice !== "neo4j" ? (
@@ -258,7 +259,7 @@ function LaunchTab({ onLaunched }: { onLaunched: () => void }) {
             : undefined
         }
       >
-        <select value={datasetChoice} onChange={(e) => setDatasetChoice(e.target.value)}>
+        <Select value={datasetChoice} onChange={(e) => setDatasetChoice(e.target.value)}>
           <option value="auto-lexml">{t("benchmarks.dataset_auto_lexml")}</option>
           {(datasets.data ?? []).map((d) => (
             <option key={d.dataset_dir} value={d.dataset_dir}>
@@ -266,7 +267,7 @@ function LaunchTab({ onLaunched }: { onLaunched: () => void }) {
             </option>
           ))}
           <option value="custom">{t("benchmarks.dataset_custom")}</option>
-        </select>
+        </Select>
       </FieldRow>
       {datasetChoice === "custom" ? (
         <FieldRow label={t("benchmarks.dataset_custom_label")}>
@@ -306,10 +307,10 @@ function LaunchTab({ onLaunched }: { onLaunched: () => void }) {
       {computeRagas ? (
         <>
           <FieldRow label={t("benchmarks.judge_label")} hint={t("benchmarks.judge_hint")}>
-            <select value={judgeBackend} onChange={(e) => setJudgeBackend(e.target.value as "ollama" | "llamacpp")}>
+            <Select value={judgeBackend} onChange={(e) => setJudgeBackend(e.target.value as "ollama" | "llamacpp")}>
               <option value="ollama">{t("benchmarks.judge_ollama")}</option>
               <option value="llamacpp">{t("benchmarks.judge_llamacpp")}</option>
-            </select>
+            </Select>
           </FieldRow>
           <FieldRow label={t("benchmarks.ragas_limit_label")} hint={t("benchmarks.ragas_limit_hint")}>
             <input type="number" value={ragasLimit} onChange={(e) => setRagasLimit(e.target.value)} min={1} />
@@ -422,14 +423,14 @@ function CustomDatasetTab({ onCreated }: { onCreated: () => void }) {
         />
       </FieldRow>
       <FieldRow label={t("common.corpus")} hint={t("benchmarks.custom_corpus_hint")}>
-        <select value={corpus} onChange={(e) => setCorpus(e.target.value)}>
+        <Select value={corpus} onChange={(e) => setCorpus(e.target.value)}>
           <option value="">{t("common.none")}</option>
           {(corpora.data ?? []).map((c) => (
             <option key={c.id} value={c.name}>
               {c.name} · {c.documents_count} docs
             </option>
           ))}
-        </select>
+        </Select>
       </FieldRow>
       <FieldRow label={t("benchmarks.custom_description_label")} hint={t("common.optional")}>
         <input
@@ -484,7 +485,7 @@ function CustomDatasetTab({ onCreated }: { onCreated: () => void }) {
               label={t("benchmarks.custom_file_label")}
               hint={t("benchmarks.custom_file_hint")}
             >
-              <select
+              <Select
                 value=""
                 onChange={(e) => {
                   const picked = e.target.value;
@@ -506,7 +507,7 @@ function CustomDatasetTab({ onCreated }: { onCreated: () => void }) {
                     {d.file_name}
                   </option>
                 ))}
-              </select>
+              </Select>
             </FieldRow>
           ) : null}
           <FieldRow
@@ -713,10 +714,10 @@ function HistoryTab() {
         <div className="inline" style={{ marginBottom: 12, gap: 14 }}>
           <label className="inline" style={{ gap: 6 }}>
             <span className="muted" style={{ fontSize: 12 }}>{t("benchmarks.filter_corpus")}</span>
-            <select value={corpusFilter} onChange={(e) => setCorpusFilter(e.target.value)}>
+            <Select value={corpusFilter} onChange={(e) => setCorpusFilter(e.target.value)} size="sm" aria-label={t("benchmarks.filter_corpus")}>
               <option value="">{t("benchmarks.all_corpora")}</option>
               {corpora.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
+            </Select>
           </label>
           <span className="dim" style={{ fontSize: 11 }}>{t("benchmarks.chart_hint")}</span>
           <button className="ghost sm" onClick={runs.refresh} style={{ marginLeft: "auto" }}>

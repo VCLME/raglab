@@ -17,6 +17,7 @@ import { SelectWithOther } from "../components/SelectWithOther";
 import { Spinner } from "../components/Spinner";
 import { StatusBadge } from "../components/StatusBadge";
 import { useConfig } from "../hooks/useConfig";
+import { Select } from "../components/Select";
 
 const STRATEGIES: ChunkingStrategy[] = ["traditional", "slide", "late"];
 
@@ -75,14 +76,14 @@ export function GraphIndex() {
             </div>
           ) : null}
           <FieldRow label={t("common.corpus")}>
-            <select value={corpus} onChange={(e) => setCorpus(e.target.value)}>
+            <Select value={corpus} onChange={(e) => setCorpus(e.target.value)}>
               <option value="">{t("common.selected_placeholder")}</option>
               {(corpora.data ?? []).map((c) => (
                 <option key={c.id} value={c.name}>
                   {c.name} ({c.documents_count} docs)
                 </option>
               ))}
-            </select>
+            </Select>
           </FieldRow>
           <FieldRow label={t("common.strategy")}>
             <div className="inline">
@@ -160,13 +161,13 @@ export function GraphIndex() {
               label={t("graph_index.extraction_engine_label")}
               hint={t("graph_index.extraction_engine_hint")}
             >
-              <select
+              <Select
                 value={extractionEngine}
                 onChange={(e) => setExtractionEngine(e.target.value as "llm" | "spacy")}
               >
                 <option value="llm">{t("graph_index.engine_llm")}</option>
                 <option value="spacy">{t("graph_index.engine_spacy")}</option>
-              </select>
+              </Select>
             </FieldRow>
           ) : null}
           <button onClick={submit} disabled={action.loading || !corpus || !neo4jReachable}>

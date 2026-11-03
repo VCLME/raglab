@@ -13,6 +13,7 @@ import { JsonViewer } from "../components/JsonViewer";
 import { Spinner } from "../components/Spinner";
 import { Ingest } from "./Ingest";
 import { LexML } from "./LexML";
+import { Select } from "../components/Select";
 
 type TabKey = "folder" | "bench" | "lexml" | "manage";
 
@@ -73,13 +74,13 @@ function BenchDownloadTab() {
       <h3>{t("corpus_page.bench_title")}</h3>
       <p className="muted" style={{ marginTop: -10 }}>{t("corpus_page.bench_help")}</p>
       <FieldRow label={t("corpus_page.bench_loader_label")}>
-        <select value={loader} onChange={(e) => setLoader(e.target.value)}>
+        <Select value={loader} onChange={(e) => setLoader(e.target.value)}>
           {(loaders.data ?? []).map((l) => (
             <option key={l.name} value={l.name}>
               {l.name} · {l.language} · {l.licence}
             </option>
           ))}
-        </select>
+        </Select>
         {chosen ? (
           <span className="hint">{chosen.description} — <a href={chosen.source} target="_blank" rel="noreferrer">{chosen.source}</a></span>
         ) : null}

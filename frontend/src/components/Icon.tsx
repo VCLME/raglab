@@ -76,8 +76,8 @@ export function SendIcon({ size = 16, className }: IconProps) {
       className={className}
       aria-hidden
     >
-      <path d="M22 2 11 13" />
-      <path d="M22 2 15 22l-4-9-9-4 20-7Z" />
+      <path d="M5 12h14" />
+      <path d="m13 6 6 6-6 6" />
     </svg>
   );
 }
@@ -100,5 +100,67 @@ export function GraduationIcon({ size = 16, className }: IconProps) {
       <path d="M6 11.3V16c0 1.4 2.7 3 6 3s6-1.6 6-3v-4.7" />
       <path d="M22 9.5V15" />
     </svg>
+  );
+}
+
+function Stroke({ size = 16, className, children }: IconProps & { children: React.ReactNode }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      {children}
+    </svg>
+  );
+}
+
+export function ChevronDownIcon(props: IconProps) {
+  return (
+    <Stroke {...props}>
+      <path d="m6 9 6 6 6-6" />
+    </Stroke>
+  );
+}
+
+export function CheckIcon(props: IconProps) {
+  return (
+    <Stroke {...props}>
+      <path d="m5 12.5 4.5 4.5L19 7.5" />
+    </Stroke>
+  );
+}
+
+export function SlidersIcon(props: IconProps) {
+  return (
+    <Stroke {...props}>
+      <path d="M4 7h10M18 7h2M4 17h4M12 17h8" />
+      <circle cx="16" cy="7" r="2" />
+      <circle cx="10" cy="17" r="2" />
+    </Stroke>
+  );
+}
+
+export function KeyIcon(props: IconProps) {
+  return (
+    <Stroke {...props}>
+      <circle cx="8" cy="15" r="4" />
+      <path d="m10.8 12.2 8.7-8.7M16 7l2.5 2.5M18.5 4.5 21 7" />
+    </Stroke>
+  );
+}
+
+export function CloseIcon(props: IconProps) {
+  return (
+    <Stroke {...props}>
+      <path d="M6 6l12 12M18 6 6 18" />
+    </Stroke>
   );
 }

@@ -1,22 +1,30 @@
 import { data, expect, test } from "./fixtures/mock-api";
 
-test("Mode pédagogique: live pipeline diagram follows the stage events and persists", async ({ page }) => {
+test("Mode pédagogique: horizontal pipeline follows the stage events, explains a stage below it, persists", async ({
+  page,
+}) => {
   await page.goto("/");
   const toggle = page.getByRole("button", { name: "Mode pédagogique" });
-  const panel = page.getByRole("complementary", { name: "Le pipeline en direct" });
+  const strip = page.getByRole("region", { name: "Le pipeline en direct" });
   const diagram = page.getByRole("group", { name: /Schéma de l'architecture RAG/ });
 
   await expect(toggle).toHaveAttribute("aria-pressed", "false");
-  await expect(panel).toHaveCount(0);
+  await expect(strip).toHaveCount(0);
 
   await toggle.click();
   await expect(toggle).toHaveAttribute("aria-pressed", "true");
-  await expect(panel).toBeVisible();
-  await expect(diagram).toBeVisible();
+  await expect(strip).toBeVisible();
+  // No separate show / hide control: leaving the mode is how the diagram goes away.
+  await expect(page.getByRole("button", { name: /Masquer le schéma|Afficher le schéma/ })).toHaveCount(0);
   // Before any question every stage is idle: no duration yet.
   await expect(diagram.getByRole("button", { name: "Embedding", exact: true })).toBeVisible();
 
-  await expect(page.getByRole("combobox").first()).toHaveValue(data.CORPUS);
+  // The strip sits above the chat, both on screen at once.
+  const stripBox = await strip.boundingBox();
+  const composerBox = await page.getByPlaceholder(/Pose ta question/).boundingBox();
+  expect(stripBox && composerBox && stripBox.y < composerBox.y).toBeTruthy();
+
+  await expect(page.getByRole("combobox", { name: /^Corpus/ })).toContainText(data.CORPUS);
   await page.getByPlaceholder(/Pose ta question/).fill(data.QUESTION);
   await page.getByRole("button", { name: "Envoyer" }).click();
 
@@ -35,13 +43,29 @@ test("Mode pédagogique: live pipeline diagram follows the stage events and pers
     await expect(diagram.getByRole("button", { name, exact: true })).toBeVisible();
   }
 
-  // Clicking a stage explains it and shows its intermediate data.
-  await diagram.getByRole("button", { name: "Recherche vectorielle — 8.3 ms" }).click();
-  await expect(panel.getByRole("heading", { name: "Recherche vectorielle" })).toBeVisible();
-  await expect(panel.getByText("Meilleurs passages")).toBeVisible();
+  // Node labels stay on one line.
+  const vector = diagram.getByRole("button", { name: "Recherche vectorielle — 8.3 ms" });
+  const height = await vector.evaluate((el) => el.getBoundingClientRect().height);
+  expect(height).toBeLessThan(40);
+
+  // Clicking a stage opens its lesson below the strip, with its data and code.
+  await vector.click();
+  await expect(vector).toHaveAttribute("aria-pressed", "true");
+  const lesson = page.getByRole("region", { name: "Recherche vectorielle" });
+  await expect(lesson).toBeVisible();
+  await expect(lesson.getByText("Meilleurs passages")).toBeVisible();
+  await expect(lesson.getByText("src/raglab/stores/vector/postgres.py")).toBeVisible();
+  await expect(lesson.getByRole("img", { name: /plus proches passages/ })).toBeVisible();
+  const lessonBox = await lesson.boundingBox();
+  const stripAfter = await strip.boundingBox();
+  expect(lessonBox && stripAfter && lessonBox.y >= stripAfter.y + stripAfter.height - 1).toBeTruthy();
+
+  // A second click on the active stage closes the lesson.
+  await vector.click();
+  await expect(lesson).toHaveCount(0);
 
   await page.reload();
   await expect(page.getByRole("button", { name: "Mode pédagogique" })).toHaveAttribute("aria-pressed", "true");
-  await expect(panel).toBeVisible();
+  await expect(strip).toBeVisible();
   await expect(diagram).toBeVisible();
 });

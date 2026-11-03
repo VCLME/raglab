@@ -2,7 +2,7 @@ import { data, expect, json, test } from "./fixtures/mock-api";
 
 async function ask(page: import("@playwright/test").Page, question: string) {
   // The corpus and its index come from /api/corpora and /api/index-runs.
-  await expect(page.getByRole("combobox").first()).toHaveValue(data.CORPUS);
+  await expect(page.getByRole("combobox", { name: /^Corpus/ })).toContainText(data.CORPUS);
   await page.getByPlaceholder(/Pose ta question/).fill(question);
   await page.getByRole("button", { name: "Envoyer" }).click();
 }
