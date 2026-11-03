@@ -11,7 +11,7 @@ from raglab.api.schemas import (
     LexMLLoadRequest,
     LexMLQuestionsRequest,
 )
-from raglab.benchmarks.lexml_questions import LexMLQuestionGenerator
+from raglab.benchmarks.lexml_questions import generate_questions
 from raglab.config import get_settings
 from raglab.lexml import LexMLLoadService, getDataFromLexML
 from raglab.lexml.fulltext import FullTextCollector
@@ -45,11 +45,15 @@ def lexml_questions(body: LexMLQuestionsRequest) -> dict[str, Any]:
     settings = get_settings()
     corpus_dir = Path(body.corpus_dir) if body.corpus_dir else settings.lexml_fulltext_dir / "corpus"
     output_dir = Path(body.output_dir) if body.output_dir else settings.data_dir / "benchmarks" / "lexml_fulltext"
-    return LexMLQuestionGenerator(settings, model=body.model).generate(
+    return generate_questions(
+        settings,
+        backend=body.backend,
         corpus_dir=corpus_dir,
         output_dir=output_dir,
         count=body.count,
         seed=body.seed,
+        model=body.model,
+        profile=body.profile,
     )
 
 

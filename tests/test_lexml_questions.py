@@ -163,3 +163,29 @@ def test_budget_laws_are_not_sampled(tmp_path: Path):
     sidecar = next(corpus.glob("*.json"))
     sidecar.write_text(json.dumps({"ementa": "Abre ao Orçamento Fiscal da União crédito suplementar"}), encoding="utf-8")
     assert sample_passages(corpus, count=2, seed=0) == []
+
+
+def test_vague_questions_are_rejected():
+    from raglab.benchmarks.lexml_questions import _VAGUE_RE
+
+    assert _VAGUE_RE.search("Qual lei é alterada por esta Lei?")
+    assert _VAGUE_RE.search("Qual programa é mencionado neste trecho?")
+    assert _VAGUE_RE.search("O que prevê o texto deste artigo?")
+    assert not _VAGUE_RE.search("Na lei que trata do FGTS, qual o prazo de recolhimento?")
+
+
+def test_boilerplate_and_filler_answers_are_rejected():
+    from raglab.benchmarks.lexml_questions import Passage, _rejection_reason
+
+    text = "Art. 5o ..................................................\nA PRESIDENTA DA REPÚBLICA sanciona."
+    passage = Passage("lei_1_2000.txt", "", "Lei nº 1", "", 0, len(text), text, "5")
+    dots = {"question": "Na lei X, o que diz o item?", "answer": "........................................"}
+    formula = {"question": "Na lei X, quem sanciona?", "answer": "A PRESIDENTA DA REPÚBLICA"}
+    assert _rejection_reason(dots, passage, "paraphrase") == "boilerplate_answer"
+    assert _rejection_reason(formula, passage, "entity") == "boilerplate_answer"
+
+
+def test_passages_start_after_the_enacting_formula(tmp_path: Path):
+    corpus = _corpus(tmp_path)
+    for passage in sample_passages(corpus, count=6, seed=5, target_chars=120):
+        assert "Dispõe sobre" not in passage.text

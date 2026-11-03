@@ -293,6 +293,8 @@
     "per_year": "Leis por ano",
     "per_year_hint": "Sorteadas (semente), entre 3.000 e 150.000 caracteres.",
     "launch_fulltext": "Coletar textos",
+    "question_backend": "Modelo redator",
+    "question_backend_hint": "llama.cpp: iniciado automaticamente se necessário (os modelos do Ollama são descarregados para liberar a GPU) e depois parado.",
     "question_count": "Número de perguntas",
     "question_count_hint": "Perguntas cuja citação não é encontrada no texto são rejeitadas.",
     "launch_questions": "Gerar perguntas",

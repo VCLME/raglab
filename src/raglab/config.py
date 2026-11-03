@@ -19,6 +19,15 @@ class Settings(BaseSettings):
 
     database_url: str = "postgresql+psycopg://raglab:raglab@localhost:5432/raglab"
     ollama_base_url: str = "http://localhost:11434"
+    # Optional OpenAI-compatible server (llama.cpp's llama-server). The start
+    # command may contain `{profile}`; leave both commands empty to only use
+    # a server you start yourself.
+    llamacpp_base_url: str = "http://127.0.0.1:8080/v1"
+    llamacpp_start_command: str = ""
+    llamacpp_stop_command: str = ""
+    llamacpp_start_timeout_seconds: int = 300
+    question_model_profile: str = "qwen35b-moe"
+    question_model: str = "qwen3.6-35b-a3b"
 
     neo4j_uri: str = "bolt://localhost:7687"
     neo4j_user: str = "neo4j"

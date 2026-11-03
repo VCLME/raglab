@@ -6,7 +6,7 @@ from pathlib import Path
 import typer
 
 from raglab.benchmarks import AVAILABLE_LOADERS, get_loader
-from raglab.benchmarks.lexml_questions import LexMLQuestionGenerator
+from raglab.benchmarks.lexml_questions import generate_questions
 from raglab.config import get_settings
 from raglab.db import initialize_database, session_scope
 from raglab.domain.enums import ChunkingStrategy
@@ -229,14 +229,24 @@ def lexml_questions(
     ),
     count: int = typer.Option(300, "--count", min=1, help="Nombre de questions a garder."),
     seed: int = typer.Option(42, "--seed", help="Graine du tirage des passages et des types."),
-    model: str | None = typer.Option(None, "--model", help="Modele Ollama (defaut: modele de generation)."),
+    backend: str = typer.Option(
+        "llamacpp",
+        "--backend",
+        help="llamacpp (serveur compatible OpenAI, demarre si besoin) ou ollama.",
+    ),
+    model: str | None = typer.Option(None, "--model", help="Modele (defaut: question_model ou generation_model)."),
+    profile: str | None = typer.Option(None, "--profile", help="Profil llama.cpp a demarrer (defaut: question_model_profile)."),
 ) -> None:
     """Generer un jeu de questions typees (paraphrase / reference / entity) sur le corpus LexML."""
-    result = LexMLQuestionGenerator(model=model).generate(
+    result = generate_questions(
+        get_settings(),
+        backend=backend,
         corpus_dir=corpus_dir,
         output_dir=output_dir,
         count=count,
         seed=seed,
+        model=model,
+        profile=profile,
     )
     typer.echo(json.dumps(result, indent=2, ensure_ascii=False))
 

@@ -34,6 +34,7 @@ from typing import Any
 from raglab.benchmarks.base import GroundTruthCase, write_ground_truth, write_metadata
 from raglab.benchmarks.squad_style import locate_span
 from raglab.config import Settings, get_settings
+from raglab.llm.openai_compat import OpenAICompatibleChat
 from raglab.logging_utils import log_event
 from raglab.ollama.service import OllamaService
 
@@ -41,6 +42,15 @@ LOGGER = logging.getLogger(__name__)
 
 QUESTION_TYPES = ("paraphrase", "reference", "entity")
 MAX_ANSWER_WORDS = 40
+# Phrasings that only make sense next to the passage ("this law", "this
+# excerpt"): in a corpus of hundreds of laws they have no single answer.
+_VAGUE_RE = re.compile(
+    r"\b(?:nest[ea]s?|dest[ea]s?|est[ea]s?)\s+(?:trecho|texto|lei|artigo|par[aá]grafo|anexo|dispositivo)\b"
+    r"|\b(?:segundo|conforme)\s+o\s+texto\b"
+    r"|\bem\s+(?:an[aá]lise|quest[aã]o)\b",
+    re.IGNORECASE,
+)
+_BOILERPLATE_RE = re.compile(r"PRESIDENT[EA]\s+DA\s+REP[UÚ]BLICA|Congresso Nacional decreta", re.IGNORECASE)
 _BUDGET_EMENTA_RE = re.compile(r"^\s*(?:abre|reabre)\b", re.IGNORECASE)
 
 _JSON_BLOCK_RE = re.compile(r"\{[\s\S]*\}")
@@ -131,8 +141,14 @@ def sample_passages(
         for text_path, sidecar, text, lines in documents:
             if len(passages) >= count:
                 break
-            # Skip the heading/ementa lines: the passage must come from the body.
-            body = [index for index in range(3, len(lines)) if (text_path.name, index) not in used]
+            # The body starts at the first article: heading, ementa and the
+            # enacting formula ("O PRESIDENTE DA REPÚBLICA...") are the same in
+            # every law and make useless questions.
+            first_article = next(
+                (index for index, (a, b) in enumerate(lines) if _ARTICLE_RE.match(text[a:b])),
+                3,
+            )
+            body = [index for index in range(first_article, len(lines)) if (text_path.name, index) not in used]
             if not body:
                 continue
             first = rng.choice(body)
@@ -215,17 +231,81 @@ def _cites_reference(question: str, passage: Passage) -> bool:
     return has_article and bool(law_number) and law_number in digits
 
 
+def generate_questions(
+    settings: Settings,
+    *,
+    backend: str,
+    corpus_dir: Path,
+    output_dir: Path,
+    count: int,
+    seed: int,
+    model: str | None = None,
+    profile: str | None = None,
+) -> dict[str, Any]:
+    """Entry point shared by the CLI and the API.
+
+    With the llama.cpp backend, Ollama models are unloaded and llama-server
+    is started for the duration of the run (and stopped afterwards if raglab
+    started it).
+    """
+    from raglab.llm.local_server import LocalLLMServer
+
+    generator = LexMLQuestionGenerator(settings, model=model, backend=backend)
+    if backend != "llamacpp":
+        return generator.generate(corpus_dir=corpus_dir, output_dir=output_dir, count=count, seed=seed)
+    with LocalLLMServer(settings, profile=profile or settings.question_model_profile):
+        return generator.generate(corpus_dir=corpus_dir, output_dir=output_dir, count=count, seed=seed)
+
+
+def _rejection_reason(generated: dict[str, str] | None, passage: Passage, question_type: str) -> str | None:
+    if generated is None:
+        return "invalid_json"
+    span = locate_span(passage.text, generated["answer"])
+    if span is None:
+        return "quote_not_found"
+    if len(span["text"].split()) > MAX_ANSWER_WORDS:
+        return "answer_too_long"
+    if _letter_ratio(span["text"]) < 0.5 or _BOILERPLATE_RE.search(span["text"]):
+        # "......" filler lines of amendment texts, or the enacting formula.
+        return "boilerplate_answer"
+    question = generated["question"]
+    if _VAGUE_RE.search(question):
+        return "vague"
+    if question_type != "reference" and re.search(r"\b(?:art\.|artigo|lei n)", question, re.I):
+        return "leaks_reference"
+    if question_type == "reference" and not _cites_reference(question, passage):
+        return "reference_missing"
+    return None
+
+
 class LexMLQuestionGenerator:
+    """Write the question set with a chat backend.
+
+    `backend="ollama"` uses the generation model served by Ollama;
+    `backend="llamacpp"` uses an OpenAI-compatible llama-server (JSON output
+    enforced by grammar). Starting/stopping that server is the caller's job
+    (see `raglab.llm.local_server.LocalLLMServer`).
+    """
+
     def __init__(
         self,
         settings: Settings | None = None,
         ollama: OllamaService | None = None,
         *,
         model: str | None = None,
+        backend: str = "ollama",
+        client: OpenAICompatibleChat | None = None,
     ) -> None:
+        if backend not in ("ollama", "llamacpp"):
+            raise ValueError(f"Backend inconnu: {backend}")
         self.settings = settings or get_settings()
-        self.ollama = ollama or OllamaService(self.settings)
-        self.model = model or self.settings.generation_model
+        self.backend = backend
+        if backend == "llamacpp":
+            self.chat_client: Any = client or OpenAICompatibleChat(self.settings)
+            self.model = model or self.settings.question_model
+        else:
+            self.chat_client = ollama or OllamaService(self.settings)
+            self.model = model or self.settings.generation_model
 
     def _ask(self, passage: Passage, question_type: str) -> dict[str, str] | None:
         reference = ""
@@ -236,11 +316,13 @@ class LexMLQuestionGenerator:
             f"TIPO: {question_type}\n{reference}TRECHO:\n{passage.text}\n\nResponda apenas com JSON."
         )
         try:
-            result = self.ollama.chat(
+            extra = {"json_mode": True} if self.backend == "llamacpp" else {}
+            result = self.chat_client.chat(
                 messages=[{"role": "user", "content": user}],
                 model=self.model,
                 system=_SYSTEM_PROMPT,
                 options={"temperature": 0.0, "num_predict": 200, "seed": 42},
+                **extra,
             )
         except Exception as exc:  # network or model errors drop the passage
             log_event(LOGGER, logging.WARNING, "lexml.questions.chat_failed", error=str(exc))
@@ -258,7 +340,7 @@ class LexMLQuestionGenerator:
         corpus_dir = (corpus_dir or self.settings.lexml_fulltext_dir / "corpus").resolve()
         output_dir = output_dir.resolve()
         # Over-sample: some questions are rejected by the quote check.
-        passages = sample_passages(corpus_dir, count=int(count * 1.5) + 10, seed=seed)
+        passages = sample_passages(corpus_dir, count=int(count * 2.5) + 10, seed=seed)
 
         cases: list[GroundTruthCase] = []
         rejected = {
@@ -267,32 +349,32 @@ class LexMLQuestionGenerator:
             "answer_too_long": 0,
             "leaks_reference": 0,
             "reference_missing": 0,
+            "vague": 0,
+            "boilerplate_answer": 0,
         }
         kept_by_type = dict.fromkeys(QUESTION_TYPES, 0)
+        failed_by_type = dict.fromkeys(QUESTION_TYPES, 0)
         for passage in passages:
             if len(cases) >= count:
                 break
             # Ask for the type we have the fewest of, so the set stays balanced
             # even when one type gets rejected more often.
-            wanted = min(QUESTION_TYPES, key=lambda kind: kept_by_type[kind])
+            # A type the model keeps failing on is no longer asked for: better
+            # a slightly unbalanced set than one that never reaches `count`.
+            available = [
+                kind for kind in QUESTION_TYPES if failed_by_type[kind] < 3 * kept_by_type[kind] + 10
+            ] or ["paraphrase"]
+            wanted = min(available, key=lambda kind: kept_by_type[kind])
             question_type = pick_question_type(passage, wanted)
             generated = self._ask(passage, question_type)
-            if generated is None:
-                rejected["invalid_json"] += 1
+            reason = _rejection_reason(generated, passage, question_type)
+            if reason is not None:
+                rejected[reason] += 1
+                failed_by_type[question_type] += 1
                 continue
+            assert generated is not None
             span = locate_span(passage.text, generated["answer"])
-            if span is None:
-                rejected["quote_not_found"] += 1
-                continue
-            if len(span["text"].split()) > MAX_ANSWER_WORDS:
-                rejected["answer_too_long"] += 1
-                continue
-            if question_type != "reference" and re.search(r"\b(?:art\.|artigo|lei n)", generated["question"], re.I):
-                rejected["leaks_reference"] += 1
-                continue
-            if question_type == "reference" and not _cites_reference(generated["question"], passage):
-                rejected["reference_missing"] += 1
-                continue
+            assert span is not None
             kept_by_type[question_type] += 1
             case_id = f"lexml-{len(cases) + 1:04d}"
             cases.append(
@@ -327,6 +409,7 @@ class LexMLQuestionGenerator:
                 "language": "pt",
                 "licence": "Public domain (Lei 9.610/1998, art. 8º, IV)",
                 "generator_model": self.model,
+                "generator_backend": self.backend,
                 "seed": seed,
                 "case_count": len(cases),
                 "by_type": by_type,

@@ -33,6 +33,7 @@ export function LexML() {
   const [perYear, setPerYear] = useState("7");
   const [questionCount, setQuestionCount] = useState("300");
   const [seed, setSeed] = useState("42");
+  const [questionBackend, setQuestionBackend] = useState<"llamacpp" | "ollama">("llamacpp");
   const fulltext = useApiAction((body: unknown) => post<unknown>("/api/lexml/fulltext", body));
   const questions = useApiAction((body: unknown) => post<unknown>("/api/lexml/questions", body));
 
@@ -196,6 +197,12 @@ export function LexML() {
             {fulltext.data ? <JsonViewer value={fulltext.data} maxHeight={240} /> : null}
           </div>
           <div>
+            <FieldRow label={t("lexml.question_backend")} hint={t("lexml.question_backend_hint")}>
+              <select value={questionBackend} onChange={(e) => setQuestionBackend(e.target.value as "llamacpp" | "ollama")}>
+                <option value="llamacpp">llama.cpp (Qwen3.6 35B MoE)</option>
+                <option value="ollama">Ollama ({config?.generation_model ?? "qwen2.5:7b"})</option>
+              </select>
+            </FieldRow>
             <FieldRow label={t("lexml.question_count")} hint={t("lexml.question_count_hint")}>
               <input type="number" value={questionCount} onChange={(e) => setQuestionCount(e.target.value)} min={1} />
             </FieldRow>
@@ -203,7 +210,9 @@ export function LexML() {
               <input type="number" value={seed} onChange={(e) => setSeed(e.target.value)} />
             </FieldRow>
             <button
-              onClick={() => questions.run({ count: Number(questionCount), seed: Number(seed) })}
+              onClick={() =>
+                questions.run({ count: Number(questionCount), seed: Number(seed), backend: questionBackend })
+              }
               disabled={questions.loading}
             >
               {questions.loading ? t("lexml.generating") : t("lexml.launch_questions")}

@@ -175,7 +175,9 @@ class LexMLQuestionsRequest(BaseModel):
     output_dir: str | None = None
     count: int = Field(300, ge=1)
     seed: int = 42
+    backend: str = "llamacpp"
     model: str | None = None
+    profile: str | None = None
 
 
 class LexMLLoadRequest(BaseModel):

@@ -293,6 +293,8 @@
     "per_year": "Lois par année",
     "per_year_hint": "Tirées au hasard (graine), entre 3 000 et 150 000 caractères.",
     "launch_fulltext": "Collecter les textes",
+    "question_backend": "Modèle rédacteur",
+    "question_backend_hint": "llama.cpp : démarré automatiquement si besoin (les modèles Ollama sont déchargés pour libérer le GPU), puis arrêté.",
     "question_count": "Nombre de questions",
     "question_count_hint": "Les questions dont la citation est introuvable dans le texte sont rejetées.",
     "launch_questions": "Générer les questions",
