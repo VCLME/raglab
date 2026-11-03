@@ -663,6 +663,17 @@ button {
 button:hover {
   background: var(--accent-strong);
 }
+/* Icon + label buttons: centre the icon on the text instead of letting it sit
+   on the baseline. Class rules (.lang-menu button, .tabs button…) still win. */
+button:has(> svg) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  vertical-align: middle;
+}
+button > svg {
+  flex: none;
+}
 button:active {
   transform: translateY(1px);
 }
@@ -671,9 +682,9 @@ button:focus-visible {
   outline-offset: 2px;
 }
 button[disabled] {
-  background: var(--surface-2);
-  border-color: var(--border);
-  color: var(--dim);
+  background: var(--accent-soft);
+  border-color: var(--accent-border);
+  color: oklch(0.6 0.1 262);
   cursor: not-allowed;
   transform: none;
 }
@@ -1332,6 +1343,33 @@ button.sm {
   font-size: 12.5px;
 }
 
+/* Every select draws its own chevron, centred in a fixed right gutter, instead
+   of the native arrow the OS places flush against the border. Declared after
+   the per-context rules above so the background shorthands there do not reset
+   it. */
+select,
+.form-row select,
+.settings-bar select,
+.composer-row select {
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none' stroke='%236b7080' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 4.5 6 7.5 9 4.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 12px 12px;
+  padding-right: 30px;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+select:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+select[multiple] {
+  background-image: none;
+  padding-right: 9px;
+}
+
 /* ——— tables ——— */
 
 .table {
@@ -1681,6 +1719,9 @@ button.sm {
   }
 }
 
+.api-key-control > button {
+  white-space: nowrap;
+}
 .api-key-control {
   position: relative;
 }

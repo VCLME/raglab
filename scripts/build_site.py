@@ -169,12 +169,12 @@ def html_table(stages: list[Stage], runs: dict[str, dict[str, Any]]) -> str:
     head = "".join(f'<th scope="col">{esc(name)}</th>' for name, _ in COLUMNS)
     body = []
     for stage, cells in table_rows(stages, runs):
-        status = f' <span class="tag">{esc(stage.status)}</span>' if stage.status else ""
+        status = f'<span class="tag">{esc(stage.status)}</span>' if stage.status else ""
         tds = "".join(
             f'<td class="pending">{esc(c)}</td>' if c == MEASURING else f'<td class="num">{esc(c)}</td>' for c in cells
         )
         body.append(
-            f'<tr><th scope="row">{esc(stage.name)}{status}<span class="change">{esc(stage.change)}</span></th>{tds}</tr>'
+            f'<tr><th scope="row">{status}{esc(stage.name)}<span class="change">{esc(stage.change)}</span></th>{tds}</tr>'
         )
     return (
         '<div class="table-wrap" role="region" aria-label="Before/after results" tabindex="0">'

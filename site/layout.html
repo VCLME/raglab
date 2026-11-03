@@ -17,15 +17,20 @@
 <meta name="twitter:title" content="{{title}}">
 <meta name="twitter:description" content="{{description}}">
 <meta name="twitter:image" content="{{site_url}}assets/chat-welcome.png">
-<meta name="theme-color" content="#f8f9fc">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f6f4ef" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#060607" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&amp;display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
 <header class="site-header">
   <div class="wrap header-row">
-    <a class="brand" href="./"><span class="brand-mark" aria-hidden="true"></span>raglab</a>
+    <a class="brand" href="./">raglab</a>
     <nav aria-label="Main">
       <ul>
         <li><a href="./" data-nav="index">Overview</a></li>
