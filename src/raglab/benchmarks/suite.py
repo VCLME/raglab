@@ -367,6 +367,7 @@ def run_suite(
         "summary": report["summary"],
         "by_type": report.get("by_type") or {},
         **({"by_split": report["by_split"]} if report.get("by_split") else {}),
+        **({"by_type_heldout": report["by_type_heldout"]} if report.get("by_type_heldout") else {}),
         "report_path": report["report_path"],
         "experiment_run_id": report["experiment_run_id"],
         # Per-question outcomes, so two runs can be compared question by
@@ -525,8 +526,13 @@ def render_markdown(results: list[dict[str, Any]]) -> str:
         if any(judged):
             lines.append("")
             lines.append(f"Juges RAGAS calculés sur les {max(j or 0 for j in judged)} premières questions.")
-        # Per question type, and per split (dev / heldout) for sets that have one.
-        for key, heading in (("by_type", "par type"), ("by_split", "par partie du jeu")):
+        # Per question type, per split (dev / heldout) for sets that have one,
+        # and per type on the held-out part only (the numbers to report).
+        for key, heading in (
+            ("by_type", "par type"),
+            ("by_split", "par partie du jeu"),
+            ("by_type_heldout", "par type, partie heldout"),
+        ):
             group_runs = [s.get(key) if s else None for s in per_run]
             if not any(group_runs):
                 continue

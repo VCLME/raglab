@@ -136,6 +136,17 @@ def compare_runs(run_a: dict[str, Any], run_b: dict[str, Any], *, k: int = 5) ->
                 )
                 for split in splits
             }
+        heldout_types = [t for t in types if any(r.get("split") == "heldout" and r.get("type") == t for r in cases_a)]
+        if heldout_types:
+            # The numbers to report: each question type on the held-out part.
+            entry["by_type_heldout"] = {
+                question_type: compare_suite(
+                    [row for row in cases_a if row.get("split") == "heldout" and row.get("type") == question_type],
+                    [row for row in cases_b if row.get("split") == "heldout" and row.get("type") == question_type],
+                    k=k,
+                )
+                for question_type in heldout_types
+            }
         result["suites"][suite_a["suite"]] = entry
     return result
 
@@ -162,5 +173,7 @@ def render(comparison: dict[str, Any], *, k: int = 5) -> str:
             lines.append(line(f"{suite_name} · {question_type}", sub))
         for split, sub in entry.get("by_split", {}).items():
             lines.append(line(f"{suite_name} · {split}", sub))
+        for question_type, sub in entry.get("by_type_heldout", {}).items():
+            lines.append(line(f"{suite_name} · heldout · {question_type}", sub))
     lines += ["", "✱ = écart significatif (p < 0,05 pour le recall, IC 95 % excluant 0 pour le MRR)."]
     return "\n".join(lines)

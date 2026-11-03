@@ -6,7 +6,7 @@ Ces fichiers sont la référence des mesures de la phase 9 : toutes les comparai
 |---|---|---|---|---|
 | `piaf/` | français | 500 | 761 paragraphes de Wikipédia, `raglab bench download piaf --limit 500 --seed 42` | CC-BY-SA 3.0 (Etalab, d'après Wikipédia) |
 | `lexml_fulltext/` | portugais | 277 sur 300 (23 marquées `rejected`) | 252 lois fédérales, `raglab lexml fulltext` ; empreintes dans `corpus_manifest.json` | domaine public (Lei 9.610/1998, art. 8º, IV) |
-| `lexml_references/` (à générer) | portugais | environ 100 (`dev` 30 %, `heldout` 70 %) : l'article A renvoie à l'article B, la réponse est dans B | le corpus LexML ci-dessus ; `raglab lexml reference-questions` | domaine public |
+| `lexml_references/` (à générer) | portugais | environ 100 (`dev` 30 %, `heldout` 70 %) : l'article A renvoie à l'article B, la réponse est dans B ; moitié `via_topic`, 30 % `scenario` (situation concrète, ni loi ni article nommés), 20 % `via_article` | le corpus LexML ci-dessus ; `raglab lexml reference-questions` | domaine public |
 | `legi_consommation/` | français | à générer (`raglab legifrance questions`) | Code de la consommation avec son historique : 5 998 versions de 3 391 articles, `raglab legifrance fetch` ; empreintes dans `corpus_manifest.json` | Licence Ouverte 2.0 (DILA, via tricoteuses) |
 | `abstention/` | fr + pt | 80 questions sans réponse dans les corpus (phase 9.4) | — | rédigées pour raglab |
 

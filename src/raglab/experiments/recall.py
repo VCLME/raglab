@@ -477,12 +477,17 @@ class RecallBenchmarkService:
 
             by_type = _summarise_by_type(details, k_values)
             by_split = _summarise_by_type(details, k_values, key="split")
+            # Each type on the questions never looked at while tuning.
+            by_type_heldout = _summarise_by_type(
+                [detail for detail in details if detail.get("split") == "heldout"], k_values
+            )
             experiment_run.config_json = {
                 **experiment_run.config_json,
                 "total_cases": total_cases,
                 "summary": summary,
                 **({"by_type": by_type} if by_type else {}),
                 **({"by_split": by_split} if by_split else {}),
+                **({"by_type_heldout": by_type_heldout} if by_type_heldout else {}),
             }
             self.session.add(experiment_run)
             complete_experiment_run(self.session, experiment_run, ExperimentStatus.COMPLETED)
@@ -508,6 +513,7 @@ class RecallBenchmarkService:
             "summary": summary,
             "by_type": by_type,
             **({"by_split": by_split} if by_split else {}),
+            **({"by_type_heldout": by_type_heldout} if by_type_heldout else {}),
             "details": details,
         }
         if retrieval.get("graph"):
