@@ -36,7 +36,11 @@ def _outcome(question: str = "Que dit la loi ?") -> RetrievalOutcome:
     )
 
 
-def parse_sse(text: str) -> list[tuple[str, dict]]:
+# Educational-mode events, additive to the 9.5 sequence (see test_api_query_stages.py).
+STAGE_EVENTS = {"pipeline", "stage"}
+
+
+def parse_sse(text: str, *, with_stages: bool = False) -> list[tuple[str, dict]]:
     events = []
     for block in text.strip().split("\n\n"):
         name, data = None, None
@@ -45,7 +49,8 @@ def parse_sse(text: str) -> list[tuple[str, dict]]:
                 name = line[len("event: ") :]
             elif line.startswith("data: "):
                 data = json.loads(line[len("data: ") :])
-        events.append((name, data))
+        if with_stages or name not in STAGE_EVENTS:
+            events.append((name, data))
     return events
 
 
@@ -181,3 +186,86 @@ def test_plain_query_endpoint_is_unchanged(client):
     assert response.status_code == 200
     assert response.headers["content-type"] == "application/json"
     assert response.json()["answer"] == "ok"
+
+
+# Educational mode: `pipeline` and `stage` events (additive).
+
+
+def _stage_events(events):
+    return [(data["stage"], data["status"]) for name, data in events if name == "stage"]
+
+
+def test_stream_emits_pipeline_then_stage_events_around_each_stage(client, stream_service):
+    outcome = _outcome()
+    outcome.query_embedding = [0.5, -0.25, 0.125] + [0.0] * 381
+    retrieve, gen = stream_service(FakeGenerator(["La loi ", "dispose."]), outcome)
+    with retrieve, gen:
+        events = parse_sse(_post(client).text, with_stages=True)
+
+    names = [name for name, _ in events]
+    assert names[0] == "pipeline"
+    assert events[0][1] == {"stages": ["embed", "retrieval", "prompt", "generation"]}
+    # Retrieval-side stages are replayed before the `retrieval` event, the
+    # generation stage wraps the tokens, `done` stays last.
+    assert names == [
+        "pipeline",
+        "stage", "stage", "stage", "stage",
+        "retrieval",
+        "stage", "stage", "stage",
+        "token", "token",
+        "stage",
+        "done",
+    ]  # fmt: skip
+    assert _stage_events(events) == [
+        ("embed", "start"),
+        ("embed", "end"),
+        ("retrieval", "start"),
+        ("retrieval", "end"),
+        ("prompt", "start"),
+        ("prompt", "end"),
+        ("generation", "start"),
+        ("generation", "end"),
+    ]
+
+    stages = {(d["stage"], d["status"]): d for name, d in events if name == "stage"}
+    embed = stages[("embed", "end")]
+    assert embed["live"] is False
+    assert embed["duration_ms"] == 12.0
+    assert embed["counts"] == {"dimension": 384}
+    assert embed["data"]["head"][:3] == [0.5, -0.25, 0.125]
+    assert len(embed["data"]["head"]) == 8
+
+    retrieval = stages[("retrieval", "end")]
+    assert retrieval["t_ms"] == 15.0  # replayed: embed 12 ms + search 3 ms
+    assert retrieval["duration_ms"] == 3.0
+    assert retrieval["counts"] == {"chunks_out": 1, "top_k": 3}
+    assert retrieval["data"]["top_chunks"] == [{"rank": 1, "file_name": "loi.txt", "excerpt": "extrait", "score": 0.91}]
+
+    prompt = stages[("prompt", "end")]
+    assert prompt["live"] is True
+    assert prompt["counts"]["chunks_in"] == 1
+    assert "Que dit la loi ?" in prompt["data"]["user_prompt"]
+
+    generation = stages[("generation", "end")]
+    assert generation["counts"]["output_tokens"] == 3.0
+    assert generation["counts"]["tokens_per_second"] == 42.0
+    assert generation["counts"]["fragments"] == 2
+    assert generation["counts"]["first_token_ms"] is not None
+    assert generation["data"]["model"]
+
+
+def test_stream_without_generation_has_no_generation_stages(client, stream_service):
+    retrieve, gen = stream_service(FakeGenerator(["never"]))
+    with retrieve, gen:
+        events = parse_sse(_post(client, generate=False).text, with_stages=True)
+    assert events[0][1] == {"stages": ["embed", "retrieval"]}
+    assert [stage for stage, status in _stage_events(events) if status == "end"] == ["embed", "retrieval"]
+    assert [name for name, _ in events][-2:] == ["retrieval", "done"]
+
+
+def test_generation_failure_leaves_the_generation_stage_open(client, stream_service):
+    retrieve, gen = stream_service(FakeGenerator(["Début "], fail_with=KeyError("boom")))
+    with retrieve, gen:
+        events = parse_sse(_post(client).text, with_stages=True)
+    assert _stage_events(events)[-1] == ("generation", "start")
+    assert events[-1][0] == "error"
