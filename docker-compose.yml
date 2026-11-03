@@ -105,6 +105,10 @@ services:
       RAGLAB_DATABASE_URL: postgresql+psycopg://raglab:raglab@postgres:5432/raglab
       RAGLAB_OLLAMA_BASE_URL: http://ollama:11434
       RAGLAB_GENERATION_MODEL: qwen2.5:7b
+      # The api image ships CPU-only torch: the cross-encoder would add
+      # several seconds per query there. Re-ranking runs by default when
+      # raglab runs natively with a GPU (see docs/reranking.md).
+      RAGLAB_DEFAULT_RERANK: "false"
       RAGLAB_GENERATION_TIMEOUT_SECONDS: "600"
       RAGLAB_ADMINER_URL: http://localhost:8080
       RAGLAB_API_CORS_ORIGINS: '["http://localhost:5173","http://localhost:8081","http://127.0.0.1:5173","http://127.0.0.1:8081"]'

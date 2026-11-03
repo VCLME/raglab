@@ -86,7 +86,7 @@ flowchart LR
   L --> A[Cited answer, or<br/>'not in your documents']
 ```
 
-<sub>* in review (phases 9.2 and 9.3); the merged pipeline is dense search only.</sub>
+<sub>Default pipeline: hybrid search (BM25 + dense, RRF) then cross-encoder re-ranking, the best measured configuration. The Docker `api` container ships without a GPU and turns re-ranking off; set `RAGLAB_DEFAULT_RERANK=false` and `RAGLAB_DEFAULT_RETRIEVAL_MODE=dense` for the fastest path (~25-40 ms search instead of ~0.5 s).</sub>
 
 One line per component, with its measured effect:
 

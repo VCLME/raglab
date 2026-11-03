@@ -46,7 +46,11 @@ class Settings(BaseSettings):
     # Hybrid retrieval (dense + BM25 fused by Reciprocal Rank Fusion).
     # default_language picks the text-search config when neither a document
     # nor its corpus declares one.
-    default_retrieval_mode: str = "dense"
+    # hybrid + rerank is the measured best configuration (rerank-v1:
+    # PIAF R@5 0.966, LexML 0.596; hybrid candidates beat dense ones under
+    # the reranker). Set dense / RAGLAB_DEFAULT_RERANK=false for the fastest
+    # path (~25-40 ms instead of ~0.5 s per query).
+    default_retrieval_mode: str = "hybrid"
     default_language: str = "fr"
     bm25_k1: float = 1.2
     bm25_b: float = 0.75
@@ -56,7 +60,7 @@ class Settings(BaseSettings):
     # Cross-encoder re-ranking (phase 9.3): the first stage returns
     # rerank_candidates chunks, the cross-encoder keeps top_k. fp16 on CUDA
     # when available (~1.1 GB VRAM for bge-reranker-v2-m3), CPU otherwise.
-    default_rerank: bool = False
+    default_rerank: bool = True
     rerank_model_name: str = "BAAI/bge-reranker-v2-m3"
     rerank_device: str = "cuda"
     rerank_candidates: int = 40
