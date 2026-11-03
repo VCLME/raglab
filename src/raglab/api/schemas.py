@@ -18,6 +18,16 @@ class HealthResponse(BaseModel):
     adminer_url: str
 
 
+class LivenessResponse(BaseModel):
+    status: str
+
+
+class ReadinessResponse(BaseModel):
+    status: str
+    checks: dict[str, str]
+    default_generation_model: str
+
+
 class ConfigResponse(BaseModel):
     app_name: str
     environment: str
