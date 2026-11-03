@@ -34,8 +34,8 @@ test("Retrieval page: hybrid mode sends its settings and shows dense / BM25 / RR
       query_lexemes: ["mandat", "president"],
       timings_ms: { embed: 12.4, retrieval: 30.1, dense: 8.2, lexical: 19.3, fusion: 0.4 },
       retrieved_chunks: [
-        { ...first, score: 0.0161, dense_score: 0.873, dense_rank: 1, lexical_score: 13.99, lexical_rank: 3, fused_score: 0.0161 },
-        { ...second, score: 0.0082, lexical_score: 18.98, lexical_rank: 1, fused_score: 0.0082 },
+        { ...first, score: 0.0161, dense_score: 0.873, dense_rank: 1, lexical_score: 13.99, lexical_rank: 3, fused_score: 0.0161, fused_rank: 1 },
+        { ...second, score: 0.0082, lexical_score: 18.98, lexical_rank: 1, fused_score: 0.0082, fused_rank: 2 },
       ],
     })(route);
   });
@@ -50,7 +50,7 @@ test("Retrieval page: hybrid mode sends its settings and shows dense / BM25 / RR
   const cards = page.locator(".chunk");
   await expect(cards.first().locator(".chunk-scores")).toContainText("#1 0.873");
   await expect(cards.first().locator(".chunk-scores")).toContainText("#3 13.99");
-  await expect(cards.first().locator(".chunk-scores")).toContainText("0.0161");
+  await expect(cards.first().locator(".chunk-scores")).toContainText("#1 0.0161");
   // A chunk the dense retriever did not return is marked absent, not zero.
   await expect(cards.nth(1).locator(".chunk-score.absent")).toBeVisible();
   await expect(page.getByText("mandat", { exact: true })).toBeVisible();
