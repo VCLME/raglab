@@ -27,5 +27,7 @@ def test_iterative_scan_is_enabled_before_the_knn_query():
 def test_iterative_scan_can_be_disabled_to_reproduce_v0():
     session = MagicMock()
     session.execute.return_value.all.return_value = []
-    PostgresVectorStore(iterative_scan=False).search(session, index_run=_index_run(), query_embedding=[0.0] * 384, top_k=5)
+    PostgresVectorStore(iterative_scan=False).search(
+        session, index_run=_index_run(), query_embedding=[0.0] * 384, top_k=5
+    )
     assert not any("hnsw" in statement for statement in _statements(session))

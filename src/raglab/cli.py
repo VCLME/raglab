@@ -101,11 +101,17 @@ def bench_list() -> None:
 
 @bench_app.command("all")
 def bench_all(
-    label: str = typer.Option(..., "--label", help="Nom du run (ex. baseline-v0). Resultat: benchmarks/results/<label>.json"),
+    label: str = typer.Option(
+        ..., "--label", help="Nom du run (ex. baseline-v0). Resultat: benchmarks/results/<label>.json"
+    ),
     suite: list[str] | None = typer.Option(None, "--suite", help="piaf et/ou lexml_fulltext (defaut: les deux)."),
     strategy: ChunkingStrategy = typer.Option(ChunkingStrategy.TRADITIONAL, "--strategy"),
-    ragas_limit: int = typer.Option(100, "--ragas-limit", min=0, help="Questions generees et notees par suite (0 = retrieval seul)."),
-    judge_backend: str = typer.Option("llamacpp", "--judge-backend", help="llamacpp (Gemma, demarre si besoin) ou ollama."),
+    ragas_limit: int = typer.Option(
+        100, "--ragas-limit", min=0, help="Questions generees et notees par suite (0 = retrieval seul)."
+    ),
+    judge_backend: str = typer.Option(
+        "llamacpp", "--judge-backend", help="llamacpp (Gemma, demarre si besoin) ou ollama."
+    ),
 ) -> None:
     """Regenerer tous les chiffres de benchmark (PIAF + LexML) et les ecrire dans benchmarks/results/."""
     from raglab.benchmarks.suite import render_markdown, run_all
@@ -503,7 +509,11 @@ def experiment_calibrate_judges(
     if output:
         output.parent.mkdir(parents=True, exist_ok=True)
         output.write_text(text, encoding="utf-8")
-    typer.echo(json.dumps([{k: v for k, v in r.items() if k != "rows"} for r in report["results"]], indent=2, ensure_ascii=False))
+    typer.echo(
+        json.dumps(
+            [{k: v for k, v in r.items() if k != "rows"} for r in report["results"]], indent=2, ensure_ascii=False
+        )
+    )
 
 
 @experiment_app.command("recall")

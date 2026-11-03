@@ -24,7 +24,7 @@ import platform
 import subprocess
 import sys
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from importlib import metadata
 from pathlib import Path
 from typing import Any
@@ -95,7 +95,9 @@ def _ensure_corpus(suite: Suite, settings: Settings) -> None:
     elif suite.name == "lexml_fulltext":
         from raglab.lexml.fulltext import FullTextCollector
 
-        FullTextCollector(settings).collect(output_dir=suite.corpus_dir.parent, years=range(1988, 2025), per_year=7, seed=42)
+        FullTextCollector(settings).collect(
+            output_dir=suite.corpus_dir.parent, years=range(1988, 2025), per_year=7, seed=42
+        )
     else:
         raise ValueError(f"Corpus absent et pas de recette pour le produire: {suite.corpus_dir}")
 
@@ -133,7 +135,8 @@ def environment_report(settings: Settings, session: Any, judge: JudgeConfig | No
     try:
         tags = requests.get(f"{settings.ollama_base_url}/api/tags", timeout=5).json().get("models", [])
         ollama_digest = next(
-            (model.get("digest", "")[:12] for model in tags if model.get("name") == settings.generation_model), "missing"
+            (model.get("digest", "")[:12] for model in tags if model.get("name") == settings.generation_model),
+            "missing",
         )
     except (requests.RequestException, ValueError):
         pass
@@ -146,7 +149,7 @@ def environment_report(settings: Settings, session: Any, judge: JudgeConfig | No
     except ImportError:
         ram = "unknown"
     return {
-        "date": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "date": datetime.now(UTC).isoformat(timespec="seconds"),
         "git_commit": _git("rev-parse", "--short", "HEAD"),
         "git_dirty": bool(_git("status", "--porcelain", "--untracked-files=no")),
         "os": platform.platform(),

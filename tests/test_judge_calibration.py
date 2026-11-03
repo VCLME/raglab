@@ -12,9 +12,25 @@ def _dataset(tmp_path: Path) -> tuple[Path, Path]:
     rows = []
     for index in range(4):
         name = f"p{index}.txt"
-        (corpus / name).write_text(f"Paragraphe {index}. Le chiffre est {index * 10} et la ville est V{index}.", encoding="utf-8")
-        rows.append({"id": f"q{index}a", "question": "Quel chiffre ?", "expected_file_names": [name], "ground_truth_answer": f"{index * 10}"})
-        rows.append({"id": f"q{index}b", "question": "Quelle ville ?", "expected_file_names": [name], "ground_truth_answer": f"V{index}"})
+        (corpus / name).write_text(
+            f"Paragraphe {index}. Le chiffre est {index * 10} et la ville est V{index}.", encoding="utf-8"
+        )
+        rows.append(
+            {
+                "id": f"q{index}a",
+                "question": "Quel chiffre ?",
+                "expected_file_names": [name],
+                "ground_truth_answer": f"{index * 10}",
+            }
+        )
+        rows.append(
+            {
+                "id": f"q{index}b",
+                "question": "Quelle ville ?",
+                "expected_file_names": [name],
+                "ground_truth_answer": f"V{index}",
+            }
+        )
     path = tmp_path / "gt.jsonl"
     path.write_text("".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8")
     return path, corpus

@@ -88,7 +88,9 @@ def build_items(ground_truth_path: Path, corpus_dir: Path, *, count: int = 30, s
                 f"{answer}. {_EMBELLISHMENTS[index % len(_EMBELLISHMENTS)]}",
             ),
             CalibrationItem("relevancy", "on_topic", True, case["question"], context, f"{answer}."),
-            CalibrationItem("relevancy", "off_topic", False, case["question"], context, f"{other['ground_truth_answer']}."),
+            CalibrationItem(
+                "relevancy", "off_topic", False, case["question"], context, f"{other['ground_truth_answer']}."
+            ),
         ]
     return items
 

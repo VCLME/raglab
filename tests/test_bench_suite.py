@@ -17,8 +17,8 @@ def test_verify_manifest_reports_missing_and_changed_files(tmp_path: Path):
         json.dumps(
             {
                 "documents": [
-                    {"file_name": "a.txt", "sha256": hashlib.sha256("texte a".encode()).hexdigest()},
-                    {"file_name": "b.txt", "sha256": hashlib.sha256("texte b".encode()).hexdigest()},
+                    {"file_name": "a.txt", "sha256": hashlib.sha256(b"texte a").hexdigest()},
+                    {"file_name": "b.txt", "sha256": hashlib.sha256(b"texte b").hexdigest()},
                     {"file_name": "c.txt", "sha256": "0" * 64},
                 ]
             }
