@@ -57,6 +57,7 @@ def run_query(
         retrieval_mode=body.retrieval_mode,
         lexical_weight=body.lexical_weight,
         rrf_k=body.rrf_k,
+        rerank=body.rerank,
     )
 
 
@@ -100,6 +101,7 @@ def stream_query(
         retrieval_mode=body.retrieval_mode,
         lexical_weight=body.lexical_weight,
         rrf_k=body.rrf_k,
+        rerank=body.rerank,
     )
     retrieval = outcome.response().model_dump(mode="json")
 

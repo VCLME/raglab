@@ -51,6 +51,6 @@ def reciprocal_rank_fusion(
     if top_k is not None:
         scored = scored[:top_k]
     return [
-        chunk.model_copy(update={"score": score, "rank": rank, "fused_score": score})
+        chunk.model_copy(update={"score": score, "rank": rank, "fused_score": score, "fused_rank": rank})
         for rank, (score, chunk) in enumerate(scored, start=1)
     ]

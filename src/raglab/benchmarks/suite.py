@@ -33,7 +33,7 @@ import requests
 from sqlalchemy import text
 
 from raglab.config import Settings, get_settings
-from raglab.domain.enums import ChunkingStrategy
+from raglab.domain.enums import ChunkingStrategy, RetrievalMode
 from raglab.experiments.ragas import JudgeConfig
 from raglab.logging_utils import log_event
 
@@ -178,6 +178,8 @@ def run_suite(
     top_k: int,
     ragas_limit: int | None,
     judge: JudgeConfig | None,
+    retrieval_mode: RetrievalMode | None = None,
+    rerank: bool | None = None,
 ) -> dict[str, Any]:
     from raglab.db import session_scope
     from raglab.experiments.recall import RecallBenchmarkService
@@ -215,6 +217,8 @@ def run_suite(
                 ragas_case_limit=ragas_limit,
                 judge=judge,
                 index_run_id=str(indexing["index_run_id"]),
+                retrieval_mode=retrieval_mode,
+                rerank=rerank,
             )
         finally:
             service.close()
@@ -243,6 +247,8 @@ def run_all(
     suites: list[str] | None = None,
     repo_root: Path | None = None,
     settings: Settings | None = None,
+    retrieval_mode: RetrievalMode | None = None,
+    rerank: bool | None = None,
 ) -> dict[str, Any]:
     from raglab.db import initialize_database, session_scope
 
@@ -253,13 +259,31 @@ def run_all(
     with session_scope() as session:
         env = environment_report(settings, session, judge if ragas_limit else None)
     selected = [suite for suite in default_suites(settings, repo_root) if not suites or suite.name in suites]
+    mode = RetrievalMode(retrieval_mode or settings.default_retrieval_mode)
+    do_rerank = settings.default_rerank if rerank is None else rerank
     results = [
-        run_suite(suite, settings=settings, strategy=strategy, top_k=top_k, ragas_limit=ragas_limit, judge=judge)
+        run_suite(
+            suite,
+            settings=settings,
+            strategy=strategy,
+            top_k=top_k,
+            ragas_limit=ragas_limit,
+            judge=judge,
+            retrieval_mode=mode,
+            rerank=do_rerank,
+        )
         for suite in selected
     ]
     return {
         "label": label,
         "strategy": strategy.value,
+        "retrieval_mode": mode.value,
+        "rerank": do_rerank,
+        **(
+            {"rerank_model": settings.rerank_model_name, "rerank_candidates": settings.rerank_candidates}
+            if do_rerank
+            else {}
+        ),
         "top_k": top_k,
         "ragas_limit": ragas_limit,
         "environment": env,
@@ -291,10 +315,13 @@ def render_markdown(results: list[dict[str, Any]]) -> str:
         ("Recall@5", "recall@5", _fmt),
         ("Recall@10", "recall@10", _fmt),
         ("MRR", "mrr", _fmt),
-        ("Latence requête p50 (embed + recherche)", "latency_query_p50_ms", _ms),
+        ("Latence requête p50 (embed + recherche + re-ranking)", "latency_query_p50_ms", _ms),
         ("Latence requête p95", "latency_query_p95_ms", _ms),
         ("dont embedding p50", "latency_embed_p50_ms", _ms),
         ("dont recherche pgvector p50", "latency_retrieval_p50_ms", _ms),
+        ("dont re-ranking p50", "latency_rerank_p50_ms", _ms),
+        ("dont re-ranking p95", "latency_rerank_p95_ms", _ms),
+        ("Cache des scores de re-ranking (taux de hit)", "rerank_cache_hit_rate", _fmt),
         ("Génération p50", "latency_generation_p50_ms", _ms),
         ("Génération p95", "latency_generation_p95_ms", _ms),
         ("Débit de génération p50 (tokens/s)", "generation_tokens_per_second_p50", lambda v: _fmt(v, 1)),

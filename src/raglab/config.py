@@ -53,6 +53,18 @@ class Settings(BaseSettings):
     rrf_k: int = 60
     hybrid_lexical_weight: float = 0.5
     hybrid_candidates: int = 50
+    # Cross-encoder re-ranking (phase 9.3): the first stage returns
+    # rerank_candidates chunks, the cross-encoder keeps top_k. fp16 on CUDA
+    # when available (~1.1 GB VRAM for bge-reranker-v2-m3), CPU otherwise.
+    default_rerank: bool = False
+    rerank_model_name: str = "BAAI/bge-reranker-v2-m3"
+    rerank_device: str = "cuda"
+    rerank_candidates: int = 40
+    rerank_batch_size: int = 16
+    rerank_max_length: int = 512
+    # LRU bound of the (model, question, chunk id) score cache; 0 = off.
+    rerank_cache_size: int = 20000
+    rerank_timeout_seconds: float = 60.0
     data_dir: Path = Field(default_factory=lambda: Path("data"))
     reports_dir: Path = Field(default_factory=lambda: Path("data/reports"))
     lexml_documents_dir: Path = Field(default_factory=lambda: Path("data/lexml/documents"))
