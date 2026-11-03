@@ -5,9 +5,11 @@ import logging
 import math
 import random
 from collections import Counter
+from contextlib import AbstractContextManager, nullcontext
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
+from time import perf_counter
 from typing import Any
 
 from sqlalchemy.orm import Session
@@ -35,6 +37,36 @@ from raglab.retrieval.service import QueryService
 SUPPORTED_BACKENDS = ("pgvector", "neo4j")
 
 LOGGER = logging.getLogger(__name__)
+
+
+@dataclass(slots=True)
+class GeneratorConfig:
+    """Which model writes the benchmark answers.
+
+    `provider=None` (or "ollama") keeps the production path: answers are
+    generated during the retrieval loop. Another provider (llama.cpp, vLLM)
+    generates in a pass of its own once retrieval is done and the
+    cross-encoder released; with "llamacpp", llama-server is started for that
+    pass with `profile` (default `RAGLAB_QUESTION_MODEL_PROFILE`) and stopped
+    before the judge's own server starts.
+    """
+
+    provider: str | None = None
+    model: str | None = None
+    profile: str | None = None
+
+    @property
+    def deferred(self) -> bool:
+        return self.provider not in (None, "ollama")
+
+    def label(self, settings: Settings) -> str:
+        if not self.deferred:
+            return f"ollama:{self.model or settings.generation_model}"
+        if self.model:
+            return f"{self.provider}:{self.model}"
+        if self.provider == "llamacpp":
+            return f"llamacpp:{self.profile or settings.question_model_profile}"
+        return f"{self.provider}:default"
 
 
 @dataclass(slots=True)
@@ -251,6 +283,7 @@ class RecallBenchmarkService:
         rerank: bool | None = None,
         citations: bool | None = None,
         graph: bool | None = None,
+        generator: GeneratorConfig | None = None,
     ) -> dict[str, Any]:
         """Run retrieval on every case, then (optionally) grade answers.
 
@@ -270,6 +303,8 @@ class RecallBenchmarkService:
             cases = self._load_cases(dataset_path.resolve())
 
         judge = judge or JudgeConfig()
+        generator = generator or GeneratorConfig()
+        deferred = compute_ragas and generator.deferred and self.backend == "pgvector"
         retrieval = self._retrieval_config(
             retrieval_mode, lexical_weight, rrf_k, rerank=rerank, citations=citations, graph=graph
         )
@@ -297,6 +332,7 @@ class RecallBenchmarkService:
                 **(
                     {
                         "judge": judge.label(self.settings),
+                        "generator": generator.label(self.settings),
                         "ragas_case_limit": ragas_case_limit,
                         "generation_top_k": self.settings.default_top_k,
                     }
@@ -329,6 +365,8 @@ class RecallBenchmarkService:
         first_rank_count = 0
         grade_limit = len(cases) if ragas_case_limit is None else ragas_case_limit
         generation_top_k = self.settings.default_top_k
+        # (position in details, question, retrieved chunks) for the deferred generation pass.
+        pending: list[tuple[int, str, list[Any]]] = []
 
         try:
             for position, case in enumerate(cases):
@@ -338,13 +376,13 @@ class RecallBenchmarkService:
                     "corpus_name": corpus_name,
                     "strategy": strategy,
                     "top_k": max_k,
-                    "generate_answer": generate,
+                    "generate_answer": generate and not deferred,
                 }
                 if index_run_id:
                     query_kwargs["index_run_id"] = index_run_id
                 if self.backend == "pgvector":
                     query_kwargs.update(retrieval)
-                if generate and self.backend == "pgvector":
+                if generate and not deferred and self.backend == "pgvector":
                     # Retrieval keeps max_k chunks for Recall@k, but the
                     # answer is generated from the production top-k only.
                     query_kwargs["generation_top_k"] = generation_top_k
@@ -370,6 +408,8 @@ class RecallBenchmarkService:
                     first_rank_sum += first_rank
                     first_rank_count += 1
                 index_run_ids.append(response.index_run_id)
+                if generate and deferred:
+                    pending.append((len(details), case.question, list(response.retrieved_chunks)))
                 details.append(
                     {
                         "id": case.case_id,
@@ -379,7 +419,7 @@ class RecallBenchmarkService:
                         "expected_file_names": case.expected_file_names,
                         "expected_urns": case.expected_urns,
                         "retrieved_chunks": retrieved,
-                        "answer": response.answer if generate else None,
+                        "answer": response.answer if generate and not deferred else None,
                         "generation_context_size": (
                             (min(generation_top_k, len(retrieved)) if self.backend == "pgvector" else len(retrieved))
                             if generate
@@ -396,6 +436,8 @@ class RecallBenchmarkService:
 
             if compute_ragas and retrieval.get("rerank"):
                 self._release_reranker()
+            if pending:
+                self._generate_deferred(pending, details, generator, generation_top_k)
             ragas_scores = self._grade(cases, details, judge) if compute_ragas else {}
 
             for case, detail, run_id in zip(cases, details, index_run_ids, strict=True):
@@ -488,6 +530,30 @@ class RecallBenchmarkService:
             experiment_run_id=experiment_run.id,
         )
         return payload
+
+    def _generate_deferred(
+        self,
+        pending: list[tuple[int, str, list[Any]]],
+        details: list[dict[str, Any]],
+        generator: GeneratorConfig,
+        generation_top_k: int,
+    ) -> None:
+        """Generation pass for a provider other than Ollama: same prompt and
+        same top-k context as the production path, after retrieval."""
+        answerer = self.query_service.generator_for(generator.provider)
+        server: AbstractContextManager[Any] = (
+            LocalLLMServer(self.settings, profile=generator.profile or self.settings.question_model_profile)
+            if generator.provider == "llamacpp"
+            else nullcontext()
+        )
+        with server:
+            for position, question, chunks in pending:
+                started = perf_counter()
+                answer = answerer.generate_answer(question, chunks[:generation_top_k], model=generator.model)
+                detail = details[position]
+                detail["answer"] = answer
+                detail["timings_ms"]["generation"] = round((perf_counter() - started) * 1000, 3)
+                detail["generation_stats"] = dict(answerer.last_stats)
 
     def _grade(
         self,

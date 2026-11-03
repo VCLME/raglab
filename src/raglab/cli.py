@@ -15,7 +15,7 @@ from raglab.db.lexical import refresh_lexical_index
 from raglab.db.models import Corpus, IndexRun
 from raglab.domain.enums import ChunkingStrategy, RetrievalMode
 from raglab.experiments.ragas import JudgeConfig
-from raglab.experiments.recall import RecallBenchmarkService
+from raglab.experiments.recall import GeneratorConfig, RecallBenchmarkService
 from raglab.experiments.service import ExperimentService
 from raglab.indexing.service import IndexingService
 from raglab.ingestion.service import IngestionService
@@ -168,6 +168,19 @@ def bench_all(
         "--graph/--no-graph",
         help="Branche graphe : suivre les renvois (CITES) des articles trouves dans Neo4j, fusion RRF a trois sources. Defaut: RAGLAB_GRAPH_RETRIEVAL.",
     ),
+    generator_provider: str | None = typer.Option(
+        None,
+        "--generator-provider",
+        help="Fournisseur qui ecrit les reponses notees : ollama (defaut, production) ou llamacpp / vllm (passe de generation separee apres la recherche).",
+    ),
+    generator_model: str | None = typer.Option(
+        None, "--generator-model", help="Modele du generateur (defaut : celui du fournisseur)."
+    ),
+    generator_profile: str | None = typer.Option(
+        None,
+        "--generator-profile",
+        help="Profil llama.cpp a demarrer pour la generation (defaut : RAGLAB_QUESTION_MODEL_PROFILE).",
+    ),
 ) -> None:
     """Regenerer les chiffres de benchmark (PIAF + LexML, Code de la consommation sur demande) dans benchmarks/results/."""
     from raglab.benchmarks.suite import render_markdown, run_all
@@ -184,6 +197,7 @@ def bench_all(
         rerank=rerank,
         citations=citations,
         graph=graph,
+        generator=GeneratorConfig(provider=generator_provider, model=generator_model, profile=generator_profile),
     )
     output = Path("benchmarks/results") / f"{label}.json"
     output.parent.mkdir(parents=True, exist_ok=True)
