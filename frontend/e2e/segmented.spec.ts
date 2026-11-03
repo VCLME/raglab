@@ -9,12 +9,12 @@ const near = (a: number, b: number) => Math.abs(a - b) <= 1.5;
 const offsetX = (locator: import("@playwright/test").Locator) =>
   locator.evaluate((el) => new DOMMatrix(getComputedStyle(el).transform).m41);
 
-test("Chat / Expert: the active pill slides to the clicked segment (200 ms ease-out)", async ({ page }) => {
+test("Chat / Atelier: the active pill slides to the clicked segment (200 ms ease-out)", async ({ page }) => {
   await page.goto("/");
   const pill = indicator(page, ".mode-switch");
   await expect(pill).toBeVisible();
   const chat = page.getByRole("tab", { name: "Chat" });
-  const expert = page.getByRole("tab", { name: "Expert" });
+  const workshop = page.getByRole("tab", { name: "Atelier" });
   const chatBox = (await chat.boundingBox())!;
   await expect.poll(async () => near((await pill.boundingBox())!.x, chatBox.x)).toBe(true);
 
@@ -22,12 +22,12 @@ test("Chat / Expert: the active pill slides to the clicked segment (200 ms ease-
   expect(transition.transitionProperty).toBe("transform");
   expect(transition.transitionDuration).toBe("0.2s");
 
-  await expert.click();
-  await expect(page).toHaveURL(/\/expert/);
-  const expertBox = (await expert.boundingBox())!;
-  await expect.poll(async () => near((await pill.boundingBox())!.x, expertBox.x)).toBe(true);
+  await workshop.click();
+  await expect(page).toHaveURL(/\/workshop/);
+  const workshopBox = (await workshop.boundingBox())!;
+  await expect.poll(async () => near((await pill.boundingBox())!.x, workshopBox.x)).toBe(true);
   // Same pill element, moved: the segments are equal, only the transform changes.
-  expect(near((await pill.boundingBox())!.width, expertBox.width)).toBe(true);
+  expect(near((await pill.boundingBox())!.width, workshopBox.width)).toBe(true);
   expect(await offsetX(pill)).toBeGreaterThan(0);
 });
 
@@ -41,10 +41,10 @@ test("Reduced motion: the indicator jumps without a transition", async ({ page }
 });
 
 test("Benchmarks tabs and the options mode selector slide too", async ({ page }) => {
-  await page.goto("/expert/benchmarks");
-  const bar = indicator(page, ".tabs");
+  await page.goto("/workshop/evaluation");
+  const bar = indicator(page, ".tablist");
   await expect(bar).toBeAttached();
-  const history = page.getByRole("button", { name: "Historique" });
+  const history = page.getByRole("tab", { name: "Historique" });
   await history.click();
   const target = (await history.boundingBox())!;
   await expect

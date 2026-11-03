@@ -12,7 +12,7 @@ export function TopBar() {
   const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
-  const isExpert = location.pathname.startsWith("/expert");
+  const isWorkshop = location.pathname.startsWith("/workshop");
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [checked, setChecked] = useState(false);
   const [educational, setEducational] = useEducationalMode();
@@ -71,12 +71,12 @@ export function TopBar() {
         </button>
         <LanguageSwitcher />
         <div className="mode-switch" role="tablist" aria-label="Mode">
-          <SlideIndicator activeKey={isExpert} variant="pill" />
+          <SlideIndicator activeKey={isWorkshop} variant="pill" />
           <button
             role="tab"
-            aria-selected={!isExpert}
-            className={!isExpert ? "active" : ""}
-            data-active={!isExpert}
+            aria-selected={!isWorkshop}
+            className={!isWorkshop ? "active" : ""}
+            data-active={!isWorkshop}
             onClick={() => navigate("/")}
             title={t("topbar.chat_title")}
           >
@@ -85,14 +85,14 @@ export function TopBar() {
           </button>
           <button
             role="tab"
-            aria-selected={isExpert}
-            className={isExpert ? "active" : ""}
-            data-active={isExpert}
-            onClick={() => navigate("/expert")}
-            title={t("topbar.expert_title")}
+            aria-selected={isWorkshop}
+            className={isWorkshop ? "active" : ""}
+            data-active={isWorkshop}
+            onClick={() => navigate("/workshop")}
+            title={t("topbar.workshop_title")}
           >
             <FlaskIcon />
-            <span className="mode-label">{t("topbar.expert")}</span>
+            <span className="mode-label">{t("topbar.workshop")}</span>
           </button>
         </div>
       </div>

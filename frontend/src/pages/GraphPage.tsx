@@ -19,6 +19,7 @@ import { Spinner } from "../components/Spinner";
 import { StatusBadge } from "../components/StatusBadge";
 import { highlight } from "../edu/highlight";
 import { useApiAction, useApiLoad } from "../hooks/useApi";
+import { useWorkshop } from "../workshop/state";
 
 const NEO4J_BROWSER = "http://localhost:7474/browser/";
 
@@ -38,6 +39,8 @@ export function GraphPage() {
   const { t, i18n } = useTranslation();
   const corpora = useApiLoad<CorpusSummary[]>(() => get("/api/corpora"));
   const [corpus, setCorpus] = useState("");
+  const workshop = useWorkshop();
+  const scope = workshop.corpus?.name;
   const runs = useApiLoad<IndexRunSummary[]>(
     () => (corpus ? get(`/api/index-runs?corpus=${encodeURIComponent(corpus)}&backend=pgvector`) : Promise.resolve([])),
     [corpus]
@@ -76,8 +79,9 @@ export function GraphPage() {
   const build = useApiAction((body: unknown) => post<GraphBuildResult>("/api/graph/build", body));
 
   useEffect(() => {
-    if (!corpus && corpora.data?.length) setCorpus(corpora.data[0].name);
-  }, [corpora.data, corpus]);
+    if (!corpus && corpora.data?.length)
+      setCorpus(corpora.data.some((c) => c.name === scope) ? scope! : corpora.data[0].name);
+  }, [corpora.data, corpus, scope]);
   useEffect(() => {
     setIndexRunId(runs.data?.[0]?.id ?? "");
   }, [runs.data]);
@@ -94,6 +98,7 @@ export function GraphPage() {
     try {
       await build.run({ index_run_id: indexRunId });
       status.refresh();
+      workshop.refresh();
     } catch {
       /* shown by the error banner */
     }

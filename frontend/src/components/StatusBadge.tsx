@@ -11,6 +11,8 @@ export function StatusBadge({ state, label }: Props) {
       ? "warn"
       : state === "err" || state === "unreachable"
       ? "err"
+      : state === "unknown" || state === "neutral"
+      ? "neutral"
       : "info";
   return <span className={`badge ${cls}`}>{label}</span>;
 }

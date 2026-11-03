@@ -89,7 +89,7 @@ test("Graph page: a law's neighbourhood, an article's references and the passage
     requested.push(article ?? "");
     return json(neighbourhood(article))(route);
   });
-  await page.goto("/expert/graph");
+  await page.goto("/workshop/graph");
 
   await expect(page.getByRole("heading", { name: "Graphe des renvois", level: 2 })).toBeVisible();
   await expect(page.getByText("graphe construit", { exact: true })).toBeVisible();
@@ -140,7 +140,7 @@ test("Graph page: building the graph of an index run that has none", async ({ pa
     built = true;
     return json({ index_run_id: RUN, corpus: data.CORPUS, profile: "laws", duration_ms: 5956, nodes: {}, relationships: {} })(route);
   });
-  await page.goto("/expert/graph");
+  await page.goto("/workshop/graph");
 
   await expect(page.getByText("pas de graphe")).toBeVisible();
   await expect(page.getByText("Construire le graphe de cet index run pour explorer ses lois.")).toBeVisible();
@@ -153,18 +153,18 @@ test("Graph page: building the graph of an index run that has none", async ({ pa
 
 test("Graph page: says when Neo4j does not answer", async ({ page, api }) => {
   api.set("GET /api/graph/status", json({ ...builtStatus, available: false, graph: null, counts: {} }));
-  await page.goto("/expert/graph");
+  await page.goto("/workshop/graph");
   await expect(page.getByText("Neo4j ne répond pas : `docker compose up -d neo4j`, puis recharger.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Construire le graphe" })).toBeDisabled();
 });
 
-test("the phase-8 entity graph pages sit behind the Expert flag", async ({ page, api }) => {
+test("the phase-8 entity graph pages sit behind their flag (old route redirects)", async ({ page, api }) => {
   api.set("GET /api/graph/status", json({ ...builtStatus, graph: null, counts: {} }));
   await page.goto("/expert/graph/index");
   await expect(page.getByRole("heading", { name: "Graphe d'entités désactivé" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Indexation (entités)" })).toHaveCount(0);
   await page.getByRole("link", { name: "Ouvrir le graphe des renvois" }).click();
-  await expect(page).toHaveURL(/\/expert\/graph$/);
+  await expect(page).toHaveURL(/\/workshop\/graph$/);
 });
 
 test("Retrieval page: the graph option sends graph and shows where a passage comes from", async ({ page, api }) => {
@@ -194,7 +194,7 @@ test("Retrieval page: the graph option sends graph and shows where a passage com
       ],
     })(route);
   });
-  await page.goto("/expert/query");
+  await page.goto("/workshop/retrieval");
   const row = (label: RegExp) => page.locator(".form-row").filter({ has: page.locator("label", { hasText: label }) });
   await row(/^Question$/).locator("textarea").fill("Quais penalidades se aplicam ao art. 5º da Lei nº 8.078?");
   await row(/^Graphe des renvois$/).getByRole("checkbox").check();
@@ -209,7 +209,7 @@ test("Retrieval page: the graph option sends graph and shows where a passage com
 
 test("Retrieval page: says when the graph branch was skipped", async ({ page, api }) => {
   api.set("POST /api/query", json({ ...data.queryResponse, graph: true, graph_notice: "skipped_no_neo4j", graph_stats: {} }));
-  await page.goto("/expert/query");
+  await page.goto("/workshop/retrieval");
   await page
     .locator(".form-row")
     .filter({ has: page.locator("label", { hasText: /^Question$/ }) })

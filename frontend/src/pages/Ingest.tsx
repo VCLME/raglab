@@ -35,10 +35,7 @@ export function Ingest() {
 
   return (
     <div>
-      <div className="page-header">
-        <h2>{t("ingest.title")}</h2>
-        <span className="muted">{t("ingest.subtitle")}</span>
-      </div>
+      <p className="muted card-lead">{t("ingest.subtitle")}</p>
       <div className="split">
         <div className="card">
           <h3>{t("query.parameters")}</h3>

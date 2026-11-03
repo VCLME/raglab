@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 import { get, post } from "../api/client";
 import { useApiAction, useApiLoad } from "../hooks/useApi";
 import type {
   ChunkingStrategy,
   CorpusSummary,
   IndexRunSummary,
+  LlmModelsResponse,
   QueryResponse,
   RetrievedChunk,
   RetrievalMode,
@@ -22,6 +24,7 @@ import { useConfig } from "../hooks/useConfig";
 import { useLocalHistory } from "../hooks/useLocalHistory";
 import { Select } from "../components/Select";
 import { VersionsField, VersionsSummary } from "../components/Versions";
+import { useWorkshop } from "../workshop/state";
 
 const STRATEGIES: ("" | ChunkingStrategy)[] = ["", "traditional", "slide", "late"];
 const RETRIEVAL_MODES: RetrievalMode[] = ["dense", "lexical", "hybrid"];
@@ -50,6 +53,7 @@ export function Query() {
     card?.focus({ preventScroll: true });
   };
   const config = useConfig();
+  const llm = useApiLoad<LlmModelsResponse>(() => get("/api/llm/models"));
   const corpora = useApiLoad<CorpusSummary[]>(() => get("/api/corpora"));
   const [corpus, setCorpus] = useState("");
   const [strategy, setStrategy] = useState<"" | ChunkingStrategy>("");
@@ -79,11 +83,12 @@ export function Query() {
     [corpus]
   );
 
+  const scope = useWorkshop().corpus?.name;
   useEffect(() => {
     if (!corpus && corpora.data && corpora.data.length > 0) {
-      setCorpus(corpora.data[0].name);
+      setCorpus(corpora.data.some((c) => c.name === scope) ? scope! : corpora.data[0].name);
     }
-  }, [corpus, corpora.data]);
+  }, [corpus, corpora.data, scope]);
 
   const history = useLocalHistory<HistoryEntry>("raglab.query.history", 20);
   const action = useApiAction((body: unknown) => post<QueryResponse>("/api/query", body));
@@ -293,7 +298,20 @@ export function Query() {
                 placeholder={config ? String(config.default_top_k) : ""}
               />
             </FieldRow>
-            <FieldRow label={t("query.generate_label")}>
+            <FieldRow
+              label={t("query.generate_label")}
+              hint={
+                llm.data ? (
+                  <>
+                    {t("query.writer_hint", {
+                      provider: llm.data.providers.find((p) => p.name === llm.data!.default_provider)?.label ?? llm.data.default_provider,
+                      model: llm.data.default_model ?? "—",
+                    })}{" "}
+                    <Link to="/workshop/models">{t("workshop.models")}</Link>
+                  </>
+                ) : undefined
+              }
+            >
               <label className="inline" style={{ gap: 4 }}>
                 <input
                   type="checkbox"
