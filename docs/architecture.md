@@ -117,7 +117,9 @@ La recherche s'exécute sous un `statement_timeout` Postgres égal à `RAGLAB_RE
 
 ## 7. Graphe Neo4j
 
-Le store graphe est une alternative à pgvector, comparable sur les mêmes benchmarks (`backend: "neo4j"` dans `/api/experiments/recall`) :
+**Graphe des renvois (9.9a)** : pour chaque index run pgvector, un graphe structuré construit à partir des chunks de PostgreSQL, sans vecteurs : `Document`, `Section`, `Chunk` (`PART_OF`, `NEXT`) et, pour les lois, `Law`, `Article`, `CITES`, `AMENDS`, `REVOKES`, extraits par règles. PostgreSQL reste la source de vérité ; le graphe se reconstruit à l'indexation quand Neo4j répond, ou par `raglab graph build`. Schéma, règles et précision mesurée : [graphe.md](graphe.md).
+
+**Store à entités (phase 8, derrière `RAGLAB_ENTITY_GRAPH_ENABLED`)** : alternative à pgvector jamais mesurée, gardée pour mémoire, comparable sur les mêmes benchmarks (`backend: "neo4j"` dans `/api/experiments/recall`) :
 
 - chaque chunk est un nœud `(:Chunk)` avec une propriété `embedding_d{N}`, relié à son document (`[:BELONGS_TO]`) et à son run (`[:FROM_RUN]`) ;
 - un vector index Neo4j par dimension, interrogé par `db.index.vector.queryNodes` ;
