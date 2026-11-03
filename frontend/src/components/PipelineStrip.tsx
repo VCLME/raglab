@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
+import { useGpuWhy } from "../hooks/useGpuWhy";
 import type { CitationInfo, RetrievalMode, VersionsInfo } from "../api/types";
 import { highlight } from "../edu/highlight";
 import { DIAGRAM_NODES, prefersReducedMotion, type NodeId, type NodeState, type PipelineState } from "../edu/pipeline";
@@ -99,6 +100,7 @@ interface Props {
  */
 export function PipelineStrip({ state, question, lexemes = [], rrfK, lexicalWeight, graphWeight = 0.5, route }: Props) {
   const { t } = useTranslation();
+  const gpuWhy = useGpuWhy();
   const [selected, setSelected] = useState<StripNode | null>(null);
   const [announce, setAnnounce] = useState("");
   const previous = useRef<PipelineState | null>(null);
@@ -158,7 +160,7 @@ export function PipelineStrip({ state, question, lexemes = [], rrfK, lexicalWeig
     if (id === "citation" && node.status === "done") {
       return citation === "law" ? route.citation?.label ?? "" : t("edu.citation_none");
     }
-    if (id === "rerank" && rerank === "off_no_gpu") return t("edu.rerank_off_no_gpu");
+    if (id === "rerank" && rerank === "off_no_gpu") return t("edu.rerank_off_no_gpu", { why: gpuWhy });
     if (id === "graph" && graph === "skipped") return t("edu.graph_skipped");
     if (id === "graph" && node.status === "done" && route.graphStats?.added != null) {
       return `+${route.graphStats.added} · ${formatMs(node.duration_ms)}`;
@@ -307,6 +309,7 @@ interface RouteRowProps {
 /** The decisions of the request, each option shown, the one taken highlighted, with its reason. */
 function RouteRow({ route, citation, rerank, graph }: RouteRowProps) {
   const { t } = useTranslation();
+  const gpuWhy = useGpuWhy();
   const all: { key: string; options: string[]; taken: string; reason: string }[] = [
     {
       key: "citation",
@@ -336,7 +339,7 @@ function RouteRow({ route, citation, rerank, graph }: RouteRowProps) {
       key: "rerank",
       options: ["on", "off"],
       taken: rerank === "cpu" ? "on" : rerank === "off_no_gpu" ? "off" : rerank,
-      reason: t(`edu.route.rerank_${rerank}`, { count: route.rerankCandidates }),
+      reason: t(`edu.route.rerank_${rerank}`, { count: route.rerankCandidates, why: gpuWhy }),
     },
     {
       key: "versions",

@@ -311,6 +311,24 @@ def test_gpu_available_needs_a_cuda_device_name():
     assert rerank_gpu_available("cpu") is False
 
 
+def test_gpu_status_says_why_there_is_no_gpu(monkeypatch):
+    import sys
+    import types
+
+    from raglab.retrieval.rerank import rerank_gpu_status
+
+    assert rerank_gpu_status("cpu") == "device_cpu"
+    for available, expected in ((True, "ok"), (False, "cuda_unavailable")):
+        fake = types.SimpleNamespace(cuda=types.SimpleNamespace(is_available=lambda a=available: a))
+        monkeypatch.setitem(sys.modules, "torch", fake)
+        rerank_gpu_status.cache_clear()
+        assert rerank_gpu_status("cuda") == expected
+    monkeypatch.setitem(sys.modules, "torch", None)
+    rerank_gpu_status.cache_clear()
+    assert rerank_gpu_status("cuda") == "torch_missing"
+    rerank_gpu_status.cache_clear()
+
+
 def test_a_cited_french_article_is_pinned_and_the_search_restricted_to_its_code(monkeypatch):
     import raglab.retrieval.service as service_module
     from raglab.retrieval.citations import Citation, CodeArticle
