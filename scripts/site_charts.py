@@ -680,20 +680,40 @@ def pipeline(runs: dict[str, dict[str, Any]], repo_url: str) -> str:
         ),
     ]
 
+    # The passages the re-ranker keeps are drawn as numbered chips, and the same chips reappear inside
+    # the prompt and the answer, so the reader sees the sources being injected and then cited.
+    top_k = int((full or {}).get("top_k") or 5)
+    chips = "".join(f'<span class="src">[{i}]</span>' for i in range(1, top_k + 1))
+    inner = {
+        "graph": '<span class="stage-chip">in measurement</span>',
+        "rerank": f'<span class="parts"><span class="src">top {top_k}</span></span>',
+        "prompt": (
+            '<span class="parts"><span class="part">instructions</span><span class="part">question</span>'
+            f'<span class="src-group">{chips}</span></span>'
+        ),
+        "answer": '<span class="parts"><span class="part">text</span><span class="src">[1]</span><span class="src">[3]</span></span>',
+    }
+
     def node(sid: str, name: str) -> str:
-        chip = '<span class="stage-chip">in measurement</span>' if sid == "graph" else ""
         label = esc(name).replace("-", "\u2011")  # non-breaking hyphen: "Re-ranking" never splits at it
         return (
-            f'<button type="button" class="stage" id="stage-btn-{sid}" data-stage="{sid}" aria-expanded="false" '
-            f'aria-controls="stage-{sid}">{label}{chip}</button>'
+            f'<button type="button" class="stage{" has-parts" if sid in inner else ""}" '
+            f'id="stage-btn-{sid}" data-stage="{sid}" aria-expanded="false" aria-controls="stage-{sid}">'
+            f'<span class="stage-name">{label}</span>{inner.get(sid, "")}</button>'
         )
 
+    sources = (
+        f'<div class="flow-sources" role="img" aria-label="The top {top_k} passages from re-ranking, numbered">'
+        f'<span class="src-stack" aria-hidden="true">{chips}</span>'
+        f'<span class="src-note" aria-hidden="true">top {top_k} passages</span></div>'
+    )
+
     arrow = '<span class="flow-arrow" aria-hidden="true"></span>'
-    # Two lanes, finding the passages then writing the answer; the layout (one line, stacked lanes or a
-    # vertical flow) is chosen by container queries in style.css, so nothing ever wraps by accident.
+    # Two lanes, finding the passages then answering from them; the layout (stacked lanes or a vertical
+    # flow) is chosen by a container query in style.css, so nothing ever wraps by accident.
     lanes: list[tuple[str, list[str]]] = [
         ("Retrieval: find the passages", []),
-        ("Generation: answer from them", []),
+        ("Generation: the passages go into the prompt", [sources]),
     ]
     parallel: list[str] = []
     for sid, name, kind, *_ in stages:

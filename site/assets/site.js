@@ -10,6 +10,7 @@
   // Arriving from another page on an anchor: start at the top and glide to the section, as an
   // in-page link does. Reloads and back/forward keep the browser's own position.
   var nav = performance.getEntriesByType && performance.getEntriesByType("navigation")[0];
+
   var anchor = location.hash && document.getElementById(decodeURIComponent(location.hash.slice(1)));
   if (anchor && !reduce.matches && nav && nav.type === "navigate" && document.referrer.indexOf(location.origin) === 0) {
     window.scrollTo({ top: 0, behavior: "instant" });
@@ -227,7 +228,9 @@
 
     // First view only: every line starts level at its baseline value and climbs to what
     // each brick measured. Skipped when the chart is already on screen or motion is reduced.
-    if ("IntersectionObserver" in window && !reduce.matches && fig.getBoundingClientRect().top > window.innerHeight) {
+    // Only on a fresh visit: back, forward and reload restore a scroll position after this runs.
+    var fresh = !nav || nav.type === "navigate";
+    if (fresh && "IntersectionObserver" in window && !reduce.matches && fig.getBoundingClientRect().top > window.innerHeight) {
       var real = values(corpus);
       shown = real.map(function (row) { return row.map(function (v) { return v === null ? null : row[0]; }); });
       draw(shown);
@@ -301,6 +304,34 @@
   document.addEventListener("focusin", function (e) { var el = e.target.closest("[data-tip]"); if (el) showTip(el); else hideTip(); });
   document.addEventListener("keydown", function (e) { if (e.key === "Escape") hideTip(); });
   window.addEventListener("scroll", hideTip, { passive: true });
+
+  // ── Copy button on every code block: an icon, a check once copied ──
+  var ICON_COPY = '<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5"/><path d="M10.5 3.5v-.5a1.5 1.5 0 0 0-1.5-1.5H4A1.5 1.5 0 0 0 2.5 3v5A1.5 1.5 0 0 0 4 9.5h.5"/></svg>';
+  var ICON_DONE = '<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3 8.5l3.2 3L13 4.5"/></svg>';
+  if (navigator.clipboard) document.querySelectorAll("pre").forEach(function (pre) {
+    var box = document.createElement("div");
+    box.className = "code";
+    pre.parentNode.insertBefore(box, pre);
+    box.appendChild(pre);
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "copy";
+    btn.setAttribute("aria-label", "Copy");
+    btn.innerHTML = '<span class="copy-icon">' + ICON_COPY + '</span><span class="copy-icon is-done">' + ICON_DONE + "</span>";
+    var said = document.createElement("span");
+    said.className = "sr-only";
+    said.setAttribute("role", "status");
+    box.append(btn, said);
+    var timer = 0;
+    btn.addEventListener("click", function () {
+      navigator.clipboard.writeText(pre.textContent.trim()).then(function () {
+        btn.classList.add("is-copied");
+        said.textContent = "Copied";
+        clearTimeout(timer);
+        timer = setTimeout(function () { btn.classList.remove("is-copied"); said.textContent = ""; }, 1600);
+      });
+    });
+  });
 
   // ── Pipeline explainer: one stage open at a time, none until the reader picks one ──
   document.querySelectorAll("[data-pipeline]").forEach(function (root) {

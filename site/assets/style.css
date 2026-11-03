@@ -87,6 +87,21 @@ pre {
   overflow-x: auto; font-size: var(--t-xs); line-height: 1.7;
 }
 pre code { font-size: inherit; }
+/* Code blocks get a copy button (site.js); it sits in the corner and never scrolls with the code. */
+.code { position: relative; margin: var(--s-5) 0; }
+.code pre { margin: 0; padding-right: 3.25rem; }
+.copy {
+  position: absolute; top: 6px; right: 6px; display: grid; place-items: center;
+  width: 32px; height: 32px; padding: 0; border: 0; border-radius: 6px;
+  background: none; color: var(--ink-3); cursor: pointer;
+}
+.copy .copy-icon { grid-area: 1 / 1; display: grid; }
+.copy svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.copy .is-done, .copy.is-copied .copy-icon { opacity: 0; transform: scale(0.6); }
+.copy.is-copied { color: var(--accent-deep); }
+.copy.is-copied .is-done { opacity: 1; transform: none; }
+.copy:active { transform: scale(0.94); }
+@media (hover: hover) and (pointer: fine) { .copy:hover { color: var(--ink); background: var(--paper); } }
 
 .wrap { width: 100%; max-width: var(--max); margin-inline: auto; padding: 0 var(--gutter); }
 
@@ -429,53 +444,53 @@ div.legend { margin: 0; gap: 2px var(--s-1); }
 
 /* Pipeline explainer ────────────────────────────────────────────────────── */
 /*
- * Three deliberate layouts, picked by the width of the pipeline itself, never by wrapping:
- * - wide (60rem and up): one line, the lanes side by side with their names above;
- * - medium (the reading column on desktop and tablet): the Retrieval lane, then the
- *   Generation lane under it, each named; one line does not fit 51rem without clipping names;
- * - narrow (under 40rem): a vertical flow, the three parallel searches side by side.
+ * Two deliberate layouts, picked by the width of the pipeline itself, never by wrapping:
+ * - from 46rem: the Retrieval lane, then the Generation lane under it, each one row;
+ * - under 46rem: one vertical flow, the three parallel searches side by side.
+ * 46rem clears the widest row's minimum (about 43rem) with room for wider fallback fonts.
+ * The re-ranker's top passages are numbered chips that reappear in the prompt and the answer.
  */
 .pipeline { margin-top: var(--s-5); container-type: inline-size; }
 .flow { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-5); }
-.flow-lane { display: flex; flex-direction: column; gap: var(--s-2); min-width: 0; }
+.flow-lane { display: flex; flex-direction: column; gap: var(--s-2); }
 .flow-label { margin: 0; font-size: var(--t-xs); font-weight: 600; color: var(--ink-3); }
-.flow-items { display: flex; align-items: center; gap: var(--s-2); min-width: 0; }
-.flow-items > * { flex: 0 1 auto; } /* never below their own words: min-content */
-.flow-items > .flow-arrow { flex: none; }
+.flow-items { display: flex; align-items: center; gap: var(--s-2); }
+.flow-items > * { flex: none; } /* boxes keep their size: the layout changes instead */
 .flow-parallel { display: flex; flex-direction: column; gap: var(--s-1); padding: var(--s-1) var(--s-2); border-left: 1.5px solid var(--rule); border-right: 1.5px solid var(--rule); }
 .flow-arrow { position: relative; width: 14px; height: 1.5px; background: var(--ink-3); }
 .flow-arrow::after { content: ""; position: absolute; right: -1px; top: -3px; border: 4px solid transparent; border-left: 5px solid var(--ink-3); border-right: 0; }
-/* Stacked lanes: the names carry the order, an arrow under the first stage would point the wrong way. */
 .flow-link { display: none; }
-@container (min-width: 60rem) {
-  .flow { flex-direction: row; align-items: center; padding-top: 1.75rem; }
-  .flow-lane { position: relative; flex: 0 1 auto; }
-  .flow-label { position: absolute; top: -1.75rem; left: 0; }
-  .flow-link { display: block; width: 14px; height: 1.5px; margin: 0; flex: none; }
-  .flow-link::after { right: -1px; top: -3px; bottom: auto; border: 4px solid transparent; border-left: 5px solid var(--ink-3); border-right: 0; }
-  .flow, .flow-items { gap: 6px; }
-  .flow-items > .flow-arrow, .flow-link { width: 10px; }
-  .stage { padding: var(--s-2) 10px; text-align: left; }
-  .stage .stage-chip { padding: 0; background: none; font-family: var(--font-text); }
-}
-@container (max-width: 40rem) {
+@container (max-width: 46rem) {
   .flow { align-items: stretch; gap: var(--s-2); }
   .flow-items { flex-direction: column; align-items: stretch; }
   .flow-items > .flow-arrow, .flow-link { display: block; width: 1.5px; height: 12px; margin: 0; align-self: center; }
   .flow-items > .flow-arrow::after, .flow-link::after { right: -3px; top: auto; bottom: -1px; border: 4px solid transparent; border-top: 5px solid var(--ink-3); border-bottom: 0; }
   .flow-parallel { flex-direction: row; flex-wrap: wrap; border: 0; padding: 0; }
   .flow-parallel .stage { flex: 1 1 8rem; }
-  .stage .stage-chip { flex-basis: auto; }
+  .flow-sources { justify-content: center; }
 }
 .stage {
-  display: inline-flex; flex-wrap: wrap; align-items: center; gap: 2px var(--s-2); min-height: 40px; padding: 0 var(--s-3);
+  display: inline-flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: 4px;
+  min-height: 40px; padding: 6px var(--s-3); text-align: left;
   border: 1px solid var(--rule); border-radius: 4px; background: var(--paper-2); cursor: pointer;
-  font: inherit; font-size: var(--t-sm); font-weight: 600; color: var(--ink);
+  font: inherit; font-size: var(--t-sm); line-height: 1.3; font-weight: 600; color: var(--ink);
 }
+.stage-name { white-space: nowrap; }
 .stage:hover { border-color: var(--ink-3); }
 .stage[aria-expanded="true"] { background: var(--accent-wash); border-color: var(--accent); color: var(--accent-deep); }
-/* Stacked lanes: the tag goes under its stage name so the parallel column stays narrow. */
-.stage-chip { flex-basis: 100%; width: max-content; padding: 0 6px; border-radius: 6px; background: var(--paper); font-family: var(--font-code); font-size: var(--t-xs); font-weight: 400; color: var(--ink-3); white-space: nowrap; }
+.stage-chip { padding: 0 6px; border-radius: 6px; background: var(--paper); font-family: var(--font-code); font-size: var(--t-xs); font-weight: 400; color: var(--ink-3); white-space: nowrap; }
+/* Sources: the same chip in the hand-off, the prompt and the answer. */
+.src {
+  display: inline-block; padding: 0 4px; border-radius: 4px;
+  background: var(--accent-wash); color: var(--accent-deep);
+  font-size: var(--t-xs); font-weight: 600; line-height: 1.5; font-variant-numeric: tabular-nums;
+}
+.parts { display: flex; flex-wrap: wrap; gap: 3px; max-width: 13rem; }
+.src-group { display: flex; gap: 3px; }
+.part { padding: 0 5px; border-radius: 4px; background: var(--paper); color: var(--ink-2); font-size: var(--t-xs); font-weight: 400; line-height: 1.5; }
+.flow-sources { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.src-stack { display: flex; gap: 3px; }
+.src-note { font-size: var(--t-xs); color: var(--ink-3); }
 .stage-panels { margin-top: var(--s-5); }
 .stage-hint { margin: 0; padding: var(--s-5) 0; border-top: 1px solid var(--rule); color: var(--ink-3); font-size: var(--t-sm); }
 .stage-panel { padding: var(--s-5) 0; border-top: 1px solid var(--rule); }
@@ -544,21 +559,34 @@ div.legend { margin: 0; gap: 2px var(--s-1); }
   .switch button, .legend button { transition: background-color 0.18s ease, color 0.18s ease, transform 0.12s var(--ease-out); }
   .stage { transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.12s var(--ease-out); }
   a, summary { transition: color 0.2s ease, background-color 0.2s ease, text-decoration-color 0.2s ease; }
+  .copy { transition: color 0.15s ease, background-color 0.15s ease, transform 0.12s var(--ease-out); }
+  .copy .copy-icon { transition: opacity 0.15s ease-out, transform 0.2s var(--ease-out); }
   .button { transition: color 0.2s ease, background-color 0.2s ease, text-decoration-color 0.2s ease, transform 0.12s var(--ease-out); }
   /* The first readout fades in; moving between stages then swaps it instantly. */
   .readout { transition: opacity 0.12s ease-out; }
   @starting-style { .readout { opacity: 0; } }
 }
-/* Page to page: the header stays, the content fades and rises a little, like the in-page scroll. */
+/*
+ * Page to page: the whole viewport fades, rising a little going forward and settling down going
+ * back (site.js tags history steps "back"). Only the viewport-sized root snapshot animates: a named
+ * <main> would also morph its box, and back navigation restores a scroll position thousands of
+ * pixels away. The sticky header stays still on screens where it is sticky.
+ */
 @media (prefers-reduced-motion: no-preference) {
   @view-transition { navigation: auto; }
-  main { view-transition-name: main; }
-  ::view-transition-old(root), ::view-transition-new(root) { animation: none; }
-  ::view-transition-old(main) { animation: vt-out 0.12s ease-out both; }
-  ::view-transition-new(main) { animation: vt-in 0.24s var(--ease-out) both; }
+  ::view-transition-old(root) { animation: vt-out 0.12s ease-out both; }
+  ::view-transition-new(root) { animation: vt-in 0.24s var(--ease-out) both; }
+  html:active-view-transition-type(back)::view-transition-new(root) { animation-name: vt-in-back; }
+}
+@media (prefers-reduced-motion: no-preference) and (min-width: 601px) {
+  .site-header { view-transition-name: site-header; }
+  ::view-transition-group(site-header),
+  ::view-transition-old(site-header),
+  ::view-transition-new(site-header) { animation: none; }
 }
 @keyframes vt-out { to { opacity: 0; } }
 @keyframes vt-in { from { opacity: 0; transform: translateY(8px); } }
+@keyframes vt-in-back { from { opacity: 0; transform: translateY(-8px); } }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
 }
