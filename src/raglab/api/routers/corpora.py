@@ -39,18 +39,23 @@ def delete_corpus(name: str, session: Session = Depends(get_db)) -> CorpusDelete
     corpus = session.execute(select(Corpus).where(Corpus.name == name)).scalar_one_or_none()
     if corpus is None:
         raise HTTPException(status_code=404, detail=f"Corpus '{name}' introuvable")
-    docs_count = session.execute(
-        select(func.count()).select_from(Document).where(Document.corpus_id == corpus.id)
-    ).scalar_one() or 0
-    runs_count = session.execute(
-        select(func.count()).select_from(IndexRun).where(IndexRun.corpus_id == corpus.id)
-    ).scalar_one() or 0
-    chunks_count = session.execute(
-        select(func.count())
-        .select_from(Chunk)
-        .join(IndexRun, IndexRun.id == Chunk.index_run_id)
-        .where(IndexRun.corpus_id == corpus.id)
-    ).scalar_one() or 0
+    docs_count = (
+        session.execute(select(func.count()).select_from(Document).where(Document.corpus_id == corpus.id)).scalar_one()
+        or 0
+    )
+    runs_count = (
+        session.execute(select(func.count()).select_from(IndexRun).where(IndexRun.corpus_id == corpus.id)).scalar_one()
+        or 0
+    )
+    chunks_count = (
+        session.execute(
+            select(func.count())
+            .select_from(Chunk)
+            .join(IndexRun, IndexRun.id == Chunk.index_run_id)
+            .where(IndexRun.corpus_id == corpus.id)
+        ).scalar_one()
+        or 0
+    )
     session.delete(corpus)
     session.flush()
     return CorpusDeleteResponse(

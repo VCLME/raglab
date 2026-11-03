@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from typing import Any
 
 import torch
 import torch.nn.functional as F
@@ -18,8 +19,8 @@ class TransformersEmbeddingProvider:
         self.model_name = settings.embedding_model_name
         self.dimension = settings.embedding_dimension
         self.device = self._resolve_device(settings.embedding_device)
-        self._tokenizer = None
-        self._model = None
+        self._tokenizer: Any = None
+        self._model: Any = None
 
     def _resolve_device(self, requested: str) -> str:
         if requested.startswith("cuda") and torch.cuda.is_available():

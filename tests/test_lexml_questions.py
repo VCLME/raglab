@@ -161,7 +161,9 @@ def test_reference_questions_must_cite_article_and_law(tmp_path: Path):
 def test_budget_laws_are_not_sampled(tmp_path: Path):
     corpus = _corpus(tmp_path, laws=1)
     sidecar = next(corpus.glob("*.json"))
-    sidecar.write_text(json.dumps({"ementa": "Abre ao Orçamento Fiscal da União crédito suplementar"}), encoding="utf-8")
+    sidecar.write_text(
+        json.dumps({"ementa": "Abre ao Orçamento Fiscal da União crédito suplementar"}), encoding="utf-8"
+    )
     assert sample_passages(corpus, count=2, seed=0) == []
 
 
@@ -197,8 +199,16 @@ def test_review_marks_contentless_and_vague_cases_without_dropping_them(tmp_path
     rows = [
         {"id": "a", "question": "Na lei do FGTS, qual o prazo?", "ground_truth_answer": "até o dia sete de cada mês"},
         {"id": "b", "question": "O que dispõe o art. 10 da Lei nº 9.262?", "ground_truth_answer": "(VETADO)"},
-        {"id": "c", "question": "Quando entra em vigor a lei X?", "ground_truth_answer": "Esta Lei entra em vigor na data de sua publicação"},
-        {"id": "d", "question": "Qual o percentual conforme o subtítulo mencionado?", "ground_truth_answer": "quarenta por cento da soma"},
+        {
+            "id": "c",
+            "question": "Quando entra em vigor a lei X?",
+            "ground_truth_answer": "Esta Lei entra em vigor na data de sua publicação",
+        },
+        {
+            "id": "d",
+            "question": "Qual o percentual conforme o subtítulo mencionado?",
+            "ground_truth_answer": "quarenta por cento da soma",
+        },
     ]
     path = tmp_path / "ground_truth.jsonl"
     path.write_text("\n".join(json.dumps(row, ensure_ascii=False) for row in rows) + "\n", encoding="utf-8")

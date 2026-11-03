@@ -68,9 +68,7 @@ def test_ollama_delete_model_endpoint(client):
 
 def test_ollama_chat_returns_404_when_model_missing(client):
     with patch("raglab.api.routers.ollama.OllamaService") as cls:
-        cls.return_value.chat.side_effect = RuntimeError(
-            "Le modele Ollama demande n'est pas disponible localement."
-        )
+        cls.return_value.chat.side_effect = RuntimeError("Le modele Ollama demande n'est pas disponible localement.")
         response = client.post(
             "/api/ollama/chat",
             json={"messages": [{"role": "user", "content": "?"}], "model": "unknown"},

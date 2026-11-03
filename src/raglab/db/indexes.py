@@ -49,15 +49,9 @@ def migrate_chunk_embeddings_to_variable_dim(connection: Connection) -> None:
             "db.migrate.alter_vector_column",
             extra={"from_atttypmod": atttypmod, "to": "vector (variable)"},
         )
-        connection.execute(
-            text("ALTER TABLE chunk_embeddings ALTER COLUMN embedding TYPE vector")
-        )
-    connection.execute(
-        text(f"DROP INDEX IF EXISTS {_LEGACY_FIXED_INDEX}")
-    )
-    existing_dims = connection.execute(
-        text("SELECT DISTINCT dimension FROM embedding_spaces")
-    ).scalars().all()
+        connection.execute(text("ALTER TABLE chunk_embeddings ALTER COLUMN embedding TYPE vector"))
+    connection.execute(text(f"DROP INDEX IF EXISTS {_LEGACY_FIXED_INDEX}"))
+    existing_dims = connection.execute(text("SELECT DISTINCT dimension FROM embedding_spaces")).scalars().all()
     for dim in existing_dims:
         if dim and int(dim) > 0:
             _create_partial_hnsw(connection, int(dim))

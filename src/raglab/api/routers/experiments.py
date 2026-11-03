@@ -26,9 +26,7 @@ router = APIRouter(prefix="/api/experiments", tags=["experiments"])
 def recall(body: RecallRequest, session: Session = Depends(get_db)) -> dict[str, Any]:
     settings = get_settings()
     dataset_path = Path(body.dataset_path) if body.dataset_path else None
-    lexml_dir = (
-        Path(body.lexml_documents_dir) if body.lexml_documents_dir else settings.lexml_documents_dir
-    )
+    lexml_dir = Path(body.lexml_documents_dir) if body.lexml_documents_dir else settings.lexml_documents_dir
     service = RecallBenchmarkService(session, backend=body.backend)
     try:
         return service.run(
@@ -51,9 +49,7 @@ def _duration_ms(run: ExperimentRun) -> float | None:
     return (run.completed_at - run.started_at).total_seconds() * 1000.0
 
 
-def _resolve_embedding_space(
-    session: Session, run: ExperimentRun
-) -> EmbeddingSpace | None:
+def _resolve_embedding_space(session: Session, run: ExperimentRun) -> EmbeddingSpace | None:
     """Take the embedding_space of the first ExperimentResult's index_run.
 
     A recall run targets exactly one index_run, but the schema allows
@@ -70,9 +66,7 @@ def _resolve_embedding_space(
     return session.execute(stmt).scalar_one_or_none()
 
 
-def _build_summary(
-    session: Session, run: ExperimentRun
-) -> ExperimentRunSummary:
+def _build_summary(session: Session, run: ExperimentRun) -> ExperimentRunSummary:
     cfg = run.config_json or {}
     embedding_space = _resolve_embedding_space(session, run)
     return ExperimentRunSummary(

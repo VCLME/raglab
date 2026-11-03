@@ -104,7 +104,7 @@ def graph_subgraph(chunk_ids: str) -> SubgraphResponse:
         payload = store.subgraph_for_chunks(chunk_ids=ids)
     finally:
         store.close()
-    return SubgraphResponse(**payload)
+    return SubgraphResponse.model_validate(payload)
 
 
 @router.get("/runs", response_model=list[IndexRunSummary])

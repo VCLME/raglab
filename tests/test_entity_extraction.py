@@ -31,16 +31,14 @@ def test_normalise_type_maps_unknown_to_misc():
 
 def test_llm_parse_entities_handles_surrounding_prose():
     answer = (
-        'Here you go:\n'
+        "Here you go:\n"
         '{"entities": [{"name": "Jakob Böhme", "type": "PERSON"}, '
         '{"name": "Görlitz", "type": "LOCATION"}]}\n'
-        'Done.'
+        "Done."
     )
     entities = _parse_entities(answer)
     assert len(entities) == 2
-    assert entities[0] == ExtractedEntity(
-        name="jakob böhme", type="PERSON", raw_text="Jakob Böhme"
-    )
+    assert entities[0] == ExtractedEntity(name="jakob böhme", type="PERSON", raw_text="Jakob Böhme")
     assert entities[1].type == "LOCATION"
 
 
@@ -57,7 +55,7 @@ def test_llm_parse_entities_deduplicates_by_name_and_type():
         '{"name": "Jakob", "type": "PERSON"},'
         '{"name": "jakob", "type": "PERSON"},'
         '{"name": "Jakob", "type": "PERSON"}'
-        ']}'
+        "]}"
     )
     entities = _parse_entities(answer)
     assert len(entities) == 1
@@ -77,9 +75,7 @@ def test_llm_extractor_invokes_ollama_and_returns_entities():
     }
     extractor = LLMEntityExtractor(ollama=ollama)
     entities = extractor.extract("Neo4j is a graph database.")
-    assert entities == [
-        ExtractedEntity(name="neo4j", type="ORGANIZATION", raw_text="Neo4j")
-    ]
+    assert entities == [ExtractedEntity(name="neo4j", type="ORGANIZATION", raw_text="Neo4j")]
     ollama.chat.assert_called_once()
 
 

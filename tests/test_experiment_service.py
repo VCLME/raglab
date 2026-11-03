@@ -69,12 +69,15 @@ def test_experiment_service_computes_ranking_metrics(tmp_path: Path):
         ]
     )
 
-    with patch("raglab.experiments.service.create_experiment_run", return_value=SimpleNamespace(id="exp-1")), patch(
-        "raglab.experiments.service.complete_experiment_run"
-    ), patch("raglab.experiments.service.store_experiment_result"), patch.object(
-        service,
-        "_write_report",
-        return_value=tmp_path / "report.json",
+    with (
+        patch("raglab.experiments.service.create_experiment_run", return_value=SimpleNamespace(id="exp-1")),
+        patch("raglab.experiments.service.complete_experiment_run"),
+        patch("raglab.experiments.service.store_experiment_result"),
+        patch.object(
+            service,
+            "_write_report",
+            return_value=tmp_path / "report.json",
+        ),
     ):
         result = service.run(
             dataset_path=dataset_path,

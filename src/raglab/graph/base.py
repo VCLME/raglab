@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Protocol
+from typing import Any, Protocol
 
 from raglab.db.models import Chunk, Document, IndexRun
 from raglab.domain.schemas import RetrievalFilters, RetrievedChunk
@@ -28,11 +28,13 @@ class GraphStore(Protocol):
         chunks: list[Chunk],
         documents: dict[str, Document],
         embeddings: list[list[float]],
+        entities_per_chunk: list[list[dict[str, Any]]] | None = None,
     ) -> None:
         """Persist chunks and their embeddings as graph nodes.
 
         `documents` maps `document_id -> Document` so the store can
         attach file_name / source_path / metadata to each chunk node.
+        `entities_per_chunk`, when given, aligns with `chunks`.
         """
 
     def search(
@@ -44,6 +46,19 @@ class GraphStore(Protocol):
         filters: RetrievalFilters | None = None,
     ) -> list[RetrievedChunk]:
         """KNN search returning chunks ranked by similarity."""
+
+    def hybrid_search(
+        self,
+        *,
+        index_run: IndexRun,
+        query_embedding: list[float],
+        top_k: int,
+        filters: RetrievalFilters | None = None,
+        seed_top_n: int = 3,
+        entity_weight: float = 0.3,
+        candidate_multiplier: int = 3,
+    ) -> list[RetrievedChunk]:
+        """KNN search re-ranked by shared entity mentions."""
 
     def expand_neighbors(
         self,

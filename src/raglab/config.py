@@ -68,9 +68,15 @@ class Settings(BaseSettings):
     embedding_dimension: int = 384
     embedding_device: str = "cpu"
     embedding_max_tokens: int = 512
+    # Keep one loaded embedder per configuration (off = reload per query, the
+    # behaviour measured in baseline-v0).
+    embedding_cache: bool = True
     query_prefix: str = "query: "
     passage_prefix: str = "passage: "
     distance_metric: str = "cosine"
+    # pgvector iterative HNSW scans, so filters (index run, metadata) never
+    # starve the top-k. Off = behaviour measured in baseline-v0.
+    hnsw_iterative_scan: bool = True
 
     chunk_size: int = 900
     chunk_overlap: int = 150
