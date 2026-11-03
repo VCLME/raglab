@@ -80,3 +80,43 @@ def test_raise_for_status_returns_hint_when_model_is_missing():
         assert "raglab ollama pull --model qwen2.5:7b" in str(exc)
     else:
         raise AssertionError("Expected RuntimeError when the Ollama model is missing")
+
+
+def test_generate_answer_uses_the_requested_model_over_the_default():
+    generator = OllamaGenerator(Settings(generation_model="qwen2.5:7b"))
+    response = Mock()
+    response.json.return_value = {"message": {"content": "Réponse."}}
+    response.raise_for_status.return_value = None
+
+    with patch("raglab.generation.service.requests.post", return_value=response) as requests_post:
+        generator.generate_answer("Que dit le contrat ?", [_chunk()], model="mistral:7b")
+
+    assert requests_post.call_args.kwargs["json"]["model"] == "mistral:7b"
+
+
+def test_stream_answer_uses_the_requested_model_over_the_default():
+    generator = OllamaGenerator(Settings(generation_model="qwen2.5:7b"))
+    response = Mock()
+    response.raise_for_status.return_value = None
+    response.iter_lines.return_value = [b'{"message": {"content": "ok"}, "done": true}']
+
+    with patch("raglab.generation.service.requests.post", return_value=response) as requests_post:
+        assert list(generator.stream_answer("?", [_chunk()], model="mistral:7b")) == ["ok"]
+
+    assert requests_post.call_args.kwargs["json"]["model"] == "mistral:7b"
+
+
+def test_typed_errors_name_the_requested_model():
+    generator = OllamaGenerator(Settings(generation_model="qwen2.5:7b"))
+    response = Mock()
+    response.status_code = 404
+    response.text = "model 'ghost:1b' not found, try pulling it first"
+    response.raise_for_status.side_effect = requests.HTTPError("missing")
+
+    with patch("raglab.generation.service.requests.post", return_value=response):
+        try:
+            generator.generate_answer("?", [_chunk()], model="ghost:1b")
+        except RuntimeError as exc:
+            assert "raglab ollama pull --model ghost:1b" in str(exc)
+        else:
+            raise AssertionError("Expected RuntimeError when the requested model is missing")

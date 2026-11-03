@@ -397,6 +397,11 @@ def query(
         help="Afficher la reponse au fil de la generation sur stderr (comme /api/query/stream) ; "
         "le JSON final reste sur stdout.",
     ),
+    llm_model: str | None = typer.Option(
+        None,
+        "--llm-model",
+        help="Modele Ollama pour la generation (defaut : RAGLAB_GENERATION_MODEL).",
+    ),
 ) -> None:
     filters = build_retrieval_filters(
         document_ids=document_ids,
@@ -417,7 +422,7 @@ def query(
                 filters=filters,
             )
             final: dict = {}
-            for event, data in service.stream_answer(outcome):
+            for event, data in service.stream_answer(outcome, llm_model=llm_model):
                 if event == "token":
                     typer.echo(data["text"], nl=False, err=True)
                 else:
@@ -433,6 +438,7 @@ def query(
             top_k=top_k,
             generate_answer=generate,
             filters=filters,
+            llm_model=llm_model,
         )
     typer.echo(response.model_dump_json(indent=2))
 

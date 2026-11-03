@@ -56,8 +56,10 @@ class FakeGenerator:
         self.pieces = pieces
         self.fail_with = fail_with
         self.last_stats: dict[str, float] = {}
+        self.models: list[str | None] = []
 
-    def stream_answer(self, question, chunks):
+    def stream_answer(self, question, chunks, *, model=None):
+        self.models.append(model)
         yield from self.pieces
         if self.fail_with is not None:
             raise self.fail_with
@@ -113,6 +115,15 @@ def test_stream_sends_retrieval_then_tokens_then_done(client, stream_service):
     assert done["generation_stats"] == {"output_tokens": 3.0, "tokens_per_second": 42.0}
     assert done["first_token_ms"] is not None
     assert done["retrieved_chunks"] == retrieval["retrieved_chunks"]
+
+
+def test_stream_forwards_llm_model_to_the_generator(client, stream_service):
+    generator = FakeGenerator(["ok"])
+    retrieve, gen = stream_service(generator)
+    with retrieve, gen:
+        _post(client, llm_model="mistral:7b")
+        _post(client)
+    assert generator.models == ["mistral:7b", None]
 
 
 def test_stream_without_generation_ends_after_retrieval(client, stream_service):

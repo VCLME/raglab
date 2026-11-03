@@ -40,3 +40,17 @@ def test_query_without_stream_keeps_the_single_json_answer():
     assert result.exit_code == 0, result.output
     assert json.loads(result.stdout) == {"answer": "ok"}
     cls.return_value.stream_answer.assert_not_called()
+
+
+def test_query_llm_model_option_is_forwarded():
+    with patch("raglab.cli.session_scope", _fake_session_scope), patch("raglab.cli.QueryService") as cls:
+        service = cls.return_value
+        service.query.return_value.model_dump_json.return_value = '{"answer": "ok"}'
+        service.stream_answer.return_value = iter([("done", {"answer": "ok"})])
+        plain = CliRunner().invoke(app, ["query", "?", "--corpus", "c", "--llm-model", "mistral:7b"])
+        streamed = CliRunner().invoke(app, ["query", "?", "--corpus", "c", "--llm-model", "mistral:7b", "--stream"])
+
+    assert plain.exit_code == 0, plain.output
+    assert streamed.exit_code == 0, streamed.output
+    assert service.query.call_args.kwargs["llm_model"] == "mistral:7b"
+    assert service.stream_answer.call_args.kwargs["llm_model"] == "mistral:7b"

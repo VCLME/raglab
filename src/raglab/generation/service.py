@@ -35,7 +35,15 @@ class OllamaGenerator:
         )
         return bundle.as_messages()
 
-    def generate_answer(self, question: str, chunks: list[RetrievedChunk]) -> str:
+    def generate_answer(
+        self,
+        question: str,
+        chunks: list[RetrievedChunk],
+        *,
+        model: str | None = None,
+    ) -> str:
+        """Answer from the chunks with `model`, or the configured generation model."""
+        model = model or self.settings.generation_model
         self.last_stats = {}
         if not chunks:
             log_event(
@@ -51,18 +59,18 @@ class OllamaGenerator:
             LOGGER,
             logging.INFO,
             "generation.request_started",
-            model=self.settings.generation_model,
+            model=model,
             question_length=len(question),
             chunks=len(chunks),
         )
 
-        with self._transport_errors():
+        with self._transport_errors(model):
             response = requests.post(
                 f"{self.settings.ollama_base_url}/api/chat",
-                json=self._chat_payload(messages, stream=False),
+                json=self._chat_payload(messages, model=model, stream=False),
                 timeout=self.settings.generation_timeout_seconds,
             )
-        self._raise_for_status(response)
+        self._raise_for_status(response, model)
         payload = response.json()
         answer = payload["message"]["content"].strip()
         self.last_stats = _ollama_stats(payload)
@@ -70,19 +78,26 @@ class OllamaGenerator:
             LOGGER,
             logging.INFO,
             "generation.request_completed",
-            model=self.settings.generation_model,
+            model=model,
             chunks=len(chunks),
             answer_length=len(answer),
         )
         return answer
 
-    def stream_answer(self, question: str, chunks: list[RetrievedChunk]) -> Iterator[str]:
+    def stream_answer(
+        self,
+        question: str,
+        chunks: list[RetrievedChunk],
+        *,
+        model: str | None = None,
+    ) -> Iterator[str]:
         """Yield answer fragments as Ollama produces them (`stream: true`).
 
-        `last_stats` is filled once the final `done` message arrives. The
-        generation budget (`generation_timeout_seconds`) applies to the whole
+        `model` overrides the configured generation model. `last_stats` is
+        filled once the final `done` message arrives. The generation budget (`generation_timeout_seconds`) applies to the whole
         stream, not only to the gap between two tokens.
         """
+        model = model or self.settings.generation_model
         self.last_stats = {}
         if not chunks:
             log_event(
@@ -100,21 +115,21 @@ class OllamaGenerator:
             LOGGER,
             logging.INFO,
             "generation.stream_started",
-            model=self.settings.generation_model,
+            model=model,
             question_length=len(question),
             chunks=len(chunks),
         )
         started = perf_counter()
         answer_length = 0
-        with self._transport_errors():
+        with self._transport_errors(model):
             response = requests.post(
                 f"{self.settings.ollama_base_url}/api/chat",
-                json=self._chat_payload(messages, stream=True),
+                json=self._chat_payload(messages, model=model, stream=True),
                 timeout=timeout,
                 stream=True,
             )
             try:
-                self._raise_for_status(response)
+                self._raise_for_status(response, model)
                 for line in response.iter_lines():
                     if not line:
                         continue
@@ -123,7 +138,7 @@ class OllamaGenerator:
                         raise classify_error(
                             str(message["error"]),
                             status_code=None,
-                            model=self.settings.generation_model,
+                            model=model,
                             retry_after=self.settings.ollama_retry_after_seconds,
                         )
                     piece = message.get("message", {}).get("content", "")
@@ -134,38 +149,38 @@ class OllamaGenerator:
                         self.last_stats = _ollama_stats(message)
                         break
                     if perf_counter() - started > timeout:
-                        raise OllamaTimeoutError(self.settings.generation_model, timeout)
+                        raise OllamaTimeoutError(model, timeout)
             finally:
                 response.close()
         log_event(
             LOGGER,
             logging.INFO,
             "generation.stream_completed",
-            model=self.settings.generation_model,
+            model=model,
             chunks=len(chunks),
             answer_length=answer_length,
             elapsed_ms=round((perf_counter() - started) * 1000, 2),
         )
 
-    def _chat_payload(self, messages: list[dict[str, str]], *, stream: bool) -> dict:
+    def _chat_payload(self, messages: list[dict[str, str]], *, model: str, stream: bool) -> dict:
         return {
-            "model": self.settings.generation_model,
+            "model": model,
             "messages": messages,
             "stream": stream,
             "options": {"temperature": self.settings.generation_temperature},
         }
 
-    def _transport_errors(self):
+    def _transport_errors(self, model: str | None = None):
         return translate_transport_errors(
             base_url=self.settings.ollama_base_url,
-            model=self.settings.generation_model,
+            model=model or self.settings.generation_model,
             timeout_seconds=self.settings.generation_timeout_seconds,
         )
 
-    def _raise_for_status(self, response: requests.Response) -> None:
+    def _raise_for_status(self, response: requests.Response, model: str | None = None) -> None:
         raise_for_ollama_status(
             response,
-            model=self.settings.generation_model,
+            model=model or self.settings.generation_model,
             retry_after=self.settings.ollama_retry_after_seconds,
         )
 
