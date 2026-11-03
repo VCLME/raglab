@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 from pgvector.sqlalchemy import VECTOR
 from sqlalchemy import Float, bindparam, cast, func, select, text
 from sqlalchemy.orm import Session
@@ -64,7 +66,7 @@ class PostgresVectorStore:
         if self.search_mode == "exact":
             # No cast: the expression no longer matches the partial HNSW
             # index, so Postgres computes the exact distance for the run's rows.
-            typed_embedding = ChunkEmbedding.embedding
+            typed_embedding: Any = ChunkEmbedding.embedding
             query_param = bindparam("query_vec", query_embedding, type_=VECTOR())
         else:
             typed_embedding = cast(ChunkEmbedding.embedding, VECTOR(dim))
@@ -75,7 +77,19 @@ class PostgresVectorStore:
         distance = typed_embedding.op("<=>", return_type=Float())(query_param)
 
         stmt = (
-            select(Chunk, Document, distance.label("distance"))
+            # Only the columns a result needs: selecting the Document entity
+            # loaded each candidate's full text (whole laws for LexML), which
+            # cost ~13 ms per query at 50 candidates.
+            select(
+                Chunk.id,
+                Chunk.text,
+                Chunk.char_start,
+                Chunk.char_end,
+                Document.id.label("document_id"),
+                Document.file_name,
+                Document.source_path,
+                distance.label("distance"),
+            )
             .join(Document, Document.id == Chunk.document_id)
             .join(ChunkEmbedding, ChunkEmbedding.chunk_id == Chunk.id)
             .where(
@@ -102,19 +116,19 @@ class PostgresVectorStore:
             session.execute(text(f"SET LOCAL hnsw.ef_search = {max(40, int(top_k))}"))
         rows = session.execute(stmt).all()
         results: list[RetrievedChunk] = []
-        for rank, (chunk, document, raw_distance) in enumerate(rows, start=1):
-            distance_value = float(raw_distance or 0.0)
+        for rank, row in enumerate(rows, start=1):
+            distance_value = float(row.distance or 0.0)
             results.append(
                 RetrievedChunk(
-                    chunk_id=chunk.id,
-                    document_id=document.id,
-                    file_name=document.file_name,
-                    source_path=document.source_path,
-                    chunk_text=chunk.text,
+                    chunk_id=row.id,
+                    document_id=row.document_id,
+                    file_name=row.file_name,
+                    source_path=row.source_path,
+                    chunk_text=row.text,
                     score=max(0.0, 1.0 - distance_value),
                     rank=rank,
-                    char_start=chunk.char_start,
-                    char_end=chunk.char_end,
+                    char_start=row.char_start,
+                    char_end=row.char_end,
                 )
             )
         return results
