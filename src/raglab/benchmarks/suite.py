@@ -236,6 +236,7 @@ def run_suite(
     lexical_weight: float | None = None,
     rrf_k: int | None = None,
     rerank: bool | None = None,
+    citations: bool | None = None,
 ) -> dict[str, Any]:
     from raglab.db import session_scope
     from raglab.experiments.recall import RecallBenchmarkService
@@ -293,6 +294,7 @@ def run_suite(
                 lexical_weight=lexical_weight,
                 rrf_k=rrf_k,
                 rerank=rerank,
+                citations=citations,
             )
         finally:
             service.close()
@@ -308,6 +310,7 @@ def run_suite(
         "lexical_weight": report.get("lexical_weight"),
         "rrf_k": report.get("rrf_k"),
         "rerank": report.get("rerank"),
+        "citations": report.get("citations"),
         "summary": report["summary"],
         "by_type": report.get("by_type") or {},
         "report_path": report["report_path"],
@@ -332,6 +335,7 @@ def run_all(
     lexical_weight: float | None = None,
     rrf_k: int | None = None,
     rerank: bool | None = None,
+    citations: bool | None = None,
 ) -> dict[str, Any]:
     from raglab.db import initialize_database, session_scope
 
@@ -356,6 +360,7 @@ def run_all(
             lexical_weight=lexical_weight,
             rrf_k=rrf_k,
             rerank=do_rerank,
+            citations=citations,
         )
         for suite in selected
     ]

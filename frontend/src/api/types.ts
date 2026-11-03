@@ -143,6 +143,17 @@ export interface RetrievedChunk {
   // Cross-encoder re-ranking; score / rank are then these.
   rerank_score?: number | null;
   rerank_rank?: number | null;
+  // True when pinned because the question cites this chunk's law and article.
+  citation_match?: boolean | null;
+}
+
+/** Legal citation parsed from the question (citations option). */
+export interface CitationInfo {
+  label: string;
+  law_number: string;
+  article: string | null;
+  law_found: boolean;
+  article_found: boolean;
 }
 
 export type RetrievalMode = "dense" | "lexical" | "hybrid";
@@ -157,6 +168,7 @@ export interface QueryResponse {
   rerank?: boolean;
   // candidates, scored, cache_hits, cache_hit_rate, cache_size, cache_hit_rate_total
   rerank_stats?: Record<string, number>;
+  citation?: CitationInfo | null;
   // "skipped_no_gpu" or "cpu" when re-ranking could not use a GPU.
   rerank_notice?: string | null;
   answer: string | null;

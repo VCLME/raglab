@@ -78,6 +78,7 @@ class RecallBenchmarkService:
         lexical_weight: float | None,
         rrf_k: int | None,
         rerank: bool | None = None,
+        citations: bool | None = None,
     ) -> dict[str, Any]:
         """Resolved retrieval parameters, recorded with the run and passed to each query."""
         mode = RetrievalMode(retrieval_mode or self.settings.default_retrieval_mode)
@@ -92,6 +93,8 @@ class RecallBenchmarkService:
         if mode == RetrievalMode.HYBRID:
             config["lexical_weight"] = self.settings.hybrid_lexical_weight if lexical_weight is None else lexical_weight
             config["rrf_k"] = self.settings.rrf_k if rrf_k is None else rrf_k
+        if citations is not None:
+            config["citations"] = citations
         return config
 
     def _rerank_record(self, retrieval: dict[str, Any]) -> dict[str, Any]:
@@ -239,6 +242,7 @@ class RecallBenchmarkService:
         lexical_weight: float | None = None,
         rrf_k: int | None = None,
         rerank: bool | None = None,
+        citations: bool | None = None,
     ) -> dict[str, Any]:
         """Run retrieval on every case, then (optionally) grade answers.
 
@@ -258,7 +262,7 @@ class RecallBenchmarkService:
             cases = self._load_cases(dataset_path.resolve())
 
         judge = judge or JudgeConfig()
-        retrieval = self._retrieval_config(retrieval_mode, lexical_weight, rrf_k, rerank)
+        retrieval = self._retrieval_config(retrieval_mode, lexical_weight, rrf_k, rerank=rerank, citations=citations)
         rerank_record = self._rerank_record(retrieval)
         benchmark_label = benchmark_name or _infer_benchmark_name(dataset_path)
         run_name = f"recall-{benchmark_label}-{datetime.now(UTC).strftime('%Y%m%d-%H%M%S')}"

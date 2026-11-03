@@ -21,6 +21,7 @@ def _isolated_reports_dir(tmp_path, monkeypatch):
     # on the shipped default (hybrid + rerank), tested in test_defaults.py.
     monkeypatch.setenv("RAGLAB_DEFAULT_RETRIEVAL_MODE", "dense")
     monkeypatch.setenv("RAGLAB_DEFAULT_RERANK", "false")
+    monkeypatch.setenv("RAGLAB_CITATION_RESOLVER", "false")
     get_settings.cache_clear()
     yield
     get_settings.cache_clear()

@@ -108,6 +108,7 @@ function LaunchTab({ onLaunched }: { onLaunched: () => void }) {
   const [lexicalWeight, setLexicalWeight] = useState("");
   const [rrfK, setRrfK] = useState("");
   const [rerank, setRerank] = useState(false);
+  const [citations, setCitations] = useState(false);
 
   const action = useApiAction((body: unknown) =>
     post<{
@@ -163,6 +164,7 @@ function LaunchTab({ onLaunched }: { onLaunched: () => void }) {
       if (backend === "pgvector") {
         body.retrieval_mode = retrievalMode;
         body.rerank = rerank;
+        body.citations = citations;
         if (retrievalMode === "hybrid") {
           if (lexicalWeight !== "") body.lexical_weight = Number(lexicalWeight);
           if (rrfK !== "") body.rrf_k = Number(rrfK);
@@ -219,6 +221,14 @@ function LaunchTab({ onLaunched }: { onLaunched: () => void }) {
           <label className="inline" style={{ gap: 4 }}>
             <input type="checkbox" checked={rerank} onChange={(e) => setRerank(e.target.checked)} />
             {t("retrieval.rerank_on")}
+          </label>
+        </FieldRow>
+      ) : null}
+      {backendChoice !== "neo4j" ? (
+        <FieldRow label={t("retrieval.citations_label")} hint={t("retrieval.citations_hint")}>
+          <label className="inline" style={{ gap: 4 }}>
+            <input type="checkbox" checked={citations} onChange={(e) => setCitations(e.target.checked)} />
+            {t("retrieval.citations_checkbox")}
           </label>
         </FieldRow>
       ) : null}

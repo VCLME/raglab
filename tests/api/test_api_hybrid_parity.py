@@ -146,6 +146,7 @@ def test_api_and_cli_send_the_same_retrieval_parameters(client):
         "lexical_weight": 0.3,
         "rrf_k": 20,
         "rerank": None,
+        "citations": None,
     }
 
     with patch("raglab.api.routers.query.QueryService") as api_cls:

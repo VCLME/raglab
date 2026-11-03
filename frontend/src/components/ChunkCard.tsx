@@ -46,6 +46,11 @@ export function ChunkCard({ chunk, maxScore, showScores = false }: Props) {
         <span>
           #{chunk.rank} · <strong>{chunk.file_name}</strong>
           <span className="muted"> — score {chunk.score.toFixed(3)}</span>
+          {chunk.citation_match ? (
+            <span className="badge ok" style={{ marginLeft: 8 }} title={t("retrieval.citation_badge_title")}>
+              {t("retrieval.citation_badge")}
+            </span>
+          ) : null}
         </span>
         <span className="muted" title={chunk.source_path}>
           {chunk.source_path.split(/[\/]/).slice(-2).join("/")}

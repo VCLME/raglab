@@ -21,6 +21,7 @@ from raglab.embeddings.factory import build_embedding_provider
 from raglab.generation.prompts import build_prompt_bundle
 from raglab.generation.service import OllamaGenerator
 from raglab.logging_utils import log_event
+from raglab.retrieval.citations import article_chunks, find_law_document, merge_with_citation, parse_citation
 from raglab.retrieval.fusion import reciprocal_rank_fusion
 from raglab.retrieval.rerank import Reranker, get_reranker, rerank_gpu_available
 from raglab.retrieval.stages import planned_stages, prompt_details, retrieval_stage_events, stage_end, stage_start
@@ -57,6 +58,8 @@ class RetrievalOutcome:
     rerank_notice: str | None = None
     # First-stage chunks the cross-encoder read (0 without re-ranking).
     rerank_candidates: int = 0
+    # Parsed legal citation and whether it resolved (citations option).
+    citation: dict[str, Any] | None = None
 
     def response(self, **extra: Any) -> QueryResponse:
         return QueryResponse(
@@ -71,6 +74,7 @@ class RetrievalOutcome:
             rerank_notice=self.rerank_notice,
             filters=self.filters,
             timings_ms=dict(self.timings_ms),
+            citation=self.citation,
             **extra,
         )
 
@@ -163,8 +167,13 @@ class QueryService:
         lexical_weight: float | None = None,
         rrf_k: int | None = None,
         rerank: bool | None = None,
+        citations: bool | None = None,
     ) -> RetrievalOutcome:
         """Search the index for the question, each stage under its budget.
+
+        With `citations` on, a question citing a law ("art. 49 da Lei nº
+        8.078") is restricted to that law and the cited article is pinned
+        first (see `raglab.retrieval.citations`).
 
         dense: embed + cosine KNN (as before). lexical: BM25, no embedder.
         hybrid: both, fused by Reciprocal Rank Fusion over deeper lists.
@@ -198,6 +207,18 @@ class QueryService:
         weight = self.settings.hybrid_lexical_weight if lexical_weight is None else lexical_weight
         fusion_k = self.settings.rrf_k if rrf_k is None else rrf_k
 
+        citation_started = perf_counter()
+        use_citations = self.settings.citation_resolver if citations is None else citations
+        citation = parse_citation(question) if use_citations else None
+        law_document_id: str | None = None
+        pinned: list[RetrievedChunk] = []
+        if citation is not None:
+            law_document_id = find_law_document(self.session, index_run, citation)
+            if law_document_id is not None:
+                if citation.article:
+                    pinned = article_chunks(self.session, index_run, law_document_id, citation.article)
+                filters = (filters or RetrievalFilters()).model_copy(update={"document_ids": [law_document_id]})
+        citation_seconds = perf_counter() - citation_started if citation is not None else 0.0
         started = perf_counter()
         query_embedding: list[float] | None = None
         if mode != RetrievalMode.LEXICAL:
@@ -245,6 +266,10 @@ class QueryService:
                     top_k=stage_top_k,
                 )
                 stage_ms["fusion"] = perf_counter() - fusion_started
+            if pinned:
+                # Keep every candidate when the cross-encoder still has to
+                # choose among them; the article is pinned again after it.
+                retrieved = merge_with_citation(pinned, retrieved, stage_top_k if do_rerank else effective_top_k)
             searched = perf_counter()
 
         # `embed` + `retrieval` (+ `rerank` when on) are the stages the recall
@@ -257,7 +282,11 @@ class QueryService:
         timings_ms: dict[str, float] = {}
         if query_embedding is not None:
             timings_ms["embed"] = round((embedded - started) * 1000, 3)
-        timings_ms["retrieval"] = round((searched - search_started) * 1000, 3)
+        # Citation resolution is part of retrieval: counted in `retrieval`
+        # (so the benchmark's query latency includes it) and shown apart.
+        timings_ms["retrieval"] = round((searched - search_started + citation_seconds) * 1000, 3)
+        if citation is not None:
+            timings_ms["citation"] = round(citation_seconds * 1000, 3)
         if mode != RetrievalMode.DENSE:
             timings_ms.update({stage: round(seconds * 1000, 3) for stage, seconds in stage_ms.items()})
 
@@ -271,6 +300,10 @@ class QueryService:
                 lambda: self.reranker.rerank(question, first_stage, top_k=effective_top_k),
             )
             timings_ms["rerank"] = round((perf_counter() - rerank_started) * 1000, 3)
+            if pinned:
+                # A cited article is the answer by construction: the
+                # cross-encoder orders the rest, it does not demote the pin.
+                retrieved = merge_with_citation(pinned, retrieved, effective_top_k)
         hybrid = mode == RetrievalMode.HYBRID
         return RetrievalOutcome(
             question=question,
@@ -290,6 +323,17 @@ class QueryService:
             rerank_notice=rerank_notice,
             rerank_stats=rerank_stats,
             rerank_candidates=int(rerank_stats.get("candidates", 0)),
+            citation=(
+                {
+                    "label": citation.label(),
+                    "law_number": citation.law_number,
+                    "article": citation.article,
+                    "law_found": law_document_id is not None,
+                    "article_found": bool(pinned),
+                }
+                if citation is not None
+                else None
+            ),
         )
 
     def query(
@@ -308,6 +352,7 @@ class QueryService:
         lexical_weight: float | None = None,
         rrf_k: int | None = None,
         rerank: bool | None = None,
+        citations: bool | None = None,
     ) -> QueryResponse:
         """`generation_top_k` sends only the first N retrieved chunks to the
         LLM; the benchmark retrieves 10 (for Recall@10) but must generate from
@@ -323,6 +368,7 @@ class QueryService:
             lexical_weight=lexical_weight,
             rrf_k=rrf_k,
             rerank=rerank,
+            citations=citations,
         )
         answer = None
         if generate_answer:

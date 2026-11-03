@@ -247,6 +247,28 @@ def test_cross_encoder_scores_in_batches_and_releases(monkeypatch):
     assert not scorer.loaded
 
 
+def test_rerank_keeps_the_cited_article_first_and_sees_all_candidates(monkeypatch):
+    import raglab.retrieval.service as service_module
+    from raglab.retrieval.citations import Citation
+
+    service, scorer = _service()
+    pinned_chunk = _chunk("a", 1, 1.0).model_copy(update={"citation_match": True})
+    monkeypatch.setattr(service_module, "parse_citation", lambda question: Citation("8078", "49"))
+    monkeypatch.setattr(service_module, "find_law_document", lambda session, run, citation: "law-doc")
+    monkeypatch.setattr(service_module, "article_chunks", lambda session, run, doc, article: [pinned_chunk])
+
+    response = service.query(
+        question="art. 49 da Lei 8.078", corpus_name="c", top_k=2, generate_answer=False, rerank=True, citations=True
+    )
+
+    # The cross-encoder chose among all 4 candidates, not a list cut to top_k...
+    assert len(scorer.calls[0]) == 4
+    # ...and "a", which it scores lowest, stays first because it is the cited article.
+    assert [chunk.chunk_id for chunk in response.retrieved_chunks] == ["a", "c"]
+    assert response.retrieved_chunks[0].citation_match
+    assert service.vector_store.search.call_args.kwargs["filters"].document_ids == ["law-doc"]
+
+
 def test_default_rerank_is_skipped_without_gpu_and_says_why(monkeypatch):
     import raglab.retrieval.service as service_module
 

@@ -47,6 +47,8 @@ export function Query() {
   const [lexicalWeight, setLexicalWeight] = useState("");
   const [rrfK, setRrfK] = useState("");
   const [rerank, setRerank] = useState<RerankChoice>("");
+  // Citation resolution is on by default server-side (citations-v1).
+  const [citations, setCitations] = useState(true);
   const [question, setQuestion] = useState("");
 
   const [documentIdsRaw, setDocumentIdsRaw] = useState("");
@@ -94,6 +96,7 @@ export function Query() {
       lexical_weight: retrievalMode === "hybrid" && lexicalWeight !== "" ? Number(lexicalWeight) : null,
       rrf_k: retrievalMode === "hybrid" && rrfK !== "" ? Number(rrfK) : null,
       rerank: rerank === "" ? null : rerank === "on",
+      citations,
       filters: {
         document_ids: documentIdsRaw.split(",").map((s) => s.trim()).filter(Boolean),
         file_names: fileNamesRaw.split(",").map((s) => s.trim()).filter(Boolean),
@@ -214,6 +217,12 @@ export function Query() {
                 <option value="on">{t("retrieval.rerank_on")}</option>
                 <option value="off">{t("retrieval.rerank_off")}</option>
               </select>
+            </FieldRow>
+            <FieldRow label={t("retrieval.citations_label")} hint={t("retrieval.citations_hint")}>
+              <label className="inline" style={{ gap: 4 }}>
+                <input type="checkbox" checked={citations} onChange={(e) => setCitations(e.target.checked)} />
+                {t("retrieval.citations_checkbox")}
+              </label>
             </FieldRow>
             {retrievalMode === "hybrid" ? (
               <>
@@ -391,6 +400,13 @@ export function Query() {
                       hits: rerankStats.cache_hits ?? 0,
                       rate: Math.round((rerankStats.cache_hit_rate_total ?? 0) * 100),
                     })}
+                  </div>
+                ) : null}
+                {action.data.citation ? (
+                  <div className={`badge ${action.data.citation.law_found ? "ok" : "warn"}`} style={{ marginBottom: 8 }}>
+                    {action.data.citation.law_found
+                      ? t("retrieval.citation_resolved", { label: action.data.citation.label })
+                      : t("retrieval.citation_unresolved", { label: action.data.citation.label })}
                   </div>
                 ) : null}
                 {action.data.query_lexemes && action.data.query_lexemes.length ? (

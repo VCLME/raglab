@@ -148,6 +148,11 @@ def bench_all(
         "--rerank/--no-rerank",
         help="Re-ranking cross-encoder des candidats (defaut: RAGLAB_DEFAULT_RERANK).",
     ),
+    citations: bool | None = typer.Option(
+        None,
+        "--citations/--no-citations",
+        help="Reconnaitre les citations juridiques (art. N da Lei X) : restreindre a la loi citee, epingler l'article. Defaut: RAGLAB_CITATION_RESOLVER.",
+    ),
 ) -> None:
     """Regenerer tous les chiffres de benchmark (PIAF + LexML) et les ecrire dans benchmarks/results/."""
     from raglab.benchmarks.suite import render_markdown, run_all
@@ -162,6 +167,7 @@ def bench_all(
         lexical_weight=lexical_weight,
         rrf_k=rrf_k,
         rerank=rerank,
+        citations=citations,
     )
     output = Path("benchmarks/results") / f"{label}.json"
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -555,6 +561,11 @@ def query(
         "--rerank/--no-rerank",
         help="Re-ranking cross-encoder de RAGLAB_RERANK_CANDIDATES candidats (defaut: RAGLAB_DEFAULT_RERANK).",
     ),
+    citations: bool | None = typer.Option(
+        None,
+        "--citations/--no-citations",
+        help="Reconnaitre les citations juridiques (art. N da Lei X) : restreindre a la loi citee, epingler l'article. Defaut: RAGLAB_CITATION_RESOLVER.",
+    ),
     stream: bool = typer.Option(
         False,
         "--stream",
@@ -588,6 +599,7 @@ def query(
                 lexical_weight=lexical_weight,
                 rrf_k=rrf_k,
                 rerank=rerank,
+                citations=citations,
             )
             final: dict = {}
             for event, data in service.stream_answer(outcome, llm_model=llm_model):
@@ -610,6 +622,7 @@ def query(
             lexical_weight=lexical_weight,
             rrf_k=rrf_k,
             rerank=rerank,
+            citations=citations,
             llm_model=llm_model,
         )
     typer.echo(response.model_dump_json(indent=2))
@@ -719,6 +732,11 @@ def experiment_recall(
         "--rerank/--no-rerank",
         help="Re-ranking cross-encoder des candidats (defaut: RAGLAB_DEFAULT_RERANK).",
     ),
+    citations: bool | None = typer.Option(
+        None,
+        "--citations/--no-citations",
+        help="Reconnaitre les citations juridiques (art. N da Lei X) : restreindre a la loi citee, epingler l'article. Defaut: RAGLAB_CITATION_RESOLVER.",
+    ),
 ) -> None:
     with session_scope() as session:
         service = RecallBenchmarkService(session)
@@ -732,6 +750,7 @@ def experiment_recall(
             lexical_weight=lexical_weight,
             rrf_k=rrf_k,
             rerank=rerank,
+            citations=citations,
             compute_ragas=ragas,
             ragas_case_limit=ragas_limit,
             judge=JudgeConfig(backend=judge_backend, model=judge_model),

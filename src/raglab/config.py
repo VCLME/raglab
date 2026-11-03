@@ -51,6 +51,11 @@ class Settings(BaseSettings):
     # the reranker). Set dense / RAGLAB_DEFAULT_RERANK=false for the fastest
     # path (~25-40 ms instead of ~0.5 s per query).
     default_retrieval_mode: str = "hybrid"
+    # Resolve legal citations ("art. 49 da Lei nº 8.078") before searching:
+    # restrict to the cited law, pin the cited article (see
+    # raglab.retrieval.citations). Measured in citations-v1: LexML questions
+    # citing an article 0.093 -> 0.753 Recall@5 (+64/-0), no other change.
+    citation_resolver: bool = True
     default_language: str = "fr"
     bm25_k1: float = 1.2
     bm25_b: float = 0.75

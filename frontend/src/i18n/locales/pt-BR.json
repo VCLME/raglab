@@ -618,6 +618,13 @@
     "rerank_off": "desativado",
     "rerank_stats": "Reordenação: {{candidates}} candidatos, {{scored}} pares calculados, {{hits}} lidos do cache (taxa de acerto acumulada {{rate}}%)",
     "scores_rerank": "rerank",
+    "citations_label": "Citações jurídicas",
+    "citations_checkbox": "Reconhecer « art. N da Lei X »",
+    "citations_hint": "Quando a pergunta cita uma lei presente no índice, a busca se limita a essa lei e o artigo citado vem primeiro.",
+    "citation_badge": "artigo citado",
+    "citation_badge_title": "Fixado: a pergunta cita a lei e o artigo deste trecho.",
+    "citation_resolved": "Citação reconhecida: {{label}}",
+    "citation_unresolved": "Citação reconhecida ({{label}}), mas a lei não está no índice: busca normal.",
     "rerank_notice_skipped_no_gpu": "Re-ranking ignorado: nenhuma GPU disponível (levaria vários segundos na CPU). Force com “ativado” se precisar.",
     "rerank_notice_cpu": "Re-ranking executado na CPU, sem GPU: conte vários segundos por consulta."
   }
