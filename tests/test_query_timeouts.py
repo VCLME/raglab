@@ -120,3 +120,12 @@ def test_query_adds_generation_timing():
     assert response.answer == "Réponse"
     assert set(response.timings_ms) == {"embed", "retrieval", "generation"}
     assert response.generation_stats == {"output_tokens": 3.0}
+
+
+def test_query_forwards_llm_model_to_the_generator():
+    service = _service()
+    service.generator = Mock(last_stats={})
+    service.generator.generate_answer.return_value = "Réponse"
+    with patch("raglab.retrieval.service.build_embedding_provider", return_value=_embedder()):
+        service.query(question="?", corpus_name="c", llm_model="mistral:7b")
+    assert service.generator.generate_answer.call_args.kwargs["model"] == "mistral:7b"

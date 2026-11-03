@@ -119,6 +119,9 @@ class QueryRequest(BaseModel):
     top_k: int | None = None
     generate: bool = True
     filters: QueryFilters | None = None
+    # Ollama model for the answer; None = RAGLAB_GENERATION_MODEL.
+    # Ignored by /api/graph/query.
+    llm_model: str | None = None
     # Graph-only: "vector" = KNN, "hybrid" = KNN seed + entity re-rank.
     # Ignored by the pgvector /api/query endpoint.
     mode: str = "vector"

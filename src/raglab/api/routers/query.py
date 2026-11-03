@@ -53,6 +53,7 @@ def run_query(
         top_k=body.top_k,
         generate_answer=body.generate,
         filters=_filters(body),
+        llm_model=body.llm_model,
     )
 
 
@@ -102,7 +103,7 @@ def stream_query(
             yield sse_event("done", {**retrieval, "first_token_ms": None})
             return
         try:
-            for event, data in service.stream_answer(outcome):
+            for event, data in service.stream_answer(outcome, llm_model=body.llm_model):
                 yield sse_event(event, data)
         except Exception as exc:
             info = describe_error(exc, settings)

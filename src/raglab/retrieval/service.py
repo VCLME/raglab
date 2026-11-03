@@ -166,6 +166,7 @@ class QueryService:
         top_k: int | None = None,
         generate_answer: bool = True,
         filters: RetrievalFilters | None = None,
+        llm_model: str | None = None,
     ) -> QueryResponse:
         outcome = self.retrieve(
             question=question,
@@ -178,7 +179,7 @@ class QueryService:
         answer = None
         if generate_answer:
             generation_started = perf_counter()
-            answer = self.generator.generate_answer(question, outcome.retrieved)
+            answer = self.generator.generate_answer(question, outcome.retrieved, model=llm_model)
             outcome.timings_ms["generation"] = round((perf_counter() - generation_started) * 1000, 3)
         elapsed_ms = (perf_counter() - outcome.started) * 1000
         self._log_completed(outcome, generate_answer=generate_answer, elapsed_ms=elapsed_ms)
@@ -188,8 +189,15 @@ class QueryService:
             generation_stats=dict(self.generator.last_stats) if generate_answer else {},
         )
 
-    def stream_answer(self, outcome: RetrievalOutcome) -> Iterator[tuple[str, dict[str, Any]]]:
+    def stream_answer(
+        self,
+        outcome: RetrievalOutcome,
+        *,
+        llm_model: str | None = None,
+    ) -> Iterator[tuple[str, dict[str, Any]]]:
         """Generate the answer for a finished retrieval as (event, data) pairs.
+
+        `llm_model` overrides the configured generation model for this answer.
 
         Yields one `token` event per fragment produced by Ollama, then a `done`
         event carrying the full `QueryResponse` plus `first_token_ms` (time
@@ -198,7 +206,7 @@ class QueryService:
         generation_started = perf_counter()
         first_token_ms: float | None = None
         parts: list[str] = []
-        for piece in self.generator.stream_answer(outcome.question, outcome.retrieved):
+        for piece in self.generator.stream_answer(outcome.question, outcome.retrieved, model=llm_model):
             if first_token_ms is None:
                 first_token_ms = round((perf_counter() - generation_started) * 1000, 3)
             parts.append(piece)
