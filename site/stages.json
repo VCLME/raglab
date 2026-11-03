@@ -34,5 +34,11 @@
     "name": "Re-ranking",
     "change": "+ cross-encoder bge-reranker-v2-m3 on the fused candidates",
     "status": "phase 9.3, in review"
+  },
+  {
+    "label": "rerank-dense-v1",
+    "name": "Dense + re-ranking",
+    "change": "cross-encoder on dense candidates only, no BM25 (comparison point for 9.3, retrieval only)",
+    "status": "phase 9.3, comparison"
   }
 ]

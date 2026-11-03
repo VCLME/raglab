@@ -46,17 +46,34 @@ class Settings(BaseSettings):
     # Hybrid retrieval (dense + BM25 fused by Reciprocal Rank Fusion).
     # default_language picks the text-search config when neither a document
     # nor its corpus declares one.
-    default_retrieval_mode: str = "dense"
+    # hybrid + rerank is the measured best configuration (rerank-v1:
+    # PIAF R@5 0.966, LexML 0.596; hybrid candidates beat dense ones under
+    # the reranker). Set dense / RAGLAB_DEFAULT_RERANK=false for the fastest
+    # path (~25-40 ms instead of ~0.5 s per query).
+    default_retrieval_mode: str = "hybrid"
     # Resolve legal citations ("art. 49 da Lei nº 8.078") before searching:
-    # restrict to the cited law, pin the cited article. Off by default
-    # until measured (see raglab.retrieval.citations).
-    citation_resolver: bool = False
+    # restrict to the cited law, pin the cited article (see
+    # raglab.retrieval.citations). Measured in citations-v1: LexML questions
+    # citing an article 0.093 -> 0.753 Recall@5 (+64/-0), no other change.
+    citation_resolver: bool = True
     default_language: str = "fr"
     bm25_k1: float = 1.2
     bm25_b: float = 0.75
     rrf_k: int = 60
     hybrid_lexical_weight: float = 0.5
     hybrid_candidates: int = 50
+    # Cross-encoder re-ranking (phase 9.3): the first stage returns
+    # rerank_candidates chunks, the cross-encoder keeps top_k. fp16 on CUDA
+    # when available (~1.1 GB VRAM for bge-reranker-v2-m3), CPU otherwise.
+    default_rerank: bool = True
+    rerank_model_name: str = "BAAI/bge-reranker-v2-m3"
+    rerank_device: str = "cuda"
+    rerank_candidates: int = 40
+    rerank_batch_size: int = 16
+    rerank_max_length: int = 512
+    # LRU bound of the (model, question, chunk id) score cache; 0 = off.
+    rerank_cache_size: int = 20000
+    rerank_timeout_seconds: float = 60.0
     data_dir: Path = Field(default_factory=lambda: Path("data"))
     reports_dir: Path = Field(default_factory=lambda: Path("data/reports"))
     lexml_documents_dir: Path = Field(default_factory=lambda: Path("data/lexml/documents"))

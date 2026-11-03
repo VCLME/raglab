@@ -143,6 +143,11 @@ def bench_all(
         None, "--lexical-weight", min=0.0, max=1.0, help="Poids du BM25 dans la fusion RRF (mode hybrid)."
     ),
     rrf_k: int | None = typer.Option(None, "--rrf-k", min=0, help="Constante k de la fusion RRF (defaut 60)."),
+    rerank: bool | None = typer.Option(
+        None,
+        "--rerank/--no-rerank",
+        help="Re-ranking cross-encoder des candidats (defaut: RAGLAB_DEFAULT_RERANK).",
+    ),
     citations: bool | None = typer.Option(
         None,
         "--citations/--no-citations",
@@ -161,6 +166,7 @@ def bench_all(
         retrieval_mode=retrieval_mode,
         lexical_weight=lexical_weight,
         rrf_k=rrf_k,
+        rerank=rerank,
         citations=citations,
     )
     output = Path("benchmarks/results") / f"{label}.json"
@@ -550,6 +556,11 @@ def query(
         help="Poids du BM25 dans la fusion RRF (0 = dense seul, 1 = BM25 seul). Mode hybrid.",
     ),
     rrf_k: int | None = typer.Option(None, "--rrf-k", min=0, help="Constante k de la fusion RRF (defaut 60)."),
+    rerank: bool | None = typer.Option(
+        None,
+        "--rerank/--no-rerank",
+        help="Re-ranking cross-encoder de RAGLAB_RERANK_CANDIDATES candidats (defaut: RAGLAB_DEFAULT_RERANK).",
+    ),
     citations: bool | None = typer.Option(
         None,
         "--citations/--no-citations",
@@ -587,6 +598,7 @@ def query(
                 retrieval_mode=retrieval_mode,
                 lexical_weight=lexical_weight,
                 rrf_k=rrf_k,
+                rerank=rerank,
                 citations=citations,
             )
             final: dict = {}
@@ -609,6 +621,7 @@ def query(
             retrieval_mode=retrieval_mode,
             lexical_weight=lexical_weight,
             rrf_k=rrf_k,
+            rerank=rerank,
             citations=citations,
             llm_model=llm_model,
         )
@@ -714,6 +727,11 @@ def experiment_recall(
         help="Poids du BM25 dans la fusion RRF (0 = dense seul, 1 = BM25 seul). Mode hybrid.",
     ),
     rrf_k: int | None = typer.Option(None, "--rrf-k", min=0, help="Constante k de la fusion RRF (defaut 60)."),
+    rerank: bool | None = typer.Option(
+        None,
+        "--rerank/--no-rerank",
+        help="Re-ranking cross-encoder des candidats (defaut: RAGLAB_DEFAULT_RERANK).",
+    ),
     citations: bool | None = typer.Option(
         None,
         "--citations/--no-citations",
@@ -731,6 +749,7 @@ def experiment_recall(
             retrieval_mode=retrieval_mode,
             lexical_weight=lexical_weight,
             rrf_k=rrf_k,
+            rerank=rerank,
             citations=citations,
             compute_ragas=ragas,
             ragas_case_limit=ragas_limit,

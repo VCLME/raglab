@@ -7,7 +7,7 @@ interface Props {
   // Scale of the score bar. Cosine similarity is already in [0, 1]; BM25
   // and RRF scores are not, so callers pass the best score of the list.
   maxScore?: number;
-  // Show the dense / BM25 / fused breakdown (Retrieval page).
+  // Show the dense / BM25 / fused / re-rank breakdown (Retrieval page).
   showScores?: boolean;
 }
 
@@ -38,7 +38,8 @@ export function ChunkCard({ chunk, maxScore, showScores = false }: Props) {
   const scale = maxScore && maxScore > 0 ? maxScore : 1;
   const scorePct = Math.max(0, Math.min(100, Math.round((chunk.score / scale) * 100)));
   const hasBreakdown =
-    showScores && (chunk.dense_rank != null || chunk.lexical_rank != null || chunk.fused_score != null);
+    showScores &&
+    (chunk.dense_rank != null || chunk.lexical_rank != null || chunk.fused_score != null || chunk.rerank_rank != null);
   return (
     <div className="chunk">
       <div className="head">
@@ -60,10 +61,10 @@ export function ChunkCard({ chunk, maxScore, showScores = false }: Props) {
           <ScoreCell label={t("retrieval.scores_dense")} rank={chunk.dense_rank} score={chunk.dense_score} digits={3} />
           <ScoreCell label={t("retrieval.scores_lexical")} rank={chunk.lexical_rank} score={chunk.lexical_score} digits={2} />
           {chunk.fused_score != null ? (
-            <span className="chunk-score">
-              <span className="chunk-score-label">{t("retrieval.scores_fused")}</span>
-              {chunk.fused_score.toFixed(4)}
-            </span>
+            <ScoreCell label={t("retrieval.scores_fused")} rank={chunk.fused_rank ?? null} score={chunk.fused_score} digits={4} />
+          ) : null}
+          {chunk.rerank_rank != null ? (
+            <ScoreCell label={t("retrieval.scores_rerank")} rank={chunk.rerank_rank} score={chunk.rerank_score} digits={3} />
           ) : null}
         </div>
       ) : null}

@@ -28,7 +28,7 @@ Si la question ne cite pas de loi, ou cite une loi absente de l'index, rien ne c
 | API | `"citations": true` dans `POST /api/query`, `/api/query/stream`, `/api/experiments/recall` |
 | UI | case « Citations juridiques » de la page Retrieval (et du lancement des benchmarks) ; le passage épinglé porte le badge « article cité », et la page indique quelle citation a été reconnue |
 | Benchmark | `raglab bench all --label citations-v1 --citations` |
-| Par défaut | `RAGLAB_CITATION_RESOLVER=false` tant que la mesure n'a pas tranché |
+| Par défaut | activé (`RAGLAB_CITATION_RESOLVER=true`) depuis la mesure `citations-v1` |
 
 ## Honnêteté de la mesure
 

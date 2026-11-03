@@ -51,6 +51,9 @@ class ConfigResponse(BaseModel):
     rrf_k: int
     bm25_k1: float
     bm25_b: float
+    default_rerank: bool = False
+    rerank_model_name: str = ""
+    rerank_candidates: int = 0
 
 
 class OllamaPullRequest(BaseModel):
@@ -134,6 +137,9 @@ class QueryRequest(BaseModel):
     citations: bool | None = None
     lexical_weight: float | None = Field(None, ge=0.0, le=1.0)
     rrf_k: int | None = Field(None, ge=0)
+    # Cross-encoder re-ranking of rerank_candidates first-stage chunks.
+    # None = RAGLAB_DEFAULT_RERANK.
+    rerank: bool | None = None
     # Ollama model for the answer; None = RAGLAB_GENERATION_MODEL.
     # Ignored by /api/graph/query.
     llm_model: str | None = None
@@ -242,6 +248,9 @@ class ExperimentRunSummary(BaseModel):
     retrieval_mode: str | None = None
     lexical_weight: float | None = None
     rrf_k: int | None = None
+    rerank: bool | None = None
+    rerank_model: str | None = None
+    rerank_candidates: int | None = None
 
 
 class ExperimentResultCase(BaseModel):
@@ -361,6 +370,7 @@ class RecallRequest(BaseModel):
     retrieval_mode: RetrievalMode | None = None
     lexical_weight: float | None = Field(None, ge=0.0, le=1.0)
     rrf_k: int | None = Field(None, ge=0)
+    rerank: bool | None = None
     citations: bool | None = None
     compute_ragas: bool = False
     # Grade only the first N cases (retrieval still runs on all of them).

@@ -433,7 +433,8 @@
     "judge_llamacpp": "llama.cpp (Gemma 4, independent judge)",
     "ragas_limit_label": "Graded cases",
     "ragas_limit_hint": "Empty = all. Retrieval always covers every case.",
-    "table_relevancy": "Answer relevancy"
+    "table_relevancy": "Answer relevancy",
+    "rerank_hint": "Adds the cross-encoder stage (pgvector). Its VRAM is freed before the RAGAS judge pass."
   },
   "corpus_page": {
     "title": "Corpus",
@@ -611,6 +612,12 @@
     "scores_lexical": "BM25",
     "scores_fused": "RRF",
     "not_retrieved": "absent",
+    "rerank_label": "Cross-encoder re-ranking",
+    "rerank_hint": "Retrieval returns {{candidates}} candidates; {{model}} reads each with the question and keeps the top-k.",
+    "rerank_on": "on",
+    "rerank_off": "off",
+    "rerank_stats": "Re-ranking: {{candidates}} candidates, {{scored}} pairs scored, {{hits}} read from the cache (cumulative hit rate {{rate}}%)",
+    "scores_rerank": "rerank",
     "citations_label": "Legal citations",
     "citations_checkbox": "Recognise « art. N da Lei X »",
     "citations_hint": "When the question cites a law present in the index, search is limited to that law and the cited article comes first.",
