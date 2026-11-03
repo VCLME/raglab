@@ -32,6 +32,8 @@ def case_rows(report: dict[str, Any]) -> list[dict[str, Any]]:
         row: dict[str, Any] = {"id": detail["id"]}
         if detail.get("question_type"):
             row["type"] = detail["question_type"]
+        if detail.get("split"):
+            row["split"] = detail["split"]
         for field in CASE_FIELDS:
             if field in metrics:
                 row[field] = float(metrics[field]) if field == "reciprocal_rank" else int(bool(metrics[field]))

@@ -1,9 +1,11 @@
 """`raglab bench all`: rebuild every benchmark number from a single command.
 
-For each suite (PIAF in French, LexML full text in Portuguese) the runner:
+For each suite (PIAF in French, LexML full text in Portuguese, and on
+request the Code de la consommation with its version history) the runner:
 
 1. makes sure the corpus is on disk (downloads / collects it otherwise) and,
-   for LexML, that every text still matches the frozen manifest;
+   for LexML and the French code, that every text still matches the frozen
+   manifest;
 2. ingests and indexes it in a dedicated corpus (`bench_*`), reusing a
    compatible index run when nothing changed;
 3. runs the recall benchmark on the frozen question set, generating and
@@ -49,6 +51,9 @@ class Suite:
     corpus_dir: Path
     dataset_path: Path
     manifest_path: Path | None = None
+    # Run by `raglab bench all` without --suite. The French code is opt-in:
+    # it doubles the GPU time of a full run.
+    default: bool = True
 
 
 def default_suites(settings: Settings, repo_root: Path) -> list[Suite]:
@@ -67,6 +72,15 @@ def default_suites(settings: Settings, repo_root: Path) -> list[Suite]:
             corpus_dir=settings.lexml_fulltext_dir / "corpus",
             dataset_path=repo_root / "benchmarks" / "lexml_fulltext" / "ground_truth.jsonl",
             manifest_path=repo_root / "benchmarks" / "lexml_fulltext" / "corpus_manifest.json",
+        ),
+        Suite(
+            name="legi_consommation",
+            language="fr",
+            corpus_name="bench_legi_consommation_fr",
+            corpus_dir=settings.legifrance_dir / "consommation" / "corpus",
+            dataset_path=repo_root / "benchmarks" / "legi_consommation" / "ground_truth.jsonl",
+            manifest_path=repo_root / "benchmarks" / "legi_consommation" / "corpus_manifest.json",
+            default=False,
         ),
     ]
 
@@ -99,6 +113,10 @@ def _ensure_corpus(suite: Suite, settings: Settings) -> None:
         FullTextCollector(settings).collect(
             output_dir=suite.corpus_dir.parent, years=range(1988, 2025), per_year=7, seed=42
         )
+    elif suite.name == "legi_consommation":
+        from raglab.legifrance.collector import CodeCollector
+
+        CodeCollector(settings).collect(code="consommation", output_dir=suite.corpus_dir.parent)
     else:
         raise ValueError(f"Corpus absent et pas de recette pour le produire: {suite.corpus_dir}")
 
@@ -243,6 +261,11 @@ def run_suite(
     from raglab.indexing.service import IndexingService
     from raglab.ingestion.service import IngestionService
 
+    if not suite.dataset_path.exists():
+        raise RuntimeError(
+            f"Pas de jeu de questions pour la suite {suite.name} ({suite.dataset_path}). "
+            "Voir docs/benchmarks/protocole.md pour le generer."
+        )
     _ensure_corpus(suite, settings)
     problems = verify_manifest(suite.corpus_dir, suite.manifest_path) if suite.manifest_path else []
     if problems:
@@ -313,6 +336,7 @@ def run_suite(
         "citations": report.get("citations"),
         "summary": report["summary"],
         "by_type": report.get("by_type") or {},
+        **({"by_split": report["by_split"]} if report.get("by_split") else {}),
         "report_path": report["report_path"],
         "experiment_run_id": report["experiment_run_id"],
         # Per-question outcomes, so two runs can be compared question by
@@ -345,7 +369,11 @@ def run_all(
     initialize_database()
     with session_scope() as session:
         env = environment_report(settings, session, judge if ragas_limit else None)
-    selected = [suite for suite in default_suites(settings, repo_root) if not suites or suite.name in suites]
+    known = default_suites(settings, repo_root)
+    unknown = sorted(set(suites or []) - {suite.name for suite in known})
+    if unknown:
+        raise ValueError(f"Suite inconnue: {', '.join(unknown)}. Suites: {', '.join(s.name for s in known)}")
+    selected = [suite for suite in known if suite.name in suites] if suites else [s for s in known if s.default]
     mode = RetrievalMode(retrieval_mode or settings.default_retrieval_mode)
     do_rerank = settings.default_rerank if rerank is None else rerank
     results = [
@@ -459,17 +487,20 @@ def render_markdown(results: list[dict[str, Any]]) -> str:
         if any(judged):
             lines.append("")
             lines.append(f"Juges RAGAS calculés sur les {max(j or 0 for j in judged)} premières questions.")
-        by_type_runs = [s.get("by_type") if s else None for s in per_run]
-        if any(by_type_runs):
-            types = sorted({t for bt in by_type_runs if bt for t in bt})
+        # Per question type, and per split (dev / heldout) for sets that have one.
+        for key, heading in (("by_type", "par type"), ("by_split", "par partie du jeu")):
+            group_runs = [s.get(key) if s else None for s in per_run]
+            if not any(group_runs):
+                continue
+            groups = sorted({g for runs in group_runs if runs for g in runs})
             lines.append("")
-            lines.append("| Recall@5 / MRR par type | " + " | ".join(labels) + " |")
+            lines.append(f"| Recall@5 / MRR {heading} | " + " | ".join(labels) + " |")
             lines.append("|---|" + "---|" * len(labels))
-            for question_type in types:
+            for group in groups:
                 cells = []
-                for bt in by_type_runs:
-                    row = (bt or {}).get(question_type)
+                for runs in group_runs:
+                    row = (runs or {}).get(group)
                     cells.append(f"{row['recall@5']:.3f} / {row['mrr']:.3f} ({int(row['cases'])})" if row else "—")
-                lines.append(f"| {question_type} | " + " | ".join(cells) + " |")
+                lines.append(f"| {group} | " + " | ".join(cells) + " |")
         lines.append("")
     return "\n".join(lines)

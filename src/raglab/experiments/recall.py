@@ -45,6 +45,8 @@ class RecallBenchmarkCase:
     ground_truth_answer: str | None = None
     expected_spans: list[dict[str, Any]] = field(default_factory=list)
     question_type: str | None = None
+    # "dev" (looked at while tuning) or "heldout" (never looked at).
+    split: str | None = None
 
 
 class RecallBenchmarkService:
@@ -137,6 +139,7 @@ class RecallBenchmarkService:
                         ground_truth_answer=payload.get("ground_truth_answer"),
                         expected_spans=payload.get("expected_spans", []),
                         question_type=payload.get("question_type"),
+                        split=payload.get("split"),
                     )
                 )
         if not cases:
@@ -365,6 +368,7 @@ class RecallBenchmarkService:
                         "id": case.case_id,
                         "question": case.question,
                         "question_type": case.question_type,
+                        **({"split": case.split} if case.split else {}),
                         "expected_file_names": case.expected_file_names,
                         "expected_urns": case.expected_urns,
                         "retrieved_chunks": retrieved,
@@ -420,11 +424,13 @@ class RecallBenchmarkService:
                 summary[f"{metric}_judged"] = len(scores)
 
             by_type = _summarise_by_type(details, k_values)
+            by_split = _summarise_by_type(details, k_values, key="split")
             experiment_run.config_json = {
                 **experiment_run.config_json,
                 "total_cases": total_cases,
                 "summary": summary,
                 **({"by_type": by_type} if by_type else {}),
+                **({"by_split": by_split} if by_split else {}),
             }
             self.session.add(experiment_run)
             complete_experiment_run(self.session, experiment_run, ExperimentStatus.COMPLETED)
@@ -449,6 +455,7 @@ class RecallBenchmarkService:
             "judge": judge.label(self.settings) if compute_ragas else None,
             "summary": summary,
             "by_type": by_type,
+            **({"by_split": by_split} if by_split else {}),
             "details": details,
         }
         report_path = self._write_report(f"recall-{benchmark_label}", payload)
@@ -605,12 +612,15 @@ def _rerank_cache_summary(details: list[dict[str, Any]]) -> dict[str, float]:
     return {"rerank_cache_hit_rate": round(hits / candidates, 4)}
 
 
-def _summarise_by_type(details: list[dict[str, Any]], k_values: tuple[int, ...]) -> dict[str, dict[str, float]]:
-    """Recall@k and MRR per question type, for typed datasets only."""
+def _summarise_by_type(
+    details: list[dict[str, Any]], k_values: tuple[int, ...], key: str = "question_type"
+) -> dict[str, dict[str, float]]:
+    """Recall@k and MRR per question type (or per split with key="split"),
+    for datasets that carry it only."""
     groups: dict[str, list[dict[str, Any]]] = {}
     for detail in details:
-        if detail.get("question_type"):
-            groups.setdefault(detail["question_type"], []).append(detail["metrics"])
+        if detail.get(key):
+            groups.setdefault(detail[key], []).append(detail["metrics"])
     summary: dict[str, dict[str, float]] = {}
     for question_type, metrics in sorted(groups.items()):
         count = len(metrics)

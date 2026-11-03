@@ -46,6 +46,12 @@ class GroundTruthCase:
     lexical_overlap: float | None = None
     #: "generated", "reviewed" or "rejected" for LLM-written questions.
     review_status: str | None = None
+    #: "dev" (may be looked at while tuning a method) or "heldout" (never
+    #: looked at), drawn with a seed so a gain can be checked on unseen cases.
+    split: str | None = None
+    #: Facts about the gold passage used to break results down (cited
+    #: article, number of versions of that article...).
+    context: dict | None = None
 
     def to_jsonl_line(self) -> str:
         payload = {key: value for key, value in asdict(self).items() if value is not None}
