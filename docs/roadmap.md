@@ -14,7 +14,7 @@ La roadmap ci-dessous reflète l'ordre réel de livraison. Les phases 0 à 6 son
 
 - Docker Compose pour PostgreSQL + pgvector + Ollama (+ Adminer)
 - configuration centralisée (Pydantic Settings, préfixe `RAGLAB_`)
-- initialisation de la base (`raglab db init`) + migration automatique au démarrage
+- initialisation de la base (`raglab db init`), qui applique aussi les ajustements de schéma connus
 - CLI Typer opérationnelle
 - ingestion `.txt`, `.pdf`, `.docx` avec sidecars JSON pour les metadata
 
@@ -145,10 +145,10 @@ Objectif : passer du laboratoire à un pipeline RAG prêt pour la production, ch
   - LexML texte intégral : 252 lois fédérales (API du Sénat + planalto.gov.br, `raglab lexml fulltext`), manifeste SHA-256
   - 277 questions LexML typées (`paraphrase`, `reference`, `entity`) écrites par Qwen3.6-35B-A3B via llama.cpp, réponse citée et retrouvée dans le texte, filtrées puis relues sur échantillon
   - client compatible OpenAI et `LocalLLMServer` : raglab décharge Ollama, démarre et arrête llama-server tout seul
-- **9.1b — Mesure (à venir)** : timing par étape, cache de l'embedder, `raglab bench all`, `docs/benchmarks/baseline.md`, juge answer_relevancy, juge RAGAS Gemma 4 via llama.cpp (calibré contre qwen2.5), CI GitHub Actions
+- **9.1b — Mesure 🚧 (code livré, mesures en cours)** : timing par étape, cache de l'embedder, `raglab bench all`, `docs/benchmarks/baseline.md`, juge answer_relevancy, juge RAGAS Gemma 4 via llama.cpp (calibré contre qwen2.5), CI GitHub Actions
   - CI GitHub Actions : ruff (lint + format), mypy (mode par défaut, `src/`), pytest, `tsc` + `vite build`, build des deux images Docker
 
-**9.5 — Durcissement API 🚧 (PR ouverte, empilée sur 9.1b)** : voir [api-production.md](api-production.md)
+**9.5 — Durcissement API ✅ (fusionnée dans la branche 9.1b, PR #28 et #29)** : voir [api-production.md](api-production.md)
 
 - `POST /api/query/stream` en SSE : événement `retrieval` (chunks, scores, timings) avant la génération, puis `token` au fil d'Ollama (`stream: true`), puis `done` (QueryResponse complète + `first_token_ms`) ou `error` ; `/api/query` inchangé ; page Chat en streaming avec repli automatique sur `/api/query` ; `raglab query --stream`
 - budgets par étape (`RAGLAB_EMBED_TIMEOUT_SECONDS`, `RAGLAB_RETRIEVAL_TIMEOUT_SECONDS` via `statement_timeout` Postgres, `RAGLAB_GENERATION_TIMEOUT_SECONDS` total en streaming), 504 qui nomme l'étape
