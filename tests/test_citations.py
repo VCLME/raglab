@@ -68,3 +68,44 @@ def test_long_article_chunks_are_ordered_by_retrieval_rank():
     ranked = [_chunk("art3", 1), _chunk("other", 2), _chunk("art1", 3)]
     merged = merge_with_citation(pinned, ranked, top_k=5)
     assert [c.chunk_id for c in merged] == ["art3", "art1", "art2", "art4", "other"]
+
+
+@pytest.mark.parametrize(
+    ("question", "expected"),
+    [
+        (
+            "Que prévoit l'article L. 221-18 du Code de la consommation ?",
+            Citation(None, "L221-18", code="consommation"),
+        ),
+        ("Que dit l'art. R. 212-1 sur l'étiquetage ?", Citation(None, "R212-1")),
+        ("Que dispose l'article 1240 du code civil ?", Citation(None, "1240", code="civil")),
+        (
+            "Selon le code de la consommation, que prévoit l'article L221-18 ?",
+            Citation(None, "L221-18", code="consommation"),
+        ),
+        (
+            "Quelles obligations fixe l'article L. 312-1 du code monétaire et financier ?",
+            Citation(None, "L312-1", code="monetaire_financier"),
+        ),
+    ],
+)
+def test_parse_french_code_citations(question, expected):
+    assert parse_citation(question) == expected
+
+
+def test_french_questions_without_an_identifiable_article_are_left_alone():
+    assert parse_citation("Quel est le délai de rétractation pour un achat en ligne ?") is None
+    # A plain number is an article only when a code is named right after it.
+    assert parse_citation("Que dit l'article 4 de la loi n° 89-462 ?") is None
+    assert parse_citation("Que dit l'article 1240 ?") is None
+
+
+def test_brazilian_citations_still_win_and_portuguese_articles_are_not_french():
+    assert parse_citation("O que dispõe o art. 49 da Lei nº 8.078?") == Citation("8078", "49")
+    assert parse_citation("Qual é a regra do art. 11-A?") is None
+
+
+def test_french_citation_label():
+    assert Citation(None, "L221-18", code="consommation").label() == "art. L. 221-18 — Code de la consommation"
+    assert Citation(None, "R212-1").label() == "art. R. 212-1"
+    assert Citation("8078", "49", 1990).label() == "art. 49 — Lei nº 8078 (1990)"

@@ -84,6 +84,8 @@ class Settings(BaseSettings):
     lexml_documents_dir: Path = Field(default_factory=lambda: Path("data/lexml/documents"))
     lexml_benchmark_dir: Path = Field(default_factory=lambda: Path("data/lexml/benchmark"))
     lexml_fulltext_dir: Path = Field(default_factory=lambda: Path("data/lexml/fulltext"))
+    # French codes with their version history (`raglab legifrance fetch`).
+    legifrance_dir: Path = Field(default_factory=lambda: Path("data/legifrance"))
 
     generation_model: str = "qwen2.5:7b"
     generation_temperature: float = 0.1
@@ -142,6 +144,8 @@ class Settings(BaseSettings):
     api_rate_limit_requests: int = 0
     api_rate_limit_window_seconds: float = 60.0
     ready_timeout_seconds: float = 3.0
+    # Prometheus endpoint `/metrics` and the request-counting middleware.
+    metrics_enabled: bool = True
 
 
 @lru_cache(maxsize=1)

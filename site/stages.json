@@ -51,6 +51,24 @@
     "label": "full-v1",
     "name": "Full pipeline",
     "change": "hybrid search + re-ranking + citation resolver (current default)",
+    "status": "judged"
+  },
+  {
+    "label": "rerank-sorted-c40",
+    "name": "Sorted re-ranking batches",
+    "change": "+ re-ranking pairs sorted by length before batching: same scores, less padding (retrieval only, not judged)",
     "status": "default"
+  },
+  {
+    "label": "rerank-sorted-c20",
+    "name": "Fast re-ranking",
+    "change": "20 re-ranking candidates instead of 40 (latency option, retrieval only)",
+    "status": "option"
+  },
+  {
+    "label": "rerank-sorted-c30",
+    "name": "30 candidates",
+    "change": "30 re-ranking candidates (latency sweep point, retrieval only)",
+    "status": "comparison"
   }
 ]

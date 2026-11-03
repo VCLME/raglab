@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime
 from pathlib import Path
 
 import typer
@@ -18,6 +19,7 @@ from raglab.experiments.recall import RecallBenchmarkService
 from raglab.experiments.service import ExperimentService
 from raglab.indexing.service import IndexingService
 from raglab.ingestion.service import IngestionService
+from raglab.legifrance.collector import CodeCollector
 from raglab.lexml import LexMLLoadService, getDataFromLexML
 from raglab.lexml.fulltext import FullTextCollector
 from raglab.logging_utils import configure_logging
@@ -29,12 +31,14 @@ app = typer.Typer(no_args_is_help=True, help="RAG local oriente experimentation.
 db_app = typer.Typer(no_args_is_help=True, help="Commandes base de donnees.")
 experiment_app = typer.Typer(no_args_is_help=True, help="Commandes d'experimentation.")
 lexml_app = typer.Typer(no_args_is_help=True, help="Collecte LexML Brasil.")
+legifrance_app = typer.Typer(no_args_is_help=True, help="Codes francais (donnees LEGI de Legifrance).")
 ollama_app = typer.Typer(no_args_is_help=True, help="Pilotage du service Ollama.")
 bench_app = typer.Typer(no_args_is_help=True, help="Datasets de benchmark.")
 
 app.add_typer(db_app, name="db")
 app.add_typer(experiment_app, name="experiment")
 app.add_typer(lexml_app, name="lexml")
+app.add_typer(legifrance_app, name="legifrance")
 app.add_typer(ollama_app, name="ollama")
 app.add_typer(bench_app, name="bench")
 
@@ -126,7 +130,11 @@ def bench_all(
     label: str = typer.Option(
         ..., "--label", help="Nom du run (ex. baseline-v0). Resultat: benchmarks/results/<label>.json"
     ),
-    suite: list[str] | None = typer.Option(None, "--suite", help="piaf et/ou lexml_fulltext (defaut: les deux)."),
+    suite: list[str] | None = typer.Option(
+        None,
+        "--suite",
+        help="piaf, lexml_fulltext et/ou legi_consommation (defaut: piaf + lexml_fulltext).",
+    ),
     strategy: ChunkingStrategy = typer.Option(ChunkingStrategy.TRADITIONAL, "--strategy"),
     ragas_limit: int = typer.Option(
         100, "--ragas-limit", min=0, help="Questions generees et notees par suite (0 = retrieval seul)."
@@ -151,10 +159,10 @@ def bench_all(
     citations: bool | None = typer.Option(
         None,
         "--citations/--no-citations",
-        help="Reconnaitre les citations juridiques (art. N da Lei X) : restreindre a la loi citee, epingler l'article. Defaut: RAGLAB_CITATION_RESOLVER.",
+        help="Reconnaitre les citations juridiques (art. N da Lei X, article L. 221-18 du code de la consommation) : restreindre a la loi ou au code cite, epingler l'article. Defaut: RAGLAB_CITATION_RESOLVER.",
     ),
 ) -> None:
-    """Regenerer tous les chiffres de benchmark (PIAF + LexML) et les ecrire dans benchmarks/results/."""
+    """Regenerer les chiffres de benchmark (PIAF + LexML, Code de la consommation sur demande) dans benchmarks/results/."""
     from raglab.benchmarks.suite import render_markdown, run_all
 
     result = run_all(
@@ -417,6 +425,83 @@ def lexml_review_questions(
     typer.echo(json.dumps({"ground_truth": str(ground_truth), "newly_rejected": counts}, indent=2, ensure_ascii=False))
 
 
+@legifrance_app.command("fetch")
+def legifrance_fetch(
+    code: str = typer.Option("consommation", "--code", help="Code a collecter (slug, ex. consommation)."),
+    output_dir: Path | None = typer.Option(
+        None,
+        "--output-dir",
+        help="Dossier de sortie (source.git, corpus/, manifest.json). Defaut: data/legifrance/<code>/",
+    ),
+    commit: str | None = typer.Option(
+        None, "--commit", help="Commit du depot tricoteuses (defaut: celui fige pour le benchmark)."
+    ),
+    versions: str = typer.Option(
+        "all", "--versions", help="all (toutes les versions, defaut) ou current (versions en vigueur seulement)."
+    ),
+) -> None:
+    """Collecter un code avec l'historique de ses versions : un document par version d'article."""
+    result = CodeCollector().collect(code=code, output_dir=output_dir, commit=commit, versions=versions)
+    typer.echo(json.dumps(result, indent=2, ensure_ascii=False))
+
+
+@legifrance_app.command("questions")
+def legifrance_questions(
+    corpus_dir: Path = typer.Option(
+        get_settings().legifrance_dir / "consommation" / "corpus",
+        "--corpus-dir",
+        help="Corpus produit par `raglab legifrance fetch`.",
+    ),
+    output_dir: Path = typer.Option(
+        get_settings().data_dir / "benchmarks" / "legi_consommation",
+        "--output-dir",
+        help="Dossier du dataset (ground_truth.jsonl + metadata.json).",
+    ),
+    count: int = typer.Option(300, "--count", min=1, help="Nombre de questions a garder."),
+    seed: int = typer.Option(
+        42, "--seed", help="Graine du tirage des passages, des types et de la partie dev / heldout."
+    ),
+    backend: str = typer.Option(
+        "llamacpp",
+        "--backend",
+        help="llamacpp (serveur compatible OpenAI, demarre si besoin) ou ollama.",
+    ),
+    model: str | None = typer.Option(None, "--model", help="Modele (defaut: question_model ou generation_model)."),
+    profile: str | None = typer.Option(
+        None, "--profile", help="Profil llama.cpp a demarrer (defaut: question_model_profile)."
+    ),
+) -> None:
+    """Generer un jeu de questions typees (paraphrase / reference / entity) sur un code francais."""
+    from raglab.benchmarks.legi_questions import generate_questions as generate_legi_questions
+
+    result = generate_legi_questions(
+        get_settings(),
+        backend=backend,
+        corpus_dir=corpus_dir,
+        output_dir=output_dir,
+        count=count,
+        seed=seed,
+        model=model,
+        profile=profile,
+    )
+    typer.echo(json.dumps(result, indent=2, ensure_ascii=False))
+
+
+@legifrance_app.command("review-questions")
+def legifrance_review_questions(
+    ground_truth: Path = typer.Option(
+        get_settings().data_dir / "benchmarks" / "legi_consommation" / "ground_truth.jsonl",
+        "--ground-truth",
+        help="Jeu de questions a re-verifier avec les regles actuelles.",
+    ),
+) -> None:
+    """Marquer `rejected` les questions qui echouent aux regles actuelles (sans les supprimer)."""
+    from raglab.benchmarks.legi_questions import review_question_set as review_legi_question_set
+
+    counts = review_legi_question_set(ground_truth)
+    typer.echo(json.dumps({"ground_truth": str(ground_truth), "newly_rejected": counts}, indent=2, ensure_ascii=False))
+
+
 @lexml_app.command("ingest")
 def lexml_ingest(
     corpus: str = typer.Option("lexml", "--corpus", help="Corpus cible pour les donnees LexML."),
@@ -564,7 +649,7 @@ def query(
     citations: bool | None = typer.Option(
         None,
         "--citations/--no-citations",
-        help="Reconnaitre les citations juridiques (art. N da Lei X) : restreindre a la loi citee, epingler l'article. Defaut: RAGLAB_CITATION_RESOLVER.",
+        help="Reconnaitre les citations juridiques (art. N da Lei X, article L. 221-18 du code de la consommation) : restreindre a la loi ou au code cite, epingler l'article. Defaut: RAGLAB_CITATION_RESOLVER.",
     ),
     stream: bool = typer.Option(
         False,
@@ -687,6 +772,45 @@ def experiment_calibrate_judges(
     )
 
 
+@experiment_app.command("drift")
+def experiment_drift(
+    baseline_index_run: str | None = typer.Option(None, "--baseline-index-run", help="Index run de reference."),
+    candidate_index_run: str | None = typer.Option(None, "--candidate-index-run", help="Index run candidat."),
+    baseline_run: str | None = typer.Option(None, "--baseline-run", help="Experiment run de reference."),
+    candidate_run: str | None = typer.Option(None, "--candidate-run", help="Experiment run candidat."),
+    baseline_since: datetime | None = typer.Option(None, "--baseline-since", help="Debut de la fenetre de reference."),
+    baseline_until: datetime | None = typer.Option(None, "--baseline-until", help="Fin (exclue) de la reference."),
+    candidate_since: datetime | None = typer.Option(None, "--candidate-since", help="Debut de la fenetre candidate."),
+    candidate_until: datetime | None = typer.Option(None, "--candidate-until", help="Fin (exclue) du candidat."),
+    alpha: float = typer.Option(0.05, "--alpha", help="Seuil de p-value du test KS."),
+    mean_threshold: float = typer.Option(0.05, "--mean-threshold", help="Baisse de moyenne signalee (RAGAS, MRR)."),
+    min_samples: int = typer.Option(10, "--min-samples", min=2, help="Taille minimale d'echantillon pour le test KS."),
+    output_format: str = typer.Option("markdown", "--format", help="markdown ou json."),
+    output: Path | None = typer.Option(None, "--output", help="Ecrire le rapport ici."),
+    fail_on_drift: bool = typer.Option(False, "--fail-on-drift", help="Code de sortie 1 si une derive est detectee."),
+) -> None:
+    """Comparer deux ensembles de resultats (index runs, experiment runs ou fenetres de dates)."""
+    from raglab.observability.drift import ResultSelection, build_drift_report, render_markdown
+
+    if output_format not in {"markdown", "json"}:
+        raise typer.BadParameter("--format attend markdown ou json.")
+    baseline = ResultSelection(baseline_index_run, baseline_run, baseline_since, baseline_until)
+    candidate = ResultSelection(candidate_index_run, candidate_run, candidate_since, candidate_until)
+    if baseline.is_empty() or candidate.is_empty():
+        raise typer.BadParameter("Precisez au moins un critere (index run, run ou dates) pour chaque ensemble.")
+    with session_scope() as session:
+        report = build_drift_report(
+            session, baseline, candidate, alpha=alpha, mean_threshold=mean_threshold, min_samples=min_samples
+        )
+    text = render_markdown(report) if output_format == "markdown" else json.dumps(report, indent=2, ensure_ascii=False)
+    if output:
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(text, encoding="utf-8")
+    typer.echo(text)
+    if fail_on_drift and report["drift_detected"]:
+        raise typer.Exit(code=1)
+
+
 @experiment_app.command("recall")
 def experiment_recall(
     corpus: str = typer.Option(..., "--corpus", help="Corpus a evaluer."),
@@ -735,7 +859,7 @@ def experiment_recall(
     citations: bool | None = typer.Option(
         None,
         "--citations/--no-citations",
-        help="Reconnaitre les citations juridiques (art. N da Lei X) : restreindre a la loi citee, epingler l'article. Defaut: RAGLAB_CITATION_RESOLVER.",
+        help="Reconnaitre les citations juridiques (art. N da Lei X, article L. 221-18 du code de la consommation) : restreindre a la loi ou au code cite, epingler l'article. Defaut: RAGLAB_CITATION_RESOLVER.",
     ),
 ) -> None:
     with session_scope() as session:

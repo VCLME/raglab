@@ -137,6 +137,17 @@ La roadmap ci-dessous reflète l'ordre réel de livraison. Les phases 0 à 6 son
 
 Objectif : passer du laboratoire à un pipeline RAG prêt pour la production, chaque brique justifiée par un gain mesuré (Recall@5/10, MRR, latence p50/p95, juges RAGAS) sur PIAF et LexML. Une PR par sous-phase, avec le tableau avant / après. Une brique qui n'améliore rien reste derrière un drapeau.
 
+**Fil rouge (validé le 3 novembre 2026, voir [audit-2026-11.md](audit-2026-11.md))** : le RAG classique échoue sur les documents structurés, référencés et versionnés. raglab montre où, le mesure et le corrige, entièrement en local. Quatre modes d'échec, chacun avec son jeu de questions figé, sa mesure avant / après et sa brique :
+
+| Mode d'échec | Brique | État |
+|---|---|---|
+| Identifiants (« art. 49 da Lei 8.078 ») | résolveur de citations (9.3b) | ✅ 9 % → 72 % |
+| Renvois (la réponse est dans l'article cité) | graphe des citations dans Neo4j (9.9) | à mesurer |
+| Versions (article abrogé ou réécrit cité comme en vigueur) | statut de version par chunk (9.10) | à mesurer |
+| Hors périmètre | routeur et abstention (9.4) | mesuré sur l'ancien pipeline, à refaire |
+
+Toute nouvelle brique doit servir l'un de ces modes d'échec ou l'expérience de démonstration (mode Démo : comparer RAG classique et raglab sur des questions pièges).
+
 **9.1 — Baseline reproductible 🚧**
 
 - **9.1a — Protocole ✅** : voir [benchmarks/protocole.md](benchmarks/protocole.md) et les jeux figés dans [`benchmarks/`](../benchmarks/)
@@ -186,4 +197,29 @@ Objectif : passer du laboratoire à un pipeline RAG prêt pour la production, ch
 
 - **9.7 — Portes de qualité (outillage en place)** : `raglab gate` et seuils versionnés dans `benchmarks/thresholds.json` (à fixer depuis `baseline-v1`), workflow hebdomadaire de retrieval sur CPU, voir [portes-qualite.md](portes-qualite.md)
 
-**À venir** : 9.4 compréhension de la requête et abstention · 9.6 observabilité (Prometheus, Grafana, dérive) · 9.7 portes de qualité · 9.8 vitrine
+**9.6 — Observabilité ✅ (PR #34)** : voir [observabilite.md](observabilite.md)
+
+**9.9 — Graphe des citations 📋 (planifié)** : mode d'échec « renvois »
+
+- 9.9a : graphe structuré dans Neo4j, construit à l'indexation à partir des chunks PostgreSQL. Socle commun `Document → Section → Chunk` (`PART_OF`, `NEXT`) et profil « lois » : `Law`, `Article`, `CITES`, `AMENDS`, `REVOKES`, extraits par règles (mêmes motifs que le résolveur de citations), sans LLM. Corpus LexML : 4 055 articles, 1 420 renvoient à un autre article (3 015 renvois), 115 liens entre lois. Le store Neo4j à entités extraites par LLM (phase 8) passe derrière un drapeau Expert.
+- 9.9b : troisième branche de recherche en parallèle de la recherche dense et de BM25, fusion RRF à trois sources, puis re-ranking ; un passage trouvé par renvoi reste groupé avec celui qui le cite. Sans Neo4j, la branche est sautée et la réponse le dit. Jeu figé d'environ 100 questions « à renvoi » (une partie jamais regardée pendant la mise au point), comparaison appariée sans régression sur PIAF et LexML.
+- 9.9c (plus tard) : profils markdown / documentation et articles de recherche (`Section`, `Topic`, `Source`, `Author`, `Reference`), avec un corpus de test dédié.
+
+**9.10 — Versions des textes 📋 (planifié)** : mode d'échec « versions »
+
+- corpus LexML : 70 lois sur 252 ont des articles réécrits (863 « Redação dada pela »), 79 ont des articles abrogés (1 084 « (Revogado) »), 1 239 articles insérés
+- jeu figé d'environ 100 questions pièges, mesure RAG classique contre pipeline complet, puis statut de version par chunk (en vigueur, abrogé, réécrit par), filtre et consigne au modèle, remesure
+
+**Corpus français 🚧 (bloc C1 de l'audit)** : voir [corpus-legi.md](corpus-legi.md)
+
+- `raglab legifrance fetch --code consommation` : Code de la consommation avec tout son historique (données LEGI de la DILA via le dépôt git tricoteuses du code, figé sur un commit), un document par version d'article, état, dates, textes modificatifs et renvois dans les métadonnées ; 5 998 versions de 3 391 articles (2 106 en vigueur), 3 593 renvois internes, 1 352 articles réécrits, 321 numéros réutilisés par la recodification de 2016
+- résolveur de citations, profil français (« article L. 221-18 du code de la consommation », « l'article 1240 du code civil »), suite `legi_consommation` (sur demande), générateur de questions avec partie `dev` / `heldout` ; questions et mesures à lancer
+
+**Mode Démo 📋 (planifié)** : questions pièges pré-remplies (une par mode d'échec), bouton « Comparer : RAG classique / raglab » qui affiche les deux réponses et leurs passages côte à côte, description de chaque corpus dans le sélecteur, pages Expert secondaires rangées dans une section « Outils ».
+
+- `GET /metrics` (Prometheus) : latence par étape (embed, retrieval, citation, dense, lexical, fusion, rerank, generation : chaque clé de `timings_ms`), tokens/s, score top-1, requêtes par route et statut, compteurs de cache (`embedder`, `reranker` depuis `rerank_stats`), re-ranking sans GPU (`raglab_rerank_notices_total`) et abstention (9.4) ; labels à faible cardinalité (gabarits de route)
+- profil Compose `obs` : Prometheus v3.5.0 et Grafana 12.1.1, ports sur 127.0.0.1, source de données et tableau de bord versionnés, lecture anonyme
+- `raglab experiment drift` et `POST /api/experiments/drift` : test KS sur les distributions de scores et de rangs, écarts des moyennes RAGAS / MRR / recall entre deux index runs, experiment runs ou fenêtres de dates ; Markdown ou JSON, `--fail-on-drift` ; scores désormais stockés dans `metrics_json.retrieved_scores`
+- coût mesuré sans GPU (`scripts/bench_observability.py`) : +105 µs sur une requête simulée de 60 ms (+0,17 %, objectif < 1 %) ; capture Grafana sur trafic réel dans [observabilite.md](observabilite.md#profil-compose-obs)
+
+**À venir** : 9.4 compréhension de la requête et abstention · 9.7 portes de qualité · 9.8 vitrine

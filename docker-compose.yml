@@ -134,6 +134,46 @@ services:
     profiles:
       - app
 
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    container_name: raglab-prometheus
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=15d
+    volumes:
+      - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "127.0.0.1:9090:9090"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    profiles:
+      - obs
+
+  grafana:
+    image: grafana/grafana:12.1.1
+    container_name: raglab-grafana
+    restart: unless-stopped
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SECURITY_ADMIN_PASSWORD: ${RAGLAB_GRAFANA_ADMIN_PASSWORD:-raglab}
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/raglab.json
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      - prometheus
+    profiles:
+      - obs
+
 volumes:
   postgres_data:
     name: raglab_postgres_data
@@ -141,3 +181,7 @@ volumes:
     name: raglab_ollama_data
   neo4j_data:
     name: raglab_neo4j_data
+  prometheus_data:
+    name: raglab_prometheus_data
+  grafana_data:
+    name: raglab_grafana_data

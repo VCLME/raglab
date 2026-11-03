@@ -1,4 +1,4 @@
-"""ASGI middlewares: correlation id, access log, API key and rate limit.
+"""ASGI middlewares: metrics, correlation id, access log, API key and rate limit.
 
 Written as plain ASGI callables rather than `BaseHTTPMiddleware` so that
 streamed (SSE) responses pass through untouched and the per-request cost stays
@@ -20,6 +20,7 @@ from collections.abc import Awaitable, Callable, MutableMapping
 from typing import Any
 
 from raglab.logging_utils import log_event, request_id_var
+from raglab.observability.metrics import UNMATCHED_ROUTE, record_http_request
 
 LOGGER = logging.getLogger("raglab.api.access")
 
@@ -32,7 +33,7 @@ ASGIApp = Callable[[Scope, Receive, Send], Awaitable[None]]
 REQUEST_ID_HEADER = "X-Request-ID"
 API_KEY_HEADER = "X-API-Key"
 # Probes and API docs stay reachable without a key and are never throttled.
-PUBLIC_PATHS = frozenset({"/health", "/ready", "/docs", "/redoc", "/openapi.json", "/docs/oauth2-redirect"})
+PUBLIC_PATHS = frozenset({"/health", "/ready", "/metrics", "/docs", "/redoc", "/openapi.json", "/docs/oauth2-redirect"})
 # A caller-supplied id is reused only if it is short and log-safe.
 _VALID_REQUEST_ID = re.compile(r"^[A-Za-z0-9._:\-]{1,128}$")
 
@@ -99,6 +100,46 @@ class RequestIdMiddleware:
                 duration_ms=round((time.perf_counter() - started) * 1000, 3),
             )
             request_id_var.reset(token)
+
+
+class MetricsMiddleware:
+    """Count requests and time them per route template.
+
+    The route comes from `scope["route"]`, which FastAPI sets once a route
+    matched, so the label is `/api/experiments/{run_id}` and not one series
+    per id. Requests no route matched (404, or answered by an outer
+    middleware such as the 401/429 checks) are labelled `unmatched`.
+    Scrapes of `/metrics` itself are not counted. Placed outermost, the
+    duration covers the whole stack and the full body, streamed or not.
+    """
+
+    def __init__(self, app: ASGIApp, *, skip_paths: frozenset[str] = frozenset({"/metrics"})):
+        self.app = app
+        self.skip_paths = skip_paths
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http" or scope.get("path") in self.skip_paths:
+            await self.app(scope, receive, send)
+            return
+
+        started = time.perf_counter()
+        status_holder = {"status": 500}
+
+        async def send_with_status(message: Message) -> None:
+            if message["type"] == "http.response.start":
+                status_holder["status"] = message["status"]
+            await send(message)
+
+        try:
+            await self.app(scope, receive, send_with_status)
+        finally:
+            route = getattr(scope.get("route"), "path", None) or UNMATCHED_ROUTE
+            record_http_request(
+                route,
+                scope.get("method", ""),
+                status_holder["status"],
+                time.perf_counter() - started,
+            )
 
 
 class SlidingWindowRateLimiter:
