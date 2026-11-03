@@ -102,7 +102,7 @@ def test_traps_are_mined_from_the_version_history(tmp_path):
 
     as_of = {c.expected.legi_id: c for c in mined["as_of"]}
     old = as_of["LEGIARTI05"]
-    assert (old.as_of, old.as_of_phrase) == (date(2021, 12, 31), "avant 2022")
+    assert (old.as_of, old.as_of_phrase) == (date(2021, 12, 31), "en 2021")
     assert old.traps[0].legi_id == "LEGIARTI06"
 
 
@@ -119,7 +119,7 @@ def _candidate(tmp_path: Path, kind: str, legi_id: str):
 def test_a_rewritten_trap_needs_both_quotes_in_their_version(tmp_path):
     candidate = _candidate(tmp_path, "rewritten", "LEGIARTI06")
     good = {
-        "question": "De combien le délai de rétractation est-il prolongé quand le consommateur n'a pas été informé ?",
+        "question": "Mon client n'a jamais été prévenu qu'il pouvait annuler son achat en ligne : il a trois mois de plus, c'est bien ça ?",
         "answer": "douze mois",
         "outdated_answer": "trois mois",
     }
@@ -127,9 +127,9 @@ def test_a_rewritten_trap_needs_both_quotes_in_their_version(tmp_path):
     assert rejection_reason({**good, "outdated_answer": "six mois"}, candidate) == "outdated_answer_not_found"
     same = {**good, "answer": "droit de rétractation"}
     assert rejection_reason(same, candidate) == "answer_in_trap"
-    cited = {**good, "question": "Que prévoit l'article L. 221-20 sur le délai de rétractation ?"}
+    cited = {**good, "question": "Selon l'article L. 221-20, mon client a-t-il trois mois de plus pour annuler ?"}
     assert rejection_reason(cited, candidate) == "leaks_reference"
-    dated = {**good, "question": "Avant 2016, de combien le délai de rétractation était-il prolongé ?"}
+    dated = {**good, "question": "En 2015, mon client non prévenu avait-il trois mois de plus pour annuler ?"}
     assert rejection_reason(dated, candidate) == "unexpected_date"
     assert rejection_reason(None, candidate) == "invalid_json"
 
@@ -137,25 +137,28 @@ def test_a_rewritten_trap_needs_both_quotes_in_their_version(tmp_path):
 def test_an_as_of_trap_must_ask_about_a_date_the_old_version_covers(tmp_path):
     candidate = _candidate(tmp_path, "as_of", "LEGIARTI05")
     good = {
-        "question": "Avant 2022, de combien le délai de rétractation était-il prolongé faute d'information ?",
+        "question": "En 2021, mon client n'avait pas été prévenu qu'il pouvait annuler : de combien de temps en plus disposait-il ?",
         "answer": "trois mois",
         "outdated_answer": "douze mois",
     }
     assert rejection_reason(good, candidate) is None
-    undated = {**good, "question": "De combien le délai de rétractation est-il prolongé faute d'information ?"}
+    undated = {
+        **good,
+        "question": "Mon client n'a pas été prévenu qu'il pouvait annuler : de combien de temps en plus dispose-t-il ?",
+    }
     assert rejection_reason(undated, candidate) == "date_missing"
-    too_late = {**good, "question": "En vigueur en 2023, de combien le délai de rétractation était-il prolongé ?"}
+    too_late = {**good, "question": "En 2023, mon client non prévenu avait combien de temps en plus pour annuler ?"}
     assert rejection_reason(too_late, candidate) == "date_missing"
 
 
 def test_a_reused_number_trap_cites_the_number(tmp_path):
     candidate = _candidate(tmp_path, "reused_number", "LEGIARTI03")
     good = {
-        "question": "Que prévoit l'article L. 121-21 du code de la consommation sur les frais de recouvrement ?",
+        "question": "Un recouvreur me réclame des frais ; que dit l'article L. 121-21 du code de la consommation ?",
         "answer": "des frais de recouvrement",
     }
     assert rejection_reason(good, candidate) is None
-    uncited = {**good, "question": "Quels frais un professionnel ne peut-il pas percevoir d'un consommateur ?"}
+    uncited = {**good, "question": "Un recouvreur peut-il me réclamer des frais ?"}
     assert rejection_reason(uncited, candidate) == "reference_missing"
 
 
@@ -166,24 +169,24 @@ class _ScriptedChat:
         prompt = messages[0]["content"]
         if "RÉFÉRENCE" in prompt:
             payload = {
-                "question": "Que prévoit l'article L. 121-21 du code de la consommation sur les frais de recouvrement ?",
+                "question": "Un recouvreur me réclame des frais ; que dit l'article L. 121-21 du code de la consommation ?",
                 "answer": "des frais de recouvrement",
             }
-        elif "DATE : avant 2022" in prompt:
+        elif "DATE : en 2021" in prompt:
             payload = {
-                "question": "Avant 2022, de combien le délai de rétractation était-il prolongé faute d'information ?",
+                "question": "En 2021, mon client n'avait pas été prévenu qu'il pouvait annuler : de combien de temps en plus disposait-il ?",
                 "answer": "trois mois",
                 "outdated_answer": "douze mois",
             }
         elif "ANCIENNE RÉDACTION" in prompt and "trois mois" in prompt.split("ANCIENNE RÉDACTION")[1]:
             payload = {
-                "question": "De combien le délai de rétractation est-il prolongé quand le consommateur n'a pas été informé ?",
+                "question": "Mon client n'a jamais été prévenu qu'il pouvait annuler son achat en ligne : il a trois mois de plus, c'est bien ça ?",
                 "answer": "douze mois",
                 "outdated_answer": "trois mois",
             }
         else:
             payload = {
-                "question": "Le consommateur qui se rétracte d'un contrat conclu à distance doit-il se justifier ?",
+                "question": "J'ai changé d'avis sur un achat fait sur internet : dois-je expliquer pourquoi ?",
                 "answer": "sans avoir à motiver sa décision",
             }
         return {"answer": json.dumps(payload, ensure_ascii=False)}
@@ -217,3 +220,20 @@ def test_generated_cases_name_the_trap_and_the_date(tmp_path):
     assert {case["split"] for case in cases} <= {"dev", "heldout"}
     metadata = json.loads((tmp_path / "out" / "metadata.json").read_text(encoding="utf-8"))
     assert metadata["generator_model"] == "qwen" and metadata["seed"] == 42
+
+
+def test_a_situation_must_not_copy_the_article_or_name_the_code(tmp_path):
+    candidate = _candidate(tmp_path, "rewritten", "LEGIARTI06")
+    good = {
+        "question": "Mon client n'a jamais été prévenu qu'il pouvait annuler son achat en ligne : il a trois mois de plus ?",
+        "answer": "douze mois",
+        "outdated_answer": "trois mois",
+    }
+    assert rejection_reason(good, candidate) is None
+    copied = {
+        **good,
+        "question": "Quand le délai de rétractation est prolongé de combien à compter de l'expiration du délai initial ?",
+    }
+    assert rejection_reason(copied, candidate) == "copies_wording"
+    named = {**good, "question": "Selon le code de la consommation, mon client non prévenu a-t-il trois mois de plus ?"}
+    assert rejection_reason(named, candidate) == "names_code"

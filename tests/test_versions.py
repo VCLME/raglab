@@ -90,14 +90,21 @@ def test_versions_option_values():
         ("Dans sa version antérieure à 2016, que disait l'article ?", date(2015, 12, 31)),
         ("Avant la réforme de 2016, quel était le délai ?", date(2015, 12, 31)),
         ("À la date du 15/03/2015, que disait l'article ?", date(2015, 3, 15)),
+        # A situation dated the way a user says it.
+        ("En 2015, mon client a signé un contrat à distance : avait-il sept jours ?", date(2015, 12, 31)),
+        ("J'ai acheté un canapé en mars 2015, pouvais-je me rétracter ?", date(2015, 3, 31)),
+        ("Contrat signé le 3 mars 2015 : quel délai ?", date(2015, 3, 3)),
+        ("Avant mars 2015, quel était le délai ?", date(2015, 2, 28)),
         # pt
         ("Antes de 2016, qual era o prazo?", date(2015, 12, 31)),
         ("O que dizia o art. 49 da Lei nº 8.078, de 1990, na redação de 2010?", date(2010, 12, 31)),
         ("Qual regra era vigente em 1º de janeiro de 2012?", date(2012, 1, 1)),
+        ("Comprei um sofá em março de 2015, podia desistir?", date(2015, 3, 31)),
         # en
         ("What did article L. 121-21 say as of 2015-03-01?", date(2015, 3, 1)),
         ("What was the rule before 2016?", date(2015, 12, 31)),
         ("What did it say as it stood on January 5, 2015?", date(2015, 1, 5)),
+        ("I bought a sofa online in March 2015, could I cancel?", date(2015, 3, 31)),
     ],
 )
 def test_question_dates_in_three_languages(question, expected):
@@ -114,6 +121,8 @@ def test_question_dates_in_three_languages(question, expected):
         "Quel délai prévoit la loi n° 2014-344 du 17 mars 2014 ?",
         "O que dispõe o art. 49 da Lei nº 8.078, de 1990?",
         "Que prévoit l'ordonnance n° 2016-301 ?",
+        # A recent situation, no date: today's law.
+        "Mon client a acheté un canapé en ligne il y a 10 jours, peut-il encore se rétracter ?",
         # A future date is not a past version.
         "Quelle règle sera en vigueur en 2030 ?",
     ],

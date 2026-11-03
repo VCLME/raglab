@@ -39,6 +39,7 @@ applies them to a search.
 
 from __future__ import annotations
 
+import calendar
 import re
 import unicodedata
 from dataclasses import dataclass
@@ -112,12 +113,14 @@ _MONTHS = {
 }  # fmt: skip
 _MONTH_NAMES = "|".join(sorted(_MONTHS, key=len, reverse=True))
 # A date: ISO, dd/mm/yyyy, "1er janvier 2019", "1º de janeiro de 2019",
-# "January 1, 2019", "1 January 2019", or a bare year.
+# "January 1, 2019", "1 January 2019", a month ("mars 2015", "março de
+# 2015"), or a bare year.
 _DATE = (
     r"(?:(?P<iso>\d{4}-\d{2}-\d{2})"
     r"|(?P<dmy>\d{1,2}[/.]\d{1,2}[/.]\d{4})"
     rf"|(?P<day>\d{{1,2}})(?:er|º|°|o)?\s+(?:de\s+)?(?P<month>{_MONTH_NAMES})\s+(?:de\s+)?(?P<year1>\d{{4}})"
     rf"|(?P<month2>{_MONTH_NAMES})\s+(?P<day2>\d{{1,2}}),?\s+(?P<year2>\d{{4}})"
+    rf"|(?P<month3>{_MONTH_NAMES})\s+(?:de\s+)?(?P<year3>\d{{4}})"
     r"|(?P<year>(?:19|20)\d{2})(?![\d/.-]))"
 )
 # Cue words that make a date a reference date rather than a text's date
@@ -144,6 +147,13 @@ _AT_CUES = (
     r"(?:in\s+force|applicable)\s+(?:in|on)",
     r"as\s+it\s+stood\s+(?:in|on)",
     r"(?:version|wording)\s+(?:of|from|in\s+force\s+in)",
+    # How a user dates a situation: "en 2015, j'ai signé...", "acheté en
+    # mars 2015", "signé le 3 mars 2015", "em 2015", "in March 2015".
+    r"(?:sign[ée]e?s?|achet[ée]e?s?|conclue?s?|souscrite?s?|command[ée]e?s?|pass[ée]e?s?)\s+le",
+    r"en",
+    r"em",
+    r"in",
+    r"on",
 )
 _CUE_RE = re.compile(
     rf"\b(?:(?P<before>{'|'.join(_BEFORE_CUES)})|(?P<at>{'|'.join(_AT_CUES)}))\s+(?:(?:le|o|the)\s+)?{_DATE}",
@@ -163,21 +173,25 @@ class QuestionDate:
     phrase: str
 
 
-def _match_date(match: re.Match[str]) -> tuple[date, bool] | None:
-    """(date, year only) of a `_DATE` match."""
+def _match_date(match: re.Match[str]) -> tuple[date, str] | None:
+    """(date, precision: "day", "month" or "year") of a `_DATE` match; a
+    month or a year is given by its last day."""
     groups = match.groupdict()
     try:
         if groups.get("iso"):
-            return date.fromisoformat(groups["iso"]), False
+            return date.fromisoformat(groups["iso"]), "day"
         if groups.get("dmy"):
             day, month, year = (int(part) for part in re.split(r"[/.]", groups["dmy"]))
-            return date(year, month, day), False
+            return date(year, month, day), "day"
         if groups.get("month"):
-            return date(int(groups["year1"]), _MONTHS[_fold(groups["month"])], int(groups["day"])), False
+            return date(int(groups["year1"]), _MONTHS[_fold(groups["month"])], int(groups["day"])), "day"
         if groups.get("month2"):
-            return date(int(groups["year2"]), _MONTHS[_fold(groups["month2"])], int(groups["day2"])), False
+            return date(int(groups["year2"]), _MONTHS[_fold(groups["month2"])], int(groups["day2"])), "day"
+        if groups.get("month3"):
+            year, month = int(groups["year3"]), _MONTHS[_fold(groups["month3"])]
+            return date(year, month, calendar.monthrange(year, month)[1]), "month"
         if groups.get("year"):
-            return date(int(groups["year"]), 12, 31), True
+            return date(int(groups["year"]), 12, 31), "year"
     except (ValueError, KeyError):
         return None
     return None
@@ -190,8 +204,11 @@ def parse_question_date(question: str, *, today: date | None = None) -> Question
     "dans sa rédaction de 2014", "en vigueur en 2014", "na redação de 2014",
     "as of 2014" -> 2014-12-31 (a year means its last day: the latest
     wording of that year); "au 1er janvier 2019", "as of 2019-01-01" -> that
-    day. Dates of texts ("loi n° 2014-344 du 17 mars 2014", "Lei nº 8.078,
-    de 1990") are not cues; a date after `today` is ignored.
+    day. A situation is dated the way a user says it: "en 2015, j'ai
+    signé..." -> 2015-12-31, "acheté en mars 2015" -> 2015-03-31, "signé le 3
+    mars 2015", "em 2015", "in March 2015". Dates of texts ("loi n° 2014-344
+    du 17 mars 2014", "Lei nº 8.078, de 1990") are not cues; a date after
+    `today` is ignored.
     """
     today = today or date.today()
     folded = _fold(question)
@@ -199,9 +216,15 @@ def parse_question_date(question: str, *, today: date | None = None) -> Question
         parsed = _match_date(match)
         if parsed is None:
             continue
-        day, year_only = parsed
+        day, precision = parsed
         if match.group("before"):
-            day = date(day.year - 1, 12, 31) if year_only else day - timedelta(days=1)
+            # The day before the period starts.
+            if precision == "year":
+                day = date(day.year - 1, 12, 31)
+            elif precision == "month":
+                day = day.replace(day=1) - timedelta(days=1)
+            else:
+                day = day - timedelta(days=1)
         if day > today:
             continue
         return QuestionDate(on=day, phrase=question[match.start() : match.end()])

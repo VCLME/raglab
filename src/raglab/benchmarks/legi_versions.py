@@ -21,6 +21,12 @@ can be found without a model. Four kinds, each a `question_type`:
   juin 2014"): the expected version is the one in force on that date, the
   current wording is the trap. It checks that the date is read and honoured.
 
+Questions are situations, as a consumer, a company or a lawyer asks them
+(« Mon client a sept jours pour se rétracter, c'est bien ça ? »): no article
+number (except for `reused_number`, where the user cites the number they
+were given), no code name, no wording copied from the article, a past date
+said the way a user dates a situation ("en 2021", "en mai 2014").
+
 Pairs are mined by rules (version history, line diff, word overlap); a
 local model (Qwen3.6 via llama.cpp, `LocalLLMServer`) writes one question
 per pair with the answer quoted from the expected version and, for
@@ -55,6 +61,7 @@ from raglab.benchmarks.lexml_questions import _parse, lexical_overlap
 from raglab.benchmarks.squad_style import locate_span
 from raglab.config import Settings, get_settings
 from raglab.domain.versions import _fr_date, parse_question_date, valid_at
+from raglab.legifrance.codes import find_code_mentions
 from raglab.legifrance.collector import IN_FORCE_STATES
 from raglab.legifrance.references import article_label
 from raglab.llm.openai_compat import OpenAICompatibleChat
@@ -271,15 +278,10 @@ def mine_as_of(by_number: dict[tuple[str, str], list[Version]], *, today: date |
             pairs = changed_lines(old, current)
             if not pairs:
                 continue
-            end_day = date.fromisoformat(str(old.date_fin))
-            year_end = date(end_day.year - 1, 12, 31)
-            metadata = {"etat": old.etat, "date_debut": old.date_debut, "date_fin": old.date_fin}
-            if valid_at(metadata, year_end):
-                phrase, on = f"avant {end_day.year}", year_end
-            else:
-                phrase, on = f"avant le {_fr_date(end_day.isoformat())}", end_day - timedelta(days=1)
-            if not valid_at(metadata, on) or on > today:
+            dated = situation_date(old)
+            if dated is None or dated[1] > today:
                 continue
+            phrase, on = dated
             index, current_line = pairs[0]
             start, end = _expand(old, index, index)
             others = [row for row in rows if row is not old and not valid_at(_meta(row), on)]
@@ -289,6 +291,33 @@ def mine_as_of(by_number: dict[tuple[str, str], list[Version]], *, today: date |
             )
             break
     return candidates
+
+
+_MONTH_NAMES = (
+    "janvier", "février", "mars", "avril", "mai", "juin",
+    "juillet", "août", "septembre", "octobre", "novembre", "décembre",
+)  # fmt: skip
+
+
+def situation_date(old: Version) -> tuple[str, date] | None:
+    """How a user would date a situation the old version covers, and the
+    date `parse_question_date` reads from it: "en 2021" (the old version
+    still applied on 31 December), else "en mai 2014" (the month before it
+    ended), else "avant le 14 juin 2014"."""
+    if not old.date_fin:
+        return None
+    end_day = date.fromisoformat(str(old.date_fin))
+    metadata = _meta(old)
+    year_end = date(end_day.year - 1, 12, 31)
+    if valid_at(metadata, year_end):
+        return f"en {year_end.year}", year_end
+    month_end = end_day.replace(day=1) - timedelta(days=1)
+    if valid_at(metadata, month_end):
+        return f"en {_MONTH_NAMES[month_end.month - 1]} {month_end.year}", month_end
+    day_before = end_day - timedelta(days=1)
+    if valid_at(metadata, day_before):
+        return f"avant le {_fr_date(end_day.isoformat())}", day_before
+    return None
 
 
 def _meta(version: Version) -> dict[str, Any]:
@@ -386,11 +415,19 @@ correspondante, et une CONSIGNE. Écris UNE question en français dont la \
 réponse se trouve dans l'EXTRAIT, et la RÉPONSE courte copiée mot pour mot \
 de l'EXTRAIT.
 
+La question est celle d'un vrai utilisateur : un consommateur, une \
+entreprise ou un avocat face à une situation concrète, en français naturel \
+(ex. : « Mon client a acheté un canapé en ligne il y a dix jours, peut-il \
+encore se rétracter ? », « Un vendeur peut-il me facturer des frais de \
+recouvrement ? »). Elle peut affirmer l'ancienne règle comme une croyance à \
+vérifier (« Mon client a sept jours pour se rétracter, c'est bien ça ? »).
+
 Règles :
 * La question doit avoir un sens seule, pour qui n'a pas lu l'extrait : \
-précise le sujet (ex. : « pour un contrat conclu à distance ») pour qu'une \
-seule réponse existe dans tout le code. N'écris jamais « cet article », \
-« cet extrait », « le présent code », « mentionné », « selon le texte ».
+la situation précise le sujet pour qu'une seule réponse existe dans tout le \
+code. N'écris jamais « cet article », « cet extrait », « le présent code », \
+« mentionné », « selon le texte ».
+* Ne recopie pas la formulation de l'extrait : dis la situation avec tes mots.
 * La réponse est une copie exacte d'un morceau de l'EXTRAIT (2 à 25 mots).
 * Quand une ANCIENNE RÉDACTION est fournie, la question porte sur ce qui a \
 changé entre les deux, et tu donnes aussi la RÉPONSE PÉRIMÉE : le morceau \
@@ -401,20 +438,32 @@ Réponds uniquement en JSON : {"question": "...", "answer": "...", "outdated_ans
 
 _INSTRUCTIONS = {
     "rewritten": (
-        "La question porte sur la règle actuelle, sans citer de numéro d'article ni de date ; "
-        "la réponse diffère de l'ancienne rédaction."
+        "Une situation d'aujourd'hui, sans numéro d'article, sans nom de code ni date ; la réponse "
+        "diffère de l'ancienne rédaction, que la question peut avancer comme une croyance à vérifier."
     ),
     "reused_number": (
-        "La question cite l'article indiqué en RÉFÉRENCE, comme le ferait un juriste "
-        "(ex. : « Que prévoit l'article L. 121-21 du code de la consommation sur ... ? »)."
+        "Une situation dans laquelle l'utilisateur cite l'article indiqué en RÉFÉRENCE, comme on le "
+        "lui a cité (ex. : « Un recouvreur me réclame des frais ; que dit l'article L. 121-21 du code "
+        "de la consommation ? »)."
     ),
-    "moved": "La question reformule la règle sans citer de numéro d'article ni de texte.",
+    "moved": "Une situation, sans numéro d'article ni nom de code.",
     "as_of": (
-        "La question porte sur la règle telle qu'elle était dans le passé et contient mot pour mot "
-        "l'expression de DATE fournie (ex. : « {phrase}, quel délai ... ? ») ; elle ne cite aucun "
-        "numéro d'article ; la réponse diffère de la rédaction actuelle (fournie comme ANCIENNE RÉDACTION)."
+        "Une situation passée, datée comme le dirait l'utilisateur avec mot pour mot l'expression de "
+        "DATE fournie (ex. : « J'ai signé {phrase} un contrat ... : de combien de temps disposais-je ? ») ; "
+        "sans numéro d'article ni nom de code ; la réponse diffère de la rédaction actuelle (fournie comme "
+        "ANCIENNE RÉDACTION)."
     ),
 }
+# A question that copies this many consecutive words of the article is a
+# Ctrl+F, not a user's question.
+MAX_COPIED_WORDS = 6
+
+
+def copied_wording(question: str, *texts: str, size: int = MAX_COPIED_WORDS) -> bool:
+    """The question repeats `size` consecutive words of one of the texts."""
+    words = [word.lower() for word in _WORD_RE.findall(question)]
+    grams = {tuple(words[index : index + size]) for index in range(len(words) - size + 1)}
+    return any(grams & _shingles(text, size) for text in texts) if grams else False
 
 
 def _normalise(text: str) -> str:
@@ -443,12 +492,16 @@ def rejection_reason(generated: dict[str, str] | None, candidate: TrapCandidate)
             return "outdated_answer_not_found"
         if outdated in _normalise(candidate.expected.body):
             return "outdated_answer_in_expected"
+    if copied_wording(question, candidate.expected.body, *(trap.body for trap in candidate.traps)):
+        return "copies_wording"
     if candidate.kind == "reused_number":
         passage = _ReferencePassage(candidate.expected)
         if not cites_reference(question, passage):  # type: ignore[arg-type]
             return "reference_missing"
     elif parse_citation(question) is not None or re.search(r"\barticles?\s+(?:[LRDA]\.?\s*)?\d", question, re.I):
         return "leaks_reference"
+    elif find_code_mentions(question):
+        return "names_code"
     asked = parse_question_date(question)
     if candidate.kind == "as_of":
         if asked is None or not valid_at(_meta(candidate.expected), asked.on):

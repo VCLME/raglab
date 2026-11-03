@@ -41,8 +41,9 @@ Par défaut, aujourd'hui. `src/raglab/domain/versions.py` (`parse_question_date`
 | « Quelle règle était **en vigueur au 1er janvier 2015** ? » | 1er janvier 2015 |
 | « **Antes de 2016**, qual era o prazo? », « … **na redação de 2010** ? » | 31 décembre 2015, 31 décembre 2010 |
 | « What did it say **as of 2015-03-01**? », « … **before 2016** ? » | 1er mars 2015, 31 décembre 2015 |
+| « **En 2015**, mon client a signé un contrat à distance : avait-il sept jours ? », « J'ai acheté un canapé **en mars 2015** … », « Contrat **signé le 3 mars 2015** », « **em março de 2015** », « **in March 2015** » | 31 décembre 2015, 31 mars 2015, 3 mars 2015 (un mois vaut son dernier jour) |
 
-Seule une date précédée d'un mot qui en fait une date de référence compte (« avant », « dans sa rédaction de », « en vigueur au », « antes de », « na redação de », « as of »…) : « la loi n° 2014-344 du 17 mars 2014 » ou « Lei nº 8.078, de 1990 » **nomment un texte**, elles ne demandent pas le passé. Une date future est ignorée. Une option `as_of=` explicite l'emporte sur la question ; `all` ne lit aucune date.
+Seule une date précédée d'un mot qui en fait une date de référence compte (« avant », « dans sa rédaction de », « en vigueur au », « en », « signé le », « antes de », « na redação de », « em », « as of », « in »…), comme quand un utilisateur date sa situation ; « la loi n° 2014-344 du 17 mars 2014 » ou « Lei nº 8.078, de 1990 » **nomment un texte**, elles ne demandent pas le passé. Une date future est ignorée. Une option `as_of=` explicite l'emporte sur la question ; `all` ne lit aucune date.
 
 ### 2. Le filtre (métadonnées de Légifrance)
 
@@ -97,16 +98,16 @@ Chaque chunk porte `version` (source `metadata` ou `markers`, état, en vigueur 
 
 ### Le jeu figé « versions »
 
-`raglab legifrance version-questions` (`src/raglab/benchmarks/legi_versions.py`) construit environ 100 questions pièges, chacune avec la version qui répond (`expected_spans`) et celle qui tromperait (`trap`). Les paires sont trouvées par des règles, sans modèle, dans l'historique du code :
+`raglab legifrance version-questions` (`src/raglab/benchmarks/legi_versions.py`) construit environ 100 questions pièges, chacune avec la version qui répond (`expected_spans`) et celle qui tromperait (`trap`). Les questions sont des **situations**, posées comme le ferait un consommateur, une entreprise ou un avocat (« Mon client a sept jours pour se rétracter, c'est bien ça ? »), pas des « que dit l'article X ? » qu'un Ctrl+F résoudrait : aucun numéro d'article (sauf `reused_number`, où l'utilisateur cite le numéro qu'on lui a donné), aucun nom de code, aucune suite de 6 mots copiée de l'article ou du piège ; une date passée est dite comme un utilisateur date sa situation (« en 2021 », « en mai 2014 »). Les paires sont trouvées par des règles, sans modèle, dans l'historique du code :
 
 | Type (`question_type`) | Part | La version qui répond | Le piège |
 |---|---|---|---|
-| `rewritten` | 40 % | la version en vigueur, sur une ligne réécrite | la version précédente, et son ancienne formulation (`trap.answer`) |
-| `reused_number` | 20 % | la version en vigueur d'un numéro réutilisé ; la question cite le numéro | les anciens articles de même numéro (une autre règle) |
+| `rewritten` | 40 % | la version en vigueur, sur une ligne réécrite ; la question peut avancer l'ancienne règle comme une croyance à vérifier | la version précédente, et son ancienne formulation (`trap.answer`) |
+| `reused_number` | 20 % | la version en vigueur d'un numéro réutilisé ; la situation cite le numéro, comme on l'a cité à l'utilisateur | les anciens articles de même numéro (une autre règle) |
 | `moved` | 20 % | l'article qui porte aujourd'hui la règle ; la question la reformule sans numéro | l'article abrogé dont le texte est passé sous un autre numéro (recouvrement de trigrammes ≥ 0,5) |
-| `as_of` | 20 % | une ancienne version ; la question porte sur le passé (« avant 2022, … ») | la version en vigueur, et sa formulation |
+| `as_of` | 20 % | une ancienne version ; la situation est datée (« J'ai signé en 2021 … ») | la version en vigueur, et sa formulation |
 
-Le modèle local (Qwen3.6 via llama.cpp, `LocalLLMServer`) écrit une question par paire, la réponse copiée de la version qui répond et, pour `rewritten` et `as_of`, la réponse périmée copiée du piège. Une question n'est gardée que si **les deux citations sont là où elles doivent être, et pas dans l'autre version** : chaque cas est un piège par construction. Autres contrôles : formulations vagues (« cet article »), citation d'article dans une question qui ne doit pas en avoir, numéro cité dans une question `reused_number` sous une forme que lit le résolveur, date lue par `parse_question_date` et couverte par l'ancienne version dans une question `as_of` (et aucune date dans les autres). Un article ne sert qu'une fois. Partie `dev` / `heldout` tirée avec la graine (un quart `dev` par type), comme pour les autres jeux.
+Le modèle local (Qwen3.6 via llama.cpp, `LocalLLMServer`) écrit une question par paire, la réponse copiée de la version qui répond et, pour `rewritten` et `as_of`, la réponse périmée copiée du piège. Une question n'est gardée que si **les deux citations sont là où elles doivent être, et pas dans l'autre version** : chaque cas est un piège par construction. Autres contrôles : formulations vagues (« cet article »), formulation recopiée de l'article ou du piège (6 mots consécutifs), nom de code, citation d'article dans une question qui ne doit pas en avoir, numéro cité dans une question `reused_number` sous une forme que lit le résolveur, date lue par `parse_question_date` et couverte par l'ancienne version dans une question `as_of` (et aucune date dans les autres). Un article ne sert qu'une fois. Partie `dev` / `heldout` tirée avec la graine (un quart `dev` par type), comme pour les autres jeux.
 
 Candidats trouvés dans le corpus figé (graine 42) : 353 `rewritten`, 297 `reused_number`, 586 `moved`, 344 `as_of`.
 
