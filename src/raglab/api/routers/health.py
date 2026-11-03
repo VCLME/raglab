@@ -8,9 +8,16 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from raglab.api.deps import get_current_settings, get_db
-from raglab.api.schemas import ConfigResponse, HealthResponse, LivenessResponse, ReadinessResponse
+from raglab.api.schemas import (
+    ConfigResponse,
+    GeneratorStatus,
+    HealthResponse,
+    LivenessResponse,
+    ReadinessResponse,
+)
 from raglab.config import Settings
 from raglab.graph import Neo4jGraphStore
+from raglab.llm.writer import get_writer
 from raglab.ollama.service import OllamaService
 from raglab.retrieval.rerank import rerank_gpu_available
 
@@ -35,9 +42,13 @@ def readiness(
     session: Session = Depends(get_db),
     settings: Settings = Depends(get_current_settings),
 ):
-    """Ready to answer queries: Postgres answers, Ollama answers and the
-    default generation model is installed. Neo4j is optional (graph pages
-    only) and is not checked here; see /api/health for the full picture."""
+    """Ready to answer queries: Postgres answers and a generator can write
+    the answer. With llama.cpp as the default writer, that is llama.cpp
+    serving the writer model (or able to start it on the next query), else
+    the Ollama fallback with its model installed; `generator` says which
+    answers. Otherwise Ollama must answer with the default generation model
+    installed. Neo4j is optional (graph pages only) and is not checked here;
+    see /api/health for the full picture."""
     checks: dict[str, str] = {}
     try:
         session.execute(text("SELECT 1"))
@@ -60,11 +71,24 @@ def readiness(
         checks["ollama"] = "unreachable"
         checks["default_generation_model"] = "unknown"
 
-    ready = all(value == "ok" for value in checks.values())
+    generator = generator_status(settings)
+    if generator is None:
+        ready = all(value == "ok" for value in checks.values())
+    else:
+        checks["llamacpp"] = "ok" if generator.status == "ready" else generator.status
+        ollama_ok = checks["ollama"] == "ok" and checks["default_generation_model"] == "ok"
+        writer_ok = generator.status in ("ready", "stopped")
+        fallback_ok = generator.fallback_provider is not None and (
+            ollama_ok if generator.fallback_provider == "ollama" else True
+        )
+        ready = checks["postgres"] == "ok" and (writer_ok or fallback_ok)
     body = ReadinessResponse(
         status="ready" if ready else "not_ready",
         checks=checks,
-        default_generation_model=settings.generation_model,
+        default_generation_model=(
+            generator.active_model or settings.generation_model if generator else settings.generation_model
+        ),
+        generator=generator,
     )
     return JSONResponse(status_code=200 if ready else 503, content=body.model_dump())
 
@@ -103,7 +127,15 @@ def health(
     finally:
         store.close()
 
-    overall = "ok" if postgres_state == "ok" and ollama_state == "ok" and neo4j_state == "ok" else "degraded"
+    generator = generator_status(settings)
+    overall = (
+        "ok"
+        if postgres_state == "ok"
+        and ollama_state == "ok"
+        and neo4j_state == "ok"
+        and (generator is None or generator.notice is None)
+        else "degraded"
+    )
     return HealthResponse(
         status=overall,
         api="ok",
@@ -113,7 +145,18 @@ def health(
         default_generation_model=default_model,
         default_generation_model_installed=default_installed,
         adminer_url=settings.adminer_url,
+        generator=generator,
     )
+
+
+def generator_status(settings: Settings) -> GeneratorStatus | None:
+    """Default writer state (see raglab.llm.writer); never starts a server."""
+    try:
+        state = get_writer().state(settings)
+    except Exception as exc:
+        LOGGER.warning("health.generator_state_failed", extra={"error": str(exc)})
+        return None
+    return GeneratorStatus(**state) if state else None
 
 
 @router.get("/api/config", response_model=ConfigResponse)

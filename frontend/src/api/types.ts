@@ -62,10 +62,31 @@ export interface LlmProvider {
   models: string[];
 }
 
+/** Default answer writer (Qwen3.6 on llama.cpp) and who answers right now. */
+export interface GeneratorStatus {
+  provider: string;
+  model: string;
+  /** Name shown in the LLM picker ("Qwen3.6"). */
+  label: string;
+  profile: string;
+  /** ready, stopped (starts on the next query), starting, busy, down or failed. */
+  status: string;
+  /** Set when the fallback answers: llamacpp_unavailable, llamacpp_starting, llamacpp_busy. */
+  notice: string | null;
+  active_provider: string;
+  active_model: string | null;
+  active_provider_label: string;
+  fallback_provider: string | null;
+  autostart: boolean;
+  error: string | null;
+}
+
 export interface LlmModelsResponse {
   default_provider: string;
   default_model: string;
   providers: LlmProvider[];
+  /** Absent or null when the default provider is not llama.cpp. */
+  generator?: GeneratorStatus | null;
 }
 
 export interface OllamaStatus {
@@ -256,6 +277,10 @@ export interface QueryResponse {
   citation?: CitationInfo | null;
   // "skipped_no_gpu" or "cpu" when re-ranking could not use a GPU.
   rerank_notice?: string | null;
+  // Provider that wrote the answer, and why the fallback did instead of the
+  // default writer: llamacpp_unavailable, llamacpp_starting, llamacpp_busy.
+  llm_provider?: string | null;
+  generator_notice?: string | null;
   // Graph branch: whether it ran, why it was skipped, its counters.
   graph?: boolean;
   graph_notice?: string | null;

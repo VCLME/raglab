@@ -15,6 +15,28 @@ def _check_versions(value: str | None) -> str | None:
     return value.strip() if isinstance(value, str) else value
 
 
+class GeneratorStatus(BaseModel):
+    """Default answer writer (llama.cpp) and who answers right now."""
+
+    provider: str
+    model: str
+    # Name shown in the Chat LLM picker ("Qwen3.6").
+    label: str
+    profile: str
+    # ready, stopped (started by the next query), starting, busy (serves
+    # another model), down (cannot be started) or failed (last start failed).
+    status: str
+    # Set when the fallback answers: llamacpp_unavailable, llamacpp_starting
+    # or llamacpp_busy (same values as QueryResponse.generator_notice).
+    notice: str | None = None
+    active_provider: str
+    active_model: str | None = None
+    active_provider_label: str
+    fallback_provider: str | None = None
+    autostart: bool = False
+    error: str | None = None
+
+
 class HealthResponse(BaseModel):
     status: str
     api: str
@@ -24,6 +46,8 @@ class HealthResponse(BaseModel):
     default_generation_model: str
     default_generation_model_installed: bool | None = None
     adminer_url: str
+    # None when the default provider is not llama.cpp.
+    generator: GeneratorStatus | None = None
 
 
 class LivenessResponse(BaseModel):
@@ -34,6 +58,7 @@ class ReadinessResponse(BaseModel):
     status: str
     checks: dict[str, str]
     default_generation_model: str
+    generator: GeneratorStatus | None = None
 
 
 class ConfigResponse(BaseModel):
@@ -94,6 +119,8 @@ class LLMModelsResponse(BaseModel):
     default_provider: str
     default_model: str | None = None
     providers: list[LLMProviderInfo]
+    # Default writer and its fallback state (None when the default is not llama.cpp).
+    generator: GeneratorStatus | None = None
 
 
 class OllamaPullRequest(BaseModel):

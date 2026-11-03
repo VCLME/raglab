@@ -319,15 +319,29 @@ courte (`unreachable`, `timeout`, `http 401`...).
 | Pas de réponse dans le budget | `LLMProviderTimeoutError` | **504**, `stage: "generation"` |
 | Autre erreur HTTP ou `error` dans le flux | `LLMProviderError` | **502**, message du serveur dans `cause` |
 
+**Rédacteur par défaut et repli.** Sans `llm_provider`, la réponse est
+écrite par Qwen3.6 sur llama.cpp (`RAGLAB_DEFAULT_LLM_PROVIDER=llamacpp`).
+S'il est arrêté, l'API le démarre avec le profil du rédacteur
+(`RAGLAB_LLAMACPP_AUTOSTART` ; la question attend le chargement jusqu'à
+`RAGLAB_LLAMACPP_AUTOSTART_WAIT_SECONDS`) et le laisse tourner. S'il ne peut
+pas servir (pas de commande de démarrage, échec, chargement trop long, autre
+modèle servi), Ollama `qwen2.5:7b` répond et la réponse le dit :
+`llm_provider: "ollama"`, `generator_notice` = `llamacpp_unavailable`,
+`llamacpp_starting` ou `llamacpp_busy` (aussi dans les données de l'étape
+`generation` du flux SSE). Une requête sans fournisseur n'échoue donc jamais
+parce que llama.cpp est arrêté. Un `llm_provider` explicite est servi tel
+quel, sans démarrage ni repli. `/api/llm/models`, `/api/health` et `/ready`
+portent un bloc `generator` (`status`, `notice`, `active_provider`,
+`active_model`), sans jamais démarrer de serveur.
+
 **GPU (8 Go).** Ollama et llama.cpp ne tiennent jamais le GPU en même temps.
-Pour une requête interactive, raglab ne **démarre pas** llama-server (des
-dizaines de secondes de chargement) : il utilise un serveur déjà lancé, sinon
-502. Avant chaque réponse llama.cpp, il demande à Ollama de décharger ses
+Avant chaque réponse llama.cpp, raglab demande à Ollama de décharger ses
 modèles (`keep_alive: 0`, même aide que `LocalLLMServer`) ; une requête
 Ollama suivante rechargera qwen2.5, ce qui peut échouer en 503 tant que
 llama-server occupe la mémoire. vLLM est supposé tourner sur une autre
 machine ou un autre GPU : rien n'est déchargé pour lui. Les benchmarks
-continuent de passer par `LocalLLMServer`, qui démarre et arrête llama-server.
+continuent de passer par `LocalLLMServer`, qui démarre et arrête llama-server
+et vérifie le modèle servi : le juge ne réutilise jamais le rédacteur.
 
 ## Mesures
 

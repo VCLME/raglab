@@ -22,6 +22,7 @@ from raglab.generation.prompts import build_prompt_bundle
 from raglab.generation.service import AnswerGenerator, OllamaGenerator, OpenAICompatGenerator
 from raglab.graph.structured import StructuredGraphStore, get_graph_store
 from raglab.llm.providers import resolve_llm_provider
+from raglab.llm.writer import WriterManager, get_writer
 from raglab.logging_utils import log_event
 from raglab.observability.metrics import observe_query
 from raglab.retrieval.citations import (
@@ -129,6 +130,8 @@ class QueryService:
         self.lexical_store = PostgresLexicalStore(k1=self.settings.bm25_k1, b=self.settings.bm25_b)
         # One generator per provider, built on first use.
         self._generators: dict[str, AnswerGenerator] = {}
+        # Picks llama.cpp or its fallback for queries that name no provider.
+        self.writer: WriterManager = get_writer()
         self._reranker: Reranker | None = None
         self._graph_store: StructuredGraphStore | None = None
         self.version_lookup = VersionLookup(session)
@@ -164,6 +167,22 @@ class QueryService:
                 else OpenAICompatGenerator(self.settings, provider=name)
             )
         return self._generators[name]
+
+    def pick_generator(self, llm_provider: str | None, llm_model: str | None) -> tuple[str, str | None, str | None]:
+        """(provider, model, generator_notice) for one answer.
+
+        A named provider is used as asked (an unknown one raises
+        UnknownLLMProviderError). Without one, the default writer answers, or
+        its fallback when llama.cpp cannot serve it (see raglab.llm.writer);
+        the notice says why, and `llm_model`, meant for the writer, is then
+        dropped.
+        """
+        if llm_provider is not None and llm_provider.strip():
+            return resolve_llm_provider(self.settings, llm_provider), llm_model, None
+        choice = self.writer.choose(self.settings)
+        if choice.notice:
+            return choice.provider, choice.model, choice.notice
+        return choice.provider, llm_model or choice.model, None
 
     @property
     def reranker(self) -> Reranker:
@@ -577,8 +596,8 @@ class QueryService:
         the same top-k as production. `llm_provider` picks the generation
         provider (None = RAGLAB_DEFAULT_LLM_PROVIDER)."""
         # Resolved before retrieval: an unknown provider fails fast with a 400.
-        provider = resolve_llm_provider(self.settings, llm_provider) if generate_answer else None
-        generator = self.generator_for(provider) if provider else None
+        if llm_provider is not None and generate_answer:
+            resolve_llm_provider(self.settings, llm_provider)
         outcome = self.retrieve(
             question=question,
             corpus_name=corpus_name,
@@ -596,10 +615,14 @@ class QueryService:
         )
         answer = None
         stats: dict[str, float] = {}
-        if generator is not None:
+        provider: str | None = None
+        notice: str | None = None
+        if generate_answer:
+            provider, model, notice = self.pick_generator(llm_provider, llm_model)
+            generator = self.generator_for(provider)
             generation_started = perf_counter()
             context = outcome.retrieved[:generation_top_k] if generation_top_k else outcome.retrieved
-            answer = generator.generate_answer(question, context, model=llm_model)
+            answer = generator.generate_answer(question, context, model=model)
             outcome.timings_ms["generation"] = round((perf_counter() - generation_started) * 1000, 3)
             stats = dict(generator.last_stats)
         elapsed_ms = (perf_counter() - outcome.started) * 1000
@@ -610,7 +633,13 @@ class QueryService:
             generation_stats=stats,
             llm_provider=provider,
         )
-        return outcome.response(answer=answer, elapsed_ms=elapsed_ms, generation_stats=stats)
+        return outcome.response(
+            answer=answer,
+            elapsed_ms=elapsed_ms,
+            generation_stats=stats,
+            llm_provider=provider,
+            generator_notice=notice,
+        )
 
     def stream_answer(
         self,
@@ -622,7 +651,8 @@ class QueryService:
         """Generate the answer for a finished retrieval as (event, data) pairs.
 
         `llm_model` overrides the configured generation model for this answer;
-        `llm_provider` picks the provider (None = RAGLAB_DEFAULT_LLM_PROVIDER).
+        `llm_provider` picks the provider (None = the default writer, or its
+        fallback: see `pick_generator`).
 
         Yields `stage` events around the prompt and generation stages (see
         `raglab.retrieval.stages`), one `token` event per fragment produced by
@@ -630,7 +660,7 @@ class QueryService:
         `first_token_ms` (time from the start of generation to the first
         fragment).
         """
-        provider = resolve_llm_provider(self.settings, llm_provider)
+        provider, llm_model, notice = self.pick_generator(llm_provider, llm_model)
         generator = self.generator_for(provider)
         prompt_started = perf_counter()
         yield "stage", stage_start("prompt", self._since_start(outcome, prompt_started))
@@ -664,6 +694,12 @@ class QueryService:
         generation_done = perf_counter()
         outcome.timings_ms["generation"] = round((generation_done - generation_started) * 1000, 3)
         stats = dict(generator.last_stats)
+        generation_data: dict[str, Any] = {
+            "provider": provider,
+            "model": _model_label(provider, llm_model, self.settings),
+        }
+        if notice:
+            generation_data["notice"] = notice
         yield (
             "stage",
             stage_end(
@@ -671,7 +707,7 @@ class QueryService:
                 self._since_start(outcome, generation_done),
                 outcome.timings_ms["generation"],
                 counts={**stats, "fragments": len(parts), "first_token_ms": first_token_ms},
-                data={"provider": provider, "model": _model_label(provider, llm_model, self.settings)},
+                data=generation_data,
             ),
         )
         elapsed_ms = (generation_done - outcome.started) * 1000
@@ -687,6 +723,8 @@ class QueryService:
             answer="".join(parts).strip(),
             elapsed_ms=elapsed_ms,
             generation_stats=stats,
+            llm_provider=provider,
+            generator_notice=notice,
         )
         yield "done", {**response.model_dump(mode="json"), "first_token_ms": first_token_ms}
 

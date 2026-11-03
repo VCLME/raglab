@@ -24,6 +24,10 @@ def _isolated_reports_dir(tmp_path, monkeypatch):
     monkeypatch.setenv("RAGLAB_CITATION_RESOLVER", "false")
     # Indexing tests never reach Neo4j unless they ask for the graph.
     monkeypatch.setenv("RAGLAB_GRAPH_BUILD_ON_INDEX", "false")
+    # Answers go to (mocked) Ollama: the shipped llama.cpp writer would probe
+    # and start a real server. Writer selection is tested in test_llm_writer.py.
+    monkeypatch.setenv("RAGLAB_LLM_PROVIDERS", "ollama")
+    monkeypatch.setenv("RAGLAB_DEFAULT_LLM_PROVIDER", "ollama")
     get_settings.cache_clear()
     yield
     get_settings.cache_clear()

@@ -14,3 +14,16 @@ def test_shipped_default_is_the_measured_best_pipeline(monkeypatch):
     assert settings.citation_resolver is True
     # Not measured yet (9.10): every version, as before, until it is.
     assert settings.versions_default == "all"
+
+
+def test_shipped_writer_is_qwen36_on_llamacpp_with_an_ollama_fallback(monkeypatch):
+    monkeypatch.delenv("RAGLAB_LLM_PROVIDERS", raising=False)
+    monkeypatch.delenv("RAGLAB_DEFAULT_LLM_PROVIDER", raising=False)
+    settings = Settings(_env_file=None)
+    # gen-qwen36-v1: answer correctness PIAF 0.763 -> 0.935, LexML 0.550 -> 0.710.
+    assert settings.default_llm_provider == "llamacpp"
+    assert settings.writer_model_profile == "qwen35b-moe"
+    assert settings.writer_model == "qwen3.6-35b-a3b"
+    assert settings.llm_fallback_provider == "ollama"
+    assert settings.generation_model == "qwen2.5:7b"
+    assert settings.llamacpp_autostart is True

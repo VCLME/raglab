@@ -15,7 +15,7 @@ Website: **[vclme.github.io/raglab](https://vclme.github.io/raglab/)** · Techni
 
 ## Why it matters
 
-- **Your data stays on your infrastructure.** Documents, embeddings, the search index and the language model all run on your machines: PostgreSQL + pgvector, a local embedding model, Ollama for generation. No external API call, so contracts, patient files or case law never leave the building.
+- **Your data stays on your infrastructure.** Documents, embeddings, the search index and the language model all run on your machines: PostgreSQL + pgvector, a local embedding model, Qwen3.6-35B-A3B on llama.cpp for generation (qwen2.5:7b on Ollama as the fallback). No external API call, so contracts, patient files or case law never leave the building.
 - **Quality is measured, not claimed.** Every component is kept only if it improves frozen benchmarks with passage-level ground truth. Generated answers are scored by a judge from another model family, whose own reliability was measured.
 - **It says when it doesn't know.** The model answers only from retrieved passages, cites each one inline, and replies with a fixed "not in your documents" message when the context is insufficient.
 
@@ -91,7 +91,7 @@ flowchart LR
   Q -.-> X[Legal citation<br/>parser]
   X -.-> R
   R --> K[Cross-encoder<br/>re-ranking*]
-  K --> L[Local LLM via Ollama<br/>qwen2.5:7b]
+  K --> L[Local LLM: Qwen3.6 via llama.cpp<br/>fallback qwen2.5:7b via Ollama]
   L --> A[Cited answer, or<br/>'not in your documents']
 ```
 
@@ -108,7 +108,7 @@ One line per component, with its measured effect:
 - **Hardened API** (9.5): streamed answers (SSE), per-stage timeouts, request ids, optional API key, `/health` and `/ready`. Not a quality brick; no benchmark effect expected.
 - **Observability** (9.6): `/metrics` for Prometheus (per-stage latency, top-1 score, tokens/s, cache hits, abstentions, skipped re-ranking), a versioned Grafana dashboard (`docker compose --profile obs up -d`, <http://127.0.0.1:3000>) and `raglab experiment drift` (KS test on scores between two indexes or periods). Cost: +0.17% on a simulated query. Details and dashboard screenshot (French): [docs/observabilite.md](docs/observabilite.md).
 
-Stack: Python 3.12, FastAPI, SQLAlchemy, PostgreSQL 16 + pgvector 0.8, transformers, Ollama, React + Vite. Optional Neo4j graph store for comparison.
+Stack: Python 3.12, FastAPI, SQLAlchemy, PostgreSQL 16 + pgvector 0.8, transformers, llama.cpp, Ollama, React + Vite. Optional Neo4j graph store for comparison.
 
 ---
 

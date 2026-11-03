@@ -98,6 +98,55 @@ test("LLM picker groups models by provider and sends the provider", async ({ pag
   expect(body).toMatchObject({ llm_provider: "llamacpp", llm_model: "gemma4-26b-a4b" });
 });
 
+const writer = {
+  provider: "llamacpp",
+  model: "qwen3.6-35b-a3b",
+  label: "Qwen3.6",
+  profile: "qwen35b-moe",
+  status: "ready",
+  notice: null,
+  active_provider: "llamacpp",
+  active_model: "qwen3.6-35b-a3b",
+  active_provider_label: "llama.cpp",
+  fallback_provider: "ollama",
+  autostart: true,
+  error: null,
+};
+
+test("LLM picker names the Qwen3.6 writer as the default", async ({ page, api }) => {
+  api.set("GET /api/llm/models", json({ ...data.llmModels, default_provider: "llamacpp", generator: writer }));
+  await page.goto("/");
+  await expect(page.getByRole("combobox", { name: "LLM" })).toContainText("Qwen3.6 · llama.cpp (défaut)");
+});
+
+test("LLM picker and answer say when the fallback writes instead of Qwen3.6", async ({ page, api }) => {
+  const fallback = {
+    ...writer,
+    status: "down",
+    notice: "llamacpp_unavailable",
+    active_provider: "ollama",
+    active_model: "qwen2.5:7b",
+    active_provider_label: "Ollama",
+  };
+  api.set("GET /api/llm/models", json({ ...data.llmModels, default_provider: "llamacpp", generator: fallback }));
+  api.set(
+    "POST /api/query/stream",
+    sse(
+      data.streamEvents().map(([event, payload]) =>
+        event === "done"
+          ? [event, { ...(payload as object), llm_provider: "ollama", generator_notice: "llamacpp_unavailable" }]
+          : [event, payload]
+      )
+    )
+  );
+  await page.goto("/");
+  await expect(page.getByRole("combobox", { name: "LLM" })).toContainText(
+    "qwen2.5:7b · Ollama (repli : llama.cpp indisponible)"
+  );
+  await ask(page);
+  await expect(page.getByText(/Réponse écrite par le modèle de repli : llama.cpp ne répond pas/)).toBeVisible();
+});
+
 test("Chat fills its pickers once the API comes up, without a reload", async ({ page, api }) => {
   let calls = 0;
   api.set("GET /api/corpora", async (route) => {
