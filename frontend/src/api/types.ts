@@ -38,6 +38,8 @@ export interface ConfigResponse {
   rerank_gpu?: boolean;
   rerank_model_name?: string;
   rerank_candidates?: number;
+  /** Phase-8 entity store pages (Expert flag RAGLAB_ENTITY_GRAPH_ENABLED). */
+  entity_graph_enabled?: boolean;
   citation_resolver?: boolean;
   llm_providers?: string[];
   default_llm_provider?: string;
@@ -257,4 +259,71 @@ export interface ExperimentResultCase {
 
 export interface ExperimentRunDetail extends ExperimentRunSummary {
   results: ExperimentResultCase[];
+}
+
+/** Structured graph of an index run (Neo4j, phase 9.9). */
+export interface GraphStatus {
+  index_run_id: string;
+  corpus: string | null;
+  available: boolean;
+  graph: {
+    status: string;
+    profile: string;
+    built_at?: string;
+    duration_ms?: number;
+    stats: Record<string, number>;
+  } | null;
+  counts: { nodes?: Record<string, number>; relationships?: Record<string, number> };
+}
+
+export interface GraphBuildResult {
+  index_run_id: string;
+  corpus: string;
+  profile: string;
+  duration_ms: number;
+  nodes: Record<string, number>;
+  relationships: Record<string, number>;
+}
+
+export interface GraphLaw {
+  uid: string;
+  key: string | null;
+  number: string | null;
+  year: number | null;
+  title: string | null;
+  ementa: string | null;
+  articles: number;
+  cited: number;
+  citing: number;
+}
+
+export type GraphNodeKind = "law" | "external_law" | "article";
+
+export interface GraphNode {
+  id: string;
+  kind: GraphNodeKind;
+  label: string | null;
+  number: string | null;
+  law_uid: string | null;
+  law_key: string | null;
+  title: string | null;
+  preview: string | null;
+  revoked: boolean;
+  focus: boolean;
+}
+
+export interface GraphEdge {
+  source: string;
+  target: string;
+  type: "PART_OF" | "CITES" | "AMENDS" | "REVOKES";
+  mentions: number;
+  snippet: string | null;
+  kind: string | null;
+  articles: string[];
+}
+
+export interface GraphNeighbourhood {
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+  isolated_articles: number;
 }

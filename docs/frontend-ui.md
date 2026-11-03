@@ -231,6 +231,14 @@ Note : `load` est tres long. Le spinner indique simplement que l'appel est en co
 - Tableau des modeles installes avec nom, taille, date, digest tronque. `qwen2.5:7b` est mis en valeur par la ligne surlignee « defaut ». Bouton `Supprimer` par ligne (avec confirmation ; avertissement special si c'est le modele de generation par defaut).
 - Formulaire pour `pull` d'un modele arbitraire.
 
+### Graphe des renvois (`/expert/graph`)
+
+- Choix du corpus et de l'index run ; état du graphe dans Neo4j (construit ou non, profil, date, comptes par type de nœud et de relation) et bouton « Construire / Reconstruire le graphe » (`POST /api/graph/build`).
+- Liste des lois du graphe, les plus reliées d'abord, avec recherche par numéro ou mot du titre.
+- Voisinage de la loi choisie (Cytoscape), en diagramme en arcs : les articles de la loi sur un axe dans l'ordre de lecture, les renvois entre eux en arcs au-dessus (plus hauts quand ils portent loin), et en dessous, sur deux ou trois rangées, tout ce qui est hors de la loi (articles d'autres lois du corpus, lois du corpus, lois hors corpus), chacun sous les articles auxquels il est relié. Couleurs des jetons de la charte (`--graph-*` dans `styles.css`) : loi en vert accent, articles de la loi en vert clair, articles d'autres lois en bleu-vert, lois hors corpus en gris ; `CITES` violet, `AMENDS` ambre, `REVOKES` rouge pointillé, avec la légende sous le graphe. Les noms apparaissent avec le zoom (les numéros d'articles d'abord). Cliquer un nœud, ou un article dans la liste sous le graphe (accessible au clavier), estompe le reste et zoome sur ses voisins ; le panneau montre ses renvois avec la phrase qui les porte, et « Voir les renvois de cet article » le place au centre d'une étoile de ses voisins. « Vue d'ensemble » revient au graphe entier.
+- La requête Cypher équivalente, à coller dans Neo4j Browser. Voir [graphe.md](graphe.md).
+- Les anciennes pages du store à entités (phase 8) n'apparaissent qu'avec `RAGLAB_ENTITY_GRAPH_ENABLED=true`.
+
 ### Experiments (`/expert/experiments`)
 
 - Exposition du benchmark Recall existant. Parametres corpus, strategie, `dataset_path` optionnel, `case_limit`.
@@ -268,6 +276,10 @@ Tous prefixes par `/api`. Swagger disponible sur http://localhost:8000/docs.
 | POST | `/api/lexml/get-data` | `getDataFromLexML(...)` |
 | POST | `/api/lexml/load` | `LexMLLoadService.run(...)` |
 | POST | `/api/experiments/recall` | `RecallBenchmarkService.run(...)` |
+| POST | `/api/graph/build` | Construit le graphe des renvois d'un index run dans Neo4j (503 sans Neo4j) |
+| GET | `/api/graph/status?corpus=…` | État du graphe d'un index run et comptes relus dans Neo4j |
+| GET | `/api/graph/laws?index_run_id=…` | Lois du graphe, les plus reliées d'abord |
+| GET | `/api/graph/neighbourhood?index_run_id=…&law=…` | Loi → articles → renvois, pour Cytoscape |
 
 ## Tests
 

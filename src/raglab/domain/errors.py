@@ -29,6 +29,10 @@ class StageTimeoutError(Exception):
         )
 
 
+class GraphUnavailableError(RuntimeError):
+    """Neo4j does not answer: the structured graph is optional (HTTP 503)."""
+
+
 def run_with_timeout[T](stage: str, timeout_seconds: float, fn: Callable[[], T]) -> T:
     """Run `fn` in a worker thread and raise `StageTimeoutError` past the budget.
 

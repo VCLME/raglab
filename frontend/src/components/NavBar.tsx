@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink, useLocation } from "react-router-dom";
+import { useConfig } from "../hooks/useConfig";
 
 interface Link {
   to: string;
   labelKey: string;
   end?: boolean;
+  /** Phase-8 entity store pages: shown only with RAGLAB_ENTITY_GRAPH_ENABLED. */
+  entityGraph?: boolean;
 }
 
 interface Group {
@@ -33,8 +36,9 @@ const GROUPS: Group[] = [
     id: "graph",
     titleKey: "nav.graph_group",
     links: [
-      { to: "/expert/graph/index", labelKey: "nav.graph_index" },
-      { to: "/expert/graph/query", labelKey: "nav.graph_query" },
+      { to: "/expert/graph", labelKey: "nav.graph_citations", end: true },
+      { to: "/expert/graph/index", labelKey: "nav.graph_index", entityGraph: true },
+      { to: "/expert/graph/query", labelKey: "nav.graph_query", entityGraph: true },
     ],
   },
   {
@@ -66,6 +70,8 @@ function writeOpen(id: string, open: boolean): void {
 
 export function NavBar() {
   const { t } = useTranslation();
+  const config = useConfig();
+  const entityGraph = config?.entity_graph_enabled ?? false;
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(GROUPS.map((g) => [g.id, readOpen(g.id)]))
   );
@@ -111,11 +117,13 @@ export function NavBar() {
               </button>
               {open ? (
                 <div className="sidebar-group-children">
-                  {group.links.map((link) => (
-                    <NavLink key={link.to} to={link.to}>
-                      {t(link.labelKey)}
-                    </NavLink>
-                  ))}
+                  {group.links
+                    .filter((link) => !link.entityGraph || entityGraph)
+                    .map((link) => (
+                      <NavLink key={link.to} to={link.to} end={link.end}>
+                        {t(link.labelKey)}
+                      </NavLink>
+                    ))}
                 </div>
               ) : null}
             </div>

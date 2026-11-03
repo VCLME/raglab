@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-export type CodeLanguage = "python" | "sql" | "ts";
+export type CodeLanguage = "python" | "sql" | "ts" | "cypher";
 
 const KEYWORDS: Record<CodeLanguage, string[]> = {
   python: [
@@ -12,9 +12,18 @@ const KEYWORDS: Record<CodeLanguage, string[]> = {
     "DESC", "ASC", "WITH",
   ],
   ts: ["const", "let", "return", "if", "else", "function", "new", "true", "false", "null"],
+  cypher: [
+    "MATCH", "OPTIONAL", "WITH", "UNWIND", "RETURN", "ORDER", "BY", "LIMIT", "CALL", "UNION", "ALL", "WHERE",
+    "AS", "DESC", "AND", "NOT", "NULL",
+  ],
 };
 
-const COMMENT: Record<CodeLanguage, string> = { python: "#[^\\n]*", sql: "--[^\\n]*", ts: "//[^\\n]*" };
+const COMMENT: Record<CodeLanguage, string> = {
+  python: "#[^\\n]*",
+  sql: "--[^\\n]*",
+  ts: "//[^\\n]*",
+  cypher: "//[^\\n]*",
+};
 
 /**
  * Tiny tokenizer for the learning-mode snippets: comments, strings, numbers,
@@ -22,7 +31,9 @@ const COMMENT: Record<CodeLanguage, string> = { python: "#[^\\n]*", sql: "--[^\\
  * dependency.
  */
 export function highlight(code: string, language: CodeLanguage): ReactNode[] {
-  const keywords = new Set(language === "sql" ? KEYWORDS.sql.map((k) => k.toUpperCase()) : KEYWORDS[language]);
+  // SQL and Cypher keywords are case-insensitive.
+  const upper = language === "sql" || language === "cypher";
+  const keywords = new Set(upper ? KEYWORDS[language].map((k) => k.toUpperCase()) : KEYWORDS[language]);
   const pattern = new RegExp(
     [
       `(?<comment>${COMMENT[language]})`,
@@ -46,7 +57,7 @@ export function highlight(code: string, language: CodeLanguage): ReactNode[] {
     else if (groups.number) kind = "number";
     else if (groups.op) kind = "op";
     else if (groups.word) {
-      const probe = language === "sql" ? text.toUpperCase() : text;
+      const probe = upper ? text.toUpperCase() : text;
       if (keywords.has(probe)) kind = "keyword";
       else if (code[pattern.lastIndex] === "(") kind = "fn";
     }

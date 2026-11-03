@@ -22,6 +22,8 @@ def _isolated_reports_dir(tmp_path, monkeypatch):
     monkeypatch.setenv("RAGLAB_DEFAULT_RETRIEVAL_MODE", "dense")
     monkeypatch.setenv("RAGLAB_DEFAULT_RERANK", "false")
     monkeypatch.setenv("RAGLAB_CITATION_RESOLVER", "false")
+    # Indexing tests never reach Neo4j unless they ask for the graph.
+    monkeypatch.setenv("RAGLAB_GRAPH_BUILD_ON_INDEX", "false")
     get_settings.cache_clear()
     yield
     get_settings.cache_clear()
