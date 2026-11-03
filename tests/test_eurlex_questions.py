@@ -6,11 +6,14 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 from raglab.benchmarks.eurlex_questions import (
+    SCENARIO_SHARE,
     CitingUnit,
     EurlexQuestionGenerator,
     Passage,
     citing_units,
     load_sidecars,
+    longest_shared_run,
+    names_reference,
     rejection_reason,
     review_question_set,
     sample_passages,
@@ -161,6 +164,13 @@ _QUESTIONS = {
 }
 
 
+_SCENARIOS = {
+    "en": "We are signing a cloud hosting deal for our bank; what must the agreement with the supplier spell out?",
+    "fr": "Notre banque signe un contrat d'hébergement en nuage ; que doit préciser l'accord avec le fournisseur ?",
+    "pt": "O nosso banco vai assinar um contrato de alojamento na nuvem; o que deve o acordo com o fornecedor prever?",
+}
+
+
 def _fake_writer(*, messages, **_):
     prompt = messages[0]["content"]
     kind = re.search(r"^TYPE: (\w+)$", prompt, re.MULTILINE).group(1)
@@ -170,7 +180,9 @@ def _fake_writer(*, messages, **_):
     passage = prompt.split("):\n", 1)[1].split("\n\nAnswer only", 1)[0]
     answer = " ".join(passage.split("\n")[0].split()[1:8])
     plain, cited = _QUESTIONS[language]
-    if kind in ("reference", "cross_reference"):
+    if kind == "scenario":
+        question = _SCENARIOS[language]
+    elif kind in ("reference", "cross_reference"):
         reference = re.search(r"^REFERENCE: (\w+) (\w+) — ", prompt, re.MULTILINE)
         word = {"en": "Article", "fr": "article", "pt": "artigo"}[language]
         question = cited.format(ref=f"{word} {reference.group(2)}" + (".º" if language == "pt" else ""))
@@ -188,7 +200,9 @@ def test_generate_writes_typed_cases_with_spans_and_context(tmp_path: Path):
 
     cases = [json.loads(line) for line in Path(result["ground_truth_path"]).read_text(encoding="utf-8").splitlines()]
     assert len(cases) == 3
-    assert {case["question_type"] for case in cases} >= {"paraphrase", "reference"}
+    types = [case["question_type"] for case in cases]
+    assert types.count("scenario") >= SCENARIO_SHARE * len(cases)
+    assert {"paraphrase", "reference"} & set(types)
     for case in cases:
         (span,) = case["expected_spans"]
         text = (corpus / span["file_name"]).read_text(encoding="utf-8")
@@ -197,6 +211,7 @@ def test_generate_writes_typed_cases_with_spans_and_context(tmp_path: Path):
         assert case["context"]["unit_key"].startswith(DORA)
     metadata = json.loads((tmp_path / "out" / "metadata.json").read_text(encoding="utf-8"))
     assert (metadata["language"], metadata["generator_model"], metadata["case_count"]) == ("multi", "qwen-test", 3)
+    assert metadata["scenario_share"] >= SCENARIO_SHARE
 
 
 def test_review_marks_cases_failing_current_rules(tmp_path: Path):
@@ -209,3 +224,21 @@ def test_review_marks_cases_failing_current_rules(tmp_path: Path):
     assert review_question_set(path) == {"vague": 1}
     statuses = [json.loads(line).get("review_status") for line in path.read_text(encoding="utf-8").splitlines()]
     assert statuses == ["rejected", None]
+
+
+def test_scenarios_name_no_act_or_unit_and_do_not_copy_the_passage():
+    passage = _passage()
+    answer = "clearly allocated and set out in writing"
+    good = {"question": _SCENARIOS["en"], "answer": answer}
+    assert rejection_reason(good, passage, "scenario", language="en") is None
+    named = {"question": "Under DORA, what must our cloud agreement with the supplier spell out?", "answer": answer}
+    assert rejection_reason(named, passage, "scenario", language="en") == "names_reference"
+    numbered = {"question": "What does Article 30 require from our cloud supplier deal?", "answer": answer}
+    assert rejection_reason(numbered, passage, "scenario", language="en") == "names_reference"
+    copied = {
+        "question": "For our bank, must the rights and obligations of the financial entity be written down?",
+        "answer": answer,
+    }
+    assert rejection_reason(copied, passage, "scenario", language="en") == "copies_passage"
+    assert names_reference("Regulation (EU) 2022/2554 applies to us?") and not names_reference(_SCENARIOS["fr"])
+    assert longest_shared_run("the rights and obligations of", ART30_EN[0]) == 5

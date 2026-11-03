@@ -218,7 +218,7 @@ Toute nouvelle brique doit servir l'un de ces modes d'échec ou l'expérience de
 **Corpus de conformité UE 🚧** : voir [corpus-eurlex.md](corpus-eurlex.md)
 
 - `raglab eurlex fetch` : 15 actes de l'UE (RGPD, AI Act, DORA, NIS 2, actes délégués et d'exécution, omnibus numérique sur l'IA) en français, anglais et portugais, depuis CELLAR (sans compte), versions consolidées figées ; un document par considérant, article ou annexe, par langue et par version : 4 236 documents, 9 632 renvois en vigueur dont 1 395 d'un acte à l'autre, 38 articles de l'AI Act réécrits par l'omnibus de 2026
-- résolveur de citations, profil UE (« article 32 du RGPD », « Article 6(1)(a) GDPR », « considérant 39 ») ; graphe, profil `eu_acts` (`CITES`, `EXPLAINS`, `SUPPLEMENTS`, `AMENDS`, `SAME_AS`), précision relue 39/39 ; suite `eurlex_compliance` (sur demande) et générateur de questions (`cross_reference`, `cross_language`) ; questions et mesures à lancer
+- résolveur de citations, profil UE (« article 32 du RGPD », « Article 6(1)(a) GDPR », « considérant 39 ») ; graphe, profil `eu_acts` (`CITES`, `EXPLAINS`, `SUPPLEMENTS`, `AMENDS`, `SAME_AS`), précision relue 39/39 ; suite `eurlex_compliance` (sur demande) et générateur de questions (`scenario` majoritaire, `cross_reference`, `cross_language`) ; questions et mesures à lancer
 
 **Mode Démo 📋 (planifié)** : questions pièges pré-remplies (une par mode d'échec), bouton « Comparer : RAG classique / raglab » qui affiche les deux réponses et leurs passages côte à côte, description de chaque corpus dans le sélecteur, pages Expert secondaires rangées dans une section « Outils ».
 

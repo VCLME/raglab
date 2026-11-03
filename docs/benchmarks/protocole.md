@@ -105,8 +105,9 @@ raglab eurlex review-questions --ground-truth benchmarks/eurlex_compliance/groun
 
 **Questions.** Même méthode que LexML et le Code de la consommation, avec ces différences :
 
-- les passages sont tirés dans les unités **en vigueur** (considérants, articles, annexes), une unité à la fois toutes langues confondues, dans une langue tirée avec la graine ;
-- cinq types : `paraphrase`, `reference` (l'unité citée comme un juriste, lue par le résolveur), `entity`, `cross_reference` (la question cite l'unité A, la réponse est dans l'unité B que A cite ; pertinence sur B seule, la phrase de A dans `citing_spans`) et `cross_language` (question dans une autre langue que le passage) ;
+- les passages sont tirés dans les unités **en vigueur** (considérants, articles, annexes), une unité à la fois toutes langues confondues, articles et annexes d'abord, dans une langue tirée avec la graine ;
+- le type principal, au moins la moitié du jeu, est `scenario` : une situation de conformité concrète (entreprise, DPO, banque) en langage courant, sans nommer l'acte (numéro ou nom court) ni d'article, de considérant ou d'annexe, et sans reprendre 5 mots consécutifs du passage (filtres `names_reference`, `copies_passage`) ;
+- les autres types : `paraphrase`, `reference` (l'unité citée comme un juriste, lue par le résolveur), `entity`, `cross_reference` (la question cite l'unité A, la réponse est dans l'unité B que A cite ; pertinence sur B seule, la phrase de A dans `citing_spans`) et `cross_language` (question dans une autre langue que le passage) ;
 - les filtres de formulation couvrent les trois langues (« this Article », « cet article », « este artigo », « mentioned », « ci-dessus ») ; la langue de la question est vérifiée ;
 - `context` note l'unité, les langues, les fichiers de la même unité dans les autres langues, le nombre de versions et si la réponse figure aussi dans une version ancienne (`answer_in_other_version`) ; partie `split` tirée avec la graine (un quart `dev`, le reste `heldout`).
 

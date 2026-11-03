@@ -4,8 +4,17 @@ Same protocol as LexML and the French code: passages are drawn at random in
 the units in force, a local model (Qwen3.6 through llama.cpp, started by
 `LocalLLMServer`) writes one question per passage with a short answer
 quoted from it, the quote is located in the document to give a gold span,
-and questions that fail the checks are dropped. Five types:
+and questions that fail the checks are dropped. Six types:
 
+* ``scenario`` — the main type (at least half of the set): a concrete
+  compliance situation seen by a company, a DPO or a bank, in plain
+  language ("We had a ransomware attack on our payment system yesterday;
+  who do we have to notify and how fast?", "Can our HR chatbot screen CVs
+  automatically?"). It names no act (neither its number nor its short
+  name), no article, recital or annex, and shares no run of
+  `SCENARIO_MAX_SHARED_WORDS` consecutive words with the passage: a
+  Ctrl+F cannot answer it. Drawn from articles and annexes only, the
+  normative text;
 * ``paraphrase`` — other words than the passage, no unit number (the act
   may be named: a compliance question says "under the GDPR");
 * ``reference`` — cites the unit the way a lawyer does ("article 32 du
@@ -24,7 +33,8 @@ and questions that fail the checks are dropped. Five types:
 
 Passages are drawn one unit (CELEX + kind + number) at a time, in a language
 drawn with the seed, so the three language copies of an article do not all
-end up in the set. Each case records in `context` the unit, its language,
+end up in the set; articles and annexes come before recitals, so that
+scenarios have normative text to work from. Each case records in `context` the unit, its language,
 the files of the same unit in the other languages, how many versions it has
 and whether the answer also appears in an older version
 (`answer_in_other_version`, the AI Act articles rewritten by the Digital
@@ -49,6 +59,7 @@ from raglab.benchmarks.squad_style import locate_span
 from raglab.config import Settings, get_settings
 from raglab.eurlex.acts import BY_CELEX, LANGUAGES, UNIT_NAMES
 from raglab.eurlex.collector import LICENCE
+from raglab.eurlex.references import find_act_names, find_acts
 from raglab.llm.openai_compat import OpenAICompatibleChat
 from raglab.logging_utils import log_event
 from raglab.ollama.service import OllamaService
@@ -56,8 +67,20 @@ from raglab.retrieval.citations import guess_language, parse_eu_citation
 
 LOGGER = logging.getLogger(__name__)
 
-QUESTION_TYPES = ("paraphrase", "reference", "entity", "cross_reference", "cross_language")
+QUESTION_TYPES = ("scenario", "paraphrase", "reference", "entity", "cross_reference", "cross_language")
+# Scenarios are at least this share of the kept questions.
+SCENARIO_SHARE = 0.5
+# A scenario sharing this many consecutive words with its passage copies it.
+SCENARIO_MAX_SHARED_WORDS = 5
 MIN_PASSAGE_CHARS = 200
+# A unit named with its number, in any corpus language: "Article 33",
+# "art. 5", "considérant 39", "anexo III".
+_UNIT_NUMBER_RE = re.compile(
+    r"\b(?:art(?:icles?|igos?|\.)|recitals?|consid[ée]rants?|considerandos?)\s*\(?\d"
+    r"|\b(?:annex(?:es)?|annexes?|anexos?)\s+(?:[IVXLC]+|\d+)\b",
+    re.IGNORECASE,
+)
+_WORD_RE = re.compile(r"\w+")
 LANGUAGE_NAMES = {"fr": "French", "en": "English", "pt": "Portuguese"}
 # Phrasings that only make sense next to the passage: "this Article", "cet
 # article", "o presente artigo", "the above".
@@ -96,6 +119,16 @@ passage, and the short ANSWER copied word for word from the passage (in the \
 passage's own language, even when the question is in another language).
 
 Types:
+* scenario — a concrete compliance situation, as a company, a data \
+protection officer, a bank or a hospital would ask it, in plain everyday \
+language: describe what happened or what they plan to do, then ask what \
+the law requires ("We had a ransomware attack on our payment system \
+yesterday; who do we have to notify and how fast?", « Notre chatbot RH \
+peut-il trier les CV automatiquement ? », "O nosso banco pode subcontratar \
+o alojamento das contas a um fornecedor de nuvem?"). NEVER name the act \
+(no number, no short name such as GDPR, AI Act, DORA, NIS 2), never cite \
+an article, recital or annex, and do not reuse the passage's wording: \
+never copy five words in a row from it.
 * paraphrase — use other words than the passage (synonyms), cite no article, \
 recital or annex number; you may name the act ("under the GDPR").
 * reference — cite the unit given as REFERENCE the way a lawyer would \
@@ -215,6 +248,8 @@ def sample_passages(
             by_unit[metadata["unit_key"]][metadata["language"]] = name
     unit_keys = sorted(by_unit)
     rng.shuffle(unit_keys)
+    # Articles and annexes first (stable: the shuffled order is kept inside).
+    unit_keys.sort(key=lambda key: key.split(":")[1] == "recital")
     texts: dict[str, str] = {}
     passages: list[Passage] = []
     used: set[tuple[str, int]] = set()
@@ -278,6 +313,8 @@ def citing_units(sidecars: dict[str, dict[str, Any]]) -> dict[str, list[tuple[st
 
 def eligible_types(passage: Passage, *, has_citing: bool) -> list[str]:
     types = ["paraphrase", "reference", "cross_language"]
+    if passage.unit in ("article", "annex"):
+        types.insert(0, "scenario")
     if _ENTITY_RE.search(passage.text):
         types.append("entity")
     if has_citing:
@@ -294,6 +331,27 @@ def text_rejection_reason(question: str, answer: str) -> str | None:
     if _VAGUE_RE.search(question):
         return "vague"
     return None
+
+
+def names_reference(question: str) -> bool:
+    """The question names an act (number or short name) or a unit by number."""
+    if find_act_names(question) or any(mention.celex for mention in find_acts(question)):
+        return True
+    return bool(_UNIT_NUMBER_RE.search(question))
+
+
+def longest_shared_run(question: str, passage: str) -> int:
+    """Longest run of consecutive words (case-insensitive) the question
+    shares with the passage."""
+    asked = [word.lower() for word in _WORD_RE.findall(question)]
+    source = " " + " ".join(word.lower() for word in _WORD_RE.findall(passage)) + " "
+    best = 0
+    for start in range(len(asked)):
+        length = best + 1
+        while start + length <= len(asked) and f" {' '.join(asked[start : start + length])} " in source:
+            best = length
+            length += 1
+    return best
 
 
 def cites_unit(question: str, celex: str, unit: str, number: str) -> bool:
@@ -321,6 +379,11 @@ def rejection_reason(
         return reason
     if guess_language(question) != language:
         return "wrong_language"
+    if question_type == "scenario":
+        if names_reference(question):
+            return "names_reference"
+        if longest_shared_run(question, passage.text) >= SCENARIO_MAX_SHARED_WORDS:
+            return "copies_passage"
     citation = parse_eu_citation(question)
     if question_type in ("paraphrase", "entity", "cross_language") and citation is not None and citation.unit:
         return "leaks_reference"
@@ -358,6 +421,8 @@ def review_question_set(ground_truth_path: Path) -> dict[str, int]:
         case = json.loads(line)
         if case.get("review_status") != "rejected":
             reason = text_rejection_reason(case["question"], case.get("ground_truth_answer") or "")
+            if reason is None and case.get("question_type") == "scenario" and names_reference(case["question"]):
+                reason = "names_reference"
             if reason is not None:
                 case["review_status"] = "rejected"
                 case["rejection_reason"] = reason
@@ -480,10 +545,15 @@ class EurlexQuestionGenerator:
                 break
             citing_rows = cited_by.get(passage.file_name, [])
             eligible = eligible_types(passage, has_citing=bool(citing_rows))
-            # The least represented type first; a type the model keeps
+            # Scenarios until they are SCENARIO_SHARE of the kept questions,
+            # then the least represented other type; a type the model keeps
             # failing on is no longer asked for (as for LexML).
             available = [kind for kind in eligible if failed[kind] < 3 * kept[kind] + 10] or ["paraphrase"]
-            question_type = min(available, key=lambda kind: kept[kind])
+            others = [kind for kind in available if kind != "scenario"] or available
+            if "scenario" in available and kept["scenario"] < SCENARIO_SHARE * (len(cases) + 1):
+                question_type = "scenario"
+            else:
+                question_type = min(others, key=lambda kind: kept[kind])
             language = passage.language
             if question_type == "cross_language":
                 language = rng.choice([other for other in LANGUAGES if other != passage.language])
@@ -588,6 +658,7 @@ class EurlexQuestionGenerator:
                 "seed": seed,
                 "case_count": len(cases),
                 "by_type": by_type,
+                "scenario_share": round(by_type["scenario"] / len(cases), 3) if cases else None,
                 "by_split": by_split,
                 "by_question_language": by_language,
                 "rejected": dict(rejected),

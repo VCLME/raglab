@@ -160,17 +160,18 @@ Les arêtes sont aussi vérifiées dans Neo4j (`tests/test_graph_structured_stor
 
 ## Le jeu de questions (à générer)
 
-Le générateur suit le protocole LexML ([protocole.md](benchmarks/protocole.md#actes-de-lue-conformité)) : passages tirés dans les unités **en vigueur**, une unité (toutes langues confondues) à la fois, dans une langue tirée avec la graine ; questions écrites par Qwen3.6-35B-A3B via llama.cpp (`LocalLLMServer`), réponse copiée mot pour mot et retrouvée dans le texte, filtres dans les trois langues, relecture, partie `dev` / `heldout` tirée avec la graine. Cinq types :
+Le générateur suit le protocole LexML ([protocole.md](benchmarks/protocole.md#actes-de-lue-conformité)) : passages tirés dans les unités **en vigueur**, une unité (toutes langues confondues) à la fois, articles et annexes d'abord, dans une langue tirée avec la graine ; questions écrites par Qwen3.6-35B-A3B via llama.cpp (`LocalLLMServer`), réponse copiée mot pour mot et retrouvée dans le texte, filtres dans les trois langues, relecture, partie `dev` / `heldout` tirée avec la graine. Six types. Le type principal (au moins la moitié du jeu) est le **scénario** : une question qui cite l'article se résout par un Ctrl+F, une situation concrète demande de comprendre le texte.
 
 | Type | La question… | Contrôle |
 |---|---|---|
+| `scenario` (≥ 50 %) | décrit une situation de conformité vue par une entreprise, un DPO ou une banque, en langage courant (« Nous avons subi hier une attaque par rançongiciel sur notre système de paiement : qui devons-nous prévenir, et dans quel délai ? », « Notre chatbot RH peut-il trier les CV automatiquement ? ») ; tirée des articles et annexes seulement | ne nomme aucun acte (ni numéro, ni nom court : RGPD, DORA…), aucun article, considérant ou annexe, et ne partage pas 5 mots consécutifs avec le passage |
 | `paraphrase` | reformule, sans numéro d'unité (l'acte peut être nommé) | pas de citation d'unité lue par le résolveur |
 | `reference` | cite l'unité comme un juriste (« article 33 du RGPD ») | le résolveur lit exactement cette unité |
 | `entity` | s'appuie sur un sigle ou un nom propre (ENISA, CSIRT, Bureau de l'IA) | pas de numéro d'unité |
 | `cross_reference` | cite l'unité A ; la réponse est dans l'unité B que A cite | A est lue par le résolveur, le numéro de B n'apparaît pas, la réponse n'est pas dans A ; pertinence sur B seule, la phrase de A dans `citing_spans` |
 | `cross_language` | est posée dans une autre langue que le passage | langue de la question vérifiée |
 
-`context` note l'unité, les langues de la question et du passage, les fichiers de la même unité dans les autres langues, le nombre de versions et si la réponse figure aussi dans une version ancienne (`answer_in_other_version`, les articles réécrits par l'omnibus).
+Les questions `reference` et `cross_reference` restent minoritaires ; le rapport de benchmark donne Recall@k et MRR par type (`by_type`) et par partie (`by_split`), et `metadata.json` la part de scénarios (`scenario_share`). `context` note l'unité, les langues de la question et du passage, les fichiers de la même unité dans les autres langues, le nombre de versions et si la réponse figure aussi dans une version ancienne (`answer_in_other_version`, les articles réécrits par l'omnibus).
 
 ```bash
 raglab eurlex fetch
