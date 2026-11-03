@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 from collections import defaultdict
 from collections.abc import Iterable
+from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -262,7 +263,14 @@ class IndexingService:
         embedding_provider: str | None = None,
         embedding_model_name: str | None = None,
         incremental: bool = False,
-    ) -> dict[str, str | int | bool | None]:
+        build_graph: bool | None = None,
+    ) -> dict[str, Any]:
+        """Chunk, embed and store a corpus as a new index run.
+
+        `build_graph` (default RAGLAB_GRAPH_BUILD_ON_INDEX) then builds the
+        run's structured graph in Neo4j; without Neo4j the step is skipped
+        and the result says so (`graph.status`), the index is complete.
+        """
         corpus = get_corpus_by_name(self.session, corpus_name)
         if corpus is None:
             raise ValueError(f"Corpus introuvable: {corpus_name}")
@@ -426,7 +434,7 @@ class IndexingService:
                 self.session.commit()
             raise
 
-        result: dict[str, str | int | bool | None] = {
+        result: dict[str, Any] = {
             "index_run_id": index_run.id,
             "documents": len(documents),
             "chunks": reused_chunks + new_chunks,
@@ -445,4 +453,9 @@ class IndexingService:
             strategy=strategy.value,
             **result,
         )
+        if self.settings.graph_build_on_index if build_graph is None else build_graph:
+            from raglab.graph.structured import build_after_index
+
+            graph_settings = self.settings.model_copy(update={"graph_build_on_index": True})
+            result["graph"] = build_after_index(self.session, index_run.id, settings=graph_settings)
         return result

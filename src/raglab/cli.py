@@ -34,6 +34,7 @@ lexml_app = typer.Typer(no_args_is_help=True, help="Collecte LexML Brasil.")
 legifrance_app = typer.Typer(no_args_is_help=True, help="Codes francais (donnees LEGI de Legifrance).")
 ollama_app = typer.Typer(no_args_is_help=True, help="Pilotage du service Ollama.")
 bench_app = typer.Typer(no_args_is_help=True, help="Datasets de benchmark.")
+graph_app = typer.Typer(no_args_is_help=True, help="Graphe structure dans Neo4j (lois, articles, renvois).")
 
 app.add_typer(db_app, name="db")
 app.add_typer(experiment_app, name="experiment")
@@ -41,6 +42,7 @@ app.add_typer(lexml_app, name="lexml")
 app.add_typer(legifrance_app, name="legifrance")
 app.add_typer(ollama_app, name="ollama")
 app.add_typer(bench_app, name="bench")
+app.add_typer(graph_app, name="graph")
 
 
 @app.callback()
@@ -291,6 +293,94 @@ def bench_download(
             ensure_ascii=False,
         )
     )
+
+
+@graph_app.command("build")
+def graph_build(
+    corpus: str | None = typer.Option(None, "--corpus", help="Corpus (dernier index run pgvector)."),
+    index_run_id: str | None = typer.Option(None, "--index-run", help="Index run explicite."),
+    profile: str | None = typer.Option(
+        None, "--profile", help="laws, generic ou auto (defaut: RAGLAB_GRAPH_PROFILES, sinon auto)."
+    ),
+) -> None:
+    """Construire (ou reconstruire) le graphe structure d'un index run dans Neo4j."""
+    from raglab.graph.structured import StructuredGraphService
+
+    with session_scope() as session:
+        service = StructuredGraphService(session)
+        try:
+            result = service.build(corpus_name=corpus, index_run_id=index_run_id, profile=profile)
+        finally:
+            service.store.close()
+    typer.echo(json.dumps(result, indent=2, ensure_ascii=False))
+
+
+@graph_app.command("status")
+def graph_status(
+    corpus: str | None = typer.Option(None, "--corpus", help="Corpus (dernier index run pgvector)."),
+    index_run_id: str | None = typer.Option(None, "--index-run", help="Index run explicite."),
+) -> None:
+    """Etat du graphe d'un index run : profil, date, comptes relus dans Neo4j."""
+    from raglab.graph.structured import StructuredGraphService
+
+    with session_scope() as session:
+        service = StructuredGraphService(session)
+        try:
+            run = service.resolve_index_run(corpus_name=corpus, index_run_id=index_run_id)
+            info = service.store.run_info(run.id)
+            counts = service.store.counts(run.id) if info else {}
+        finally:
+            service.store.close()
+    typer.echo(json.dumps({"index_run_id": run.id, "graph": info, "counts": counts}, indent=2, ensure_ascii=False))
+
+
+@graph_app.command("sample")
+def graph_sample(
+    output: Path = typer.Option(..., "--output", help="Fichier JSON de l'echantillon a relire."),
+    corpus: str | None = typer.Option(None, "--corpus"),
+    index_run_id: str | None = typer.Option(None, "--index-run"),
+    seed: int = typer.Option(42, "--seed"),
+    cites: int = typer.Option(60, "--cites", min=0, help="Aretes CITES tirees."),
+    amendments: int = typer.Option(30, "--amendments", min=0, help="Aretes AMENDS / REVOKES tirees."),
+) -> None:
+    """Tirer un echantillon d'aretes a verifier a la main (precision de l'extraction)."""
+    from raglab.graph.evaluation import draw_sample
+    from raglab.graph.structured import StructuredGraphService
+
+    with session_scope() as session:
+        service = StructuredGraphService(session)
+        run = service.resolve_index_run(corpus_name=corpus, index_run_id=index_run_id)
+        payload, documents = service.payload_with_documents(run)
+    sample = draw_sample(payload, documents, seed=seed, cites=cites, amendments=amendments)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(json.dumps(sample, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    typer.echo(f"{len(sample['items'])} aretes -> {output}")
+
+
+@graph_app.command("report")
+def graph_report(
+    sample: Path = typer.Option(..., "--sample", exists=True, dir_okay=False, help="Echantillon relu (verdicts)."),
+    corpus: str | None = typer.Option(None, "--corpus"),
+    index_run_id: str | None = typer.Option(None, "--index-run"),
+    questions: Path | None = typer.Option(
+        None, "--questions", exists=True, dir_okay=False, help="ground_truth.jsonl LexML (couverture des articles)."
+    ),
+) -> None:
+    """Precision de l'extraction (echantillon relu) et questions LexML qui tombent sur un noeud Article."""
+    from raglab.graph.evaluation import article_coverage, load_cases, precision_report
+    from raglab.graph.structured import StructuredGraphService
+
+    report: dict = {"precision": precision_report(json.loads(sample.read_text(encoding="utf-8")))}
+    if questions is not None:
+        with session_scope() as session:
+            service = StructuredGraphService(session)
+            run = service.resolve_index_run(corpus_name=corpus, index_run_id=index_run_id)
+            payload, documents = service.payload_with_documents(run)
+        report["coverage"] = article_coverage(payload, load_cases(questions), documents)
+        report["extraction"] = payload.stats
+        report["nodes"] = payload.node_counts()
+        report["relationships"] = payload.relationship_counts()
+    typer.echo(json.dumps(report, indent=2, ensure_ascii=False))
 
 
 @app.command()
