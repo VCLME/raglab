@@ -323,6 +323,8 @@ class RecallBenchmarkService:
                     metrics_json={
                         **detail["metrics"],
                         "timings_ms": detail["timings_ms"],
+                        # Kept for `raglab experiment drift` (score distributions).
+                        "retrieved_scores": [chunk["score"] for chunk in detail["retrieved_chunks"]],
                         "expected_file_names": case.expected_file_names,
                         "expected_urns": case.expected_urns,
                         "expected_spans": case.expected_spans,

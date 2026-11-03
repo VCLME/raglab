@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -345,3 +346,18 @@ class RecallRequest(BaseModel):
     # RAGLAB_LLAMACPP_BASE_URL; the API container cannot start it).
     judge_backend: str = "ollama"
     judge_model: str | None = None
+
+
+class DriftSelection(BaseModel):
+    index_run_id: str | None = None
+    experiment_run_id: str | None = None
+    since: datetime | None = None
+    until: datetime | None = None
+
+
+class DriftRequest(BaseModel):
+    baseline: DriftSelection
+    candidate: DriftSelection
+    alpha: float = Field(default=0.05, gt=0, lt=1)
+    mean_threshold: float = Field(default=0.05, ge=0)
+    min_samples: int = Field(default=10, ge=2)

@@ -9,6 +9,8 @@ from sqlalchemy.orm import Session
 
 from raglab.api.deps import get_db
 from raglab.api.schemas import (
+    DriftRequest,
+    DriftSelection,
     ExperimentResultCase,
     ExperimentRunDetail,
     ExperimentRunSummary,
@@ -18,6 +20,7 @@ from raglab.config import get_settings
 from raglab.db.models import EmbeddingSpace, ExperimentResult, ExperimentRun, IndexRun
 from raglab.experiments.ragas import JudgeConfig
 from raglab.experiments.recall import RecallBenchmarkService
+from raglab.observability.drift import ResultSelection, build_drift_report, render_markdown
 
 router = APIRouter(prefix="/api/experiments", tags=["experiments"])
 
@@ -41,6 +44,32 @@ def recall(body: RecallRequest, session: Session = Depends(get_db)) -> dict[str,
         )
     finally:
         service.close()
+
+
+def _selection(body: DriftSelection, name: str) -> ResultSelection:
+    selection = ResultSelection(body.index_run_id, body.experiment_run_id, body.since, body.until)
+    if selection.is_empty():
+        raise HTTPException(
+            status_code=422,
+            detail=f"Selection '{name}' vide : indiquez index_run_id, experiment_run_id, since ou until.",
+        )
+    return selection
+
+
+@router.post("/drift")
+def drift(body: DriftRequest, session: Session = Depends(get_db)) -> dict[str, Any]:
+    """Drift report between two sets of stored results (KS test on score
+    distributions, deltas of RAGAS / MRR means). `markdown` holds the
+    rendered report."""
+    report = build_drift_report(
+        session,
+        _selection(body.baseline, "baseline"),
+        _selection(body.candidate, "candidate"),
+        alpha=body.alpha,
+        mean_threshold=body.mean_threshold,
+        min_samples=body.min_samples,
+    )
+    return {**report, "markdown": render_markdown(report)}
 
 
 def _duration_ms(run: ExperimentRun) -> float | None:

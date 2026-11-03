@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime
 from pathlib import Path
 
 import typer
@@ -544,6 +545,45 @@ def experiment_calibrate_judges(
             [{k: v for k, v in r.items() if k != "rows"} for r in report["results"]], indent=2, ensure_ascii=False
         )
     )
+
+
+@experiment_app.command("drift")
+def experiment_drift(
+    baseline_index_run: str | None = typer.Option(None, "--baseline-index-run", help="Index run de reference."),
+    candidate_index_run: str | None = typer.Option(None, "--candidate-index-run", help="Index run candidat."),
+    baseline_run: str | None = typer.Option(None, "--baseline-run", help="Experiment run de reference."),
+    candidate_run: str | None = typer.Option(None, "--candidate-run", help="Experiment run candidat."),
+    baseline_since: datetime | None = typer.Option(None, "--baseline-since", help="Debut de la fenetre de reference."),
+    baseline_until: datetime | None = typer.Option(None, "--baseline-until", help="Fin (exclue) de la reference."),
+    candidate_since: datetime | None = typer.Option(None, "--candidate-since", help="Debut de la fenetre candidate."),
+    candidate_until: datetime | None = typer.Option(None, "--candidate-until", help="Fin (exclue) du candidat."),
+    alpha: float = typer.Option(0.05, "--alpha", help="Seuil de p-value du test KS."),
+    mean_threshold: float = typer.Option(0.05, "--mean-threshold", help="Baisse de moyenne signalee (RAGAS, MRR)."),
+    min_samples: int = typer.Option(10, "--min-samples", min=2, help="Taille minimale d'echantillon pour le test KS."),
+    output_format: str = typer.Option("markdown", "--format", help="markdown ou json."),
+    output: Path | None = typer.Option(None, "--output", help="Ecrire le rapport ici."),
+    fail_on_drift: bool = typer.Option(False, "--fail-on-drift", help="Code de sortie 1 si une derive est detectee."),
+) -> None:
+    """Comparer deux ensembles de resultats (index runs, experiment runs ou fenetres de dates)."""
+    from raglab.observability.drift import ResultSelection, build_drift_report, render_markdown
+
+    if output_format not in {"markdown", "json"}:
+        raise typer.BadParameter("--format attend markdown ou json.")
+    baseline = ResultSelection(baseline_index_run, baseline_run, baseline_since, baseline_until)
+    candidate = ResultSelection(candidate_index_run, candidate_run, candidate_since, candidate_until)
+    if baseline.is_empty() or candidate.is_empty():
+        raise typer.BadParameter("Precisez au moins un critere (index run, run ou dates) pour chaque ensemble.")
+    with session_scope() as session:
+        report = build_drift_report(
+            session, baseline, candidate, alpha=alpha, mean_threshold=mean_threshold, min_samples=min_samples
+        )
+    text = render_markdown(report) if output_format == "markdown" else json.dumps(report, indent=2, ensure_ascii=False)
+    if output:
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(text, encoding="utf-8")
+    typer.echo(text)
+    if fail_on_drift and report["drift_detected"]:
+        raise typer.Exit(code=1)
 
 
 @experiment_app.command("recall")
