@@ -147,4 +147,12 @@ Objectif : passer du laboratoire à un pipeline RAG prêt pour la production, ch
   - client compatible OpenAI et `LocalLLMServer` : raglab décharge Ollama, démarre et arrête llama-server tout seul
 - **9.1b — Mesure (à venir)** : timing par étape, cache de l'embedder, `raglab bench all`, `docs/benchmarks/baseline.md`, juge answer_relevancy, juge RAGAS Gemma 4 via llama.cpp (calibré contre qwen2.5), CI GitHub Actions
 
-**À venir** : 9.2 retrieval hybride BM25 + RRF · 9.3 re-ranking cross-encoder · 9.4 compréhension de la requête et abstention · 9.5 durcissement API (SSE, timeouts, clé d'API, /ready, migrations Alembic) · 9.6 observabilité (Prometheus, Grafana, dérive) · 9.7 portes de qualité · 9.8 vitrine
+**9.2 — Retrieval hybride BM25 + RRF 🚧 (code prêt, mesure après la baseline 9.1b)** : voir [retrieval-hybrid.md](retrieval-hybrid.md)
+
+- Alembic : révision de base identique au schéma `create_all` d'avant, puis `0002_hybrid_lexical` ; `raglab db init` exécute les migrations et adopte les bases existantes (estampille + mise à niveau)
+- `tsvector` par chunk + index GIN, configuration choisie selon la langue du document ou du corpus (`raglab_french`, `raglab_portuguese`, avec `unaccent`)
+- vrai BM25 calculé dans PostgreSQL (`ts_rank` n'a pas d'IDF), statistiques N / avgdl / df stockées par `index_run`, recalculées pour les runs existants par la migration
+- fusion RRF (k = 60) avec un poids lexical réglable ; `retrieval_mode = dense | lexical | hybrid` sur l'API, la CLI, le benchmark de recall et l'UI, avec les scores dense / BM25 / RRF de chaque chunk
+- à mesurer : Recall@5/10, MRR, latence par type de question (`reference`, `entity`, `paraphrase`) contre la baseline
+
+**À venir** : 9.3 re-ranking cross-encoder · 9.4 compréhension de la requête et abstention · 9.5 durcissement API (SSE, timeouts, clé d'API, /ready) · 9.6 observabilité (Prometheus, Grafana, dérive) · 9.7 portes de qualité · 9.8 vitrine
