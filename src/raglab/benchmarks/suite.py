@@ -30,7 +30,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from importlib import metadata
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import requests
 from sqlalchemy import text
@@ -39,6 +39,9 @@ from raglab.benchmarks.compare import case_rows
 from raglab.config import Settings, get_settings
 from raglab.domain.enums import ChunkingStrategy, RetrievalMode
 from raglab.experiments.ragas import JudgeConfig
+
+if TYPE_CHECKING:
+    from raglab.experiments.recall import GeneratorConfig
 from raglab.logging_utils import log_event
 
 LOGGER = logging.getLogger(__name__)
@@ -285,6 +288,7 @@ def run_suite(
     rerank: bool | None = None,
     citations: bool | None = None,
     graph: bool | None = None,
+    generator: GeneratorConfig | None = None,
 ) -> dict[str, Any]:
     from raglab.db import session_scope
     from raglab.experiments.recall import RecallBenchmarkService
@@ -357,6 +361,7 @@ def run_suite(
                 rerank=rerank,
                 citations=citations,
                 graph=graph,
+                generator=generator,
             )
         finally:
             service.close()
@@ -403,6 +408,7 @@ def run_all(
     rerank: bool | None = None,
     citations: bool | None = None,
     graph: bool | None = None,
+    generator: GeneratorConfig | None = None,
 ) -> dict[str, Any]:
     from raglab.db import initialize_database, session_scope
 
@@ -433,6 +439,7 @@ def run_all(
             rerank=do_rerank,
             citations=citations,
             graph=graph,
+            generator=generator,
         )
         for suite in selected
     ]
@@ -442,6 +449,7 @@ def run_all(
         "retrieval_mode": mode.value,
         "rerank": do_rerank,
         "graph": settings.graph_retrieval if graph is None else graph,
+        **({"generator": generator.label(settings)} if generator and generator.deferred else {}),
         **(
             {"rerank_model": settings.rerank_model_name, "rerank_candidates": settings.rerank_candidates}
             if do_rerank
