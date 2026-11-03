@@ -150,7 +150,8 @@ def article_coverage(
         if citation is None or citation.article is None:
             continue
         counts["cite_article"] += 1
-        document_id = laws.get(citation.law_number)
+        # A French code article has no law number: not a law of this graph.
+        document_id = laws.get(citation.law_number) if citation.law_number else None
         if document_id is None:
             misses.append({"id": case["id"], "reason": "law_not_in_corpus", "question": case["question"]})
             continue
