@@ -22,7 +22,7 @@ question ──► retrieval (dense | lexical | hybrid) ──► rerank_candida
 
 ## Utilisation
 
-Le re-ranking est un booléen `rerank`, modifiable à chaque requête. Absent, il prend la valeur de `RAGLAB_DEFAULT_RERANK` (désactivé par défaut tant que le gain n'est pas mesuré).
+Le re-ranking est un booléen `rerank`, modifiable à chaque requête. Absent, il prend la valeur de `RAGLAB_DEFAULT_RERANK`, **activé par défaut** depuis la mesure (avec `RAGLAB_DEFAULT_RETRIEVAL_MODE=hybrid`), sauf dans l'image Docker de l'API, sans GPU, où `docker-compose.yml` le désactive.
 
 | Surface | Paramètre |
 |---|---|
@@ -95,7 +95,7 @@ Le budget visé était de 200 ms ajoutées au p50 sur GPU : **il est dépassé d
 
 | Variable | Défaut | Rôle |
 |---|---|---|
-| `RAGLAB_DEFAULT_RERANK` | `false` | re-ranking quand la requête ne précise rien |
+| `RAGLAB_DEFAULT_RERANK` | `true` (`false` dans le conteneur `api`, sans GPU) | re-ranking quand la requête ne précise rien |
 | `RAGLAB_RERANK_MODEL_NAME` | `BAAI/bge-reranker-v2-m3` | modèle Hugging Face |
 | `RAGLAB_RERANK_DEVICE` | `cuda` | repli sur CPU si CUDA est absent |
 | `RAGLAB_RERANK_CANDIDATES` | `40` | taille de la liste re-classée |
@@ -200,4 +200,4 @@ Le cross-encoder tient à côté de qwen2.5:7b, avec ~550 Mio de marge seulement
 5. **Juges RAGAS : correctness et relevancy en hausse, faithfulness en baisse sur LexML.** Correctness +0.050 (PIAF) et +0.097 (LexML) par rapport à l'hybride, relevancy +0.050 et +0.040. Faithfulness −0.010 (PIAF) et −0.035 (LexML), −0.050 contre la baseline sur LexML. Ces écarts portent sur 100 réponses sans intervalle de confiance. Une hypothèse, non vérifiée : avec de meilleurs passages, le modèle répond plus souvent et prend plus de risques. À surveiller.
 6. **La latence dépasse le budget.** +420 ms (PIAF) et +610 ms (LexML) au p50, contre 200 ms visés. Rapporté à la réponse complète (génération 2 à 4 s au p50), c'est +15 à 20 %.
 
-**Recommandation.** Le gain justifie la brique : la proposer comme configuration recommandée (`RAGLAB_DEFAULT_RETRIEVAL_MODE=hybrid`, `RAGLAB_DEFAULT_RERANK=true`) pour un usage où la qualité prime sur la latence de recherche. Cette PR laisse `RAGLAB_DEFAULT_RERANK=false` : basculer le défaut revient au propriétaire. Avant de le faire, deux réglages non mesurés pourraient ramener la latence près du budget : 20 candidats au lieu de 40 (le Recall@10 de l'hybride, 0.94 / 0.56, laisse penser que l'essentiel est dans le top-20) et `RAGLAB_RERANK_MAX_LENGTH=256`.
+**Recommandation.** Le gain justifie la brique : la proposer comme configuration recommandée (`RAGLAB_DEFAULT_RETRIEVAL_MODE=hybrid`, `RAGLAB_DEFAULT_RERANK=true`) pour un usage où la qualité prime sur la latence de recherche. Décision du propriétaire après la mesure : hybride + re-ranking devient la configuration par défaut. Avant de le faire, deux réglages non mesurés pourraient ramener la latence près du budget : 20 candidats au lieu de 40 (le Recall@10 de l'hybride, 0.94 / 0.56, laisse penser que l'essentiel est dans le top-20) et `RAGLAB_RERANK_MAX_LENGTH=256`.
