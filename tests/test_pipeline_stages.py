@@ -82,3 +82,34 @@ def test_chunk_previews_carry_first_stage_scores_and_ranks():
     assert preview["lexical_score"] == 9.5
     # The chunk's own `rank` stays the final position; absent ranks are left out.
     assert preview["rank"] == 1 and "rerank_rank" not in preview
+
+
+def test_graph_branch_is_a_stage_between_bm25_and_fusion():
+    outcome = _hybrid_outcome(embed=10.0, retrieval=40.0, dense=8.0, lexical=12.0, graph=9.5, fusion=1.0)
+    outcome.graph = True
+    outcome.graph_stats = {"seeds": 12, "articles": 3, "chunks": 5, "added": 2}
+    outcome.graph_links = [
+        {
+            "from": "Art. 10-B — Lei nº 11.445/2007",
+            "to": "Art. 11-B — Lei nº 11.445/2007",
+            "snippet": "art. 11-B",
+            "chunks": 2,
+            "added": 1,
+        }
+    ]
+    outcome.graph_chunks = list(outcome.retrieved)
+    assert planned_stages(outcome, generate=False) == ["embed", "retrieval", "lexical", "graph", "fusion"]
+    graph = next(e for e in retrieval_stage_events(outcome) if e["stage"] == "graph" and e["status"] == "end")
+    assert graph["duration_ms"] == 9.5
+    assert graph["counts"] == {"seeds": 12, "articles": 3, "chunks": 5, "added": 2}
+    assert graph["data"]["links"][0]["to"] == "Art. 11-B — Lei nº 11.445/2007"
+    assert graph["data"]["top_chunks"][0]["file_name"] == "loi.txt"
+    assert "notice" not in graph["data"]
+
+
+def test_skipped_graph_branch_says_why():
+    outcome = _hybrid_outcome(embed=10.0, retrieval=40.0, dense=8.0, lexical=12.0, graph=0.2, fusion=1.0)
+    outcome.graph = True
+    outcome.graph_notice = "skipped_no_neo4j"
+    graph = next(e for e in retrieval_stage_events(outcome) if e["stage"] == "graph" and e["status"] == "end")
+    assert graph["data"]["notice"] == "skipped_no_neo4j" and graph["counts"] == {}

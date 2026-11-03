@@ -13,6 +13,9 @@ export interface ChunkPreview {
   fused_score?: number;
   fused_rank?: number;
   rerank_score?: number;
+  graph_score?: number;
+  graph_rank?: number;
+  graph_pinned?: boolean;
   [key: string]: unknown;
 }
 
@@ -205,13 +208,25 @@ function RankLinks({ left, right, links, caption }: { left: Column; right: Colum
  * RRF: each passage's rank in the vector list and in the BM25 list, and the
  * fused score computed from those two ranks only.
  */
-export function RrfMerge({ chunks, k, weight }: { chunks: ChunkPreview[]; k: number; weight: number }) {
+export function RrfMerge({
+  chunks,
+  k,
+  weight,
+  graphWeight = 0.5,
+}: {
+  chunks: ChunkPreview[];
+  k: number;
+  weight: number;
+  graphWeight?: number;
+}) {
   const { t } = useTranslation();
   // Fused order, whatever the re-ranker did afterwards.
   const ranked = chunks
-    .filter((c) => c.dense_rank != null || c.lexical_rank != null)
+    .filter((c) => c.dense_rank != null || c.lexical_rank != null || c.graph_rank != null)
     .sort((a, b) => (b.fused_score ?? 0) - (a.fused_score ?? 0));
   if (ranked.length === 0) return null;
+  // The graph column appears when the third branch added a passage.
+  const withGraph = ranked.some((c) => c.graph_rank != null);
   const term = (rank: number | undefined, w: number) => (rank != null ? `${w.toFixed(1)}/(${k}+${rank})` : "0");
   return (
     <figure className="edu-figure">
@@ -221,6 +236,7 @@ export function RrfMerge({ chunks, k, weight }: { chunks: ChunkPreview[]; k: num
             <th>{t("edu.fig.passage")}</th>
             <th>{t("edu.fig.rank_dense")}</th>
             <th>{t("edu.fig.rank_bm25")}</th>
+            {withGraph ? <th>{t("edu.fig.rank_graph")}</th> : null}
             <th>{t("edu.fig.rrf_formula")}</th>
             <th>{t("edu.fig.fused")}</th>
           </tr>
@@ -231,15 +247,125 @@ export function RrfMerge({ chunks, k, weight }: { chunks: ChunkPreview[]; k: num
               <td className="edu-file">{shortName(chunk.file_name, 18)}</td>
               <td>{chunk.dense_rank != null ? `#${chunk.dense_rank}` : "—"}</td>
               <td>{chunk.lexical_rank != null ? `#${chunk.lexical_rank}` : "—"}</td>
+              {withGraph ? <td className="edu-graph">{chunk.graph_rank != null ? `#${chunk.graph_rank}` : "—"}</td> : null}
               <td className="edu-formula">
                 {term(chunk.dense_rank, 1 - weight)} + {term(chunk.lexical_rank, weight)}
+                {withGraph ? ` + ${term(chunk.graph_rank, graphWeight)}` : ""}
               </td>
-              <td className="edu-strong">{chunk.fused_score != null ? chunk.fused_score.toFixed(4) : "—"}</td>
+              <td className="edu-strong">
+                {chunk.fused_score != null ? (
+                  chunk.fused_score.toFixed(4)
+                ) : chunk.graph_pinned ? (
+                  <span className="edu-grouped">{t("edu.fig.grouped")}</span>
+                ) : (
+                  "—"
+                )}
+              </td>
             </tr>
           ))}
         </tbody>
       </table>
-      <figcaption>{t("edu.fig.rrf_caption", { k, weight })}</figcaption>
+      <figcaption>
+        {t("edu.fig.rrf_caption", { k, weight })}
+        {withGraph ? ` ${t("edu.fig.rrf_graph_caption", { weight: graphWeight })}` : ""}
+      </figcaption>
+    </figure>
+  );
+}
+
+/** A reference followed by the graph branch (`graph` stage, `links`). */
+export interface GraphLink {
+  from: string;
+  to: string;
+  snippet?: string | null;
+  chunks: number;
+  added: number;
+}
+
+function splitArticle(label: string): { article: string; law: string } {
+  const [article, law = ""] = label.split(" — ");
+  return { article, law };
+}
+
+/**
+ * The graph branch: article A, found by the search, cites article B; B's
+ * passages join the fusion. Drawn from the first reference this request
+ * followed, the others listed below.
+ */
+export function CitesSchematic({ links }: { links: GraphLink[] }) {
+  const { t } = useTranslation();
+  const first = links[0];
+  const a = splitArticle(first?.from ?? t("edu.fig.cites_example_from"));
+  const b = splitArticle(first?.to ?? t("edu.fig.cites_example_to"));
+  const added = first?.added ?? 1;
+  const passages = Math.max(first?.chunks ?? 2, 1);
+  return (
+    <figure className="edu-figure">
+      <svg viewBox="0 0 340 168" className="edu-cites" role="img" aria-label={t("edu.fig.cites_label")}>
+        <defs>
+          <marker id="edu-cites-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" className="edu-cites-head" />
+          </marker>
+        </defs>
+        <g className="edu-fade">
+          <rect x={6} y={18} width={124} height={62} rx={9} className="edu-cites-card found" />
+          <text x={68} y={12} textAnchor="middle" className="edu-fig-head">
+            {t("edu.fig.cites_found")}
+          </text>
+          <text x={68} y={44} textAnchor="middle" className="edu-fig-label strong">
+            {a.article}
+          </text>
+          <text x={68} y={62} textAnchor="middle" className="edu-fig-value">
+            {a.law}
+          </text>
+        </g>
+        <path d="M 136 49 C 168 38, 178 38, 204 49" pathLength={1} className="edu-cites-edge edu-draw" markerEnd="url(#edu-cites-head)" />
+        <text x={170} y={30} textAnchor="middle" className="edu-cites-type">
+          CITES
+        </text>
+        <g className="edu-fade" style={{ animationDelay: "260ms" }}>
+          <rect x={210} y={18} width={124} height={62} rx={9} className="edu-cites-card cited" />
+          <text x={272} y={12} textAnchor="middle" className="edu-fig-head">
+            {t("edu.fig.cites_cited")}
+          </text>
+          <text x={272} y={44} textAnchor="middle" className="edu-fig-label strong graph">
+            {b.article}
+          </text>
+          <text x={272} y={62} textAnchor="middle" className="edu-fig-value">
+            {b.law}
+          </text>
+        </g>
+        {Array.from({ length: Math.min(passages, 3) }, (_, i) => (
+          <g key={i} className="edu-fade" style={{ animationDelay: `${420 + i * 120}ms` }}>
+            <path d={`M 272 80 L ${228 + i * 44} 112`} className="edu-cites-part" />
+            <rect x={210 + i * 44} y={112} width={36} height={22} rx={5} className={`edu-cites-chunk${i < added ? " added" : ""}`} />
+          </g>
+        ))}
+        <text x={272} y={152} textAnchor="middle" className="edu-fig-value">
+          {t("edu.fig.cites_added", { count: added })}
+        </text>
+        <rect x={50} y={112} width={36} height={22} rx={5} className="edu-cites-chunk seed" />
+        <path d="M 68 80 L 68 112" className="edu-cites-part" />
+        <text x={68} y={152} textAnchor="middle" className="edu-fig-value">
+          {t("edu.fig.cites_seed")}
+        </text>
+      </svg>
+      {first?.snippet ? <p className="edu-cites-snippet">« {first.snippet} »</p> : null}
+      {links.length > 1 ? (
+        <ol className="edu-cites-list">
+          {links.slice(1).map((link, i) => (
+            <li key={`${link.from}-${link.to}-${i}`}>
+              <span>{link.from}</span>
+              <span className="edu-cites-arrow" aria-hidden="true">
+                →
+              </span>
+              <span className="edu-cites-to">{link.to}</span>
+              {link.added ? <span className="edu-cites-badge">+{link.added}</span> : null}
+            </li>
+          ))}
+        </ol>
+      ) : null}
+      <figcaption>{first ? t("edu.fig.cites_caption") : t("edu.fig.cites_caption_example")}</figcaption>
     </figure>
   );
 }

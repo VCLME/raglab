@@ -58,6 +58,9 @@ class ConfigResponse(BaseModel):
     rerank_candidates: int = 0
     # Phase-8 entity store pages (Expert flag).
     entity_graph_enabled: bool = False
+    # Graph retrieval branch default and its RRF weight (phase 9.9b).
+    graph_retrieval: bool = False
+    graph_weight: float = 0.5
     citation_resolver: bool = True
     # Enabled generation providers (RAGLAB_LLM_PROVIDERS) and the default one.
     llm_providers: list[str] = Field(default_factory=lambda: ["ollama"])
@@ -163,6 +166,9 @@ class QueryRequest(BaseModel):
     retrieval_mode: RetrievalMode | None = None
     # Resolve legal citations ("art. 49 da Lei nº 8.078"); None = server default.
     citations: bool | None = None
+    # Graph branch: follow the legal references of the found articles
+    # (Neo4j); None = RAGLAB_GRAPH_RETRIEVAL.
+    graph: bool | None = None
     lexical_weight: float | None = Field(None, ge=0.0, le=1.0)
     rrf_k: int | None = Field(None, ge=0)
     # Cross-encoder re-ranking of rerank_candidates first-stage chunks.
@@ -471,6 +477,7 @@ class RecallRequest(BaseModel):
     rrf_k: int | None = Field(None, ge=0)
     rerank: bool | None = None
     citations: bool | None = None
+    graph: bool | None = None
     compute_ragas: bool = False
     # Grade only the first N cases (retrieval still runs on all of them).
     ragas_case_limit: int | None = Field(None, ge=1)

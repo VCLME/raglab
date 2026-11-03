@@ -136,7 +136,9 @@
     "chunks_hide_filtered_one": "Ocultar o chunk filtrado",
     "chunks_hide_filtered_other": "Ocultar os {{count}} chunks filtrados",
     "stop": "Parar",
-    "stopped": "Geração interrompida."
+    "stopped": "Geração interrompida.",
+    "options_graph_hint": "Segue as remissões dos artigos encontrados (\"art. 12 desta Lei\") no grafo Neo4j e adiciona os artigos citados. Em medição: desativado por padrão.",
+    "options_graph_short": "grafo"
   },
   "dashboard": {
     "title": "Painel",
@@ -545,14 +547,19 @@
       "output_tokens": "Tokens gerados",
       "tokens_per_second": "Tokens / s",
       "fragments": "Fragmentos transmitidos",
-      "first_token_ms": "Primeiro token após"
+      "first_token_ms": "Primeiro token após",
+      "seeds": "Trechos de partida",
+      "articles": "Artigos citados seguidos",
+      "chunks": "Trechos obtidos",
+      "added": "Novos para a fusão"
     },
     "scores": {
       "score": "score",
       "dense_score": "vetorial",
       "lexical_score": "BM25",
       "fused_score": "fusão",
-      "rerank_score": "re-ranking"
+      "rerank_score": "re-ranking",
+      "graph_score": "grafo"
     },
     "stages": {
       "question": {
@@ -631,6 +638,13 @@
         "what": "Detecta na pergunta uma referência a artigo (“art. 49 da Lei 8.078”, “article L. 221-18 du Code de la consommation”) com expressões regulares.",
         "why": "Quando um artigo é citado, buscar em todo o corpus o afoga entre textos parecidos: a busca fica restrita a esse texto e o artigo vai para o topo.",
         "disabled": "Opção desativada: a pergunta é buscada em todo o corpus."
+      },
+      "graph": {
+        "name": "Grafo de remissões",
+        "short": "Grafo",
+        "what": "Parte do artigo citado pela pergunta e dos artigos dos melhores trechos encontrados, segue suas remissões (\"nos termos do art. 12\") por um salto no grafo Neo4j e adiciona os trechos dos artigos citados que as buscas não encontraram.",
+        "why": "Numa lei, a resposta costuma estar no artigo ao qual o trecho encontrado remete: ele não se parece com a pergunta, nem no sentido nem nas palavras, e nenhuma das duas buscas o traz.",
+        "disabled": "Opção desativada: a fusão recebe só os trechos das buscas vetorial e BM25."
       }
     },
     "hint_selected": "Clique de novo na etapa ativa para fechar a explicação.",
@@ -652,7 +666,20 @@
       "rrf_caption": "Só as posições contam (k = {{k}}, peso BM25 = {{weight}}): não é preciso comparar um cosseno com um score BM25.",
       "before": "Antes (1ª busca)",
       "after": "Depois (cross-encoder)",
-      "rerank_caption": "Cada linha liga a posição de um trecho antes e depois da releitura pelo cross-encoder."
+      "rerank_caption": "Cada linha liga a posição de um trecho antes e depois da releitura pelo cross-encoder.",
+      "rank_graph": "Rank no grafo",
+      "rrf_graph_caption": "O ramo do grafo soma g/(k + rank) com g = {{weight}}, só para trechos que as buscas não tinham encontrado.",
+      "cites_label": "O artigo A, encontrado pela busca, cita o artigo B; os trechos de B entram na fusão",
+      "cites_found": "encontrado pela busca",
+      "cites_cited": "citado por A",
+      "cites_seed": "trecho encontrado",
+      "cites_added_one": "{{count}} trecho novo",
+      "cites_added_other": "{{count}} trechos novos",
+      "cites_caption": "A primeira remissão seguida para esta pergunta, com a frase que a contém; os trechos cheios são novos para a fusão.",
+      "cites_caption_example": "Exemplo: nenhuma remissão foi seguida para esta pergunta.",
+      "cites_example_from": "Art. 5º — Lei nº 8.078",
+      "cites_example_to": "Art. 12 — Lei nº 8.078",
+      "grouped": "agrupado: segue o trecho que o cita"
     },
     "citation_none": "nenhuma",
     "rerank_skipped": "pulado (sem GPU)",
@@ -681,7 +708,18 @@
       "rerank_on": "Ativado: o cross-encoder relê os {{count}} melhores candidatos e fica com os mais relevantes.",
       "rerank_off": "Desativado: a ordem da busca é mantida.",
       "rerank_skipped": "Pulado: sem GPU no servidor (na CPU levaria vários segundos).",
-      "rerank_cpu": "Ativado na CPU, por falta de GPU: mais lento que o normal."
+      "rerank_cpu": "Ativado na CPU, por falta de GPU: mais lento que o normal.",
+      "graph": "Grafo de remissões",
+      "graph_opt_on": "ativado",
+      "graph_opt_off": "desativado",
+      "graph_opt_skipped": "ignorado",
+      "graph_on": "Ativado: {{articles}} artigos citados seguidos, {{count}} trechos adicionados à fusão.",
+      "graph_on_planned": "Ativado: segue as remissões (CITES) dos artigos encontrados no Neo4j e adiciona seus trechos à fusão.",
+      "graph_off": "Desativado: a fusão recebe só os trechos das buscas.",
+      "graph_skipped": "Ignorado: o ramo não pôde rodar.",
+      "graph_skipped_no_neo4j": "Ignorado: o Neo4j não responde, a resposta informa.",
+      "graph_skipped_no_graph": "Ignorado: sem grafo para este índice (Expert → Grafo de remissões).",
+      "graph_failed": "Ignorado: erro do Neo4j (ver os logs)."
     },
     "code": {
       "citation": {
@@ -716,7 +754,8 @@
         "what": "Reciprocal Rank Fusion: só as posições contam, não os scores",
         "dense": "bem colocado na busca vetorial: ganha pontos",
         "lexical": "bem colocado no BM25 também: ganha mais",
-        "absent": "ausente de uma lista: essa lista não soma nada"
+        "absent": "ausente de uma lista: essa lista não soma nada",
+        "graph": "encontrado pelo ramo do grafo (e não pelas buscas): seu rank no grafo conta"
       },
       "rerank": {
         "what": "O cross-encoder lê a pergunta e o trecho juntos",
@@ -740,8 +779,16 @@
       "answer": {
         "what": "No navegador, cada [Rank N] da resposta é detectado",
         "click": "e vira uma etiqueta clicável que leva à fonte N"
+      },
+      "graph": {
+        "seeds": "partidas: os artigos dos melhores trechos encontrados (e o citado na pergunta)",
+        "hop": "um salto: os artigos que eles citam (relação CITES)",
+        "cap": "no máximo 3 artigos citados por partida, os mais bem classificados primeiro",
+        "chunks": "os primeiros trechos de cada artigo citado",
+        "fusion": "esses trechos entram na fusão RRF como terceira lista"
       }
-    }
+    },
+    "graph_skipped": "ignorado"
   },
   "retrieval": {
     "mode_label": "Modo de busca",
@@ -775,6 +822,16 @@
     "citation_unresolved": "Citação reconhecida ({{label}}), mas a lei não está no índice: busca normal.",
     "rerank_notice_skipped_no_gpu": "Re-ranking ignorado: nenhuma GPU disponível (levaria vários segundos na CPU). Force com “ativado” se precisar.",
     "rerank_notice_cpu": "Re-ranking executado na CPU, sem GPU: conte vários segundos por consulta.",
+    "graph_label": "Grafo de remissões",
+    "graph_hint": "Terceiro ramo: segue as remissões (CITES, Neo4j) do artigo citado e dos melhores trechos, fusão RRF de três fontes; um trecho citado fica ao lado do que o cita. Requer o grafo do index run.",
+    "graph_checkbox": "Seguir remissões",
+    "graph_badge": "remissão de {{via}}",
+    "graph_badge_pinned": "citado por {{via}}, mantido ao lado",
+    "scores_graph": "grafo",
+    "graph_notice_skipped_no_neo4j": "Ramo do grafo ignorado: o Neo4j não responde.",
+    "graph_notice_skipped_no_graph": "Ramo do grafo ignorado: sem grafo para este index run (Expert → Grafo).",
+    "graph_notice_failed": "Ramo do grafo ignorado: erro do Neo4j (ver os logs).",
+    "graph_stats": "Grafo: {{seeds}} trechos de partida, {{articles}} artigos citados, {{chunks}} trechos adicionados à fusão",
     "mode_short_dense": "Vetorial",
     "mode_short_lexical": "Palavras-chave",
     "mode_short_hybrid": "Híbrida",

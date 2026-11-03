@@ -20,6 +20,7 @@ from raglab.domain.schemas import QueryResponse, RetrievalFilters, RetrievedChun
 from raglab.embeddings.factory import build_embedding_provider
 from raglab.generation.prompts import build_prompt_bundle
 from raglab.generation.service import AnswerGenerator, OllamaGenerator, OpenAICompatGenerator
+from raglab.graph.structured import StructuredGraphStore, get_graph_store
 from raglab.llm.providers import resolve_llm_provider
 from raglab.logging_utils import log_event
 from raglab.observability.metrics import observe_query
@@ -32,6 +33,14 @@ from raglab.retrieval.citations import (
     parse_citation,
 )
 from raglab.retrieval.fusion import reciprocal_rank_fusion
+from raglab.retrieval.graph_branch import (
+    GraphBranchResult,
+    graph_links,
+    group_references,
+    new_candidates,
+    run_graph_branch,
+    seed_chunks,
+)
 from raglab.retrieval.rerank import Reranker, get_reranker, rerank_gpu_available
 from raglab.retrieval.stages import planned_stages, prompt_details, retrieval_stage_events, stage_end, stage_start
 from raglab.stores.lexical.postgres import PostgresLexicalStore
@@ -72,6 +81,15 @@ class RetrievalOutcome:
     rerank_candidates: int = 0
     # Parsed legal citation and whether it resolved (citations option).
     citation: dict[str, Any] | None = None
+    # Graph branch (graph option): whether it ran, why not, its counters.
+    graph: bool = False
+    graph_notice: str | None = None
+    graph_stats: dict[str, int] = field(default_factory=dict)
+    # For the learning mode's `graph` stage: the references followed
+    # (citing -> cited article, the sentence, passages added) and the
+    # branch's own ranked list.
+    graph_links: list[dict[str, Any]] = field(default_factory=list)
+    graph_chunks: list[RetrievedChunk] = field(default_factory=list)
 
     def response(self, **extra: Any) -> QueryResponse:
         return QueryResponse(
@@ -87,6 +105,9 @@ class RetrievalOutcome:
             filters=self.filters,
             timings_ms=dict(self.timings_ms),
             citation=self.citation,
+            graph=self.graph,
+            graph_notice=self.graph_notice,
+            graph_stats=dict(self.graph_stats),
             **extra,
         )
 
@@ -103,6 +124,18 @@ class QueryService:
         # One generator per provider, built on first use.
         self._generators: dict[str, AnswerGenerator] = {}
         self._reranker: Reranker | None = None
+        self._graph_store: StructuredGraphStore | None = None
+
+    @property
+    def graph_store(self) -> StructuredGraphStore:
+        # Shared driver per Neo4j target, opened on the first graph query.
+        if self._graph_store is None:
+            self._graph_store = get_graph_store(self.settings)
+        return self._graph_store
+
+    @graph_store.setter
+    def graph_store(self, value: StructuredGraphStore) -> None:
+        self._graph_store = value
 
     @property
     def generator(self) -> AnswerGenerator:
@@ -202,6 +235,7 @@ class QueryService:
         rrf_k: int | None = None,
         rerank: bool | None = None,
         citations: bool | None = None,
+        graph: bool | None = None,
     ) -> RetrievalOutcome:
         """Search the index for the question, each stage under its budget.
 
@@ -210,6 +244,11 @@ class QueryService:
         first; one citing an article of a French code ("article L. 221-18 du
         code de la consommation") pins that article's document and is
         restricted to the code (see `raglab.retrieval.citations`).
+
+        With `graph` on, a third list joins the fusion: chunks of the
+        articles that the cited article and the best first-stage hits cite
+        (see `raglab.retrieval.graph_branch`); after re-ranking, a cited
+        passage is kept right after the passage citing it.
 
         dense: embed + cosine KNN (as before). lexical: BM25, no embedder.
         hybrid: both, fused by Reciprocal Rank Fusion over deeper lists.
@@ -243,15 +282,22 @@ class QueryService:
         weight = self.settings.hybrid_lexical_weight if lexical_weight is None else lexical_weight
         fusion_k = self.settings.rrf_k if rrf_k is None else rrf_k
 
+        use_graph = self.settings.graph_retrieval if graph is None else graph
+        # The citation restricts the search to the cited law; the graph
+        # branch follows references out of it, under the caller's filters only.
+        user_filters = filters
         citation_started = perf_counter()
         use_citations = self.settings.citation_resolver if citations is None else citations
-        citation = parse_citation(question) if use_citations else None
+        parsed = parse_citation(question) if use_citations or use_graph else None
+        # Graph only (citations off): the cited article seeds the branch, the
+        # search itself is not restricted to its law.
+        citation = parsed if use_citations else None
         law_document_id: str | None = None
         pinned: list[RetrievedChunk] = []
         cited_code: str | None = None
-        if citation is not None and citation.law_number is not None:
-            law_document_id = find_law_document(self.session, index_run, citation)
-            if law_document_id is not None:
+        if parsed is not None and parsed.law_number is not None:
+            law_document_id = find_law_document(self.session, index_run, parsed)
+            if citation is not None and law_document_id is not None:
                 if citation.article:
                     pinned = article_chunks(self.session, index_run, law_document_id, citation.article)
                 filters = (filters or RetrievalFilters()).model_copy(update={"document_ids": [law_document_id]})
@@ -266,6 +312,16 @@ class QueryService:
                 if cited_code:
                     base = filters or RetrievalFilters()
                     filters = base.model_copy(update={"metadata_equals": {**base.metadata_equals, "code": cited_code}})
+        # The graph holds laws (profile "laws"): only a cited law's article seeds it.
+        seed_articles = (
+            [{"document_id": law_document_id, "number": parsed.article, "rank": 0}]
+            if use_graph
+            and parsed is not None
+            and parsed.law_number is not None
+            and parsed.article
+            and law_document_id is not None
+            else []
+        )
         citation_seconds = perf_counter() - citation_started if citation is not None else 0.0
         started = perf_counter()
         query_embedding: list[float] | None = None
@@ -298,8 +354,40 @@ class QueryService:
                     filters=filters,
                 )
                 stage_ms["lexical"] = perf_counter() - lexical_started
+            branch = GraphBranchResult()
+            if use_graph:
+                graph_started = perf_counter()
+                branch = run_graph_branch(
+                    self.session,
+                    self.graph_store,
+                    index_run,
+                    settings=self.settings,
+                    seeds=seed_chunks(dense, lexical, limit=self.settings.graph_seed_chunks, pinned=pinned),
+                    seed_articles=seed_articles,
+                    filters=user_filters,
+                )
+                stage_ms["graph"] = perf_counter() - graph_started
             fusion_started = perf_counter()
-            if mode == RetrievalMode.DENSE:
+            # The graph adds the cited passages the retrievers missed; it does
+            # not re-score what they found (that cost Recall@1 on LexML).
+            graph_list = new_candidates(branch.chunks, dense, lexical, pinned)
+            if branch.stats:
+                branch.stats["added"] = len(graph_list)
+            if graph_list:
+                # Three sources: the single-retriever modes keep their own
+                # list at full weight (w = 0 or 1).
+                three_way_weight = {RetrievalMode.DENSE: 0.0, RetrievalMode.LEXICAL: 1.0}.get(mode, weight)
+                retrieved = reciprocal_rank_fusion(
+                    dense,
+                    lexical,
+                    graph=graph_list,
+                    k=fusion_k,
+                    lexical_weight=three_way_weight,
+                    graph_weight=self.settings.graph_weight,
+                    top_k=stage_top_k,
+                )
+                stage_ms["fusion"] = perf_counter() - fusion_started
+            elif mode == RetrievalMode.DENSE:
                 retrieved = [
                     chunk.model_copy(update={"dense_score": chunk.score, "dense_rank": chunk.rank}) for chunk in dense
                 ]
@@ -335,10 +423,11 @@ class QueryService:
         timings_ms["retrieval"] = round((searched - search_started + citation_seconds) * 1000, 3)
         if citation is not None:
             timings_ms["citation"] = round(citation_seconds * 1000, 3)
-        if mode != RetrievalMode.DENSE:
+        if mode != RetrievalMode.DENSE or use_graph:
             timings_ms.update({stage: round(seconds * 1000, 3) for stage, seconds in stage_ms.items()})
 
         rerank_stats: dict[str, float] = {}
+        first_stage_pool = list(retrieved)
         if do_rerank:
             first_stage = retrieved
             rerank_started = perf_counter()
@@ -352,6 +441,13 @@ class QueryService:
                 # A cited article is the answer by construction: the
                 # cross-encoder orders the rest, it does not demote the pin.
                 retrieved = merge_with_citation(pinned, retrieved, effective_top_k)
+        if branch.hits:
+            # A passage found through a reference stays next to the one
+            # citing it, whatever the cross-encoder made of it.
+            pool = {chunk.chunk_id: chunk for chunk in [*branch.chunks, *first_stage_pool]}
+            retrieved = group_references(
+                retrieved, branch.hits, pool, top_k=effective_top_k, max_groups=self.settings.graph_group_max
+            )
         hybrid = mode == RetrievalMode.HYBRID
         return RetrievalOutcome(
             question=question,
@@ -383,6 +479,11 @@ class QueryService:
                 if citation is not None
                 else None
             ),
+            graph=use_graph,
+            graph_notice=branch.notice,
+            graph_stats=dict(branch.stats),
+            graph_links=graph_links(branch, graph_list),
+            graph_chunks=list(branch.chunks),
         )
 
     def query(
@@ -402,6 +503,7 @@ class QueryService:
         rrf_k: int | None = None,
         rerank: bool | None = None,
         citations: bool | None = None,
+        graph: bool | None = None,
         llm_provider: str | None = None,
     ) -> QueryResponse:
         """`generation_top_k` sends only the first N retrieved chunks to the
@@ -423,6 +525,7 @@ class QueryService:
             rrf_k=rrf_k,
             rerank=rerank,
             citations=citations,
+            graph=graph,
         )
         answer = None
         stats: dict[str, float] = {}
@@ -556,6 +659,9 @@ class QueryService:
             rrf_k=outcome.rrf_k,
             rerank=outcome.rerank,
             rerank_stats=outcome.rerank_stats,
+            graph=outcome.graph,
+            graph_notice=outcome.graph_notice,
+            graph_stats=outcome.graph_stats,
             generate_answer=generate_answer,
             llm_provider=llm_provider,
             streamed=streamed,
@@ -573,7 +679,13 @@ class QueryService:
             generation_stats=generation_stats if generate_answer else None,
             rerank_stats=outcome.rerank_stats,
             rerank_notice=outcome.rerank_notice,
-            score_type="rerank" if outcome.rerank else _SCORE_TYPES[outcome.retrieval_mode],
+            score_type=(
+                "rerank"
+                if outcome.rerank
+                else "rrf"
+                if outcome.graph_stats.get("chunks")
+                else _SCORE_TYPES[outcome.retrieval_mode]
+            ),
         )
 
     @contextmanager

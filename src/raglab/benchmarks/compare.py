@@ -125,6 +125,17 @@ def compare_runs(run_a: dict[str, Any], run_b: dict[str, Any], *, k: int = 5) ->
                 )
                 for question_type in types
             }
+        splits = sorted({row["split"] for row in cases_a if row.get("split")})
+        if splits:
+            # Questions never looked at while tuning are reported apart.
+            entry["by_split"] = {
+                split: compare_suite(
+                    [row for row in cases_a if row.get("split") == split],
+                    [row for row in cases_b if row.get("split") == split],
+                    k=k,
+                )
+                for split in splits
+            }
         result["suites"][suite_a["suite"]] = entry
     return result
 
@@ -149,5 +160,7 @@ def render(comparison: dict[str, Any], *, k: int = 5) -> str:
         lines.append(line(suite_name, entry))
         for question_type, sub in entry.get("by_type", {}).items():
             lines.append(line(f"{suite_name} · {question_type}", sub))
+        for split, sub in entry.get("by_split", {}).items():
+            lines.append(line(f"{suite_name} · {split}", sub))
     lines += ["", "✱ = écart significatif (p < 0,05 pour le recall, IC 95 % excluant 0 pour le MRR)."]
     return "\n".join(lines)

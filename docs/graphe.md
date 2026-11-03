@@ -1,6 +1,6 @@
 # Graphe des renvois (Neo4j)
 
-Phase 9.9a, mode d'échec « renvois » : dans une loi, la réponse est souvent dans l'article **cité** par celui que la recherche trouve (« as penalidades do art. 12 », « nos termos do art. 5º »). Un RAG classique ne suit pas ces renvois. raglab construit donc, pour chaque index run, un graphe structuré dans Neo4j : les lois, leurs articles et les liens explicites entre eux. La 9.9b s'en servira comme troisième branche de recherche, à côté de la recherche dense et de BM25.
+Phase 9.9a, mode d'échec « renvois » : dans une loi, la réponse est souvent dans l'article **cité** par celui que la recherche trouve (« as penalidades do art. 12 », « nos termos do art. 5º »). Un RAG classique ne suit pas ces renvois. raglab construit donc, pour chaque index run, un graphe structuré dans Neo4j : les lois, leurs articles et les liens explicites entre eux. La 9.9b s'en sert comme troisième branche de recherche, à côté de la recherche dense et de BM25.
 
 ## Ce qui va où
 
@@ -72,6 +72,53 @@ Les renvois juridiques sont explicites dans le texte : une règle les lit mieux 
 | UI | Expert → Graphe → **Graphe des renvois** : état du graphe, bouton de construction, liste des lois, voisinage Loi → Articles → renvois (Cytoscape), passage qui porte chaque renvoi |
 
 Neo4j tourne dans Docker Compose (`docker compose up -d neo4j`, Browser sur http://localhost:7474, `neo4j` / `raglab_neo4j`).
+
+## La branche de recherche graphe (9.9b)
+
+Troisième branche de recherche, à côté de la recherche dense et de BM25 (`src/raglab/retrieval/graph_branch.py`) :
+
+```mermaid
+graph LR
+    Q[Question] --> D[Dense] & L[BM25]
+    Q -->|art. cité| C[Résolveur de citations]
+    D & L -->|meilleurs passages| S[Articles de départ]
+    C --> S
+    S -->|CITES, 1 saut| G[Articles cités → leurs passages]
+    D & L & G --> F[RRF à trois sources]
+    F --> R[Re-ranking]
+    R --> P[Passage cité gardé après celui qui le cite]
+```
+
+1. **Départs** : l'article que cite la question (« art. 10-B da Lei nº 11.445 », lu par le résolveur de citations, même si l'option `citations` est coupée) et les articles des `RAGLAB_GRAPH_SEED_CHUNKS` (10) meilleurs passages dense et BM25 ; au plus `RAGLAB_GRAPH_SEED_ARTICLES` (10) articles.
+2. **Un saut** : pour chaque article de départ, les articles qu'il cite (`CITES`), au plus `RAGLAB_GRAPH_MAX_PER_SEED` (3) par départ et `RAGLAB_GRAPH_MAX_ARTICLES` (12) en tout, les meilleurs départs d'abord ; pour chacun, ses `RAGLAB_GRAPH_CHUNKS_PER_ARTICLE` (2) premiers passages. Une seule requête Cypher (≈ 10 ms), les textes viennent de PostgreSQL, filtrés par les filtres de l'appelant.
+3. **Fusion** : `fused = (1 − w) / (k + rang_dense) + w / (k + rang_bm25) + g / (k + rang_graphe)`, `g = RAGLAB_GRAPH_WEIGHT` (0,5, le poids de chaque source dans un RRF simple). La liste graphe ne garde que les passages que la recherche dense et BM25 n'ont pas trouvés : la branche apporte des candidats, elle ne réordonne pas les autres. Une première version ajoutait aussi le terme graphe aux passages déjà trouvés ; sur les 277 questions LexML, sans re-ranking, elle faisait passer le Recall@1 de 0,426 à 0,350 (chaque passage cité par un bon résultat remontait) ; la version livrée laisse Recall@1 et Recall@5 inchangés (0,426 et 0,722), Recall@10 0,798 → 0,791 (contrôle de non-régression sur CPU, pas une mesure du protocole). Sans liste graphe, la formule est exactement celle à deux sources.
+4. **Re-ranking** comme aujourd'hui (les passages du graphe font partie des 40 candidats).
+5. **Regroupement** : un passage trouvé par renvoi est replacé juste après le passage qui le cite (et les autres passages du même article), comme le résolveur de citations réépingle l'article cité après le re-ranking ; au plus `RAGLAB_GRAPH_GROUP_MAX` (2) passages déplacés, repris des candidats si le re-ranking les avait écartés.
+
+Chaque passage porte `graph_rank`, `graph_score`, `graph_via` (« Art. 10-B — Lei nº 11.445/2007 ») et `graph_reason` (« cité par l'art. 10-B de la Lei nº 11.445/2007 ») ; `graph_pinned` marque un passage regroupé. La réponse ajoute `graph`, `graph_stats` (départs, articles, passages) et `timings_ms.graph`.
+
+**Sans Neo4j**, ou sans graphe pour l'index run, la branche est sautée et la réponse le dit : `graph_notice` = `skipped_no_neo4j`, `skipped_no_graph` ou `failed`, comme `rerank_notice`. Après un échec de connexion, Neo4j n'est pas réinterrogé pendant `RAGLAB_GRAPH_RETRY_SECONDS` (30 s) : la première requête attend le refus (~2 s sous Windows), les suivantes passent en 0,2 ms.
+
+| Où | Comment |
+|---|---|
+| Par défaut | **désactivée** (`RAGLAB_GRAPH_RETRIEVAL=false`) tant qu'elle n'est pas mesurée |
+| CLI | `raglab query "…" --corpus bench_lexml_pt --graph`, `raglab bench all --graph`, `raglab experiment recall --graph` |
+| API | `"graph": true` dans `POST /api/query`, `/api/query/stream`, `/api/experiments/recall` |
+| UI | case « Graphe des renvois » de la page Retrieval et du lancement des benchmarks ; badge « cité par Art. 5º — … » et score `graphe` sur chaque passage |
+
+Avant une mesure `--graph`, `raglab bench all` construit le graphe de l'index run s'il manque ou s'il date d'une version antérieure des règles (`RULES_VERSION`), et note dans le résultat combien de questions ont tourné sans la branche (`graph_notices`).
+
+## Le jeu « renvois »
+
+`raglab lexml reference-questions` écrit `benchmarks/lexml_references/` (environ 100 questions) à partir de vrais renvois du corpus : l'article A cite l'article B, la question porte sur A, la réponse est citée de B.
+
+- **Paires** : les arêtes `CITES` article → article des règles ci-dessus, lues directement dans les fichiers du corpus figé (sans index run ni Neo4j) ; 1 078 paires, 970 retenues (article cité substantiel, ni abrogé, ni opposé par veto, ni modification d'une autre loi ; article citant qui n'est pas une clause d'entrée en vigueur ou d'abrogation). Tirage avec graine, une paire par loi d'abord.
+- **Questions** : écrites par Qwen3.6 via llama.cpp (`LocalLLMServer`, comme le jeu LexML), deux types équilibrés : `via_article` (la question cite l'article A et sa loi, le cas type « quelles peines pour l'art. 5 ? ») et `via_topic` (le sujet de A, sans numéro).
+- **Filtres** : réponse retrouvée mot pour mot dans B, longueur, formules creuses et questions vagues (règles du jeu LexML), plus : la question ne cite pas le numéro de B (sinon le résolveur de citations la résout seul), la réponse n'est pas aussi dans A, une question `via_article` cite bien A et sa loi. Relecture : `raglab lexml review-questions --ground-truth benchmarks/lexml_references/ground_truth.jsonl`, puis lecture d'un échantillon à la main.
+- **Pertinence** : `expected_spans` porte sur B seulement ; le passage de A qui contient le renvoi est gardé dans `citing_spans` pour l'analyse. Compter A comme pertinent laisserait passer un run qui ne trouve que l'article cité par la question, ce que le résolveur de citations fait déjà.
+- **Partage** : 30 % des questions marquées `split: "dev"` (on peut les regarder pendant la mise au point), les autres `heldout` ; `raglab bench compare` donne les deux à part.
+
+Le jeu n'est pas encore généré ni mesuré : ces commandes demandent le GPU (voir la PR 9.9b).
 
 ## Le voir dans Neo4j Browser
 

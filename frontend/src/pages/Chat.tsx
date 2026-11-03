@@ -57,6 +57,10 @@ interface ChatTurn {
   rerank_notice?: string | null;
   citation?: CitationInfo | null;
   lexemes?: string[];
+  // Graph branch: whether it ran, why it was skipped, its counters.
+  graph?: boolean | null;
+  graph_notice?: string | null;
+  graph_stats?: Record<string, number> | null;
 }
 
 function newTurnId(): string {
@@ -185,9 +189,9 @@ export function Chat() {
       body.llm_model = picked.model;
     }
     // Only the options changed in the popover: the rest keeps the server defaults.
-    // Article references are not sent for a corpus without law articles.
+    // Article references and the graph are not sent for a corpus without law articles.
     (Object.keys(options) as (keyof RetrievalOverrides)[]).forEach((key) => {
-      if (options[key] !== null && (key !== "citations" || legalCorpus)) body[key] = options[key];
+      if (options[key] !== null && ((key !== "citations" && key !== "graph") || legalCorpus)) body[key] = options[key];
     });
     const patchTurn = (update: (tn: ChatTurn) => Partial<ChatTurn>) =>
       setTurns((prev) => prev.map((tn) => (tn.id === id ? { ...tn, ...update(tn) } : tn)));
@@ -209,6 +213,9 @@ export function Chat() {
       rerank_notice: r.rerank_notice ?? null,
       citation: r.citation ?? null,
       lexemes: r.query_lexemes ?? [],
+      graph: r.graph ?? null,
+      graph_notice: r.graph_notice ?? null,
+      graph_stats: r.graph_stats ?? null,
     });
     try {
       // Sources show up as soon as retrieval is done, then the answer grows
@@ -463,6 +470,9 @@ export function Chat() {
     legalCorpus,
     citationsOn: planned.citations,
     citation: answered ? lastTurn?.citation ?? null : null,
+    graphOn: (answered ? lastTurn?.graph : null) ?? planned.graph,
+    graphNotice: answered ? lastTurn?.graph_notice ?? null : null,
+    graphStats: answered ? lastTurn?.graph_stats ?? null : null,
   };
   return (
     <div className="edu-shell">
@@ -472,6 +482,7 @@ export function Chat() {
         lexemes={lastTurn?.lexemes}
         rrfK={config?.rrf_k ?? 60}
         lexicalWeight={config?.hybrid_lexical_weight ?? 0.5}
+        graphWeight={config?.graph_weight ?? 0.5}
         route={route}
       />
       {page}

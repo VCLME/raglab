@@ -28,6 +28,10 @@ test("Focus: no ring after a mouse click, a thin one for the keyboard; active no
   expect(clicked.outline).toBe(0);
   expect(clicked.shadow).toBe("none");
 
+  // Close the lesson and go back to the top: the settings bar is then in view,
+  // between the sticky strip and the composer.
+  await node.click();
+  await page.evaluate(() => window.scrollTo(0, 0));
   const picker = page.getByRole("combobox", { name: /^Corpus/ });
   await picker.click();
   expect((await ring(picker)).outline).toBe(0);
@@ -128,8 +132,8 @@ test("Learning mode reads as the request's decisions: branch taken highlighted, 
   await expect(decision("Re-ranking").locator(".edu-option.taken")).toHaveText("sauté");
   await expect(decision("Re-ranking")).toContainText("pas de GPU");
 
-  // The BM25 lane is dimmed; the citation decision is a node with its own lesson.
-  await expect(page.locator(".edu-lane.off")).toContainText("BM25");
+  // The BM25 and graph lanes are dimmed; the reference decision is a node with its own lesson.
+  await expect(page.locator(".edu-lane.off")).toHaveText([/^BM25/, /^Graphe/]);
   await page.getByRole("button", { name: /^Référence d'article de loi/ }).click();
   const lesson = page.getByRole("region", { name: "Référence d'article de loi" });
   await expect(lesson.getByText("src/raglab/retrieval/citations.py")).toBeVisible();
@@ -156,7 +160,7 @@ test("French learning-mode copy is idiomatic", async ({ page, api }) => {
   await expect(lesson).not.toContainText("plein texte classique");
 });
 
-test("Article references only for corpora of law articles: hidden, unsent and undrawn elsewhere", async ({ page, api }) => {
+test("Article references and the graph only for corpora of law articles: hidden, unsent and undrawn elsewhere", async ({ page, api }) => {
   let body: Record<string, unknown> = {};
   api.set("GET /api/corpora", json([{ ...data.corpora[0], name: "piaf_fr", features: { legal_citations: false } }]));
   api.set("POST /api/query/stream", async (route) => {
@@ -175,12 +179,14 @@ test("Article references only for corpora of law articles: hidden, unsent and un
 
   await page.getByRole("button", { name: "Mode pédagogique" }).click();
   await expect(page.getByRole("button", { name: /^Référence d'article/ })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /^Graphe des renvois/ })).toHaveCount(0);
   await expect(page.getByRole("list", { name: /chemin/ }).getByRole("listitem")).toHaveCount(2);
 
   await page.getByPlaceholder(/Pose ta question/).fill(data.QUESTION);
   await page.getByRole("button", { name: "Envoyer" }).click();
   await expect(page.getByText(/Le Président est élu/)).toBeVisible();
   expect(body).not.toHaveProperty("citations");
+  expect(body).not.toHaveProperty("graph");
 });
 
 test("Legal corpus: the renamed option explains itself with both examples", async ({ page }) => {

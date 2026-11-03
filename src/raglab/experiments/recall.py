@@ -4,6 +4,7 @@ import json
 import logging
 import math
 import random
+from collections import Counter
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -45,7 +46,7 @@ class RecallBenchmarkCase:
     ground_truth_answer: str | None = None
     expected_spans: list[dict[str, Any]] = field(default_factory=list)
     question_type: str | None = None
-    # "dev" (looked at while tuning) or "heldout" (never looked at).
+    # "dev" (looked at while tuning) or "heldout" (never looked at), for sets that have one.
     split: str | None = None
 
 
@@ -81,6 +82,7 @@ class RecallBenchmarkService:
         rrf_k: int | None,
         rerank: bool | None = None,
         citations: bool | None = None,
+        graph: bool | None = None,
     ) -> dict[str, Any]:
         """Resolved retrieval parameters, recorded with the run and passed to each query."""
         mode = RetrievalMode(retrieval_mode or self.settings.default_retrieval_mode)
@@ -97,6 +99,8 @@ class RecallBenchmarkService:
             config["rrf_k"] = self.settings.rrf_k if rrf_k is None else rrf_k
         if citations is not None:
             config["citations"] = citations
+        if graph is not None:
+            config["graph"] = graph
         return config
 
     def _rerank_record(self, retrieval: dict[str, Any]) -> dict[str, Any]:
@@ -246,6 +250,7 @@ class RecallBenchmarkService:
         rrf_k: int | None = None,
         rerank: bool | None = None,
         citations: bool | None = None,
+        graph: bool | None = None,
     ) -> dict[str, Any]:
         """Run retrieval on every case, then (optionally) grade answers.
 
@@ -265,7 +270,9 @@ class RecallBenchmarkService:
             cases = self._load_cases(dataset_path.resolve())
 
         judge = judge or JudgeConfig()
-        retrieval = self._retrieval_config(retrieval_mode, lexical_weight, rrf_k, rerank=rerank, citations=citations)
+        retrieval = self._retrieval_config(
+            retrieval_mode, lexical_weight, rrf_k, rerank=rerank, citations=citations, graph=graph
+        )
         rerank_record = self._rerank_record(retrieval)
         benchmark_label = benchmark_name or _infer_benchmark_name(dataset_path)
         run_name = f"recall-{benchmark_label}-{datetime.now(UTC).strftime('%Y%m%d-%H%M%S')}"
@@ -380,6 +387,8 @@ class RecallBenchmarkService:
                         ),
                         "timings_ms": dict(getattr(response, "timings_ms", {}) or {}),
                         "rerank_stats": dict(getattr(response, "rerank_stats", {}) or {}),
+                        "graph_notice": getattr(response, "graph_notice", None),
+                        "graph_stats": dict(getattr(response, "graph_stats", {}) or {}),
                         "generation_stats": dict(getattr(response, "generation_stats", {}) or {}),
                         "metrics": metrics_for_case,
                     }
@@ -407,6 +416,7 @@ class RecallBenchmarkService:
                         "expected_urns": case.expected_urns,
                         "expected_spans": case.expected_spans,
                         "question_type": case.question_type,
+                        **({"split": case.split} if case.split else {}),
                     },
                 )
 
@@ -458,6 +468,11 @@ class RecallBenchmarkService:
             **({"by_split": by_split} if by_split else {}),
             "details": details,
         }
+        if retrieval.get("graph"):
+            # How many questions ran without the graph branch, and why: a
+            # graph run measured without Neo4j must not pass for a graph run.
+            notices = Counter(detail["graph_notice"] for detail in details if detail.get("graph_notice"))
+            payload["graph_notices"] = dict(notices)
         report_path = self._write_report(f"recall-{benchmark_label}", payload)
         payload["report_path"] = str(report_path)
         log_event(
