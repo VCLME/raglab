@@ -27,10 +27,11 @@ def get_or_create_corpus(
     name: str,
     root_path: str | None = None,
     description: str | None = None,
+    language: str | None = None,
 ) -> Corpus:
     corpus = session.scalar(select(Corpus).where(Corpus.name == name))
     if corpus is None:
-        corpus = Corpus(name=name, root_path=root_path, description=description)
+        corpus = Corpus(name=name, root_path=root_path, description=description, language=language)
         session.add(corpus)
         session.flush()
         return corpus
@@ -39,6 +40,8 @@ def get_or_create_corpus(
         corpus.root_path = root_path
     if description:
         corpus.description = description
+    if language:
+        corpus.language = language
     session.flush()
     return corpus
 

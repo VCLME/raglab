@@ -24,6 +24,12 @@
     "status": "phase 9.2, in review"
   },
   {
+    "label": "lexical-v1",
+    "name": "BM25 only",
+    "change": "BM25 keyword search alone, no embedding (comparison point for 9.2, not kept)",
+    "status": "phase 9.2, comparison"
+  },
+  {
     "label": "rerank-v1",
     "name": "Re-ranking",
     "change": "+ cross-encoder bge-reranker-v2-m3 on the fused candidates",

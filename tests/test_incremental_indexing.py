@@ -136,6 +136,10 @@ def test_index_corpus_incremental_reuses_all_documents_without_loading_models():
         patch(
             "raglab.indexing.service.build_embedding_provider",
         ) as build_embedding_provider,
+        patch(
+            "raglab.indexing.service.refresh_lexical_index",
+            return_value={"doc_count": 3, "avg_length": 10.0, "ts_configs": ["raglab_french"]},
+        ) as refresh_lexical_index,
     ):
         result = service.index_corpus(
             corpus_name="demo",
@@ -159,3 +163,5 @@ def test_index_corpus_incremental_reuses_all_documents_without_loading_models():
     build_chunker.assert_not_called()
     build_embedding_provider.assert_not_called()
     complete_index_run.assert_called_once()
+    refresh_lexical_index.assert_called_once_with(session, "run-1", default_language="fr")
+    assert index_run.config_json["lexical_ts_configs"] == ["raglab_french"]

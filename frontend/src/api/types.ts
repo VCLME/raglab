@@ -29,6 +29,11 @@ export interface ConfigResponse {
   slide_stride: number;
   late_chunk_size: number;
   late_context_chars: number;
+  default_retrieval_mode: string;
+  hybrid_lexical_weight: number;
+  rrf_k: number;
+  bm25_k1: number;
+  bm25_b: number;
 }
 
 export interface OllamaStatus {
@@ -123,13 +128,24 @@ export interface RetrievedChunk {
   chunk_text: string;
   score: number;
   rank: number;
+  // Hybrid retrieval intermediate scores; null when that retriever did not
+  // run or did not return the chunk.
+  dense_score?: number | null;
+  dense_rank?: number | null;
+  lexical_score?: number | null;
+  lexical_rank?: number | null;
+  fused_score?: number | null;
 }
+
+export type RetrievalMode = "dense" | "lexical" | "hybrid";
 
 export interface QueryResponse {
   question: string;
   index_run_id: string;
   strategy: ChunkingStrategy;
   retrieved_chunks: RetrievedChunk[];
+  retrieval_mode?: RetrievalMode;
+  query_lexemes?: string[];
   answer: string | null;
   elapsed_ms: number;
   filters: unknown;
@@ -171,6 +187,9 @@ export interface ExperimentRunSummary {
   summary: Record<string, number | null> | null;
   duration_ms: number | null;
   backend: string | null;
+  retrieval_mode?: RetrievalMode | null;
+  lexical_weight?: number | null;
+  rrf_k?: number | null;
 }
 
 export interface ExperimentResultCase {

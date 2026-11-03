@@ -43,6 +43,16 @@ class Settings(BaseSettings):
 
     default_corpus_name: str = "default"
     default_top_k: int = 5
+    # Hybrid retrieval (dense + BM25 fused by Reciprocal Rank Fusion).
+    # default_language picks the text-search config when neither a document
+    # nor its corpus declares one.
+    default_retrieval_mode: str = "dense"
+    default_language: str = "fr"
+    bm25_k1: float = 1.2
+    bm25_b: float = 0.75
+    rrf_k: int = 60
+    hybrid_lexical_weight: float = 0.5
+    hybrid_candidates: int = 50
     data_dir: Path = Field(default_factory=lambda: Path("data"))
     reports_dir: Path = Field(default_factory=lambda: Path("data/reports"))
     lexml_documents_dir: Path = Field(default_factory=lambda: Path("data/lexml/documents"))

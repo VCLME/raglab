@@ -54,6 +54,9 @@ def run_query(
         generate_answer=body.generate,
         filters=_filters(body),
         llm_model=body.llm_model,
+        retrieval_mode=body.retrieval_mode,
+        lexical_weight=body.lexical_weight,
+        rrf_k=body.rrf_k,
     )
 
 
@@ -96,6 +99,9 @@ def stream_query(
         index_run_id=body.index_run_id,
         top_k=body.top_k,
         filters=_filters(body),
+        retrieval_mode=body.retrieval_mode,
+        lexical_weight=body.lexical_weight,
+        rrf_k=body.rrf_k,
     )
     retrieval = outcome.response().model_dump(mode="json")
 

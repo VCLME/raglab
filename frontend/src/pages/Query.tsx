@@ -7,6 +7,7 @@ import type {
   CorpusSummary,
   IndexRunSummary,
   QueryResponse,
+  RetrievalMode,
 } from "../api/types";
 import { ChunkCard } from "../components/ChunkCard";
 import { ErrorBanner } from "../components/ErrorBanner";
@@ -18,6 +19,7 @@ import { useConfig } from "../hooks/useConfig";
 import { useLocalHistory } from "../hooks/useLocalHistory";
 
 const STRATEGIES: ("" | ChunkingStrategy)[] = ["", "traditional", "slide", "late"];
+const RETRIEVAL_MODES: RetrievalMode[] = ["dense", "lexical", "hybrid"];
 
 interface HistoryEntry {
   question: string;
@@ -25,6 +27,7 @@ interface HistoryEntry {
   strategy: string;
   top_k: number | null;
   generate: boolean;
+  retrieval_mode?: "" | RetrievalMode;
   timestamp: number;
 }
 
@@ -37,6 +40,9 @@ export function Query() {
   const [indexRunId, setIndexRunId] = useState("");
   const [topK, setTopK] = useState<string>("");
   const [generate, setGenerate] = useState(true);
+  const [retrievalMode, setRetrievalMode] = useState<"" | RetrievalMode>("");
+  const [lexicalWeight, setLexicalWeight] = useState("");
+  const [rrfK, setRrfK] = useState("");
   const [question, setQuestion] = useState("");
 
   const [documentIdsRaw, setDocumentIdsRaw] = useState("");
@@ -80,6 +86,9 @@ export function Query() {
       index_run_id: indexRunId || null,
       top_k: topK ? Number(topK) : null,
       generate,
+      retrieval_mode: retrievalMode || null,
+      lexical_weight: retrievalMode === "hybrid" && lexicalWeight !== "" ? Number(lexicalWeight) : null,
+      rrf_k: retrievalMode === "hybrid" && rrfK !== "" ? Number(rrfK) : null,
       filters: {
         document_ids: documentIdsRaw.split(",").map((s) => s.trim()).filter(Boolean),
         file_names: fileNamesRaw.split(",").map((s) => s.trim()).filter(Boolean),
@@ -95,6 +104,7 @@ export function Query() {
       strategy: strategy || "",
       top_k: topK ? Number(topK) : null,
       generate,
+      retrieval_mode: retrievalMode,
       timestamp: Date.now(),
     });
   };
@@ -105,7 +115,15 @@ export function Query() {
     setStrategy(entry.strategy as "" | ChunkingStrategy);
     setTopK(entry.top_k != null ? String(entry.top_k) : "");
     setGenerate(entry.generate);
+    setRetrievalMode(entry.retrieval_mode ?? "");
   };
+
+  const maxScore = action.data
+    ? Math.max(0, ...action.data.retrieved_chunks.map((c) => c.score))
+    : 0;
+  // Cosine similarities keep their absolute [0, 1] bar; BM25 and RRF are
+  // drawn relative to the best chunk.
+  const barScale = action.data?.retrieval_mode && action.data.retrieval_mode !== "dense" ? maxScore : 1;
 
   return (
     <div>
@@ -154,6 +172,46 @@ export function Query() {
                 ))}
               </select>
             </FieldRow>
+            <FieldRow label={t("retrieval.mode_label")} hint={t("retrieval.mode_hint")}>
+              <select
+                value={retrievalMode}
+                onChange={(e) => setRetrievalMode(e.target.value as "" | RetrievalMode)}
+              >
+                <option value="">
+                  {t("retrieval.mode_default")}
+                  {config?.default_retrieval_mode ? ` (${config.default_retrieval_mode})` : ""}
+                </option>
+                {RETRIEVAL_MODES.map((m) => (
+                  <option key={m} value={m}>
+                    {t(`retrieval.mode_${m}`)}
+                  </option>
+                ))}
+              </select>
+            </FieldRow>
+            {retrievalMode === "hybrid" ? (
+              <>
+                <FieldRow label={t("retrieval.lexical_weight_label")} hint={t("retrieval.lexical_weight_hint")}>
+                  <input
+                    type="number"
+                    value={lexicalWeight}
+                    onChange={(e) => setLexicalWeight(e.target.value)}
+                    min={0}
+                    max={1}
+                    step={0.05}
+                    placeholder={config?.hybrid_lexical_weight != null ? String(config.hybrid_lexical_weight) : "0.5"}
+                  />
+                </FieldRow>
+                <FieldRow label={t("retrieval.rrf_k_label")} hint={t("retrieval.rrf_k_hint")}>
+                  <input
+                    type="number"
+                    value={rrfK}
+                    onChange={(e) => setRrfK(e.target.value)}
+                    min={0}
+                    placeholder={config?.rrf_k != null ? String(config.rrf_k) : "60"}
+                  />
+                </FieldRow>
+              </>
+            ) : null}
             <FieldRow
               label={t("query.top_k")}
               hint={
@@ -242,6 +300,7 @@ export function Query() {
                       <td className="muted">{h.corpus || "—"}</td>
                       <td>
                         <span className="tag">{h.strategy || t("common.auto")}</span>
+                        {h.retrieval_mode ? <span className="tag" style={{ marginLeft: 4 }}>{h.retrieval_mode}</span> : null}
                       </td>
                     </tr>
                   ))}
@@ -271,7 +330,31 @@ export function Query() {
                     strategy: action.data.strategy,
                     ms: action.data.elapsed_ms.toFixed(0),
                   })}
+                  {action.data.retrieval_mode ? (
+                    <>
+                      {" · "}
+                      <span className="tag">{action.data.retrieval_mode}</span>
+                    </>
+                  ) : null}
                 </div>
+                {action.data.timings_ms && Object.keys(action.data.timings_ms).length ? (
+                  <div className="muted" style={{ marginBottom: 8, fontSize: 12 }}>
+                    {t("retrieval.timings")} :{" "}
+                    {Object.entries(action.data.timings_ms)
+                      .map(([stage, ms]) => `${stage} ${ms.toFixed(1)} ms`)
+                      .join(" · ")}
+                  </div>
+                ) : null}
+                {action.data.query_lexemes && action.data.query_lexemes.length ? (
+                  <div className="muted" style={{ marginBottom: 8, fontSize: 12 }}>
+                    {t("retrieval.query_lexemes")} :{" "}
+                    {action.data.query_lexemes.map((lexeme) => (
+                      <code key={lexeme} style={{ marginRight: 6 }}>
+                        {lexeme}
+                      </code>
+                    ))}
+                  </div>
+                ) : null}
                 {action.data.answer ? (
                   <pre style={{ whiteSpace: "pre-wrap", margin: 0, fontFamily: "inherit" }}>
                     {action.data.answer}
@@ -283,7 +366,7 @@ export function Query() {
               <div className="card">
                 <h3>{t("query.chunks_header", { count: action.data.retrieved_chunks.length })}</h3>
                 {action.data.retrieved_chunks.map((c) => (
-                  <ChunkCard key={c.chunk_id} chunk={c} />
+                  <ChunkCard key={c.chunk_id} chunk={c} maxScore={barScale} showScores />
                 ))}
               </div>
               <div className="card">

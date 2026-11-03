@@ -47,6 +47,11 @@ export const config: ConfigResponse = {
   slide_stride: 1,
   late_chunk_size: 400,
   late_context_chars: 2000,
+  default_retrieval_mode: "dense",
+  hybrid_lexical_weight: 0.5,
+  rrf_k: 60,
+  bm25_k1: 1.2,
+  bm25_b: 0.75,
 };
 
 export const corpora: CorpusSummary[] = [

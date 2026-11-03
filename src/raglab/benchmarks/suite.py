@@ -34,7 +34,7 @@ from sqlalchemy import text
 
 from raglab.benchmarks.compare import case_rows
 from raglab.config import Settings, get_settings
-from raglab.domain.enums import ChunkingStrategy
+from raglab.domain.enums import ChunkingStrategy, RetrievalMode
 from raglab.experiments.ragas import JudgeConfig
 from raglab.logging_utils import log_event
 
@@ -232,6 +232,9 @@ def run_suite(
     top_k: int,
     ragas_limit: int | None,
     judge: JudgeConfig | None,
+    retrieval_mode: RetrievalMode | str | None = None,
+    lexical_weight: float | None = None,
+    rrf_k: int | None = None,
 ) -> dict[str, Any]:
     from raglab.db import session_scope
     from raglab.experiments.recall import RecallBenchmarkService
@@ -248,7 +251,10 @@ def run_suite(
 
     with session_scope() as session:
         ingestion = IngestionService(session).ingest_folder(
-            suite.corpus_dir, corpus_name=suite.corpus_name, description=f"Benchmark {suite.name} (fige)"
+            suite.corpus_dir,
+            corpus_name=suite.corpus_name,
+            description=f"Benchmark {suite.name} (fige)",
+            language=suite.language,
         )
     with session_scope() as session:
         reusable = None
@@ -282,6 +288,9 @@ def run_suite(
                 ragas_case_limit=ragas_limit,
                 judge=judge,
                 index_run_id=str(indexing["index_run_id"]),
+                retrieval_mode=retrieval_mode,
+                lexical_weight=lexical_weight,
+                rrf_k=rrf_k,
             )
         finally:
             service.close()
@@ -293,6 +302,9 @@ def run_suite(
         "chunks": indexing.get("chunks"),
         "documents": documents,
         "total_cases": report["total_cases"],
+        "retrieval_mode": report.get("retrieval_mode"),
+        "lexical_weight": report.get("lexical_weight"),
+        "rrf_k": report.get("rrf_k"),
         "summary": report["summary"],
         "by_type": report.get("by_type") or {},
         "report_path": report["report_path"],
@@ -313,6 +325,9 @@ def run_all(
     suites: list[str] | None = None,
     repo_root: Path | None = None,
     settings: Settings | None = None,
+    retrieval_mode: RetrievalMode | str | None = None,
+    lexical_weight: float | None = None,
+    rrf_k: int | None = None,
 ) -> dict[str, Any]:
     from raglab.db import initialize_database, session_scope
 
@@ -323,13 +338,25 @@ def run_all(
     with session_scope() as session:
         env = environment_report(settings, session, judge if ragas_limit else None)
     selected = [suite for suite in default_suites(settings, repo_root) if not suites or suite.name in suites]
+    mode = RetrievalMode(retrieval_mode or settings.default_retrieval_mode)
     results = [
-        run_suite(suite, settings=settings, strategy=strategy, top_k=top_k, ragas_limit=ragas_limit, judge=judge)
+        run_suite(
+            suite,
+            settings=settings,
+            strategy=strategy,
+            top_k=top_k,
+            ragas_limit=ragas_limit,
+            judge=judge,
+            retrieval_mode=mode,
+            lexical_weight=lexical_weight,
+            rrf_k=rrf_k,
+        )
         for suite in selected
     ]
     return {
         "label": label,
         "strategy": strategy.value,
+        "retrieval_mode": mode.value,
         "top_k": top_k,
         "ragas_limit": ragas_limit,
         "environment": env,
@@ -359,6 +386,14 @@ def _with_ci(fmt: Any, summary: dict[str, Any], key: str) -> str:
     return f"{text} [{low:.2f}–{high:.2f}]"
 
 
+def _retrieval_label(run: dict[str, Any], suite: dict[str, Any] | None) -> str:
+    # Results written before hybrid retrieval carry no mode: they were dense.
+    mode = (suite or {}).get("retrieval_mode") or run.get("retrieval_mode") or "dense"
+    if mode != "hybrid" or not suite:
+        return mode
+    return f"hybrid (w={suite.get('lexical_weight')}, k={suite.get('rrf_k')})"
+
+
 def render_markdown(results: list[dict[str, Any]]) -> str:
     """Comparison table across runs (one column per run label), per suite."""
     lines: list[str] = []
@@ -372,7 +407,11 @@ def render_markdown(results: list[dict[str, Any]]) -> str:
         ("Latence requête p50 (embed + recherche)", "latency_query_p50_ms", _ms),
         ("Latence requête p95", "latency_query_p95_ms", _ms),
         ("dont embedding p50", "latency_embed_p50_ms", _ms),
-        ("dont recherche pgvector p50", "latency_retrieval_p50_ms", _ms),
+        ("dont recherche p50", "latency_retrieval_p50_ms", _ms),
+        ("dont vectoriel p50 (hybrid)", "latency_dense_p50_ms", _ms),
+        ("dont BM25 p50", "latency_lexical_p50_ms", _ms),
+        ("dont BM25 p95", "latency_lexical_p95_ms", _ms),
+        ("dont fusion RRF p50", "latency_fusion_p50_ms", _ms),
         ("Génération p50", "latency_generation_p50_ms", _ms),
         ("Génération p95", "latency_generation_p95_ms", _ms),
         ("Débit de génération p50 (tokens/s)", "generation_tokens_per_second_p50", lambda v: _fmt(v, 1)),
@@ -387,6 +426,8 @@ def render_markdown(results: list[dict[str, Any]]) -> str:
         lines.append("")
         lines.append("| Métrique | " + " | ".join(labels) + " |")
         lines.append("|---|" + "---|" * len(labels))
+        modes = [_retrieval_label(run, s) for run, s in zip(results, per_run, strict=True)]
+        lines.append("| Retrieval | " + " | ".join(modes) + " |")
         for title, key, fmt in rows:
             values = [_with_ci(fmt, s["summary"], key) if s else "—" for s in per_run]
             if all(v == "—" for v in values):

@@ -35,6 +35,9 @@ def recall(body: RecallRequest, session: Session = Depends(get_db)) -> dict[str,
             dataset_path=dataset_path,
             lexml_documents_dir=lexml_dir,
             case_limit=body.case_limit,
+            retrieval_mode=body.retrieval_mode,
+            lexical_weight=body.lexical_weight,
+            rrf_k=body.rrf_k,
             compute_ragas=body.compute_ragas,
             ragas_case_limit=body.ragas_case_limit,
             judge=JudgeConfig(backend=body.judge_backend, model=body.judge_model),
@@ -88,6 +91,9 @@ def _build_summary(session: Session, run: ExperimentRun) -> ExperimentRunSummary
         summary=cfg.get("summary"),
         duration_ms=_duration_ms(run),
         backend=cfg.get("backend"),
+        retrieval_mode=cfg.get("retrieval_mode"),
+        lexical_weight=cfg.get("lexical_weight"),
+        rrf_k=cfg.get("rrf_k"),
     )
 
 
