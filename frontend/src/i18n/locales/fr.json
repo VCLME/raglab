@@ -48,7 +48,14 @@
     "expert_title": "Mode expert : ingestion, indexation, Ollama, benchmarks",
     "api_label": "API {{api}} · PostgreSQL {{postgres}} · Ollama {{ollama}}",
     "api_unreachable": "API injoignable",
-    "language": "Langue"
+    "language": "Langue",
+    "api_key": "Clé d'API",
+    "api_key_title": "Clé envoyée dans l'en-tête X-API-Key (requise si l'API définit RAGLAB_API_KEY)",
+    "api_key_set": "Clé d'API définie",
+    "api_key_placeholder": "Coller la clé d'API",
+    "api_key_save": "Enregistrer",
+    "api_key_clear": "Effacer",
+    "api_key_hint": "Stockée dans ce navigateur uniquement."
   },
   "nav": {
     "expert_section": "Mode expert",
@@ -96,7 +103,9 @@
     "composer_no_corpus": "aucun corpus",
     "llm_label": "LLM",
     "llm_title": "Modèle utilisé pour la génération finale",
-    "no_answer_generated": "(Pas de réponse générée)"
+    "no_answer_generated": "(Pas de réponse générée)",
+    "meta_first_token": "1er token {{ms}} ms",
+    "meta_first_token_title": "Temps entre le début de la génération et le premier fragment de réponse reçu"
   },
   "dashboard": {
     "title": "Dashboard",
