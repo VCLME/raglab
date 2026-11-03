@@ -116,3 +116,11 @@ def test_report_breaks_down_by_split_when_the_set_has_one():
     text = render_markdown([run])
     assert "| Recall@5 / MRR par partie du jeu | v1 |" in text
     assert "| dev | 0.800 / 0.600 (25) |" in text
+
+
+def test_report_breaks_down_the_held_out_part_by_type():
+    run = _run("v1", 0.7, 10.0, True)
+    run["suites"][0]["by_type_heldout"] = {"scenario": {"cases": 21, "recall@5": 0.5, "mrr": 0.4}}
+    text = render_markdown([run])
+    assert "| Recall@5 / MRR par type, partie heldout | v1 |" in text
+    assert "| scenario | 0.500 / 0.400 (21) |" in text

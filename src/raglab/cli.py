@@ -550,10 +550,19 @@ def lexml_reference_questions(
     profile: str | None = typer.Option(
         None, "--profile", help="Profil llama.cpp a demarrer (defaut: question_model_profile)."
     ),
+    mix: str = typer.Option(
+        "via_topic=0.5,scenario=0.3,via_article=0.2",
+        "--mix",
+        help="Part de chaque type : via_topic (sujet de A), scenario (situation concrete), via_article (cite A).",
+    ),
 ) -> None:
     """Generer le jeu « renvois » : l'article A renvoie a l'article B, la reponse est dans B (9.9b)."""
-    from raglab.benchmarks.lexml_references import generate_reference_questions
+    from raglab.benchmarks.lexml_references import generate_reference_questions, parse_mix
 
+    try:
+        shares = parse_mix(mix)
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc), param_hint="--mix") from exc
     result = generate_reference_questions(
         get_settings(),
         backend=backend,
@@ -563,6 +572,7 @@ def lexml_reference_questions(
         seed=seed,
         model=model,
         profile=profile,
+        shares=shares,
     )
     typer.echo(json.dumps(result, indent=2, ensure_ascii=False))
 
