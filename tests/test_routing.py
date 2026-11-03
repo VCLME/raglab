@@ -1,0 +1,493 @@
+from __future__ import annotations
+
+import json
+from types import SimpleNamespace
+from unittest.mock import Mock, patch
+
+import numpy as np
+import pytest
+
+from raglab.config import Settings
+from raglab.domain.schemas import RetrievedChunk
+from raglab.experiments.routing import (
+    ABSTENTION_PATH,
+    InScopeSet,
+    abstention_metrics,
+    calibrated_thresholds,
+    candidate_points,
+    intent_confusion,
+    load_calibration,
+    load_cases,
+    render_curve_svg,
+    render_markdown,
+    summarize,
+    sweep,
+)
+from raglab.retrieval.service import QueryService
+from raglab.routing import corpus as corpus_module
+from raglab.routing.abstention import best_score, chunk_score, decide_abstention, fallback_answer, threshold_for
+from raglab.routing.examples import iter_examples
+from raglab.routing.intent import IntentClassifier, clear_intent_cache, decide_intent
+from raglab.routing.language import detect_language
+from raglab.routing.router import QueryRouter
+from raglab.routing.schemas import Intent
+
+# Fake embedding space: one axis per theme, so similarities are predictable.
+AXES = {
+    "loi": 0,
+    "lei": 0,
+    "article": 0,
+    "art": 0,
+    "bonjour": 1,
+    "merci": 1,
+    "olá": 1,
+    "obrigado": 1,
+    "météo": 2,
+    "chuva": 2,
+    "commande": 2,
+    "pedido": 2,
+    "musée": 3,
+    "museu": 3,
+}
+
+
+class FakeEmbedder:
+    def __init__(self):
+        self.calls: list[str] = []
+
+    def embed_query(self, text: str) -> list[float]:
+        self.calls.append(text)
+        vector = np.full(5, 0.01, dtype=np.float32)
+        for word in text.lower().replace("?", " ").replace("!", " ").split():
+            if word in AXES:
+                vector[AXES[word]] += 1.0
+        return (vector / np.linalg.norm(vector)).tolist()
+
+
+EXAMPLES = [
+    ("documentary", "fr", "que dit la loi"),
+    ("documentary", "fr", "quel musée"),
+    ("documentary", "pt", "o que diz a lei"),
+    ("conversational", "fr", "bonjour"),
+    ("conversational", "pt", "olá obrigado"),
+    ("out_of_scope", "fr", "météo de demain"),
+    ("out_of_scope", "pt", "meu pedido"),
+]
+
+
+def _chunk(score: float, rank: int = 1, **extra) -> RetrievedChunk:
+    return RetrievedChunk(
+        chunk_id=f"c{rank}",
+        document_id="d1",
+        file_name="loi.txt",
+        source_path="data/loi.txt",
+        chunk_text="extrait",
+        score=score,
+        rank=rank,
+        **extra,
+    )
+
+
+@pytest.fixture(autouse=True)
+def _clear_caches():
+    clear_intent_cache()
+    corpus_module.clear_centroid_cache()
+    yield
+    clear_intent_cache()
+    corpus_module.clear_centroid_cache()
+
+
+# --- language ---------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("Quelle est la durée du mandat prévue par le texte ?", "fr"),
+        ("Qual é o prazo de prescrição previsto na lei?", "pt"),
+        ("Não encontrei a informação.", "pt"),
+        ("D'accord, je comprends.", "fr"),
+        ("Which law sets the tax rate?", "other"),
+    ],
+)
+def test_detect_language_from_function_words(text, expected):
+    decision = detect_language(text)
+    assert decision.language == expected
+    assert decision.method == "lexical"
+
+
+def test_detect_language_falls_back_to_the_nearest_example_without_marker():
+    decision = detect_language("Beleza.", fallback={"fr": 0.81, "pt": 0.86})
+    assert decision.language == "pt"
+    assert decision.method == "embedding"
+    assert detect_language("Beleza.").language == "other"
+
+
+# --- intent -----------------------------------------------------------------
+
+
+def test_intent_classifier_uses_the_nearest_centroid():
+    classifier = IntentClassifier(FakeEmbedder(), EXAMPLES)
+    embedding = np.asarray(FakeEmbedder().embed_query("bonjour merci"))
+    decision = classifier.classify(embedding, margin=0.0)
+    assert decision.intent == Intent.CONVERSATIONAL
+    assert decision.scores["conversational"] > decision.scores["documentary"]
+    assert decision.nearest_example in {"bonjour", "olá obrigado"}
+
+    weather = classifier.classify(np.asarray(FakeEmbedder().embed_query("chuva météo")), margin=0.0)
+    assert weather.intent == Intent.OUT_OF_SCOPE
+    law = classifier.classify(np.asarray(FakeEmbedder().embed_query("art lei")), margin=0.0)
+    assert law.intent == Intent.DOCUMENTARY
+
+
+def test_decide_intent_keeps_documentary_unless_beaten_by_the_margin():
+    scores = {"documentary": 0.80, "conversational": 0.83, "out_of_scope": 0.70}
+    assert decide_intent(scores, margin=0.0) == Intent.CONVERSATIONAL
+    assert decide_intent(scores, margin=0.05) == Intent.DOCUMENTARY
+    assert decide_intent({"documentary": 0.5}, margin=0.0) == Intent.DOCUMENTARY
+
+
+def test_language_similarities_report_the_nearest_example_per_language():
+    classifier = IntentClassifier(FakeEmbedder(), EXAMPLES)
+    sims = classifier.language_similarities(np.asarray(FakeEmbedder().embed_query("olá obrigado")))
+    assert sims["pt"] > sims["fr"]
+
+
+def test_router_examples_stay_out_of_the_frozen_evaluation_sets():
+    frozen = {json.loads(line)["question"].strip().lower() for line in ABSTENTION_PATH.read_text("utf-8").splitlines()}
+    for path in ("benchmarks/piaf/ground_truth.jsonl", "benchmarks/lexml_fulltext/ground_truth.jsonl"):
+        full = ABSTENTION_PATH.parents[2] / path
+        frozen |= {json.loads(line)["question"].strip().lower() for line in full.read_text("utf-8").splitlines()}
+    examples = [text.strip().lower() for _, _, text in iter_examples()]
+    assert len(examples) == len(set(examples))
+    assert not frozen & set(examples)
+
+
+# --- abstention -------------------------------------------------------------
+
+
+def test_chunk_score_reads_dense_or_reranker_scores():
+    plain = _chunk(0.82)
+    assert chunk_score(plain, "dense") == pytest.approx(0.82)
+    assert chunk_score(plain, "rerank") is None
+    # Hybrid (9.2) keeps the cosine in dense_score while score is the RRF value.
+    hybrid = SimpleNamespace(score=0.03, dense_score=0.87)
+    assert chunk_score(hybrid, "dense") == pytest.approx(0.87)
+    reranked = SimpleNamespace(score=0.8, rerank_score=4.2)
+    assert chunk_score(reranked, "rerank") == pytest.approx(4.2)
+    assert best_score([_chunk(0.7, 1), _chunk(0.9, 2)], "dense") == pytest.approx(0.9)
+    with pytest.raises(ValueError):
+        chunk_score(plain, "bm25")
+
+
+@pytest.mark.parametrize(
+    ("intent", "score", "abstain", "reason"),
+    [
+        (Intent.DOCUMENTARY, 0.9, False, None),
+        (Intent.DOCUMENTARY, 0.7, True, "low_score"),
+        (Intent.DOCUMENTARY, None, True, "no_passage"),
+        (Intent.CONVERSATIONAL, 0.95, True, "intent:conversational"),
+        (Intent.OUT_OF_SCOPE, 0.95, True, "intent:out_of_scope"),
+    ],
+)
+def test_decide_abstention(intent, score, abstain, reason):
+    decision = decide_abstention(intent=intent, score=score, threshold=0.8, score_source="dense")
+    assert decision.abstain is abstain
+    assert decision.reason == reason
+
+
+def test_fallback_answers_follow_the_language_and_intent():
+    assert fallback_answer(Intent.DOCUMENTARY, "fr") == "Je ne trouve pas cela dans les documents."
+    assert fallback_answer(Intent.OUT_OF_SCOPE, "pt") == "Não encontrei isso nos documentos."
+    assert fallback_answer(Intent.DOCUMENTARY, "other") == "Je ne trouve pas cela dans les documents."
+    assert "documents indexés" in fallback_answer(Intent.CONVERSATIONAL, "fr")
+
+
+# --- router -----------------------------------------------------------------
+
+
+def _runs():
+    return [
+        SimpleNamespace(id="run-lexml", corpus=SimpleNamespace(name="lexml")),
+        SimpleNamespace(id="run-piaf", corpus=SimpleNamespace(name="piaf")),
+    ]
+
+
+def _router(**settings) -> QueryRouter:
+    corpus_module._CENTROIDS.update(
+        {
+            "run-lexml": np.asarray([1.0, 0, 0, 0, 0], dtype=np.float32),
+            "run-piaf": np.asarray([0, 0, 0, 1.0, 0], dtype=np.float32),
+        }
+    )
+    return QueryRouter(Mock(), Settings(**settings), embedder=FakeEmbedder())
+
+
+def test_router_picks_the_corpus_whose_centroid_is_closest():
+    router = _router()
+    with (
+        patch("raglab.routing.router.list_candidate_runs", return_value=_runs()),
+        patch("raglab.routing.intent.iter_examples", return_value=EXAMPLES),
+    ):
+        decision = router.route("Que dit l'article de la loi ?")
+    assert decision.corpus.source == "routed"
+    assert decision.corpus.corpus_name == "lexml"
+    assert decision.corpus.index_run_id == "run-lexml"
+    assert decision.corpus.margin > 0
+    assert [c.corpus_name for c in decision.corpus.candidates] == ["lexml", "piaf"]
+    assert decision.language.language == "fr"
+    assert decision.intent.intent == Intent.DOCUMENTARY
+    assert set(decision.timings_ms) == {"embed", "language", "intent", "corpus", "total"}
+
+
+def test_router_keeps_the_corpus_named_by_the_caller():
+    router = _router()
+    with (
+        patch("raglab.routing.router.list_candidate_runs", return_value=_runs()),
+        patch("raglab.routing.intent.iter_examples", return_value=EXAMPLES),
+    ):
+        decision = router.route("Quel musée ?", corpus_name="lexml")
+    assert decision.corpus.source == "requested"
+    assert decision.corpus.corpus_name == "lexml"
+    assert decision.corpus.index_run_id is None
+    assert decision.corpus.suggested_corpus == "piaf"
+
+
+def test_router_reports_no_corpus_without_compatible_index():
+    router = _router()
+    with (
+        patch("raglab.routing.router.list_candidate_runs", return_value=[]),
+        patch("raglab.routing.intent.iter_examples", return_value=EXAMPLES),
+    ):
+        decision = router.route("Quel musée ?")
+    assert decision.corpus.source == "none"
+    assert decision.corpus.corpus_name is None
+
+
+# --- integration in QueryService ---------------------------------------------
+
+
+def _service(chunks, **overrides) -> QueryService:
+    settings = Settings(**overrides)
+    service = QueryService(Mock(), settings)
+    service._resolve_index_run = Mock(
+        return_value=SimpleNamespace(
+            id="run-lexml",
+            strategy="traditional",
+            embedding_space=SimpleNamespace(
+                dimension=5,
+                provider=settings.embedding_provider,
+                model_name=settings.embedding_model_name,
+                distance_metric=settings.distance_metric,
+                query_prefix=settings.query_prefix,
+                passage_prefix=settings.passage_prefix,
+            ),
+        )
+    )
+    service.vector_store = Mock()
+    service.vector_store.search.return_value = chunks
+    service.generator = Mock()
+    service.generator.generate_answer.return_value = "Réponse générée"
+    service.generator.last_stats = {"tokens_per_second": 40.0}
+    service.generator.stream_answer.return_value = iter(["Réponse", " générée"])
+    return service
+
+
+@pytest.fixture
+def routed_env():
+    corpus_module._CENTROIDS.update(
+        {
+            "run-lexml": np.asarray([1.0, 0, 0, 0, 0], dtype=np.float32),
+            "run-piaf": np.asarray([0, 0, 0, 1.0, 0], dtype=np.float32),
+        }
+    )
+    embedder = FakeEmbedder()
+    with (
+        patch("raglab.routing.router.build_embedding_provider", return_value=embedder),
+        patch("raglab.retrieval.service.build_embedding_provider", return_value=embedder),
+        patch("raglab.routing.router.list_candidate_runs", return_value=_runs()),
+        patch("raglab.routing.intent.iter_examples", return_value=EXAMPLES),
+    ):
+        yield embedder
+
+
+def test_query_with_routing_answers_from_documents_above_the_threshold(routed_env):
+    service = _service([_chunk(0.9)], routing_abstention_threshold=0.8)
+    response = service.query(question="Que dit la loi ?", routing=True)
+    assert response.answer == "Réponse générée"
+    assert response.routing is not None
+    assert response.routing.corpus.corpus_name == "lexml"
+    assert response.routing.abstention.abstain is False
+    assert response.routing.answer_from_documents is True
+    assert "routing" in response.timings_ms
+    # The routed index run is the one queried.
+    assert service._resolve_index_run.call_args.kwargs["index_run_id"] == "run-lexml"
+    # Retrieval reuses the router's question vector.
+    assert routed_env.calls.count("Que dit la loi ?") == 1
+
+
+def test_query_with_routing_abstains_below_the_threshold(routed_env):
+    service = _service([_chunk(0.6)], routing_abstention_threshold=0.8)
+    response = service.query(question="Que dit la loi ?", routing=True)
+    assert response.answer == "Je ne trouve pas cela dans les documents."
+    assert response.routing.abstention.reason == "low_score"
+    assert response.generation_stats == {}
+    service.generator.generate_answer.assert_not_called()
+
+
+def test_query_with_routing_answers_conversation_without_generation(routed_env):
+    service = _service([_chunk(0.95)], routing_abstention_threshold=0.0)
+    response = service.query(question="Bonjour merci !", routing=True)
+    assert response.routing.intent.intent == Intent.CONVERSATIONAL
+    assert "documents indexés" in response.answer
+    service.generator.generate_answer.assert_not_called()
+
+
+def test_query_without_routing_is_unchanged(routed_env):
+    service = _service([_chunk(0.1)], routing_abstention_threshold=0.8)
+    response = service.query(question="Que dit la loi ?", corpus_name="lexml")
+    assert response.routing is None
+    assert response.answer == "Réponse générée"
+
+
+def test_stream_answer_streams_the_fallback_when_the_router_declines(routed_env):
+    service = _service([_chunk(0.5)], routing_abstention_threshold=0.8)
+    outcome = service.retrieve(question="Que dit la loi ?", routing=True)
+    events = list(service.stream_answer(outcome))
+    assert events[0] == ("token", {"text": "Je ne trouve pas cela dans les documents."})
+    assert events[-1][0] == "done"
+    assert events[-1][1]["routing"]["abstention"]["abstain"] is True
+    service.generator.stream_answer.assert_not_called()
+
+
+# --- evaluation ---------------------------------------------------------------
+
+
+def _record(category: str, score: float | None, *, conv: float = 0.0, language="fr", detected="fr", corpus=None):
+    return {
+        "id": f"{category}-{score}",
+        "category": category,
+        "language": language,
+        "language_detected": detected,
+        "language_method": "lexical",
+        "intent_scores": {"documentary": 0.8, "conversational": conv, "out_of_scope": 0.0},
+        "expected_corpus": corpus,
+        "corpus_routed": corpus,
+        "best_score": score,
+        "hit": category == "in_scope",
+        "timings_ms": {"embed": 8.0, "total": 9.0},
+    }
+
+
+RECORDS = [
+    _record("in_scope", 0.90, corpus="piaf"),
+    _record("in_scope", 0.88, corpus="lexml"),
+    _record("in_scope", 0.79, corpus="piaf"),
+    _record("near_miss", 0.81),
+    _record("out_of_scope", 0.75),
+    _record("conversational", 0.86, conv=0.95),
+]
+
+
+def test_abstention_metrics_count_intent_and_score_refusals():
+    metrics = abstention_metrics(RECORDS, margin=0.0, threshold=0.8)
+    # Abstains: in_scope 0.79 (fp), out_of_scope 0.75 (tp), conversational by intent (tp).
+    assert metrics["counts"] == {"tp": 2, "fp": 1, "fn": 1, "tn": 2}
+    assert metrics["precision"] == pytest.approx(2 / 3, abs=1e-4)
+    assert metrics["recall"] == pytest.approx(2 / 3, abs=1e-4)
+    assert metrics["false_abstention_rate"] == pytest.approx(1 / 3, abs=1e-4)
+    # Intent ignored: the conversational question scores 0.86 and gets answered.
+    assert abstention_metrics(RECORDS, margin=None, threshold=0.8)["counts"]["tp"] == 1
+
+
+def test_sweep_and_candidate_points_cover_the_curve():
+    curve = sweep(RECORDS)
+    assert {p["intent_margin"] for p in curve} >= {None, 0.0}
+    candidates = candidate_points(curve)
+    assert set(candidates) == {
+        "max_f1",
+        "max_recall_false_abstention_le_5pct",
+        "max_precision_recall_ge_80pct",
+    }
+    assert candidates["max_recall_false_abstention_le_5pct"]["false_abstention_rate"] <= 0.05
+    assert "<polyline" in render_curve_svg(curve)
+
+
+def test_intent_confusion_and_summary():
+    assert intent_confusion(RECORDS, margin=0.0)["conversational"]["conversational"] == 1
+    summary = summarize(RECORDS, Settings(routing_abstention_threshold=0.8))
+    assert summary["language_accuracy"] == 1.0
+    assert summary["corpus_routing_accuracy"] == 1.0
+    assert summary["latency"]["router_total"]["p50_ms"] == 9.0
+    assert summary["latency"]["router_without_embed"]["p95_ms"] == 1.0
+    assert "| max_f1 |" in render_markdown(summary)
+
+
+def test_load_cases_draws_an_equal_seeded_in_scope_sample(tmp_path):
+    abstention = tmp_path / "abstention.jsonl"
+    abstention.write_text(
+        "\n".join(
+            json.dumps({"id": f"a{i}", "language": "fr", "category": "out_of_scope", "question": f"q{i}"})
+            for i in range(4)
+        ),
+        encoding="utf-8",
+    )
+    sets = []
+    for name, language in (("one", "fr"), ("two", "pt")):
+        path = tmp_path / f"{name}.jsonl"
+        rows = [{"id": f"{name}{i}", "question": f"{name} {i}"} for i in range(10)]
+        rows.append({"id": f"{name}-rejected", "question": "x", "review_status": "rejected"})
+        path.write_text("\n".join(json.dumps(r) for r in rows), encoding="utf-8")
+        sets.append(InScopeSet(name, path, f"bench_{name}", language))
+
+    cases = load_cases(abstention_path=abstention, in_scope_sets=tuple(sets), seed=1)
+    in_scope = [c for c in cases if c.category == "in_scope"]
+    assert len(in_scope) == 4
+    assert {c.source for c in in_scope} == {"one", "two"}
+    assert all("rejected" not in c.id for c in in_scope)
+    again = load_cases(abstention_path=abstention, in_scope_sets=tuple(sets), seed=1)
+    assert [c.id for c in again] == [c.id for c in cases]
+
+
+def test_threshold_for_prefers_the_corpus_threshold():
+    settings = Settings(routing_abstention_threshold=0.8, routing_abstention_thresholds={"piaf": 0.74})
+    assert threshold_for(settings, "piaf") == pytest.approx(0.74)
+    assert threshold_for(settings, "lexml") == pytest.approx(0.8)
+    assert threshold_for(settings, None) == pytest.approx(0.8)
+
+
+def test_router_abstains_against_the_routed_corpus_threshold():
+    router = _router(routing_abstention_threshold=0.9, routing_abstention_thresholds={"lexml": 0.7})
+    with (
+        patch("raglab.routing.router.list_candidate_runs", return_value=_runs()),
+        patch("raglab.routing.intent.iter_examples", return_value=EXAMPLES),
+    ):
+        decision = router.finish(router.route("Que dit la loi ?"), [_chunk(0.8)])
+    assert decision.abstention.threshold == pytest.approx(0.7)
+    assert decision.answer_from_documents is True
+
+
+def test_per_corpus_thresholds_come_from_calibration_quantiles():
+    calibration = {"piaf": [0.70, 0.75, 0.80, 0.85, 0.90] * 4, "lexml": [0.86, 0.88, 0.90, 0.92] * 5}
+    assert calibrated_thresholds(calibration, 0.1) == {"lexml": 0.86, "piaf": 0.7}
+    records = [dict(r, corpus_routed=r["corpus_routed"] or "piaf") for r in RECORDS]
+    metrics = abstention_metrics(records, margin=0.0, threshold={"piaf": 0.8, "lexml": 0.9})
+    assert metrics["threshold_mode"] == "per_corpus"
+    # lexml in-scope at 0.88 < 0.9 now abstains.
+    assert metrics["counts"]["fp"] == 2
+    curve = sweep(records, calibration)
+    per_corpus = [p for p in curve if p["threshold_mode"] == "per_corpus"]
+    assert per_corpus and all(isinstance(p["threshold"], dict) for p in per_corpus)
+    assert "par corpus" in render_markdown(
+        dict(summarize(records, Settings(), calibration), candidates={"max_f1": per_corpus[0]})
+    )
+
+
+def test_load_calibration_excludes_the_evaluated_questions(tmp_path):
+    path = tmp_path / "set.jsonl"
+    rows = [json.dumps({"id": f"q{i}", "question": f"q {i}"}) for i in range(10)]
+    path.write_text("\n".join(rows), encoding="utf-8")
+    sets = (InScopeSet("one", path, "bench_one", "fr"),)
+    cases = load_calibration(in_scope_sets=sets, exclude_ids={"q0", "q1"}, size=20, seed=3)
+    assert len(cases) == 8
+    assert {c.id for c in cases}.isdisjoint({"q0", "q1"})

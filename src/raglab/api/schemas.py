@@ -122,6 +122,9 @@ class QueryRequest(BaseModel):
     # Ollama model for the answer; None = RAGLAB_GENERATION_MODEL.
     # Ignored by /api/graph/query.
     llm_model: str | None = None
+    # Query router (phase 9.4): language, intent, corpus choice when `corpus`
+    # and `index_run_id` are empty, abstention. Ignored by /api/graph/query.
+    routing: bool = False
     # Graph-only: "vector" = KNN, "hybrid" = KNN seed + entity re-rank.
     # Ignored by the pgvector /api/query endpoint.
     mode: str = "vector"
@@ -345,3 +348,17 @@ class RecallRequest(BaseModel):
     # RAGLAB_LLAMACPP_BASE_URL; the API container cannot start it).
     judge_backend: str = "ollama"
     judge_model: str | None = None
+
+
+class RoutingExperimentRequest(BaseModel):
+    # Corpora the router chooses from; empty = every compatible index.
+    corpora: list[str] = Field(default_factory=list)
+    strategy: ChunkingStrategy | None = None
+    # In-scope questions drawn per frozen set; None = as many as the
+    # abstention set has questions, split evenly between the sets.
+    sample_size: int | None = Field(None, ge=1)
+    seed: int = 42
+    top_k: int = Field(5, ge=1, le=50)
+    # In-scope questions per corpus, disjoint from the evaluated ones, that
+    # set the per-corpus thresholds.
+    calibration_size: int = Field(100, ge=1)

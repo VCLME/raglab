@@ -20,6 +20,8 @@ from raglab.domain.schemas import QueryResponse, RetrievalFilters, RetrievedChun
 from raglab.embeddings.factory import build_embedding_provider
 from raglab.generation.service import OllamaGenerator
 from raglab.logging_utils import log_event
+from raglab.routing.schemas import RoutingDecision
+from raglab.routing.step import route_and_retrieve
 from raglab.stores.vector.postgres import PostgresVectorStore
 
 LOGGER = logging.getLogger(__name__)
@@ -40,6 +42,12 @@ class RetrievalOutcome:
     retrieved: list[RetrievedChunk]
     started: float
     timings_ms: dict[str, float] = field(default_factory=dict)
+    # Set by the routing step (phase 9.4) when the request enabled it.
+    routing: RoutingDecision | None = None
+
+    @property
+    def answers_from_documents(self) -> bool:
+        return self.routing is None or self.routing.answer_from_documents
 
     def response(self, **extra: Any) -> QueryResponse:
         return QueryResponse(
@@ -49,6 +57,7 @@ class RetrievalOutcome:
             retrieved_chunks=self.retrieved,
             filters=self.filters,
             timings_ms=dict(self.timings_ms),
+            routing=self.routing,
             **extra,
         )
 
@@ -98,8 +107,25 @@ class QueryService:
         index_run_id: str | None = None,
         top_k: int | None = None,
         filters: RetrievalFilters | None = None,
+        routing: bool = False,
+        query_embedding: list[float] | None = None,
     ) -> RetrievalOutcome:
-        """Embed the question and search the index, each stage under its budget."""
+        """Embed the question and search the index, each stage under its budget.
+
+        `routing` runs the query router around this method (phase 9.4).
+        `query_embedding` skips the embed stage: the router passes the vector
+        it already computed, with the same embedder as the routed index run.
+        """
+        if routing:
+            return route_and_retrieve(
+                self,
+                question=question,
+                corpus_name=corpus_name,
+                strategy=strategy,
+                index_run_id=index_run_id,
+                top_k=top_k,
+                filters=filters,
+            )
         index_run = self._resolve_index_run(
             corpus_name=corpus_name,
             strategy=strategy,
@@ -124,11 +150,12 @@ class QueryService:
         effective_top_k = top_k or self.settings.default_top_k
 
         started = perf_counter()
-        query_embedding = run_with_timeout(
-            "embed",
-            self.settings.embed_timeout_seconds,
-            lambda: embedder.embed_query(question),
-        )
+        if query_embedding is None:
+            query_embedding = run_with_timeout(
+                "embed",
+                self.settings.embed_timeout_seconds,
+                lambda: embedder.embed_query(question),
+            )
         embedded = perf_counter()
         with self._statement_timeout(self.settings.retrieval_timeout_seconds):
             search_started = perf_counter()
@@ -167,6 +194,7 @@ class QueryService:
         generate_answer: bool = True,
         filters: RetrievalFilters | None = None,
         llm_model: str | None = None,
+        routing: bool = False,
     ) -> QueryResponse:
         outcome = self.retrieve(
             question=question,
@@ -175,9 +203,13 @@ class QueryService:
             index_run_id=index_run_id,
             top_k=top_k,
             filters=filters,
+            routing=routing,
         )
         answer = None
-        if generate_answer:
+        if generate_answer and not outcome.answers_from_documents:
+            assert outcome.routing is not None
+            answer = outcome.routing.fallback_answer
+        elif generate_answer:
             generation_started = perf_counter()
             answer = self.generator.generate_answer(question, outcome.retrieved, model=llm_model)
             outcome.timings_ms["generation"] = round((perf_counter() - generation_started) * 1000, 3)
@@ -186,7 +218,9 @@ class QueryService:
         return outcome.response(
             answer=answer,
             elapsed_ms=elapsed_ms,
-            generation_stats=dict(self.generator.last_stats) if generate_answer else {},
+            generation_stats=dict(self.generator.last_stats)
+            if generate_answer and outcome.answers_from_documents
+            else {},
         )
 
     def stream_answer(
@@ -206,7 +240,13 @@ class QueryService:
         generation_started = perf_counter()
         first_token_ms: float | None = None
         parts: list[str] = []
-        for piece in self.generator.stream_answer(outcome.question, outcome.retrieved, model=llm_model):
+        if outcome.answers_from_documents:
+            pieces = self.generator.stream_answer(outcome.question, outcome.retrieved, model=llm_model)
+        else:
+            # The router declined: its canned answer is the only fragment.
+            assert outcome.routing is not None
+            pieces = iter([outcome.routing.fallback_answer or ""])
+        for piece in pieces:
             if first_token_ms is None:
                 first_token_ms = round((perf_counter() - generation_started) * 1000, 3)
             parts.append(piece)
@@ -217,7 +257,7 @@ class QueryService:
         response = outcome.response(
             answer="".join(parts).strip(),
             elapsed_ms=elapsed_ms,
-            generation_stats=dict(self.generator.last_stats),
+            generation_stats=dict(self.generator.last_stats) if outcome.answers_from_documents else {},
         )
         yield "done", {**response.model_dump(mode="json"), "first_token_ms": first_token_ms}
 
@@ -244,6 +284,8 @@ class QueryService:
             question_length=len(outcome.question),
             elapsed_ms=round(elapsed_ms, 3),
             timings_ms=outcome.timings_ms,
+            routed_intent=outcome.routing.intent.intent.value if outcome.routing else None,
+            abstained=not outcome.answers_from_documents if outcome.routing else None,
         )
 
     @contextmanager

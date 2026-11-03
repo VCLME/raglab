@@ -54,6 +54,7 @@ def run_query(
         generate_answer=body.generate,
         filters=_filters(body),
         llm_model=body.llm_model,
+        routing=body.routing,
     )
 
 
@@ -94,6 +95,7 @@ def stream_query(
         index_run_id=body.index_run_id,
         top_k=body.top_k,
         filters=_filters(body),
+        routing=body.routing,
     )
     retrieval = outcome.response().model_dump(mode="json")
 
