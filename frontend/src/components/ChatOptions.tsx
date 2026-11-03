@@ -9,9 +9,10 @@ export interface RetrievalOverrides {
   retrieval_mode: RetrievalMode | null;
   rerank: boolean | null;
   citations: boolean | null;
+  graph: boolean | null;
 }
 
-export const NO_OVERRIDES: RetrievalOverrides = { retrieval_mode: null, rerank: null, citations: null };
+export const NO_OVERRIDES: RetrievalOverrides = { retrieval_mode: null, rerank: null, citations: null, graph: null };
 
 const MODES: RetrievalMode[] = ["dense", "lexical", "hybrid"];
 
@@ -20,6 +21,7 @@ export function effectiveOptions(value: RetrievalOverrides, config: ConfigRespon
     mode: (value.retrieval_mode ?? config?.default_retrieval_mode ?? "hybrid") as RetrievalMode,
     rerank: value.rerank ?? config?.default_rerank ?? false,
     citations: value.citations ?? config?.citation_resolver ?? true,
+    graph: value.graph ?? config?.graph_retrieval ?? false,
   };
 }
 
@@ -31,7 +33,7 @@ interface Props {
 
 /**
  * Compact popover of the retrieval options the API exposes (mode, re-ranking,
- * legal citations). Only the options changed here are sent: the rest keeps the
+ * legal citations, citation graph). Only the options changed here are sent: the rest keeps the
  * server defaults from /api/config.
  */
 export function ChatOptions({ value, onChange, config }: Props) {
@@ -66,7 +68,7 @@ export function ChatOptions({ value, onChange, config }: Props) {
   // A choice equal to the server default goes back to "default".
   const set = <K extends keyof RetrievalOverrides>(key: K, next: NonNullable<RetrievalOverrides[K]>) => {
     const defaults = effectiveOptions(NO_OVERRIDES, config);
-    const defaultValue = key === "retrieval_mode" ? defaults.mode : defaults[key as "rerank" | "citations"];
+    const defaultValue = key === "retrieval_mode" ? defaults.mode : defaults[key as "rerank" | "citations" | "graph"];
     onChange({ ...value, [key]: next === defaultValue ? null : next });
   };
 
@@ -74,6 +76,7 @@ export function ChatOptions({ value, onChange, config }: Props) {
     t(`retrieval.mode_short_${current.mode}`),
     current.rerank ? t("chat.options_rerank_short") : null,
     current.citations ? t("chat.options_citations_short") : null,
+    current.graph ? t("chat.options_graph_short") : null,
   ]
     .filter(Boolean)
     .join(" · ");
@@ -130,6 +133,13 @@ export function ChatOptions({ value, onChange, config }: Props) {
             description={t("chat.options_citations_hint")}
             checked={current.citations}
             onChange={(on) => set("citations", on)}
+          />
+
+          <Switch
+            label={t("retrieval.graph_label")}
+            description={t("chat.options_graph_hint")}
+            checked={current.graph}
+            onChange={(on) => set("graph", on)}
           />
 
           <div className="options-foot">

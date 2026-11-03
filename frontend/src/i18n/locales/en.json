@@ -136,7 +136,9 @@
     "chunks_hide_filtered_one": "Hide the filtered chunk",
     "chunks_hide_filtered_other": "Hide the {{count}} filtered chunks",
     "stop": "Stop",
-    "stopped": "Generation stopped."
+    "stopped": "Generation stopped.",
+    "options_graph_hint": "Follows the references of the found articles (\"art. 12 desta Lei\") in the Neo4j graph and adds the cited articles. Being measured: off by default.",
+    "options_graph_short": "graph"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -545,14 +547,19 @@
       "output_tokens": "Tokens generated",
       "tokens_per_second": "Tokens / s",
       "fragments": "Streamed fragments",
-      "first_token_ms": "First token after"
+      "first_token_ms": "First token after",
+      "seeds": "Seed passages",
+      "articles": "Cited articles followed",
+      "chunks": "Passages fetched",
+      "added": "New to the fusion"
     },
     "scores": {
       "score": "score",
       "dense_score": "vector",
       "lexical_score": "BM25",
       "fused_score": "fused",
-      "rerank_score": "rerank"
+      "rerank_score": "rerank",
+      "graph_score": "graph"
     },
     "stages": {
       "question": {
@@ -631,6 +638,13 @@
         "what": "Spots a cited law and article in the question (“art. 49 da Lei 8.078”) with regular expressions.",
         "why": "When a law is cited, searching the whole corpus drowns the article among similar texts: the search is restricted to that law and the article goes first.",
         "disabled": "Option off: the question is searched across the whole corpus."
+      },
+      "graph": {
+        "name": "Citation graph",
+        "short": "Graph",
+        "what": "Starts from the article the question cites and the articles of the best passages found, follows their references (\"nos termos do art. 12\") one hop in the Neo4j graph, and adds the passages of the cited articles that the searches did not find.",
+        "why": "In a law, the answer is often in the article the found passage refers to: it looks like the question neither in meaning nor in words, so neither search brings it up.",
+        "disabled": "Option off: the fusion only gets the vector and BM25 passages."
       }
     },
     "hint_selected": "Click the active stage again to close its explanation.",
@@ -652,7 +666,20 @@
       "rrf_caption": "Only ranks count (k = {{k}}, BM25 weight = {{weight}}): no need to compare a cosine with a BM25 score.",
       "before": "Before (first search)",
       "after": "After (cross-encoder)",
-      "rerank_caption": "Each line joins a passage's position before and after the cross-encoder reread it."
+      "rerank_caption": "Each line joins a passage's position before and after the cross-encoder reread it.",
+      "rank_graph": "Graph rank",
+      "rrf_graph_caption": "The graph branch adds g/(k + rank) with g = {{weight}}, only for passages the searches had not found.",
+      "cites_label": "Article A, found by the search, cites article B; B's passages join the fusion",
+      "cites_found": "found by the search",
+      "cites_cited": "cited by A",
+      "cites_seed": "found passage",
+      "cites_added_one": "{{count}} new passage",
+      "cites_added_other": "{{count}} new passages",
+      "cites_caption": "The first reference followed for this question, with the sentence carrying it; filled passages are new to the fusion.",
+      "cites_caption_example": "Example: no reference was followed for this question.",
+      "cites_example_from": "Art. 5º — Lei nº 8.078",
+      "cites_example_to": "Art. 12 — Lei nº 8.078",
+      "grouped": "grouped: follows the passage citing it"
     },
     "citation_none": "none",
     "rerank_skipped": "skipped (no GPU)",
@@ -681,7 +708,18 @@
       "rerank_on": "On: the cross-encoder rereads the {{count}} best candidates and keeps the most relevant.",
       "rerank_off": "Off: the search order is kept as is.",
       "rerank_skipped": "Skipped: no GPU on the server (on CPU it would take several seconds).",
-      "rerank_cpu": "On, running on CPU for lack of a GPU: slower than usual."
+      "rerank_cpu": "On, running on CPU for lack of a GPU: slower than usual.",
+      "graph": "Citation graph",
+      "graph_opt_on": "on",
+      "graph_opt_off": "off",
+      "graph_opt_skipped": "skipped",
+      "graph_on": "On: {{articles}} cited articles followed, {{count}} passages added to the fusion.",
+      "graph_on_planned": "On: follows the references (CITES) of the found articles in Neo4j and adds their passages to the fusion.",
+      "graph_off": "Off: the fusion only gets the searches' passages.",
+      "graph_skipped": "Skipped: the branch could not run.",
+      "graph_skipped_no_neo4j": "Skipped: Neo4j does not answer, the response says so.",
+      "graph_skipped_no_graph": "Skipped: no graph for this index (Expert → Citation graph).",
+      "graph_failed": "Skipped: Neo4j error (see the logs)."
     },
     "code": {
       "citation": {
@@ -716,7 +754,8 @@
         "what": "Reciprocal Rank Fusion: only ranks count, not scores",
         "dense": "ranked well by the vector search: it scores",
         "lexical": "ranked well by BM25 too: it scores again",
-        "absent": "missing from a list: that list adds nothing"
+        "absent": "missing from a list: that list adds nothing",
+        "graph": "found by the graph branch (not by the searches): its graph rank counts"
       },
       "rerank": {
         "what": "The cross-encoder reads the question and the passage together",
@@ -740,8 +779,16 @@
       "answer": {
         "what": "In the browser, every [Rank N] of the answer is found",
         "click": "and turned into a clickable chip pointing to source N"
+      },
+      "graph": {
+        "seeds": "seeds: the articles of the best passages found (and the one the question cites)",
+        "hop": "one hop: the articles they cite (CITES relationship)",
+        "cap": "at most 3 cited articles per seed, best ranked first",
+        "chunks": "the first passages of each cited article",
+        "fusion": "these passages join the RRF fusion as a third list"
       }
-    }
+    },
+    "graph_skipped": "skipped"
   },
   "retrieval": {
     "mode_label": "Search mode",

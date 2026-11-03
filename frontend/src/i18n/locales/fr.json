@@ -136,7 +136,9 @@
     "chunks_hide_filtered_one": "Masquer le chunk filtré",
     "chunks_hide_filtered_other": "Masquer les {{count}} chunks filtrés",
     "stop": "Arrêter",
-    "stopped": "Génération arrêtée."
+    "stopped": "Génération arrêtée.",
+    "options_graph_hint": "Suit les renvois des articles trouvés (« art. 12 desta Lei ») dans le graphe Neo4j et ajoute les articles cités. Mesure en cours : désactivé par défaut.",
+    "options_graph_short": "graphe"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -545,14 +547,19 @@
       "output_tokens": "Tokens générés",
       "tokens_per_second": "Tokens / s",
       "fragments": "Fragments streamés",
-      "first_token_ms": "Premier token après"
+      "first_token_ms": "Premier token après",
+      "seeds": "Passages de départ",
+      "articles": "Articles cités suivis",
+      "chunks": "Passages récupérés",
+      "added": "Nouveaux pour la fusion"
     },
     "scores": {
       "score": "score",
       "dense_score": "vectoriel",
       "lexical_score": "BM25",
       "fused_score": "fusion",
-      "rerank_score": "re-ranking"
+      "rerank_score": "re-ranking",
+      "graph_score": "graphe"
     },
     "stages": {
       "question": {
@@ -631,6 +638,13 @@
         "what": "Repère dans la question une loi et un article cités (« art. 49 de la Lei 8.078 ») à l'aide d'expressions régulières.",
         "why": "Quand une loi est citée, chercher dans tout le corpus noie l'article parmi des textes voisins : on limite la recherche à cette loi et on place l'article en tête.",
         "disabled": "Option désactivée : la question est cherchée dans tout le corpus."
+      },
+      "graph": {
+        "name": "Graphe des renvois",
+        "short": "Graphe",
+        "what": "Part de l'article cité par la question et des articles des meilleurs passages trouvés, suit leurs renvois (« nos termos do art. 12 ») d'un saut dans le graphe Neo4j, et ajoute les passages des articles cités que les recherches n'avaient pas trouvés.",
+        "why": "Dans une loi, la réponse est souvent dans l'article auquel le passage trouvé renvoie : il ne ressemble pas à la question, ni par le sens ni par les mots, et aucune des deux recherches ne le remonte.",
+        "disabled": "Option désactivée : la fusion ne reçoit que les passages des recherches vectorielle et BM25."
       }
     },
     "hint_selected": "Reclique sur l'étape active pour refermer son explication.",
@@ -652,7 +666,20 @@
       "rrf_caption": "Seuls les rangs comptent (k = {{k}}, poids BM25 = {{weight}}) : inutile de comparer un cosinus à un score BM25.",
       "before": "Avant (1re recherche)",
       "after": "Après (cross-encoder)",
-      "rerank_caption": "Chaque trait relie la place d'un passage avant et après la relecture par le cross-encoder."
+      "rerank_caption": "Chaque trait relie la place d'un passage avant et après la relecture par le cross-encoder.",
+      "rank_graph": "Rang graphe",
+      "rrf_graph_caption": "La branche graphe ajoute g/(k + rang) avec g = {{weight}}, seulement pour les passages que les recherches n'avaient pas trouvés.",
+      "cites_label": "L'article A, trouvé par la recherche, cite l'article B ; les passages de B rejoignent la fusion",
+      "cites_found": "trouvé par la recherche",
+      "cites_cited": "cité par A",
+      "cites_seed": "passage trouvé",
+      "cites_added_one": "{{count}} passage nouveau",
+      "cites_added_other": "{{count}} passages nouveaux",
+      "cites_caption": "Le premier renvoi suivi pour cette question, avec la phrase qui le porte ; les passages pleins sont nouveaux pour la fusion.",
+      "cites_caption_example": "Exemple : aucun renvoi suivi pour cette question.",
+      "cites_example_from": "Art. 5º — Lei nº 8.078",
+      "cites_example_to": "Art. 12 — Lei nº 8.078",
+      "grouped": "regroupé : suit le passage qui le cite"
     },
     "citation_none": "aucune",
     "rerank_skipped": "sauté (pas de GPU)",
@@ -681,7 +708,18 @@
       "rerank_on": "Activé : le cross-encoder relit les {{count}} meilleurs candidats et garde les plus pertinents.",
       "rerank_off": "Désactivé : l'ordre de la recherche est gardé tel quel.",
       "rerank_skipped": "Sauté : pas de GPU côté serveur (sur CPU, il prendrait plusieurs secondes).",
-      "rerank_cpu": "Activé sur CPU, faute de GPU : plus lent que d'habitude."
+      "rerank_cpu": "Activé sur CPU, faute de GPU : plus lent que d'habitude.",
+      "graph": "Graphe des renvois",
+      "graph_opt_on": "activé",
+      "graph_opt_off": "désactivé",
+      "graph_opt_skipped": "sauté",
+      "graph_on": "Activé : {{articles}} articles cités suivis, {{count}} passages ajoutés à la fusion.",
+      "graph_on_planned": "Activé : suit les renvois (CITES) des articles trouvés dans Neo4j et ajoute leurs passages à la fusion.",
+      "graph_off": "Désactivé : la fusion ne reçoit que les passages des recherches.",
+      "graph_skipped": "Sauté : la branche n'a pas pu tourner.",
+      "graph_skipped_no_neo4j": "Sauté : Neo4j ne répond pas, la réponse le signale.",
+      "graph_skipped_no_graph": "Sauté : pas de graphe pour cet index (Expert → Graphe des renvois).",
+      "graph_failed": "Sauté : erreur Neo4j (voir les logs)."
     },
     "code": {
       "citation": {
@@ -716,7 +754,8 @@
         "what": "Reciprocal Rank Fusion : seuls les rangs comptent, pas les scores",
         "dense": "bien classé par la recherche vectorielle : il gagne des points",
         "lexical": "bien classé par BM25 aussi : il en gagne encore",
-        "absent": "absent d'une liste : cette liste n'ajoute rien"
+        "absent": "absent d'une liste : cette liste n'ajoute rien",
+        "graph": "trouvé par la branche graphe (et pas par les recherches) : son rang graphe compte"
       },
       "rerank": {
         "what": "Le cross-encoder lit la question et le passage ensemble",
@@ -740,8 +779,16 @@
       "answer": {
         "what": "Dans le navigateur, chaque [Rank N] de la réponse est repéré",
         "click": "puis transformé en pastille cliquable vers la source N"
+      },
+      "graph": {
+        "seeds": "départs : les articles des meilleurs passages trouvés (et celui que cite la question)",
+        "hop": "un saut : les articles qu'ils citent (relation CITES)",
+        "cap": "au plus 3 articles cités par départ, les mieux classés d'abord",
+        "chunks": "les premiers passages de chaque article cité",
+        "fusion": "ces passages entrent dans la fusion RRF comme troisième liste"
       }
-    }
+    },
+    "graph_skipped": "sautée"
   },
   "retrieval": {
     "mode_label": "Mode de recherche",

@@ -57,6 +57,10 @@ interface ChatTurn {
   rerank_notice?: string | null;
   citation?: CitationInfo | null;
   lexemes?: string[];
+  // Graph branch: whether it ran, why it was skipped, its counters.
+  graph?: boolean | null;
+  graph_notice?: string | null;
+  graph_stats?: Record<string, number> | null;
 }
 
 function newTurnId(): string {
@@ -207,6 +211,9 @@ export function Chat() {
       rerank_notice: r.rerank_notice ?? null,
       citation: r.citation ?? null,
       lexemes: r.query_lexemes ?? [],
+      graph: r.graph ?? null,
+      graph_notice: r.graph_notice ?? null,
+      graph_stats: r.graph_stats ?? null,
     });
     try {
       // Sources show up as soon as retrieval is done, then the answer grows
@@ -460,6 +467,9 @@ export function Chat() {
     rerankCandidates: config?.rerank_candidates ?? 40,
     citationsOn: planned.citations,
     citation: answered ? lastTurn?.citation ?? null : null,
+    graphOn: (answered ? lastTurn?.graph : null) ?? planned.graph,
+    graphNotice: answered ? lastTurn?.graph_notice ?? null : null,
+    graphStats: answered ? lastTurn?.graph_stats ?? null : null,
   };
   return (
     <div className="edu-shell">
@@ -469,6 +479,7 @@ export function Chat() {
         lexemes={lastTurn?.lexemes}
         rrfK={config?.rrf_k ?? 60}
         lexicalWeight={config?.hybrid_lexical_weight ?? 0.5}
+        graphWeight={config?.graph_weight ?? 0.5}
         route={route}
       />
       {page}

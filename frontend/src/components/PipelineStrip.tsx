@@ -6,7 +6,16 @@ import { DIAGRAM_NODES, prefersReducedMotion, type NodeId, type NodeState, type 
 import { SNIPPETS, type StripNode } from "../edu/snippets";
 import { CloseIcon } from "./Icon";
 import { JsonViewer } from "./JsonViewer";
-import { LexicalBars, RerankReorder, RrfMerge, VectorBars, VectorSpace, type ChunkPreview } from "./edu/Schematics";
+import {
+  CitesSchematic,
+  LexicalBars,
+  RerankReorder,
+  RrfMerge,
+  VectorBars,
+  VectorSpace,
+  type ChunkPreview,
+  type GraphLink,
+} from "./edu/Schematics";
 
 export function formatMs(ms: number | null | undefined): string {
   if (ms == null) return "—";
@@ -34,15 +43,25 @@ export interface RouteInfo {
   rerankCandidates: number;
   citationsOn: boolean;
   citation: CitationInfo | null;
+  /** Graph branch (citation graph in Neo4j): asked for, and why it was skipped. */
+  graphOn: boolean;
+  graphNotice: string | null;
+  graphStats: Record<string, number> | null;
 }
 
 type CitationBranch = "off" | "none" | "law" | "unknown_law";
 type RerankBranch = "on" | "off" | "skipped" | "cpu";
+type GraphBranch = "on" | "off" | "skipped";
 
 function citationBranch(route: RouteInfo): CitationBranch {
   if (!route.citationsOn) return "off";
   if (!route.citation) return "none";
   return route.citation.law_found ? "law" : "unknown_law";
+}
+
+function graphBranch(route: RouteInfo): GraphBranch {
+  if (!route.graphOn) return "off";
+  return route.graphNotice ? "skipped" : "on";
 }
 
 function rerankBranch(route: RouteInfo): RerankBranch {
@@ -59,6 +78,7 @@ interface Props {
   lexemes?: string[];
   rrfK: number;
   lexicalWeight: number;
+  graphWeight?: number;
   route: RouteInfo;
 }
 
@@ -69,7 +89,7 @@ interface Props {
  * decision (legal citation, retrieval mode, re-ranking) with the branch taken
  * and why. Clicking a stage opens its lesson below.
  */
-export function PipelineStrip({ state, question, lexemes = [], rrfK, lexicalWeight, route }: Props) {
+export function PipelineStrip({ state, question, lexemes = [], rrfK, lexicalWeight, graphWeight = 0.5, route }: Props) {
   const { t } = useTranslation();
   const [selected, setSelected] = useState<StripNode | null>(null);
   const [announce, setAnnounce] = useState("");
@@ -110,6 +130,7 @@ export function PipelineStrip({ state, question, lexemes = [], rrfK, lexicalWeig
 
   const citation = citationBranch(route);
   const rerank = rerankBranch(route);
+  const graph = graphBranch(route);
   // The citation check runs with the search: drawn from the response.
   const citationNode: NodeState =
     citation === "off"
@@ -117,13 +138,23 @@ export function PipelineStrip({ state, question, lexemes = [], rrfK, lexicalWeig
       : route.known
       ? { status: "done" }
       : { status: state.nodes.question.status === "done" && state.planned ? "running" : "idle" };
-  const nodeState = (id: StripNode): NodeState => (id === "citation" ? citationNode : state.nodes[id]);
+  // A skipped graph branch still reports its stage (why, how long it
+  // tried): drawn dimmed, its lesson keeps the details.
+  const nodeState = (id: StripNode): NodeState => {
+    if (id === "citation") return citationNode;
+    if (id === "graph" && graph === "skipped") return { ...state.nodes.graph, status: "disabled" };
+    return state.nodes[id];
+  };
 
   const meta = (id: StripNode, node: NodeState): string => {
     if (id === "citation" && node.status === "done") {
       return citation === "law" ? route.citation?.label ?? "" : t("edu.citation_none");
     }
     if (id === "rerank" && rerank === "skipped") return t("edu.rerank_skipped");
+    if (id === "graph" && graph === "skipped") return t("edu.graph_skipped");
+    if (id === "graph" && node.status === "done" && route.graphStats?.added != null) {
+      return `+${route.graphStats.added} · ${formatMs(node.duration_ms)}`;
+    }
     if (node.status === "disabled") return t("edu.status_disabled");
     if (node.status === "running") return t("edu.status_running");
     if (node.status === "error") return t("edu.status_error");
@@ -168,6 +199,7 @@ export function PipelineStrip({ state, question, lexemes = [], rrfK, lexicalWeig
   // Branches the retrieval mode leaves out are dimmed, not only greyed.
   const vectorOff = route.mode === "lexical";
   const lexicalOff = route.mode === "dense";
+  const graphOff = graph !== "on";
 
   return (
     <>
@@ -201,6 +233,11 @@ export function PipelineStrip({ state, question, lexemes = [], rrfK, lexicalWeig
                 {node("lexical")}
                 {wire(state.nodes.lexical.status === "done", false)}
               </div>
+              <div className={`edu-lane graph${graphOff ? " off" : ""}`}>
+                {wire(!graphOff && reached("graph"), true)}
+                {node("graph")}
+                {wire(!graphOff && state.nodes.graph.status === "done", false)}
+              </div>
             </div>
             {main.map((id, i) => (
               <Fragment key={id}>
@@ -212,7 +249,7 @@ export function PipelineStrip({ state, question, lexemes = [], rrfK, lexicalWeig
             ))}
           </div>
         </div>
-        <RouteRow route={route} citation={citation} rerank={rerank} />
+        <RouteRow route={route} citation={citation} rerank={rerank} graph={graph} />
         {state.fromTimings ? <p className="edu-note">{t("edu.from_timings")}</p> : null}
         <div className="sr-only" aria-live="polite">
           {announce}
@@ -228,6 +265,7 @@ export function PipelineStrip({ state, question, lexemes = [], rrfK, lexicalWeig
           lexemes={lexemes}
           rrfK={rrfK}
           lexicalWeight={lexicalWeight}
+          graphWeight={graphWeight}
           onClose={() => setSelected(null)}
         />
       ) : null}
@@ -239,10 +277,11 @@ interface RouteRowProps {
   route: RouteInfo;
   citation: CitationBranch;
   rerank: RerankBranch;
+  graph: GraphBranch;
 }
 
-/** The three decisions of the request, each option shown, the one taken highlighted, with its reason. */
-function RouteRow({ route, citation, rerank }: RouteRowProps) {
+/** The decisions of the request, each option shown, the one taken highlighted, with its reason. */
+function RouteRow({ route, citation, rerank, graph }: RouteRowProps) {
   const { t } = useTranslation();
   const decisions: { key: string; options: string[]; taken: string; reason: string }[] = [
     {
@@ -256,6 +295,18 @@ function RouteRow({ route, citation, rerank }: RouteRowProps) {
       options: ["dense", "lexical", "hybrid"],
       taken: route.mode,
       reason: t(`edu.route.mode_${route.mode}`),
+    },
+    {
+      key: "graph",
+      options: ["on", "off", "skipped"],
+      taken: graph,
+      reason:
+        graph === "skipped"
+          ? t(`edu.route.graph_${route.graphNotice}`, { defaultValue: t("edu.route.graph_skipped") })
+          : t(`edu.route.graph_${graph}${graph === "on" && !route.known ? "_planned" : ""}`, {
+              articles: route.graphStats?.articles ?? 0,
+              count: route.graphStats?.added ?? 0,
+            }),
     },
     {
       key: "rerank",
@@ -296,12 +347,25 @@ interface LessonProps {
   lexemes: string[];
   rrfK: number;
   lexicalWeight: number;
+  graphWeight: number;
   onClose: () => void;
 }
 
-const RENDERED_KEYS = new Set(["head", "dimension", "norm", "top_chunks", "system_prompt", "user_prompt", "truncated", "model", "provider"]);
+const RENDERED_KEYS = new Set([
+  "head",
+  "dimension",
+  "norm",
+  "top_chunks",
+  "system_prompt",
+  "user_prompt",
+  "truncated",
+  "model",
+  "provider",
+  "links",
+  "notice",
+]);
 
-function StageLesson({ sectionRef, id, node, question, lexemes, rrfK, lexicalWeight, onClose }: LessonProps) {
+function StageLesson({ sectionRef, id, node, question, lexemes, rrfK, lexicalWeight, graphWeight, onClose }: LessonProps) {
   const { t } = useTranslation();
   const counts = Object.entries(node.counts ?? {}).filter(([, value]) => value != null);
   const data = node.data ?? {};
@@ -336,8 +400,10 @@ function StageLesson({ sectionRef, id, node, question, lexemes, rrfK, lexicalWei
     figure = <VectorSpace chunks={chunks} />;
   } else if (id === "lexical") {
     figure = <LexicalBars chunks={chunks} lexemes={lexemes} />;
+  } else if (id === "graph") {
+    figure = <CitesSchematic links={Array.isArray(data.links) ? (data.links as GraphLink[]) : []} />;
   } else if (id === "fusion") {
-    figure = <RrfMerge chunks={chunks} k={rrfK} weight={lexicalWeight} />;
+    figure = <RrfMerge chunks={chunks} k={rrfK} weight={lexicalWeight} graphWeight={graphWeight} />;
   } else if (id === "rerank") {
     figure = <RerankReorder chunks={chunks} />;
   }
@@ -367,7 +433,13 @@ function StageLesson({ sectionRef, id, node, question, lexemes, rrfK, lexicalWei
           <p>
             <strong>{t("edu.why")}</strong> {t(`edu.stages.${id}.why`)}
           </p>
-          {node.status === "disabled" ? <p className="edu-note">{t(`edu.stages.${id}.disabled`)}</p> : null}
+          {node.status === "disabled" ? (
+            <p className="edu-note">
+              {typeof data.notice === "string"
+                ? t(`edu.route.graph_${data.notice}`, { defaultValue: t("edu.route.graph_skipped") })
+                : t(`edu.stages.${id}.disabled`)}
+            </p>
+          ) : null}
           {!hasRun && node.status !== "disabled" && id !== "question" ? (
             <p className="edu-note">{t("edu.not_run_yet")}</p>
           ) : null}
