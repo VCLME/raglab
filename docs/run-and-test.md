@@ -22,10 +22,10 @@ Il faut disposer de :
 - Docker Desktop avec `docker compose`
 - un acces reseau pour telecharger les dependances Python et les modeles
 
-Sur cette machine, Python a ete installe ici :
+Sous Windows, l'installateur officiel place Python 3.12 ici :
 
 ```powershell
-C:\Users\lucme\AppData\Local\Programs\Python\Python312\python.exe
+$env:LOCALAPPDATA\Programs\Python\Python312\python.exe
 ```
 
 Si `python` ou `py -3.12` ne fonctionne pas encore dans ton terminal, utilise directement ce chemin.
@@ -35,7 +35,7 @@ Si `python` ou `py -3.12` ne fonctionne pas encore dans ton terminal, utilise di
 ### Option recommandee
 
 ```powershell
-& 'C:\Users\lucme\AppData\Local\Programs\Python\Python312\python.exe' -m venv .venv
+& "$env:LOCALAPPDATA\Programs\Python\Python312\python.exe" -m venv .venv
 ```
 
 ### Activer l'environnement
@@ -421,7 +421,7 @@ python -m pytest
 Utiliser le chemin complet :
 
 ```powershell
-& 'C:\Users\lucme\AppData\Local\Programs\Python\Python312\python.exe' --version
+& "$env:LOCALAPPDATA\Programs\Python\Python312\python.exe" --version
 ```
 
 ### `raglab` n'est pas reconnu
