@@ -15,6 +15,7 @@ Every number comes from ``benchmarks/results/*.json``. A stage listed in
 from __future__ import annotations
 
 import argparse
+import hashlib
 import html
 import json
 import os
@@ -351,13 +352,29 @@ def render(template: str, values: dict[str, str]) -> str:
     return re.sub(r"\{\{\s*([a-z0-9_]+)\s*\}\}", replace, template)
 
 
+ASSET_URL = re.compile(r'((?:src|href|content)="[^"]*?assets/)([^"?#]+)"')
+
+
+def versioned(page: str, assets: Path) -> str:
+    """Append ``?v=<sha8>`` to every asset URL so browsers and Pages never serve a stale file."""
+
+    def stamp(match: re.Match[str]) -> str:
+        path = assets / match.group(2)
+        if not path.is_file():
+            return match.group(0)
+        digest = hashlib.sha256(path.read_bytes()).hexdigest()[:8]
+        return f'{match.group(1)}{match.group(2)}?v={digest}"'
+
+    return ASSET_URL.sub(stamp, page)
+
+
 def build_site(out: Path, site_url: str) -> None:
     stages = load_stages()
     runs = load_results()
     values = {
         "results_table": html_table(stages, runs),
         "chart_results": site_charts.results_chart(runs),
-        "chart_tradeoff": site_charts.tradeoff_chart(runs, stages),
+        "chart_tradeoff": site_charts.cost_chart(runs),
         "pipeline": site_charts.pipeline(runs, REPO_URL),
         "run_details": run_details(runs),
         "calibration_table": calibration_table(),
@@ -369,6 +386,9 @@ def build_site(out: Path, site_url: str) -> None:
     if out.exists():
         shutil.rmtree(out)
     out.mkdir(parents=True)
+    # Assets first: page URLs carry a hash of the file they point to.
+    shutil.copytree(SITE_SRC / "assets", out / "assets")
+    shutil.copy2(ROOT / "docs" / "images" / "chat-welcome.png", out / "assets" / "chat-welcome.png")
     for page in sorted((SITE_SRC / "pages").glob("*.html")):
         raw = page.read_text(encoding="utf-8")
         meta, _, body = raw.partition("\n---\n")
@@ -389,9 +409,7 @@ def build_site(out: Path, site_url: str) -> None:
         for nav in ("index", "results", "method"):
             current = ' aria-current="page"' if fields.get("nav") == nav else ""
             html_out = html_out.replace(f'data-nav="{nav}"', f'data-nav="{nav}"{current}')
-        (out / page.name).write_text(html_out, encoding="utf-8")
-    shutil.copytree(SITE_SRC / "assets", out / "assets")
-    shutil.copy2(ROOT / "docs" / "images" / "chat-welcome.png", out / "assets" / "chat-welcome.png")
+        (out / page.name).write_text(versioned(html_out, out / "assets"), encoding="utf-8")
     if REPORT_PDF.exists():
         shutil.copy2(REPORT_PDF, out / "raglab-report-fr.pdf")
     (out / ".nojekyll").write_text("", encoding="utf-8")

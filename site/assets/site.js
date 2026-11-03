@@ -241,7 +241,44 @@
     }
   });
 
-  // ── Trade-off chart: one shared tooltip for every data mark (hover and focus) ──
+  // ── Cost chart: the path drawn as arrows in pixels (a stretched SVG would bend the heads) ──
+  document.querySelectorAll('figure[data-chart="cost"]').forEach(function (fig) {
+    function arrows() {
+      fig.querySelectorAll(".chart-panel:not([hidden]) .plot-area[data-path]").forEach(function (area) {
+        area.querySelectorAll(".arrow").forEach(function (a) { a.remove(); });
+        var w = area.clientWidth, h = area.clientHeight;
+        var pts = area.dataset.path.split(" ").map(function (p) {
+          var xy = p.split(",");
+          return [(parseFloat(xy[0]) / 100) * w, (parseFloat(xy[1]) / 100) * h];
+        });
+        for (var i = 1; i < pts.length; i++) {
+          var dx = pts[i][0] - pts[i - 1][0], dy = pts[i][1] - pts[i - 1][1];
+          var len = Math.sqrt(dx * dx + dy * dy), gap = 9;
+          if (len < gap * 2 + 4) continue; // too short to carry a head: the two dots touch
+          var ux = dx / len, uy = dy / len;
+          var a = document.createElement("span");
+          a.className = "arrow";
+          a.style.left = pts[i - 1][0] + ux * gap + "px";
+          a.style.top = pts[i - 1][1] + uy * gap + "px";
+          a.style.width = len - gap * 2 + "px";
+          a.style.transform = "rotate(" + Math.atan2(dy, dx) + "rad)";
+          area.insertBefore(a, area.querySelector("svg").nextSibling);
+        }
+      });
+    }
+    var sw = fig.querySelector('[data-switch="corpus"]');
+    if (sw) sw.addEventListener("click", function (e) {
+      var btn = e.target.closest("button[data-value]");
+      if (!btn) return;
+      sw.querySelectorAll("button").forEach(function (b) { b.setAttribute("aria-pressed", String(b === btn)); });
+      fig.querySelectorAll(".chart-panel").forEach(function (p) { p.hidden = p.dataset.panel !== btn.dataset.value; });
+      arrows();
+    });
+    arrows();
+    window.addEventListener("resize", arrows);
+  });
+
+  // ── Cost chart: one shared tooltip for every data mark (hover and focus) ──
   var tip = document.createElement("div");
   tip.className = "tip";
   tip.setAttribute("role", "status");
@@ -265,7 +302,7 @@
   document.addEventListener("keydown", function (e) { if (e.key === "Escape") hideTip(); });
   window.addEventListener("scroll", hideTip, { passive: true });
 
-  // ── Pipeline explainer: one stage open at a time; the first opens by default ──
+  // ── Pipeline explainer: one stage open at a time, none until the reader picks one ──
   document.querySelectorAll("[data-pipeline]").forEach(function (root) {
     var buttons = root.querySelectorAll("button.stage");
     function open(id) {
@@ -275,8 +312,11 @@
         document.getElementById("stage-" + b.dataset.stage).classList.toggle("is-open", on);
       });
     }
-    buttons.forEach(function (b) { b.addEventListener("click", function () { open(b.dataset.stage); }); });
-    open("citation");
+    var hint = root.querySelector(".stage-hint");
+    buttons.forEach(function (b) {
+      b.addEventListener("click", function () { open(b.dataset.stage); hint.hidden = true; });
+    });
+    hint.hidden = false;
   });
 
   // ── Nav: highlight the in-page section crossing the middle of the viewport ──

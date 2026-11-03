@@ -16,6 +16,7 @@ its end); the trade-off chart keeps slate #4f7cc0 against the green.
 from __future__ import annotations
 
 import html
+import itertools
 import json
 import math
 from collections.abc import Callable
@@ -97,7 +98,7 @@ def ms(v: float | None) -> str:
 class Dot:
     x: float
     y: float
-    series: str  # "base" or "main"
+    series: str  # "main" or "muted"
     tip: str
     label: str = ""
     label_pos: str = "above"  # above | below | right | left
@@ -120,6 +121,8 @@ class Plot:
     whiskers: list[tuple[str, float, float, float]] = field(default_factory=list)  # (series, x%, y_low, y_high)
     height: str = "260px"
     cls: str = ""
+    extra: str = ""  # more HTML inside the plot area (labels, arrows)
+    area_attrs: str = ""
     cats: int = 0  # number of categories on x; 0 for a numeric axis
 
     def py(self, y: float) -> float:
@@ -158,8 +161,8 @@ class Plot:
             f'<div class="plot {self.cls}{" is-cat" if self.cats else ""}" style="--plot-h:{self.height};--n:{self.cats or 1}">'
             f'<div class="plot-ylabel">{esc(self.ylabel)}</div>'
             f'<div class="plot-y" aria-hidden="true">{yt}</div>'
-            f'<div class="plot-area"><svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">'
-            f"{grid}{whisk}{lines}</svg>{dots}{labels}</div>"
+            f'<div class="plot-area"{self.area_attrs}><svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">'
+            f"{grid}{whisk}{lines}</svg>{self.extra}{dots}{labels}</div>"
             f'<div class="plot-x" aria-hidden="true">{xt}</div>'
             f'<div class="plot-xlabel">{esc(self.xlabel)}</div></div>'
         )
@@ -366,88 +369,211 @@ def results_chart(runs: dict[str, dict[str, Any]]) -> str:
     )
 
 
-# ── b. Quality against latency, with the Pareto frontier ────────────────────
+# ── b. What each brick costs: a connected scatter of the cumulative stages ───
+
+# The path, in the order the bricks were added; the last point is the current default
+# (hybrid + re-ranking + citations, re-ranking pairs sorted by length).
+COST_PATH = [
+    ("baseline-v1", "Baseline v1", ""),
+    ("hybrid-v1", "+ BM25 hybrid", "+ BM25 hybrid"),
+    ("rerank-v1", "+ re-ranking", "+ re-ranking"),
+    ("rerank-sorted-c40", "Full pipeline (current default)", "+ citation resolver"),
+]
+# Comparison runs: muted points, named on hover only.
+COST_OTHERS = [
+    ("lexical-v1", "BM25 only"),
+    ("rerank-dense-v1", "Dense + re-ranking, no BM25"),
+    ("citations-v1", "Citation resolver only, no BM25 or re-ranking"),
+    ("rerank-sorted-c20", "Full pipeline, 20 re-ranking candidates"),
+    ("rerank-sorted-c30", "Full pipeline, 30 re-ranking candidates"),
+]
+COST_CORPORA = [("lexml_fulltext", "LexML"), ("piaf", "PIAF")]
+# Labels are placed against the narrowest desktop plot; phones get the step list instead.
+NOMINAL_W, NOMINAL_H = 640, 320
 
 
-def tradeoff_chart(runs: dict[str, dict[str, Any]], stages: list[Any]) -> str:
-    points = []
-    for st in stages:
-        if st.label in ("baseline-v0", "baseline-v0-cache"):
-            continue  # earlier protocol (approximate HNSW search): not comparable
-        run = runs.get(st.label)
-        r5 = summary(run, "lexml_fulltext", "recall@5")
-        lat = summary(run, "lexml_fulltext", "latency_query_p50_ms")
-        if r5 is not None and lat:
-            points.append((lat, r5, st.name, st.label))
-    if len(points) < 3:
-        return ""
-    xmin, xmax = (
-        10 ** math.floor(math.log10(min(p[0] for p in points))),
-        10 ** math.ceil(math.log10(max(p[0] for p in points))),
-    )
+def signed(v: float, fmt: Callable[[float], str]) -> str:
+    return ("+" if v >= 0 else "−") + fmt(abs(v))
+
+
+Box = tuple[float, float, float, float]
+
+
+def label_box(pos: str, ax: float, ay: float, w: float, h: float) -> Box:
+    """Bounding box in px of a label anchored at (ax, ay), matching the .at-* rules in style.css."""
+    gap, end = 10, 6
+    if pos == "above":
+        return ax - w / 2, ay - gap - h, ax + w / 2, ay - gap
+    if pos == "below":
+        return ax - w / 2, ay + gap, ax + w / 2, ay + gap + h
+    if pos == "left":
+        return ax - 12 - w, ay - h / 2, ax - 12, ay + h / 2
+    if pos == "right":
+        return ax + 12, ay - h / 2, ax + 12 + w, ay + h / 2
+    if pos == "above-end":
+        return ax + end - w, ay - gap - h, ax + end, ay - gap
+    if pos == "below-end":
+        return ax + end - w, ay + gap, ax + end, ay + gap + h
+    if pos == "above-start":
+        return ax - end, ay - gap - h, ax - end + w, ay - gap
+    return ax - end, ay + gap, ax - end + w, ay + gap + h  # below-start
+
+
+def overlaps(a: Box, b: Box) -> bool:
+    return a[0] < b[2] and b[0] < a[2] and a[1] < b[3] and b[1] < a[3]
+
+
+def place_label(cands: list[str], ax: float, ay: float, w: float, h: float, taken: list[Box]) -> str:
+    """First candidate inside the plot that touches no mark, arrow or earlier label; else the least covered."""
+
+    def cost(pos: str) -> float:
+        box = label_box(pos, ax, ay, w, h)
+        out = max(0, -4 - box[0]) + max(0, box[2] - NOMINAL_W - 4) + max(0, -box[1]) + max(0, box[3] - NOMINAL_H)
+        hit = sum(
+            max(0, min(box[2], t[2]) - max(box[0], t[0])) * max(0, min(box[3], t[3]) - max(box[1], t[1])) for t in taken
+        )
+        return out * 100 + hit
+
+    best = min(cands, key=lambda pos: (cost(pos) > 0, cost(pos), cands.index(pos)))
+    taken.append(label_box(best, ax, ay, w, h))
+    return best
+
+
+def cost_panel(runs: dict[str, dict[str, Any]], corpus: str, cname: str) -> tuple[str, list[list[str]]] | None:
+    def point(label: str) -> tuple[float, float] | None:
+        r5 = summary(runs.get(label), corpus, "recall@5")
+        lat = summary(runs.get(label), corpus, "latency_query_p50_ms")
+        return None if r5 is None or not lat else (lat, r5)
+
+    path = [(label, name, brick, point(label)) for label, name, brick in COST_PATH]
+    path = [(label, name, brick, p) for label, name, brick, p in path if p]
+    others = [(label, name, p) for label, name in COST_OTHERS if (p := point(label))]
+    if len(path) < 2:
+        return None
+    every = [p for *_, p in path] + [p for *_, p in others]
+    xmin = 10 ** math.floor(math.log10(min(lat for lat, _ in every)))
+    xmax = 10 ** math.ceil(math.log10(max(lat for lat, _ in every)))
+    ylo = nice_floor(min(r for _, r in every) - 0.03, 0.05)
+    yhi = min(1.0, math.ceil((max(r for _, r in every) + 0.03) / 0.05) * 0.05)
+    step = 0.1 if yhi - ylo > 0.3 else 0.05
 
     def lx(v: float) -> float:
         return (math.log10(v) - math.log10(xmin)) / (math.log10(xmax) - math.log10(xmin)) * 100
 
-    ylo = max(0.0, nice_floor(min(p[1] for p in points) - 0.05, 0.1))
+    def py(v: float) -> float:
+        return 100 - (v - ylo) / (yhi - ylo) * 100
+
     xt, v = [], xmin
-    while v <= xmax:
+    while v <= xmax * 1.0001:
         xt.append((lx(v), ms(v)))
         v *= 10
-    # Pareto frontier: no other run is both faster and better.
-    frontier = sorted(
-        (p for p in points if not any(q[0] <= p[0] and q[1] >= p[1] and q != p for q in points)), key=lambda p: p[0]
-    )
     plot = Plot(
-        ydom=(ylo, 1.0),
-        yticks=ticks(ylo, 1.0, 0.1, lambda v: f"{v:.1f}"),
+        ydom=(ylo, yhi),
+        yticks=ticks(ylo, yhi, step, lambda v: f"{v:.2f}" if step < 0.1 else f"{v:.1f}"),
         xticks=xt,
-        xlabel="Search latency p50, LexML (log scale)",
-        ylabel="LexML Recall@5",
-        height="300px",
+        xlabel=f"Search latency p50, {cname} (log scale)",
+        ylabel=f"{cname} Recall@5",
+        height=f"{NOMINAL_H}px",
+        cls="cost-plot",
     )
-    # Straight segments between measured runs, as in ML papers: no fitted curve, nothing invented between them.
-    plot.lines.append(("main", [(lx(lat), r5) for lat, r5, _, _ in frontier], "frontier"))
-    # Direct labels only on the frontier. Near the right edge they end at their dot, alternating above and
-    # below from the last run so close neighbours never collide; the first run's label sits under it, the
-    # others above, away from the segments.
-    place = {
-        p[3]: ("above-end" if (len(frontier) - 1 - i) % 2 == 0 else "below-end")
-        if lx(p[0]) > 70
-        else ("below" if i == 0 else "above")
-        for i, p in enumerate(frontier)
-    }
-    for lat, r5, name, label in points:
-        front = label in place
-        plot.dots.append(
-            Dot(
-                lx(lat),
-                r5,
-                "main" if front else "base",
-                f"{name}: Recall@5 {r5:.3f}, {ms(lat)} p50" + (" (on the frontier)" if front else " (dominated)"),
-                name if front else "",
-                place.get(label, "above"),
+    # Without script the path is a plain line; site.js draws it again as arrows in pixel space.
+    plot.lines.append(("main", [(lx(lat), r5) for *_, (lat, r5) in path], "path"))
+
+    def px(lat: float, r5: float) -> tuple[float, float]:
+        return lx(lat) / 100 * NOMINAL_W, py(r5) / 100 * NOMINAL_H
+
+    taken: list[Box] = [(x - 8, y - 8, x + 8, y + 8) for x, y in (px(*p) for p in every)]
+    for (*_, a), (*_, b) in itertools.pairwise(path):  # the arrows are obstacles too, sampled every 6 px
+        (x0, y0), (x1, y1) = px(*a), px(*b)
+        n = max(1, int(math.hypot(x1 - x0, y1 - y0) // 6))
+        for k in range(n + 1):
+            bx, by = x0 + (x1 - x0) * k / n, y0 + (y1 - y0) * k / n
+            taken.append((bx - 2, by - 2, bx + 2, by + 2))
+
+    for _, name, (lat, r5) in others:
+        plot.dots.append(Dot(lx(lat), r5, "muted", f"{name}: Recall@5 {r5:.3f}, {ms(lat)} p50"))
+    # What each brick changed. An arrow too short to carry its label hands it to the end point's label.
+    moves = []
+    for (_, _, _, (lat0, r0)), (_, _, brick, (lat1, r1)) in itertools.pairwise(path):
+        detail = f"{signed(r1 - r0, lambda v: f'{v:.2f}')} Recall@5 · {signed(lat1 - lat0, ms)}"
+        (x0, y0), (x1, y1) = px(lat0, r0), px(lat1, r1)
+        moves.append(
+            (brick, detail, (x0 + x1) / 2, (y0 + y1) / 2, abs(x1 - x0) >= abs(y1 - y0), math.hypot(x1 - x0, y1 - y0))
+        )
+    folded = moves[-1] if moves and moves[-1][5] < 48 else None
+    for i, (_, name, brick, (lat, r5)) in enumerate(path):
+        first = i == 0
+        tip = f"{name if first or i == len(path) - 1 else brick}: Recall@5 {r5:.3f}, {ms(lat)} p50"
+        pos = (
+            place_label(["below-start", "below", "above-start", "left"], *px(lat, r5), len(name) * 7.4, 18, taken)
+            if first
+            else "above"
+        )
+        plot.dots.append(Dot(lx(lat), r5, "main", tip, name if first else "", pos))
+
+    steps, items, rows = [], [], []
+
+    def step_label(title: str, detail: str, ax: float, ay: float, cands: list[str]) -> str:
+        w, h = max(len(title) * 7.6, len(detail) * 6.6), 36 if detail else 18
+        pos = place_label(cands, ax, ay, w, h, taken)
+        sub = f"<span>{esc(detail)}</span>" if detail else ""
+        return (
+            f'<span class="step-label at-{pos}" style="left:{ax / NOMINAL_W * 100:.2f}%;top:{ay / NOMINAL_H * 100:.2f}%" '
+            f'aria-hidden="true"><b>{esc(title)}</b>{sub}</span>'
+        )
+
+    sides = ["above", "below", "above-end", "below-end", "above-start", "below-start"]
+    for move in moves:
+        brick, detail, mx, my, horizontal, _ = move
+        items.append(f"<li><b>{esc(brick)}</b> {esc(detail)}</li>")
+        if move is not folded:
+            steps.append(
+                step_label(
+                    brick, detail, mx, my, [*sides, "left", "right"] if horizontal else ["left", "right", *sides]
+                )
             )
-        )
-    rows = [[name, ratio(r5), ms(lat), "yes" if label in place else "no"] for lat, r5, name, label in sorted(points)]
+    end_name, end_at = path[-1][1], px(*path[-1][3])
+    end_detail = f"{folded[0]}: {folded[1]}" if folded else ""
+    steps.append(step_label(end_name, end_detail, *end_at, ["above-end", "below-end", "left", "above", "below"]))
+    plot.extra = "".join(steps)
+    plot.area_attrs = ' data-path="' + " ".join(f"{lx(lat):.2f},{py(r5):.2f}" for *_, (lat, r5) in path) + '"'
+    for label, name, brick, (lat, r5) in path:
+        rows.append([f"{cname}: {name if not brick or label == path[-1][0] else brick}", ratio(r5), ms(lat), "stage"])
+    for _, name, (lat, r5) in others:
+        rows.append([f"{cname}: {name}", ratio(r5), ms(lat), "comparison"])
+    hidden = "" if corpus == COST_CORPORA[0][0] else " hidden"
     return (
-        '<figure class="chart" data-chart="tradeoff">'
-        '<p class="chart-title">What each gain costs in search time</p>'
-        + legend(
-            [
-                ("main", "Frontier: no other run is both faster and more accurate"),
-                ("base is-hollow", "Dominated: another run is both faster and more accurate"),
-            ]
-        )
-        + plot.render()
-        + "<figcaption>Each point is a recorded run; hover or focus one for its name and values. The line "
-        "joins the frontier runs: moving right along it buys recall with latency. Points between two runs are "
-        "not measured. Re-ranking is the expensive step: twenty candidates instead of forty is clearly faster "
-        "for a small loss in recall.</figcaption>"
+        f'<div class="chart-panel" data-panel="{corpus}"{hidden}>{plot.render()}'
+        f'<ul class="step-list">{"".join(items)}</ul></div>',
+        rows,
+    )
+
+
+def cost_chart(runs: dict[str, dict[str, Any]]) -> str:
+    panels = [(c, n, cost_panel(runs, c, n)) for c, n in COST_CORPORA]
+    panels = [(c, n, p) for c, n, p in panels if p]
+    if not panels:
+        return ""
+    controls = (
+        '<div class="chart-controls">'
+        + switch("corpus", "Question set", [(c, n) for c, n, _ in panels], panels[0][0])
+        + legend([("main", "Each brick, in the order it was added"), ("muted", "Comparison runs")])
+        + "</div>"
+        if len(panels) > 1
+        else legend([("main", "Each brick, in the order it was added"), ("muted", "Comparison runs")])
+    )
+    return (
+        f'<figure class="chart cost-chart" data-chart="cost" data-corpus="{panels[0][0]}">'
+        '<p class="chart-title">What each brick costs in search time</p>'
+        f"{controls}{''.join(p[0] for _, _, p in panels)}"
+        "<figcaption>Up is a gain in Recall@5, right is a cost in search time (log scale). Each arrow adds one "
+        "brick to the previous stage; the last point is the current default, which also sorts re-ranking pairs "
+        "by length (same scores, less padding). Grey points are comparison runs: hover or focus one for its "
+        "name. Points between two runs are not measured.</figcaption>"
         + sr_table(
-            "Every run: LexML Recall@5 against search latency",
-            ["Run", "LexML Recall@5", "Search p50", "Frontier"],
-            rows,
+            "Recall@5 against search latency, every stage and comparison run",
+            ["Run", "Recall@5", "Search p50", "Kind"],
+            [row for _, _, p in panels for row in p[1]],
         )
         + "</figure>"
     )
@@ -598,5 +724,5 @@ def pipeline(runs: dict[str, dict[str, Any]], repo_url: str) -> str:
     return (
         '<div class="pipeline" data-pipeline>'
         f'<div class="flow">{flow}</div>'
-        f'<div class="stage-panels">{panels}</div></div>'
+        f'<div class="stage-panels"><p class="stage-hint" hidden>Pick a stage above to see what it does.</p>{panels}</div></div>'
     )
