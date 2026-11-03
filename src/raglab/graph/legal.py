@@ -124,6 +124,9 @@ _MARKER_KIND = {"redacao": "rewritten", "incluid": "inserted", "acrescid": "inse
 _REVOKED_LINE_RE = re.compile(r"\(\s*Revogad[oa]s?\b", re.IGNORECASE)
 _VETOED_LINE_RE = re.compile(r"\(\s*VETAD[OA]\s*\)", re.IGNORECASE)
 
+# Bumped when the rules change, so a stale graph is rebuilt (`ensure_graph`).
+RULES_VERSION = "2"
+
 MAX_RANGE = 10
 """Longest article range expanded ("arts. 10 a 15"); a longer one is a weak
 signal and only its last article is kept (the first is a mention of its own)."""

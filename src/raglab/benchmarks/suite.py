@@ -52,6 +52,7 @@ class Suite:
 
 
 def default_suites(settings: Settings, repo_root: Path) -> list[Suite]:
+    """Suites of `raglab bench all` without `--suite` (the frozen comparison)."""
     return [
         Suite(
             name="piaf",
@@ -66,6 +67,21 @@ def default_suites(settings: Settings, repo_root: Path) -> list[Suite]:
             corpus_name="bench_lexml_pt",
             corpus_dir=settings.lexml_fulltext_dir / "corpus",
             dataset_path=repo_root / "benchmarks" / "lexml_fulltext" / "ground_truth.jsonl",
+            manifest_path=repo_root / "benchmarks" / "lexml_fulltext" / "corpus_manifest.json",
+        ),
+    ]
+
+
+def optional_suites(settings: Settings, repo_root: Path) -> list[Suite]:
+    """Suites run only when named: `--suite lexml_references` (questions whose
+    answer is in the article cited by another, phase 9.9b) on the LexML corpus."""
+    return [
+        Suite(
+            name="lexml_references",
+            language="pt",
+            corpus_name="bench_lexml_pt",
+            corpus_dir=settings.lexml_fulltext_dir / "corpus",
+            dataset_path=repo_root / "benchmarks" / "lexml_references" / "ground_truth.jsonl",
             manifest_path=repo_root / "benchmarks" / "lexml_fulltext" / "corpus_manifest.json",
         ),
     ]
@@ -93,7 +109,7 @@ def _ensure_corpus(suite: Suite, settings: Settings) -> None:
         from raglab.benchmarks.piaf import PIAFLoader
 
         PIAFLoader().download(suite.corpus_dir.parent, limit=500, sample_seed=42)
-    elif suite.name == "lexml_fulltext":
+    elif suite.name in ("lexml_fulltext", "lexml_references"):
         from raglab.lexml.fulltext import FullTextCollector
 
         FullTextCollector(settings).collect(
@@ -237,6 +253,7 @@ def run_suite(
     rrf_k: int | None = None,
     rerank: bool | None = None,
     citations: bool | None = None,
+    graph: bool | None = None,
 ) -> dict[str, Any]:
     from raglab.db import session_scope
     from raglab.experiments.recall import RecallBenchmarkService
@@ -276,6 +293,14 @@ def run_suite(
             {"name": suite.corpus_name},
         ).scalar_one()
     log_event(LOGGER, logging.INFO, "bench.suite.indexed", suite=suite.name, ingestion=ingestion, indexing=indexing)
+    graph_build: dict[str, Any] | None = None
+    if graph or (graph is None and settings.graph_retrieval):
+        from raglab.graph.structured import ensure_graph
+
+        # A reused index run may predate its graph or the current rules.
+        with session_scope() as session:
+            graph_build = ensure_graph(session, str(indexing["index_run_id"]), settings=settings)
+        log_event(LOGGER, logging.INFO, "bench.suite.graph", suite=suite.name, status=graph_build.get("status"))
 
     with session_scope() as session:
         service = RecallBenchmarkService(session, settings)
@@ -295,6 +320,7 @@ def run_suite(
                 rrf_k=rrf_k,
                 rerank=rerank,
                 citations=citations,
+                graph=graph,
             )
         finally:
             service.close()
@@ -311,6 +337,9 @@ def run_suite(
         "rrf_k": report.get("rrf_k"),
         "rerank": report.get("rerank"),
         "citations": report.get("citations"),
+        "graph": report.get("graph"),
+        "graph_notices": report.get("graph_notices"),
+        **({"graph_build": graph_build.get("status")} if graph_build else {}),
         "summary": report["summary"],
         "by_type": report.get("by_type") or {},
         "report_path": report["report_path"],
@@ -336,6 +365,7 @@ def run_all(
     rrf_k: int | None = None,
     rerank: bool | None = None,
     citations: bool | None = None,
+    graph: bool | None = None,
 ) -> dict[str, Any]:
     from raglab.db import initialize_database, session_scope
 
@@ -345,7 +375,11 @@ def run_all(
     initialize_database()
     with session_scope() as session:
         env = environment_report(settings, session, judge if ragas_limit else None)
-    selected = [suite for suite in default_suites(settings, repo_root) if not suites or suite.name in suites]
+    known = default_suites(settings, repo_root) + optional_suites(settings, repo_root)
+    selected = [suite for suite in known if suite.name in suites] if suites else default_suites(settings, repo_root)
+    if suites and len(selected) != len(set(suites)):
+        unknown = sorted(set(suites) - {suite.name for suite in selected})
+        raise ValueError(f"Suite inconnue: {', '.join(unknown)} (connues: {', '.join(s.name for s in known)})")
     mode = RetrievalMode(retrieval_mode or settings.default_retrieval_mode)
     do_rerank = settings.default_rerank if rerank is None else rerank
     results = [
@@ -361,6 +395,7 @@ def run_all(
             rrf_k=rrf_k,
             rerank=do_rerank,
             citations=citations,
+            graph=graph,
         )
         for suite in selected
     ]
@@ -369,6 +404,7 @@ def run_all(
         "strategy": strategy.value,
         "retrieval_mode": mode.value,
         "rerank": do_rerank,
+        "graph": settings.graph_retrieval if graph is None else graph,
         **(
             {"rerank_model": settings.rerank_model_name, "rerank_candidates": settings.rerank_candidates}
             if do_rerank
@@ -410,6 +446,8 @@ def _retrieval_label(run: dict[str, Any], suite: dict[str, Any] | None) -> str:
         mode = f"hybrid (w={suite.get('lexical_weight')}, k={suite.get('rrf_k')})"
     if (suite or {}).get("rerank", run.get("rerank")):
         mode += f" + rerank ({run.get('rerank_candidates', '?')})"
+    if (suite or {}).get("graph", run.get("graph")):
+        mode += " + graph"
     return mode
 
 

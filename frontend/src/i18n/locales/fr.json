@@ -627,7 +627,17 @@
     "citation_resolved": "Citation reconnue : {{label}}",
     "citation_unresolved": "Citation reconnue ({{label}}) mais loi absente de l'index : recherche normale.",
     "rerank_notice_skipped_no_gpu": "Re-ranking ignoré : aucun GPU disponible (il prendrait plusieurs secondes sur CPU). Forcez-le avec « activé » si besoin.",
-    "rerank_notice_cpu": "Re-ranking exécuté sur CPU, sans GPU : comptez plusieurs secondes par requête."
+    "rerank_notice_cpu": "Re-ranking exécuté sur CPU, sans GPU : comptez plusieurs secondes par requête.",
+    "graph_label": "Graphe des renvois",
+    "graph_hint": "Troisième branche : suit les renvois (CITES, Neo4j) de l'article cité et des meilleurs passages, fusion RRF à trois sources ; un passage cité reste à côté de celui qui le cite. Nécessite le graphe de l'index run.",
+    "graph_checkbox": "Suivre les renvois",
+    "graph_badge": "renvoi depuis {{via}}",
+    "graph_badge_pinned": "cité par {{via}}, gardé à côté",
+    "scores_graph": "graphe",
+    "graph_notice_skipped_no_neo4j": "Branche graphe sautée : Neo4j ne répond pas.",
+    "graph_notice_skipped_no_graph": "Branche graphe sautée : pas de graphe pour cet index run (Expert → Graphe).",
+    "graph_notice_failed": "Branche graphe sautée : erreur Neo4j (voir les logs).",
+    "graph_stats": "Graphe : {{seeds}} passages de départ, {{articles}} articles cités, {{chunks}} passages ajoutés à la fusion"
   },
   "graph": {
     "title": "Graphe des renvois",

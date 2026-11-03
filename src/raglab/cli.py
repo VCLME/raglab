@@ -129,7 +129,9 @@ def bench_all(
     label: str = typer.Option(
         ..., "--label", help="Nom du run (ex. baseline-v0). Resultat: benchmarks/results/<label>.json"
     ),
-    suite: list[str] | None = typer.Option(None, "--suite", help="piaf et/ou lexml_fulltext (defaut: les deux)."),
+    suite: list[str] | None = typer.Option(
+        None, "--suite", help="piaf, lexml_fulltext (defaut: les deux) ou lexml_references (renvois, 9.9b)."
+    ),
     strategy: ChunkingStrategy = typer.Option(ChunkingStrategy.TRADITIONAL, "--strategy"),
     ragas_limit: int = typer.Option(
         100, "--ragas-limit", min=0, help="Questions generees et notees par suite (0 = retrieval seul)."
@@ -156,6 +158,11 @@ def bench_all(
         "--citations/--no-citations",
         help="Reconnaitre les citations juridiques (art. N da Lei X) : restreindre a la loi citee, epingler l'article. Defaut: RAGLAB_CITATION_RESOLVER.",
     ),
+    graph: bool | None = typer.Option(
+        None,
+        "--graph/--no-graph",
+        help="Branche graphe : suivre les renvois (CITES) des articles trouves dans Neo4j, fusion RRF a trois sources. Defaut: RAGLAB_GRAPH_RETRIEVAL.",
+    ),
 ) -> None:
     """Regenerer tous les chiffres de benchmark (PIAF + LexML) et les ecrire dans benchmarks/results/."""
     from raglab.benchmarks.suite import render_markdown, run_all
@@ -171,6 +178,7 @@ def bench_all(
         rrf_k=rrf_k,
         rerank=rerank,
         citations=citations,
+        graph=graph,
     )
     output = Path("benchmarks/results") / f"{label}.json"
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -495,6 +503,46 @@ def lexml_questions(
     typer.echo(json.dumps(result, indent=2, ensure_ascii=False))
 
 
+@lexml_app.command("reference-questions")
+def lexml_reference_questions(
+    corpus_dir: Path = typer.Option(
+        get_settings().lexml_fulltext_dir / "corpus",
+        "--corpus-dir",
+        help="Corpus texte integral produit par `raglab lexml fulltext` (le meme que le jeu LexML).",
+    ),
+    output_dir: Path = typer.Option(
+        Path("benchmarks") / "lexml_references",
+        "--output-dir",
+        help="Dossier du jeu fige (ground_truth.jsonl + metadata.json).",
+    ),
+    count: int = typer.Option(100, "--count", min=1, help="Nombre de questions a garder."),
+    seed: int = typer.Option(42, "--seed", help="Graine du tirage des renvois et du partage dev / heldout."),
+    backend: str = typer.Option(
+        "llamacpp",
+        "--backend",
+        help="llamacpp (serveur compatible OpenAI, demarre si besoin) ou ollama.",
+    ),
+    model: str | None = typer.Option(None, "--model", help="Modele (defaut: question_model ou generation_model)."),
+    profile: str | None = typer.Option(
+        None, "--profile", help="Profil llama.cpp a demarrer (defaut: question_model_profile)."
+    ),
+) -> None:
+    """Generer le jeu « renvois » : l'article A renvoie a l'article B, la reponse est dans B (9.9b)."""
+    from raglab.benchmarks.lexml_references import generate_reference_questions
+
+    result = generate_reference_questions(
+        get_settings(),
+        backend=backend,
+        corpus_dir=corpus_dir,
+        output_dir=output_dir,
+        count=count,
+        seed=seed,
+        model=model,
+        profile=profile,
+    )
+    typer.echo(json.dumps(result, indent=2, ensure_ascii=False))
+
+
 @lexml_app.command("review-questions")
 def lexml_review_questions(
     ground_truth: Path = typer.Option(
@@ -657,6 +705,11 @@ def query(
         "--citations/--no-citations",
         help="Reconnaitre les citations juridiques (art. N da Lei X) : restreindre a la loi citee, epingler l'article. Defaut: RAGLAB_CITATION_RESOLVER.",
     ),
+    graph: bool | None = typer.Option(
+        None,
+        "--graph/--no-graph",
+        help="Branche graphe : suivre les renvois (CITES) des articles trouves dans Neo4j, fusion RRF a trois sources. Defaut: RAGLAB_GRAPH_RETRIEVAL.",
+    ),
     stream: bool = typer.Option(
         False,
         "--stream",
@@ -691,6 +744,7 @@ def query(
                 rrf_k=rrf_k,
                 rerank=rerank,
                 citations=citations,
+                graph=graph,
             )
             final: dict = {}
             for event, data in service.stream_answer(outcome, llm_model=llm_model):
@@ -714,6 +768,7 @@ def query(
             rrf_k=rrf_k,
             rerank=rerank,
             citations=citations,
+            graph=graph,
             llm_model=llm_model,
         )
     typer.echo(response.model_dump_json(indent=2))
@@ -867,6 +922,11 @@ def experiment_recall(
         "--citations/--no-citations",
         help="Reconnaitre les citations juridiques (art. N da Lei X) : restreindre a la loi citee, epingler l'article. Defaut: RAGLAB_CITATION_RESOLVER.",
     ),
+    graph: bool | None = typer.Option(
+        None,
+        "--graph/--no-graph",
+        help="Branche graphe : suivre les renvois (CITES) des articles trouves dans Neo4j, fusion RRF a trois sources. Defaut: RAGLAB_GRAPH_RETRIEVAL.",
+    ),
 ) -> None:
     with session_scope() as session:
         service = RecallBenchmarkService(session)
@@ -881,6 +941,7 @@ def experiment_recall(
             rrf_k=rrf_k,
             rerank=rerank,
             citations=citations,
+            graph=graph,
             compute_ragas=ragas,
             ragas_case_limit=ragas_limit,
             judge=JudgeConfig(backend=judge_backend, model=judge_model),

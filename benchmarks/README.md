@@ -6,6 +6,7 @@ Ces fichiers sont la référence des mesures de la phase 9 : toutes les comparai
 |---|---|---|---|---|
 | `piaf/` | français | 500 | 761 paragraphes de Wikipédia, `raglab bench download piaf --limit 500 --seed 42` | CC-BY-SA 3.0 (Etalab, d'après Wikipédia) |
 | `lexml_fulltext/` | portugais | 277 sur 300 (23 marquées `rejected`) | 252 lois fédérales, `raglab lexml fulltext` ; empreintes dans `corpus_manifest.json` | domaine public (Lei 9.610/1998, art. 8º, IV) |
+| `lexml_references/` (à générer) | portugais | environ 100 (`dev` 30 %, `heldout` 70 %) : l'article A renvoie à l'article B, la réponse est dans B | le corpus LexML ci-dessus ; `raglab lexml reference-questions` | domaine public |
 | `abstention/` | fr + pt | 80 questions sans réponse dans les corpus (phase 9.4) | — | rédigées pour raglab |
 
 Chaque ligne de `ground_truth.jsonl` porte `expected_spans` (fichier + positions de la réponse dans le texte normalisé) : la pertinence est jugée au niveau du passage, quelle que soit la stratégie de chunking.

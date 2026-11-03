@@ -60,6 +60,15 @@ class RetrievedChunk(BaseModel):
     # True when the chunk was pinned because the question cites its law and
     # article (see raglab.retrieval.citations).
     citation_match: bool | None = None
+    # Graph branch (phase 9.9b): the chunk belongs to an article cited by a
+    # found one. `graph_via` names the citing article ("Art. 5º — Lei nº
+    # 8.078/1990"), `graph_reason` says it in a sentence; `graph_pinned`
+    # marks a cited passage kept right after the passage citing it.
+    graph_score: float | None = None
+    graph_rank: int | None = None
+    graph_reason: str | None = None
+    graph_via: str | None = None
+    graph_pinned: bool | None = None
 
 
 class RetrievalFilters(BaseModel):
@@ -92,6 +101,11 @@ class QueryResponse(BaseModel):
     rerank_stats: dict[str, float] = Field(default_factory=dict)
     # Set when re-ranking could not use a GPU: "skipped_no_gpu" or "cpu".
     rerank_notice: str | None = None
+    # Graph branch: whether it ran, why it was skipped ("skipped_no_neo4j",
+    # "skipped_no_graph", "failed") and its counters (seeds, articles, chunks).
+    graph: bool = False
+    graph_notice: str | None = None
+    graph_stats: dict[str, int] = Field(default_factory=dict)
     filters: RetrievalFilters | None = None
     answer: str | None = None
     elapsed_ms: float = 0.0

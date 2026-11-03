@@ -144,3 +144,21 @@ def test_round_trip_through_neo4j():
         store.delete_run(run)
         assert store.run_info(run) is None
         store.close()
+
+
+@patch("raglab.graph.structured.GraphDatabase.driver")
+def test_unreachable_neo4j_is_not_retried_on_every_query(driver_factory):
+    from neo4j.exceptions import ServiceUnavailable
+
+    driver_factory.return_value.session.return_value.__enter__.return_value.run.side_effect = ServiceUnavailable("down")
+    store = StructuredGraphStore(settings=Settings(graph_retry_seconds=60))
+    with pytest.raises(ServiceUnavailable):
+        store.run_info("run-1")
+    with pytest.raises(ServiceUnavailable, match="not retried yet"):
+        store.run_info("run-1")
+    assert driver_factory.return_value.session.return_value.__enter__.return_value.run.call_count == 1
+    # A successful ping closes the breaker.
+    driver_factory.return_value.verify_connectivity.return_value = None
+    assert store.ping() is True
+    with pytest.raises(ServiceUnavailable, match="down"):
+        store.run_info("run-1")

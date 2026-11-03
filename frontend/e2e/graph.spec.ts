@@ -151,3 +151,55 @@ test("the phase-8 entity graph pages sit behind the Expert flag", async ({ page,
   await page.getByRole("link", { name: "Ouvrir le graphe des renvois" }).click();
   await expect(page).toHaveURL(/\/expert\/graph$/);
 });
+
+test("Retrieval page: the graph option sends graph and shows where a passage comes from", async ({ page, api }) => {
+  const [first, second] = data.chunks;
+  let body: Record<string, unknown> = {};
+  api.set("POST /api/query", async (route) => {
+    body = route.request().postDataJSON();
+    return json({
+      ...data.queryResponse,
+      retrieval_mode: "hybrid",
+      graph: true,
+      graph_stats: { seeds: 12, articles: 3, chunks: 5 },
+      timings_ms: { embed: 12.4, retrieval: 40.1, dense: 8.2, lexical: 19.3, graph: 9.6, fusion: 0.4 },
+      retrieved_chunks: [
+        { ...first, dense_score: 0.873, dense_rank: 1, fused_score: 0.0161, fused_rank: 1 },
+        {
+          ...second,
+          rank: 2,
+          graph_score: 1,
+          graph_rank: 1,
+          graph_via: "Art. 5º — Lei nº 8.078/1990",
+          graph_reason: "cité par l'art. 5º de la Lei nº 8.078/1990",
+          graph_pinned: true,
+          fused_score: 0.0082,
+          fused_rank: 2,
+        },
+      ],
+    })(route);
+  });
+  await page.goto("/expert/query");
+  const row = (label: RegExp) => page.locator(".form-row").filter({ has: page.locator("label", { hasText: label }) });
+  await row(/^Question$/).locator("textarea").fill("Quais penalidades se aplicam ao art. 5º da Lei nº 8.078?");
+  await row(/^Graphe des renvois$/).getByRole("checkbox").check();
+  await page.getByRole("button", { name: "Exécuter" }).click();
+
+  expect(body).toMatchObject({ graph: true });
+  await expect(page.getByText("Graphe : 12 passages de départ, 3 articles cités, 5 passages ajoutés à la fusion")).toBeVisible();
+  const cited = page.locator(".chunk").nth(1);
+  await expect(cited).toContainText("cité par Art. 5º — Lei nº 8.078/1990, gardé à côté");
+  await expect(cited.locator(".chunk-scores")).toContainText("#1 1.000");
+});
+
+test("Retrieval page: says when the graph branch was skipped", async ({ page, api }) => {
+  api.set("POST /api/query", json({ ...data.queryResponse, graph: true, graph_notice: "skipped_no_neo4j", graph_stats: {} }));
+  await page.goto("/expert/query");
+  await page
+    .locator(".form-row")
+    .filter({ has: page.locator("label", { hasText: /^Question$/ }) })
+    .locator("textarea")
+    .fill(data.QUESTION);
+  await page.getByRole("button", { name: "Exécuter" }).click();
+  await expect(page.getByText("Branche graphe sautée : Neo4j ne répond pas.")).toBeVisible();
+});

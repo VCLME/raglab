@@ -39,7 +39,11 @@ export function ChunkCard({ chunk, maxScore, showScores = false }: Props) {
   const scorePct = Math.max(0, Math.min(100, Math.round((chunk.score / scale) * 100)));
   const hasBreakdown =
     showScores &&
-    (chunk.dense_rank != null || chunk.lexical_rank != null || chunk.fused_score != null || chunk.rerank_rank != null);
+    (chunk.dense_rank != null ||
+      chunk.lexical_rank != null ||
+      chunk.graph_rank != null ||
+      chunk.fused_score != null ||
+      chunk.rerank_rank != null);
   return (
     <div className="chunk">
       <div className="head">
@@ -51,6 +55,13 @@ export function ChunkCard({ chunk, maxScore, showScores = false }: Props) {
               {t("retrieval.citation_badge")}
             </span>
           ) : null}
+          {chunk.graph_via ? (
+            <span className="badge info" style={{ marginLeft: 8 }} title={chunk.graph_reason ?? undefined}>
+              {chunk.graph_pinned
+                ? t("retrieval.graph_badge_pinned", { via: chunk.graph_via })
+                : t("retrieval.graph_badge", { via: chunk.graph_via })}
+            </span>
+          ) : null}
         </span>
         <span className="muted" title={chunk.source_path}>
           {chunk.source_path.split(/[\/]/).slice(-2).join("/")}
@@ -60,6 +71,9 @@ export function ChunkCard({ chunk, maxScore, showScores = false }: Props) {
         <div className="chunk-scores">
           <ScoreCell label={t("retrieval.scores_dense")} rank={chunk.dense_rank} score={chunk.dense_score} digits={3} />
           <ScoreCell label={t("retrieval.scores_lexical")} rank={chunk.lexical_rank} score={chunk.lexical_score} digits={2} />
+          {chunk.graph_rank != null ? (
+            <ScoreCell label={t("retrieval.scores_graph")} rank={chunk.graph_rank} score={chunk.graph_score} digits={3} />
+          ) : null}
           {chunk.fused_score != null ? (
             <ScoreCell label={t("retrieval.scores_fused")} rank={chunk.fused_rank ?? null} score={chunk.fused_score} digits={4} />
           ) : null}
