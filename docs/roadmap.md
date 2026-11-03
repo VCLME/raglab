@@ -156,6 +156,15 @@ Objectif : passer du laboratoire à un pipeline RAG prêt pour la production, ch
 - fusion RRF (k = 60) avec un poids lexical réglable ; `retrieval_mode = dense | lexical | hybrid` sur l'API (y compris `/api/query/stream`), la CLI, le benchmark de recall et l'UI, avec les scores dense / BM25 / RRF de chaque chunk
 - à mesurer : Recall@5/10, MRR, latence par type de question (`reference`, `entity`, `paraphrase`) contre la baseline
 
+**9.3 — Re-ranking cross-encoder 🚧 (code prêt, mesure après la baseline 9.1b)** : voir [reranking.md](reranking.md)
+
+- `BAAI/bge-reranker-v2-m3` (Apache-2.0, 568 M de paramètres) via `transformers`, fp16 sur CUDA (~1,1 Go de VRAM), chargé une fois et partagé, scoring par lots
+- le premier niveau (dense, lexical ou hybride) renvoie 40 candidats, le cross-encoder garde le top-k ; `rerank` activable à chaque requête sur l'API (y compris `/api/query/stream`), la CLI, le benchmark de recall, `raglab bench all --rerank` et l'UI
+- chaque chunk porte ses scores et rangs dense, BM25, RRF et rerank ; étape `rerank` dans `timings_ms` et dans la latence de requête du benchmark
+- cache LRU des scores par (modèle, question, chunk), taux de hit dans `rerank_stats`
+- VRAM du cross-encoder libérée (`release()`) avant la passe du juge llama.cpp
+- à mesurer : Recall@5/10, MRR, latence ajoutée p50/p95, pic de VRAM à côté de qwen2.5
+
 **9.5 — Durcissement API 🚧 (PR ouverte, empilée sur 9.1b)** : voir [api-production.md](api-production.md)
 
 - `POST /api/query/stream` en SSE : événement `retrieval` (chunks, scores, timings) avant la génération, puis `token` au fil d'Ollama (`stream: true`), puis `done` (QueryResponse complète + `first_token_ms`) ou `error` ; `/api/query` inchangé ; page Chat en streaming avec repli automatique sur `/api/query` ; `raglab query --stream`
@@ -167,4 +176,4 @@ Objectif : passer du laboratoire à un pipeline RAG prêt pour la production, ch
 - mesuré sans GPU (`scripts/bench_api_hardening.py`) : sources affichées après ~65 ms au lieu de ~3,4 s, premier token à 366 ms (préremplissage simulé 300 ms) ; middlewares +0,16 ms par requête ; TTFT réel sur GPU à mesurer
 - migrations Alembic : introduites avec 9.2 (`feature/hybrid-retrieval`), aucune migration dans cette PR
 
-**À venir** : 9.3 re-ranking cross-encoder · 9.4 compréhension de la requête et abstention · 9.6 observabilité (Prometheus, Grafana, dérive) · 9.7 portes de qualité · 9.8 vitrine
+**À venir** : 9.4 compréhension de la requête et abstention · 9.6 observabilité (Prometheus, Grafana, dérive) · 9.7 portes de qualité · 9.8 vitrine
