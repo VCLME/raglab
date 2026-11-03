@@ -67,3 +67,18 @@ def test_router_decision_adds_a_routing_stage():
     assert routing_end["stage"] == "routing"
     assert routing_end["duration_ms"] is None
     assert routing_end["data"] == {"intent": "documentary", "corpus": "lexml"}
+
+
+def test_chunk_previews_carry_first_stage_scores_and_ranks():
+    outcome = _hybrid_outcome(embed=1.0, retrieval=3.0, dense=1.0, lexical=1.0, fusion=1.0)
+    outcome.retrieved = [
+        outcome.retrieved[0].model_copy(
+            update={"dense_score": 0.8, "dense_rank": 2, "lexical_score": 9.5, "lexical_rank": 1, "fused_rank": 1}
+        )
+    ]
+    fusion = next(e for e in retrieval_stage_events(outcome) if e["stage"] == "fusion" and e["status"] == "end")
+    preview = fusion["data"]["top_chunks"][0]
+    assert preview["dense_rank"] == 2 and preview["lexical_rank"] == 1 and preview["fused_rank"] == 1
+    assert preview["lexical_score"] == 9.5
+    # The chunk's own `rank` stays the final position; absent ranks are left out.
+    assert preview["rank"] == 1 and "rerank_rank" not in preview

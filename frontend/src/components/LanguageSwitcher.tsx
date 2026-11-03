@@ -39,7 +39,7 @@ export function LanguageSwitcher() {
       >
         <FlagIcon code={currentLang.code} size={18} />
         <span className="lang-code">{currentLang.code.split("-")[0].toUpperCase()}</span>
-        <span className="lang-caret">▾</span>
+        <span className="lang-caret" aria-hidden="true">▾</span>
       </button>
       {open ? (
         <ul className="lang-menu" role="listbox">

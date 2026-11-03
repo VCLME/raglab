@@ -54,20 +54,35 @@ export function useApiAction<TArgs extends unknown[], T>(
   return { ...state, run, reset };
 }
 
+export interface LoadOptions {
+  /**
+   * Retry every `retryMs` while the call fails, e.g. when the UI is up before
+   * the API: the page fills itself once the API answers, no reload needed.
+   */
+  retryMs?: number;
+}
+
 export function useApiLoad<T>(
   fn: () => Promise<T>,
-  deps: unknown[] = []
+  deps: unknown[] = [],
+  options: LoadOptions = {}
 ): ApiState<T> & { refresh: () => void } {
   const [state, setState] = useState<ApiState<T>>({
     data: null,
     loading: true,
     error: null,
   });
+  // Ignores the answer of a superseded call (deps changed meanwhile).
+  const generation = useRef(0);
   const refresh = useCallback(() => {
+    const call = ++generation.current;
     setState((s) => ({ ...s, loading: true, error: null }));
     fn()
-      .then((data) => setState({ data, loading: false, error: null }))
-      .catch((e) =>
+      .then((data) => {
+        if (call === generation.current) setState({ data, loading: false, error: null });
+      })
+      .catch((e) => {
+        if (call !== generation.current) return;
         setState({
           data: null,
           loading: false,
@@ -77,12 +92,18 @@ export function useApiLoad<T>(
               : e instanceof Error
               ? e.message
               : "Erreur inconnue",
-        })
-      );
+        });
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
   useEffect(() => {
     refresh();
   }, [refresh]);
+  const { retryMs } = options;
+  useEffect(() => {
+    if (!retryMs || !state.error) return;
+    const id = setTimeout(refresh, retryMs);
+    return () => clearTimeout(id);
+  }, [retryMs, state.error, refresh]);
   return { ...state, refresh };
 }

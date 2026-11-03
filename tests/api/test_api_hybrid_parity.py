@@ -142,6 +142,7 @@ def test_api_and_cli_send_the_same_retrieval_parameters(client):
         "generate_answer": False,
         "filters": None,
         "llm_model": None,
+        "llm_provider": None,
         "retrieval_mode": RetrievalMode.HYBRID,
         "lexical_weight": 0.3,
         "rrf_k": 20,

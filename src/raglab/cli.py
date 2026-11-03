@@ -719,7 +719,15 @@ def query(
     llm_model: str | None = typer.Option(
         None,
         "--llm-model",
-        help="Modele Ollama pour la generation (defaut : RAGLAB_GENERATION_MODEL).",
+        "--model",
+        help="Modele de generation (defaut : RAGLAB_GENERATION_MODEL pour Ollama, "
+        "premier modele servi pour llama.cpp / vLLM).",
+    ),
+    provider: str | None = typer.Option(
+        None,
+        "--provider",
+        help="Fournisseur de generation : ollama, llamacpp ou vllm, parmi RAGLAB_LLM_PROVIDERS "
+        "(defaut : RAGLAB_DEFAULT_LLM_PROVIDER). llama-server doit deja tourner.",
     ),
 ) -> None:
     filters = build_retrieval_filters(
@@ -747,7 +755,7 @@ def query(
                 graph=graph,
             )
             final: dict = {}
-            for event, data in service.stream_answer(outcome, llm_model=llm_model):
+            for event, data in service.stream_answer(outcome, llm_model=llm_model, llm_provider=provider):
                 if event == "token":
                     typer.echo(data["text"], nl=False, err=True)
                 elif event == "done":
@@ -770,6 +778,7 @@ def query(
             citations=citations,
             graph=graph,
             llm_model=llm_model,
+            llm_provider=provider,
         )
     typer.echo(response.model_dump_json(indent=2))
 

@@ -20,7 +20,7 @@ test("Retrieval page: a query lists chunk cards with file name and score", async
     await expect(card).toBeVisible();
     await expect(card).toContainText(`score ${chunk.score.toFixed(3)}`);
   }
-  await expect(page.getByRole("heading", { name: "Réponse" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Réponse", exact: true })).toBeVisible();
 });
 
 test("Retrieval page: hybrid mode sends its settings and shows dense / BM25 / RRF per chunk", async ({ page, api }) => {
@@ -43,7 +43,9 @@ test("Retrieval page: hybrid mode sends its settings and shows dense / BM25 / RR
 
   const row = (label: RegExp) => page.locator(".form-row").filter({ has: page.locator("label", { hasText: label }) });
   await row(/^Question$/).locator("textarea").fill(data.QUESTION);
-  await row(/^Mode de retrieval$/).locator("select").selectOption("hybrid");
+  // Custom listbox: open it, then pick the option by its label.
+  await row(/^Mode de recherche$/).getByRole("combobox").click();
+  await page.getByRole("option", { name: "hybrid (RRF)" }).click();
   await row(/^Poids du BM25$/).locator("input").fill("0.3");
   await page.getByRole("button", { name: "Exécuter" }).click();
 

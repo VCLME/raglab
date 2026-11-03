@@ -11,6 +11,7 @@ import { JsonViewer } from "../components/JsonViewer";
 import { SelectWithOther } from "../components/SelectWithOther";
 import { Spinner } from "../components/Spinner";
 import { useConfig } from "../hooks/useConfig";
+import { Select } from "../components/Select";
 
 const STRATEGIES: ChunkingStrategy[] = ["traditional", "slide", "late"];
 
@@ -53,14 +54,14 @@ export function IndexPage() {
         <div className="card">
           <h3>{t("query.parameters")}</h3>
           <FieldRow label={t("common.corpus")}>
-            <select value={corpus} onChange={(e) => setCorpus(e.target.value)}>
+            <Select value={corpus} onChange={(e) => setCorpus(e.target.value)}>
               <option value="">{t("common.selected_placeholder")}</option>
               {(corpora.data ?? []).map((c) => (
                 <option key={c.id} value={c.name}>
                   {c.name} ({c.documents_count} docs)
                 </option>
               ))}
-            </select>
+            </Select>
           </FieldRow>
           <FieldRow label={t("common.strategy")}>
             <div className="inline">

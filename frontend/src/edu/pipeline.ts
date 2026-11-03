@@ -108,6 +108,15 @@ export function failPipeline(state: PipelineState): PipelineState {
   return { ...state, nodes };
 }
 
+/** The user stopped the request: stages still running go back to waiting. */
+export function stopPipeline(state: PipelineState): PipelineState {
+  const nodes = { ...state.nodes };
+  DIAGRAM_NODES.forEach((id) => {
+    if (nodes[id].status === "running") nodes[id] = { status: "idle" };
+  });
+  return { ...state, nodes };
+}
+
 /**
  * Without stage events (API without streaming), rebuild what we can from the
  * per-stage durations of the response. Stages missing from timings_ms are
