@@ -1,0 +1,72 @@
+{"id": "val2-abs-001", "language": "fr", "category": "out_of_scope", "subtype": "personal_data", "question": "Quel est le solde de mon compte Nubank ce matin ?"}
+{"id": "val2-abs-002", "language": "fr", "category": "out_of_scope", "subtype": "personal_data", "question": "Rappelle-moi l'adresse de mon notaire à São Paulo"}
+{"id": "val2-abs-003", "language": "fr", "category": "out_of_scope", "subtype": "live_info", "question": "Il va faire quel temps à Florianópolis demain ?"}
+{"id": "val2-abs-004", "language": "fr", "category": "out_of_scope", "subtype": "live_info", "question": "le réal est à combien face à l'euro aujourd'hui"}
+{"id": "val2-abs-005", "language": "fr", "category": "out_of_scope", "subtype": "task_write", "question": "Rédige-moi un mail de relance poli pour un client qui ne paie pas sa facture"}
+{"id": "val2-abs-006", "language": "fr", "category": "out_of_scope", "subtype": "task_translate", "question": "Traduis en portugais : je voudrais ouvrir un compte bancaire"}
+{"id": "val2-abs-007", "language": "fr", "category": "out_of_scope", "subtype": "task_compute", "question": "Combien font 18 % de 2 450 euros ?"}
+{"id": "val2-abs-008", "language": "fr", "category": "out_of_scope", "subtype": "task_code", "question": "Écris une fonction Python qui trie une liste de dictionnaires par date"}
+{"id": "val2-abs-009", "language": "fr", "category": "out_of_scope", "subtype": "advice", "question": "Tu me conseilles d'acheter ou de louer un appartement à Lisbonne ?"}
+{"id": "val2-abs-010", "language": "fr", "category": "out_of_scope", "subtype": "opinion", "question": "Quel est le meilleur film de l'année selon toi ?"}
+{"id": "val2-abs-014", "language": "fr", "category": "out_of_scope", "subtype": "product", "question": "Quel aspirateur robot choisir pour un appartement avec deux chats ?"}
+{"id": "val2-abs-015", "language": "fr", "category": "out_of_scope", "subtype": "task_write", "question": "Donne-moi une recette de gâteau au chocolat sans gluten"}
+{"id": "val2-abs-016", "language": "fr", "category": "out_of_scope", "subtype": "private_company", "question": "Est-ce que mon chef a validé ma note de frais ?"}
+{"id": "val2-abs-017", "language": "pt", "category": "out_of_scope", "subtype": "personal_data", "question": "Qual é o meu CPF mesmo? esqueci"}
+{"id": "val2-abs-018", "language": "pt", "category": "out_of_scope", "subtype": "live_info", "question": "Quanto está o dólar agora?"}
+{"id": "val2-abs-019", "language": "pt", "category": "out_of_scope", "subtype": "live_info", "question": "Vai chover em Belo Horizonte no fim de semana?"}
+{"id": "val2-abs-021", "language": "pt", "category": "out_of_scope", "subtype": "task_translate", "question": "Traduz para o inglês: o contrato vence na próxima semana"}
+{"id": "val2-abs-022", "language": "pt", "category": "out_of_scope", "subtype": "task_compute", "question": "Quanto dá 1.250 reais em 7 parcelas com juros de 2% ao mês?"}
+{"id": "val2-abs-023", "language": "pt", "category": "out_of_scope", "subtype": "task_code", "question": "Me ajuda a escrever uma query SQL que conta pedidos por cliente"}
+{"id": "val2-abs-024", "language": "pt", "category": "out_of_scope", "subtype": "advice", "question": "Vale a pena eu investir em fundos imobiliários este ano?"}
+{"id": "val2-abs-025", "language": "pt", "category": "out_of_scope", "subtype": "opinion", "question": "Qual time você acha que vai ganhar o Brasileirão?"}
+{"id": "val2-abs-027", "language": "pt", "category": "out_of_scope", "subtype": "health", "question": "Estou com febre e dor no corpo, pode ser dengue?"}
+{"id": "val2-abs-028", "language": "pt", "category": "out_of_scope", "subtype": "product", "question": "Qual celular custo-benefício você recomenda até 2 mil reais?"}
+{"id": "val2-abs-029", "language": "en", "category": "out_of_scope", "subtype": "personal_data", "question": "When is my next dentist appointment?"}
+{"id": "val2-abs-030", "language": "en", "category": "out_of_scope", "subtype": "personal_data", "question": "Show me the last invoices I sent to Acme"}
+{"id": "val2-abs-031", "language": "en", "category": "out_of_scope", "subtype": "live_info", "question": "How bad is the traffic on the A1 right now?"}
+{"id": "val2-abs-032", "language": "en", "category": "out_of_scope", "subtype": "live_info", "question": "current bitcoin price?"}
+{"id": "val2-abs-034", "language": "en", "category": "out_of_scope", "subtype": "task_translate", "question": "Translate 'where is the train station' into German"}
+{"id": "val2-abs-035", "language": "en", "category": "out_of_scope", "subtype": "task_compute", "question": "whats a 15% tip on an 86 dollar bill"}
+{"id": "val2-abs-036", "language": "en", "category": "out_of_scope", "subtype": "task_code", "question": "Fix this JavaScript: const x = [1,2,3].mapp(n => n*2)"}
+{"id": "val2-abs-037", "language": "en", "category": "out_of_scope", "subtype": "advice", "question": "Should I quit my job to open a bakery?"}
+{"id": "val2-abs-038", "language": "en", "category": "out_of_scope", "subtype": "opinion", "question": "Which is better in your opinion, Python or Rust?"}
+{"id": "val2-abs-039", "language": "en", "category": "out_of_scope", "subtype": "private_company", "question": "Who is on call for the payments team this weekend?"}
+{"id": "val2-abs-040", "language": "en", "category": "out_of_scope", "subtype": "health", "question": "Is it safe to take ibuprofen with my blood pressure medication?"}
+{"id": "val2-abs-041", "language": "fr", "category": "near_miss", "subtype": "foreign_law", "question": "Que prévoit le Code du travail français sur la rupture conventionnelle collective ?"}
+{"id": "val2-abs-042", "language": "fr", "category": "near_miss", "subtype": "event_after_2025", "question": "Qui a remporté le Tour de France 2026 ?"}
+{"id": "val2-abs-043", "language": "fr", "category": "near_miss", "subtype": "absent_entity", "question": "En quelle année la ville de Tombouctou a-t-elle été fondée ?"}
+{"id": "val2-abs-044", "language": "fr", "category": "near_miss", "subtype": "absent_entity", "question": "Quelle est la capitale du Bhoutan ?"}
+{"id": "val2-abs-045", "language": "fr", "category": "near_miss", "subtype": "invented_law", "question": "Que prévoit la loi brésilienne n° 15.987 de 2025 sur les cryptomonnaies ?"}
+{"id": "val2-abs-046", "language": "fr", "category": "near_miss", "subtype": "foreign_law", "question": "Quelles peines le Code pénal suisse prévoit-il pour le blanchiment d'argent ?"}
+{"id": "val2-abs-047", "language": "fr", "category": "near_miss", "subtype": "other_eu_act", "question": "Quelles entreprises sont concernées par le reporting de durabilité de la directive CSRD ?"}
+{"id": "val2-abs-048", "language": "fr", "category": "near_miss", "subtype": "invented_article", "question": "Que dit l'article 412 du RGPD sur les cookies ?"}
+{"id": "val2-abs-049", "language": "fr", "category": "near_miss", "subtype": "absent_entity", "question": "Qui a écrit le roman Les Bienveillantes ?"}
+{"id": "val2-abs-050", "language": "fr", "category": "near_miss", "subtype": "absent_entity", "question": "Combien d'habitants compte Ouagadougou ?"}
+{"id": "val2-abs-051", "language": "fr", "category": "near_miss", "subtype": "foreign_law", "question": "Que dit la loi Évin sur la publicité pour l'alcool ?"}
+{"id": "val2-abs-052", "language": "fr", "category": "near_miss", "subtype": "foreign_law", "question": "Qu'est-ce que la loi Duplomb change pour les pesticides en France ?"}
+{"id": "val2-abs-053", "language": "pt", "category": "near_miss", "subtype": "foreign_law", "question": "Qual é a duração mínima do arrendamento urbano segundo o NRAU em Portugal?"}
+{"id": "val2-abs-054", "language": "pt", "category": "near_miss", "subtype": "event_after_2025", "question": "Quem venceu a eleição presidencial de 2026 no Brasil?"}
+{"id": "val2-abs-055", "language": "pt", "category": "near_miss", "subtype": "invented_law", "question": "O que estabelece a Lei nº 15.402 de 2025 sobre carros elétricos?"}
+{"id": "val2-abs-056", "language": "pt", "category": "near_miss", "subtype": "absent_entity", "question": "Qual é a capital do Butão?"}
+{"id": "val2-abs-057", "language": "pt", "category": "near_miss", "subtype": "foreign_law", "question": "O que diz a lei argentina 25.326 de proteção de dados pessoais?"}
+{"id": "val2-abs-058", "language": "pt", "category": "near_miss", "subtype": "foreign_law", "question": "Quantos dias de férias o Código do Trabalho português garante ao trabalhador?"}
+{"id": "val2-abs-059", "language": "pt", "category": "near_miss", "subtype": "absent_law", "question": "O que a lei do marco temporal de 2023 estabelece sobre a demarcação de terras indígenas?"}
+{"id": "val2-abs-060", "language": "pt", "category": "near_miss", "subtype": "absent_entity", "question": "Em que ano Machado de Assis publicou Dom Casmurro?"}
+{"id": "val2-abs-061", "language": "pt", "category": "near_miss", "subtype": "event_after_2025", "question": "Quem foi o artilheiro da Copa do Mundo de 2026?"}
+{"id": "val2-abs-062", "language": "en", "category": "near_miss", "subtype": "foreign_law", "question": "What does the California Consumer Privacy Act require for opting out of data sales?"}
+{"id": "val2-abs-063", "language": "en", "category": "near_miss", "subtype": "foreign_law", "question": "What duties does the UK Online Safety Act put on social media platforms?"}
+{"id": "val2-abs-064", "language": "en", "category": "near_miss", "subtype": "event_after_2025", "question": "Who won the 2026 FIFA World Cup final?"}
+{"id": "val2-abs-065", "language": "en", "category": "near_miss", "subtype": "invented_article", "question": "What does Article 140 of DORA say about crypto custody?"}
+{"id": "val2-abs-066", "language": "en", "category": "near_miss", "subtype": "foreign_law", "question": "How quickly must a data breach be notified under Singapore's PDPA?"}
+{"id": "val2-abs-067", "language": "en", "category": "near_miss", "subtype": "absent_entity", "question": "When was Ulaanbaatar founded?"}
+{"id": "val2-abs-068", "language": "en", "category": "near_miss", "subtype": "other_eu_act", "question": "What does the EU Pay Transparency Directive require from employers?"}
+{"id": "val2-abs-069", "language": "en", "category": "near_miss", "subtype": "foreign_law", "question": "Under HIPAA, how long does a clinic have to give patients access to their records?"}
+{"id": "val2-abs-070", "language": "en", "category": "near_miss", "subtype": "absent_entity", "question": "Who directed the film Oppenheimer?"}
+{"id": "val2-abs-071", "language": "fr", "category": "conversational", "subtype": "greeting", "question": "Bonjour !"}
+{"id": "val2-abs-072", "language": "fr", "category": "conversational", "subtype": "thanks", "question": "Merci beaucoup, c'était très clair"}
+{"id": "val2-abs-073", "language": "fr", "category": "conversational", "subtype": "identity", "question": "Tu es qui au juste ?"}
+{"id": "val2-abs-074", "language": "fr", "category": "conversational", "subtype": "closing", "question": "ok super, à plus"}
+{"id": "val2-abs-075", "language": "pt", "category": "conversational", "subtype": "greeting", "question": "Oi, tudo bem?"}
+{"id": "val2-abs-077", "language": "pt", "category": "conversational", "subtype": "capabilities", "question": "O que você consegue fazer?"}
+{"id": "val2-abs-079", "language": "en", "category": "conversational", "subtype": "closing", "question": "Thanks, that's all for now"}
+{"id": "val2-abs-080", "language": "en", "category": "conversational", "subtype": "identity", "question": "Are you a bot?"}

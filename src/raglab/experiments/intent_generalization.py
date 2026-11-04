@@ -315,7 +315,11 @@ def metrics(report: dict[str, Any], decisions: list[bool], reference: list[bool]
     declinable = [(r, d) for r, d in zip(records, decisions, strict=True) if r["category"] != "in_scope"]
     by_set: dict[str, dict[str, Any]] = {}
     for record, declined in in_scope:
-        key = record["source"] if record["source"] != "validation" else f"validation:{record['expected_corpus']}"
+        key = (
+            f"{record['source']}:{record['expected_corpus']}"
+            if record["source"].startswith("validation")
+            else record["source"]
+        )
         entry = by_set.setdefault(key, {"questions": 0, "refused": 0, "answered": 0})
         entry["questions"] += 1
         entry["refused"] += declined
@@ -347,7 +351,11 @@ def paired(report: dict[str, Any], before: list[bool], after: list[bool]) -> dic
     groups: dict[str, list[tuple[bool, bool]]] = {}
     for record, b, a in zip(report["records"], before, after, strict=True):
         if record["category"] == "in_scope":
-            key = record["source"] if record["source"] != "validation" else f"validation:{record['expected_corpus']}"
+            key = (
+                f"{record['source']}:{record['expected_corpus']}"
+                if record["source"].startswith("validation")
+                else record["source"]
+            )
             groups.setdefault(key, []).append((answered(record, b), answered(record, a)))
         else:
             groups.setdefault("abstention", []).append((b, a))

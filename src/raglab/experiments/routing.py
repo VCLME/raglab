@@ -99,6 +99,10 @@ EXTRA_SETS = {
     "validation": InScopeSet(
         "validation", REPO_ROOT / "benchmarks" / "routing_validation" / "in_scope.jsonl", MULTI_CORPUS, "multi"
     ),
+    # Second one, written after the first was read, to test the variant chosen in between.
+    "validation_2": InScopeSet(
+        "validation_2", REPO_ROOT / "benchmarks" / "routing_validation_2" / "in_scope.jsonl", MULTI_CORPUS, "multi"
+    ),
 }
 VALIDATION_ABSTENTION_PATH = REPO_ROOT / "benchmarks" / "routing_validation" / "abstention.jsonl"
 
