@@ -78,7 +78,9 @@ class QueryRouter:
             intent = self._knn_classifier().classify(
                 embedding,
                 margin=self.settings.routing_intent_margin,
-                logistic=calibration.logistic if calibration is not None else None,
+                logistic=(
+                    calibration.logistic if calibration is not None and self.settings.routing_intent_logistic else None
+                ),
             )
         else:
             intent = classifier.classify(embedding, margin=self.settings.routing_intent_margin)

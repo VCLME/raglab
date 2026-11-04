@@ -292,6 +292,11 @@ class Settings(BaseSettings):
     # Calibration written by `raglab experiment routing-languages --replay
     # ... --intent` (calibration questions only). Off until the owner decides.
     routing_intent_knn: bool = False
+    # Second intent signal of the kNN option: the logistic regression of the
+    # calibration file. It brings the frozen abstention set to 70 of 80, but
+    # declines first-person questions of real users (BR Expat false refusals
+    # 3 -> 15 of 38): off keeps the kNN gate and the joint rule only.
+    routing_intent_logistic: bool = True
     routing_intent_calibration_path: Path = Field(
         default_factory=lambda: Path("benchmarks/routing/intent_calibration.json")
     )

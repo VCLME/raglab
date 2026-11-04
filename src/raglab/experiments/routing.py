@@ -654,6 +654,7 @@ class RoutingExperimentService:
                 "routing_corpus_examples": self.settings.routing_corpus_examples,
                 "routing_language_thresholds": self.settings.routing_language_thresholds,
                 "routing_intent_knn": self.settings.routing_intent_knn,
+                "routing_intent_logistic": self.settings.routing_intent_logistic,
                 "routing_intent_calibration_path": str(self.settings.routing_intent_calibration_path),
                 "language_abstention_thresholds": self.settings.routing_language_abstention_thresholds,
                 "rerank_language_abstention_thresholds": self.settings.routing_rerank_language_abstention_thresholds,

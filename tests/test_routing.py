@@ -1081,3 +1081,31 @@ def test_paired_live_reads_the_router_decision_or_replays_the_thresholds():
     result = paired_live(before, after)
     assert result["abstention"] == {"before": 0, "after": 1, "gained": 1, "lost": 0, "p_value": 1.0}
     assert result["piaf"]["before"] == result["piaf"]["after"] == 1
+
+
+@pytest.mark.parametrize(("logistic", "expected"), [(True, Intent.OUT_OF_SCOPE), (False, Intent.DOCUMENTARY)])
+def test_router_reads_the_logistic_signal_only_when_enabled(tmp_path, logistic, expected):
+    from raglab.routing.intent_knn import clear_knn_cache
+
+    clear_knn_cache()
+    questions = tmp_path / "corpus_examples.jsonl"
+    questions.write_text(json.dumps({"corpus": "lexml", "language": "fr", "question": "que dit la loi"}) + "\n")
+    calibration = tmp_path / "intent_calibration.json"
+    # A cut no question can stay under: the logistic signal alone declines.
+    model = {"weights": [0.0] * 5, "bias": 0.0, "scale": 20.0, "threshold": 0.1, "quantile": 0.97}
+    calibration.write_text(json.dumps({"k": 1, "quantile": 0.03, "score": "dense", "groups": {}, "logistic": model}))
+    router = _router(
+        routing_intent_knn=True,
+        routing_intent_logistic=logistic,
+        routing_corpus_examples_path=questions,
+        routing_intent_calibration_path=calibration,
+    )
+    with (
+        patch("raglab.routing.router.list_candidate_runs", return_value=_runs()),
+        patch("raglab.routing.intent.iter_examples", return_value=EXAMPLES),
+        patch("raglab.routing.intent_knn.iter_examples", return_value=EXAMPLES),
+    ):
+        decision = router.route("Que dit la loi ?")
+    assert decision.intent.intent == expected
+    assert (decision.intent.not_documentary_probability is not None) is logistic
+    clear_knn_cache()
