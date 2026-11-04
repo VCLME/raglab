@@ -12,6 +12,7 @@ from pathlib import Path
 from time import perf_counter
 from typing import Any, cast
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from raglab.config import Settings, get_settings
@@ -20,6 +21,7 @@ from raglab.db.crud import (
     create_experiment_run,
     store_experiment_result,
 )
+from raglab.db.models import Corpus
 from raglab.domain.enums import ChunkingStrategy, ExperimentStatus, RetrievalMode
 from raglab.domain.versions import is_outdated
 from raglab.experiments.metrics import (
@@ -42,6 +44,7 @@ from raglab.llm.local_server import LocalLLMServer
 from raglab.llm.openai_compat import OpenAICompatibleChat
 from raglab.logging_utils import log_event
 from raglab.retrieval.service import QueryService
+from raglab.retrieval.translation import needs_translation
 
 SUPPORTED_BACKENDS = ("pgvector", "neo4j")
 
@@ -177,6 +180,10 @@ class RecallBenchmarkService:
             "rerank_model": self.settings.rerank_model_name,
             "rerank_candidates": self.settings.rerank_candidates,
         }
+
+    def _any_needs_translation(self, cases: list[RecallBenchmarkCase], corpus_name: str) -> bool:
+        language = self.session.execute(select(Corpus.language).where(Corpus.name == corpus_name)).scalar_one_or_none()
+        return any(needs_translation(case.question, language) for case in cases)
 
     def _release_reranker(self) -> None:
         """Free the cross-encoder's VRAM before the judge pass.
@@ -421,7 +428,13 @@ class RecallBenchmarkService:
             translate = retrieval.get(
                 "query_translation", self.settings.query_translation if self.backend == "pgvector" else False
             )
-            if translate and retrieval.get("retrieval_mode") != RetrievalMode.DENSE.value:
+            if (
+                translate
+                and retrieval.get("retrieval_mode") != RetrievalMode.DENSE.value
+                and self._any_needs_translation(cases, corpus_name)
+            ):
+                # Started only when a question is in another language than the
+                # corpus: on by default, same-language suites never load the writer.
                 writer.enter_context(LocalLLMServer(self.settings, profile=self.settings.writer_model_profile))
             for position, case in enumerate(cases):
                 generate = compute_ragas and position < grade_limit

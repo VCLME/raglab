@@ -139,8 +139,11 @@ class Settings(BaseSettings):
     # Cross-language questions (French question, Portuguese corpus): the
     # local writer translates the question into the corpus language for
     # BM25 only; dense search, re-ranking and the answer keep the original
-    # (raglab.retrieval.translation). Off until measured (lexml_fr set).
-    query_translation: bool = False
+    # (raglab.retrieval.translation). Only questions whose detected language
+    # differs from the corpus's are translated. Measured (lexml-fr-qt-v1):
+    # French questions on LexML Recall@5 0.790 -> 0.890, ~2.4 s per
+    # translated question; on by default since.
+    query_translation: bool = True
     query_translation_timeout_seconds: float = 20.0
     # Article versions retrieval may use (phase 9.10, docs/versions.md):
     # in_force (today, or the date the question asks about), all, or

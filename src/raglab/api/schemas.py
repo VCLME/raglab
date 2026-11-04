@@ -101,7 +101,7 @@ class ConfigResponse(BaseModel):
     # Default of the versions option (phase 9.10).
     versions_default: str = "in_force"
     # Default of the query-translation option (cross-language questions).
-    query_translation: bool = False
+    query_translation: bool = True
     # Enabled generation providers (RAGLAB_LLM_PROVIDERS) and the default one.
     llm_providers: list[str] = Field(default_factory=lambda: ["ollama"])
     default_llm_provider: str = "ollama"

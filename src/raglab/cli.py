@@ -1374,10 +1374,25 @@ def experiment_routing(
         "--citations/--no-citations",
         help="Resolution des citations juridiques (defaut: RAGLAB_CITATION_RESOLVER).",
     ),
+    query_translation: bool | None = typer.Option(
+        None,
+        "--query-translation/--no-query-translation",
+        help="Traduction de la question pour le BM25 quand sa langue differe du corpus (defaut: RAGLAB_QUERY_TRANSLATION).",
+    ),
+    in_scope: list[str] | None = typer.Option(
+        None,
+        "--in-scope",
+        help="Jeux de questions in-scope (repetable) : piaf, lexml_fulltext, legi_consommation, eurlex_compliance, "
+        "ou lexml_fr (questions francaises sur LexML, jamais dans le tirage par defaut). Defaut : les jeux par defaut.",
+    ),
 ) -> None:
     """Mesurer le routeur : abstention (precision / rappel / F1, courbe), intention, langue, corpus, latence."""
-    from raglab.experiments.routing import RoutingExperimentService, render_markdown
+    from raglab.experiments.routing import IN_SCOPE_SETS, RoutingExperimentService, named_sets, render_markdown
 
+    try:
+        sets = named_sets(in_scope) if in_scope else IN_SCOPE_SETS
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc)) from exc
     with session_scope() as session:
         report = RoutingExperimentService(session).run(
             corpora=corpus or None,
@@ -1389,6 +1404,8 @@ def experiment_routing(
             retrieval_mode=retrieval_mode,
             rerank=rerank,
             citations=citations,
+            query_translation=query_translation,
+            in_scope_sets=sets,
         )
     summary = {k: v for k, v in report["summary"].items() if k != "curve"}
     typer.echo(json.dumps({"report_path": report["report_path"], "summary": summary}, indent=2, ensure_ascii=False))

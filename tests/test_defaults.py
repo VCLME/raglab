@@ -8,12 +8,15 @@ def test_shipped_default_is_the_measured_best_pipeline(monkeypatch):
     monkeypatch.delenv("RAGLAB_DEFAULT_RERANK", raising=False)
     monkeypatch.delenv("RAGLAB_CITATION_RESOLVER", raising=False)
     monkeypatch.delenv("RAGLAB_VERSIONS_DEFAULT", raising=False)
+    monkeypatch.delenv("RAGLAB_QUERY_TRANSLATION", raising=False)
     settings = Settings(_env_file=None)
     assert settings.default_retrieval_mode == "hybrid"
     assert settings.default_rerank is True
     assert settings.citation_resolver is True
     # Measured in versions-full-v1 (9.10): versions set Recall@5 0.75 -> 0.93.
     assert settings.versions_default == "in_force"
+    # Measured in lexml-fr-qt-v1: French questions on LexML Recall@5 0.790 -> 0.890.
+    assert settings.query_translation is True
 
 
 def test_shipped_writer_is_qwen36_on_llamacpp_with_an_ollama_fallback(monkeypatch):

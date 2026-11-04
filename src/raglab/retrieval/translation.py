@@ -12,11 +12,16 @@ question.
 Translation never fails a query: when the writer does not answer (down,
 serving another model, timeout), BM25 gets the original question and the
 outcome says why (`notice`).
+
+Translations are cached per process (question, target language, writer
+model), shared by every `QueryService`: the API builds one service per
+request, so a per-service cache would be lost after each question.
 """
 
 from __future__ import annotations
 
 import logging
+import threading
 from collections import OrderedDict
 from dataclasses import dataclass
 from time import perf_counter
@@ -41,6 +46,37 @@ _SYSTEM_PROMPT = (
 _CACHE_SIZE = 512
 
 
+class TranslationCache:
+    """Bounded LRU of successful translations, safe across request threads."""
+
+    def __init__(self, size: int = _CACHE_SIZE):
+        self.size = size
+        self._items: OrderedDict[tuple[str, str, str], str] = OrderedDict()
+        self._lock = threading.Lock()
+
+    def get(self, key: tuple[str, str, str]) -> str | None:
+        with self._lock:
+            if key not in self._items:
+                return None
+            self._items.move_to_end(key)
+            return self._items[key]
+
+    def put(self, key: tuple[str, str, str], text: str) -> None:
+        with self._lock:
+            self._items[key] = text
+            self._items.move_to_end(key)
+            while len(self._items) > self.size:
+                self._items.popitem(last=False)
+
+    def clear(self) -> None:
+        with self._lock:
+            self._items.clear()
+
+
+# One per process: survives the per-request QueryService.
+SHARED_CACHE = TranslationCache()
+
+
 @dataclass(frozen=True)
 class Translation:
     # Text sent to BM25: the translation, or the question when none was made.
@@ -52,6 +88,8 @@ class Translation:
     # Why the question was not translated: same_language, unknown_language,
     # writer_unavailable, failed.
     notice: str | None = None
+    # Served from the process cache: no writer call for this request.
+    cached: bool = False
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -60,17 +98,36 @@ class Translation:
             "target_language": self.target_language,
             "translated": self.translated,
             "elapsed_ms": round(self.elapsed_ms, 3),
+            "cached": self.cached,
             **({"notice": self.notice} if self.notice else {}),
         }
+
+
+def needs_translation(question: str, target_language: str | None) -> bool:
+    """Whether `translate` would call the writer for this question: its
+    detected language and the corpus language are both known and differ."""
+    source = detect_language(question).language
+    return (
+        bool(target_language)
+        and target_language in LANGUAGE_NAMES
+        and source in LANGUAGE_NAMES
+        and source != target_language
+    )
 
 
 class QueryTranslator:
     """Translate questions with the local writer, with a small in-memory cache."""
 
-    def __init__(self, settings: Settings, *, client: OpenAICompatibleChat | None = None):
+    def __init__(
+        self,
+        settings: Settings,
+        *,
+        client: OpenAICompatibleChat | None = None,
+        cache: TranslationCache | None = None,
+    ):
         self.settings = settings
         self.client = client or OpenAICompatibleChat(settings)
-        self._cache: OrderedDict[tuple[str, str], str] = OrderedDict()
+        self.cache = SHARED_CACHE if cache is None else cache
 
     def translate(self, question: str, target_language: str | None) -> Translation:
         source = detect_language(question).language
@@ -78,10 +135,10 @@ class QueryTranslator:
             return Translation(question, source, target_language, False, notice="unknown_language")
         if source == target_language:
             return Translation(question, source, target_language, False, notice="same_language")
-        key = (question, target_language)
-        if key in self._cache:
-            self._cache.move_to_end(key)
-            return Translation(self._cache[key], source, target_language, True)
+        key = (question, target_language, self.settings.writer_model)
+        cached = self.cache.get(key)
+        if cached is not None:
+            return Translation(cached, source, target_language, True, cached=True)
         started = perf_counter()
         try:
             served = self.client.list_models(timeout=2.0)
@@ -102,9 +159,7 @@ class QueryTranslator:
         elapsed = (perf_counter() - started) * 1000
         if not text:
             return Translation(question, source, target_language, False, elapsed, notice="failed")
-        self._cache[key] = text
-        if len(self._cache) > _CACHE_SIZE:
-            self._cache.popitem(last=False)
+        self.cache.put(key, text)
         log_event(
             LOGGER,
             logging.INFO,

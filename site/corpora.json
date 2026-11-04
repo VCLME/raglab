@@ -41,7 +41,7 @@
     "about": "natural LexML questions translated into French, answered from the Portuguese corpus",
     "failure": "cross-language",
     "runs": ["lexml-fr-naive-v1", "lexml-fr-v1", "lexml-fr-qt-v1"],
-    "brick": "+ query translation for BM25 (option, off by default)",
+    "brick": "+ query translation for BM25 (on by default, cross-language questions only)",
     "types": {"entity": "acronym or entity"},
     "references": [{"run": "lexml-fr-v1", "suite": "lexml_fr_pt", "label": "same questions in Portuguese, full pipeline"}]
   }

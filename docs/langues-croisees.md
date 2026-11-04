@@ -48,15 +48,19 @@ Gagnées en français : lexml-0091, lexml-0148, lexml-0274 (trois paraphrases).
 
 ## La brique : traduire la question pour le BM25
 
-Option `query_translation` ([`translation.py`](../src/raglab/retrieval/translation.py)), **désactivée par défaut**. Quand la langue détectée de la question (détecteur du routeur, sans modèle) diffère de la langue du corpus, le rédacteur local (Qwen3.6-35B-A3B via llama.cpp, raisonnement désactivé, température 0) traduit la question dans la langue du corpus, « comme la formulerait un juriste de ce pays, avec ses termes juridiques et ses noms d'institutions ». La traduction ne sert **qu'au BM25** : la recherche dense, le re-ranking et la réponse gardent la question d'origine, et la réponse reste en français.
+Option `query_translation` ([`translation.py`](../src/raglab/retrieval/translation.py)), **activée par défaut** depuis la décision du propriétaire du 4 novembre 2026 (voir « Décision »). Quand la langue détectée de la question (détecteur du routeur, sans modèle) diffère de la langue du corpus, le rédacteur local (Qwen3.6-35B-A3B via llama.cpp, raisonnement désactivé, température 0) traduit la question dans la langue du corpus, « comme la formulerait un juriste de ce pays, avec ses termes juridiques et ses noms d'institutions ». La traduction ne sert **qu'au BM25** : la recherche dense, le re-ranking et la réponse gardent la question d'origine, et la réponse reste en français.
 
-Une question dans la langue du corpus ne déclenche aucun appel. Si le rédacteur ne répond pas (arrêté, occupé par un autre modèle, délai `RAGLAB_QUERY_TRANSLATION_TIMEOUT_SECONDS` dépassé), le BM25 cherche la question d'origine et la réponse le dit (`query_translation.notice: "writer_unavailable"`) ; une requête n'échoue jamais à cause de la traduction. Les traductions sont gardées en cache en mémoire (512 questions).
+Une question dans la langue du corpus ne déclenche aucun appel. Si le rédacteur ne répond pas (arrêté, occupé par un autre modèle, délai `RAGLAB_QUERY_TRANSLATION_TIMEOUT_SECONDS` dépassé), le BM25 cherche la question d'origine et la réponse le dit (`query_translation.notice: "writer_unavailable"`) ; une requête n'échoue jamais à cause de la traduction. La recherche dense seule (`--retrieval-mode dense`) n'a pas de BM25 et ne traduit rien.
+
+**Cache.** L'API construit un `QueryService` par requête : un cache porté par le service serait perdu après chaque question. Les traductions réussies sont donc gardées dans un cache du processus (512 entrées, LRU, protégé par un verrou), partagé par toutes les requêtes et indexé par (question, langue cible, modèle du rédacteur). Une question déjà traduite ne rappelle pas le rédacteur (`query_translation.cached: true`, durée 0) ; les échecs ne sont pas mis en cache, pour retenter quand le rédacteur revient.
+
+**Corpus multilingue.** Le corpus UE (`bench_eurlex_compliance`) déclare la langue `multi` : chaque acte y existe en anglais, français et portugais, il n'y a pas une langue cible unique, et la question n'est pas traduite. Le BM25 y trouve déjà la version de l'acte dans la langue de la question.
 
 | Option | Valeurs | Défaut | CLI | API | Variable |
 |---|---|---|---|---|---|
-| Traduction de la question | oui / non | non | `--query-translation/--no-query-translation` | `query_translation` | `RAGLAB_QUERY_TRANSLATION`, `RAGLAB_QUERY_TRANSLATION_TIMEOUT_SECONDS` |
+| Traduction de la question | oui / non | **oui** (seulement si la langue de la question diffère de celle du corpus) | `--query-translation/--no-query-translation` | `query_translation` | `RAGLAB_QUERY_TRANSLATION`, `RAGLAB_QUERY_TRANSLATION_TIMEOUT_SECONDS` |
 
-Dans l'Atelier (page Interrogation, mode expert), le champ « Traduction de la question » l'active ; la réponse affiche la traduction envoyée au BM25 et son temps.
+Dans l'Atelier (page Interrogation, mode expert), le champ « Traduction de la question » permet de la forcer ou de la couper pour comparer ; la réponse affiche la traduction envoyée au BM25 et son temps. Dans le Chat, une réponse dont la question a été traduite porte une mention discrète (« mots-clés cherchés en pt », la traduction en info-bulle).
 
 ### Mesure
 
@@ -80,7 +84,22 @@ Une première mesure, faite pendant que d'autres calculs tournaient sur la machi
 
 ### Décision
 
-La brique comble l'écart, mais au prix de 2 à 4 s par question : elle reste **désactivée par défaut**, en option à activer pour un usage franco-brésilien. Le choix de l'activer par défaut (ou seulement quand le routeur détecte une langue différente du corpus, ce qu'elle fait déjà) revient au propriétaire du projet.
+**Activée par défaut** (décision du propriétaire, 4 novembre 2026) : c'est la meilleure configuration mesurée, et elle reste conditionnelle. Le surcoût de 2 à 4 s ne touche que les questions dont la langue diffère de celle du corpus ; sur les jeux figés dans une seule langue (PIAF, LexML, Code de la consommation, jeu « versions »), le détecteur de langue ne se trompe sur aucune question (PIAF : 498 en français, 2 sans marqueur ; les autres : 100 %), donc aucun appel au rédacteur et aucun chiffre publié ne change. Le p95 et la disponibilité du rédacteur sont à surveiller en production ; `RAGLAB_QUERY_TRANSLATION=false` la coupe sans toucher au code, `query_translation: false` (API) ou `--no-query-translation` (CLI) pour une requête.
+
+Dans `raglab bench all`, le rédacteur n'est démarré que si une question du jeu est dans une autre langue que le corpus : les suites monolingues ne chargent pas Qwen3.6, et l'étiquette « + query translation » n'apparaît que si une question a été traduite.
+
+## Avec le routeur
+
+Avec `routing=true`, l'ordre est : le routeur détecte la langue et l'intention et choisit le corpus (sans LLM) ; la question est traduite dans la langue **du corpus choisi** si elle diffère ; puis recherche hybride, fusion, re-ranking (question d'origine), abstention, génération. L'abstention lit le score **dense** (cosinus de la question d'origine) des passages retenus : la traduction ne change pas l'échelle sur laquelle les seuils par corpus ont été calibrés, elle peut seulement changer quels passages arrivent dans le top 5. Les seuils ne sont pas modifiés.
+
+Ce point n'a **pas encore été mesuré** : le GPU était pris par un autre benchmark au moment de ce changement. La mesure est prête :
+
+```bash
+raglab experiment routing --in-scope lexml_fr --corpus bench_piaf_fr --corpus bench_lexml_pt --query-translation
+raglab experiment routing --in-scope lexml_fr --corpus bench_piaf_fr --corpus bench_lexml_pt --no-query-translation
+```
+
+`--in-scope lexml_fr` prend les questions françaises sur LexML comme questions à traiter (jamais dans le tirage par défaut, qui reste celui des seuils publiés) face aux 80 questions d'abstention. Le rapport donne le choix du corpus, la précision et le rappel de l'abstention, le taux de faux refus, le taux de passage-réponse trouvé, la latence routeur + recherche (p50 / p95) et le décompte des traductions (`query_translation_outcomes`). Ce qu'il faudra regarder : que les questions françaises vers LexML ne soient pas plus souvent refusées que les portugaises avec le seuil calibré sur ces dernières.
 
 ## Limites
 

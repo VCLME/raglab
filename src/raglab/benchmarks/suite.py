@@ -544,7 +544,9 @@ def _retrieval_label(run: dict[str, Any], suite: dict[str, Any] | None) -> str:
         mode += f" + rerank ({run.get('rerank_candidates', '?')})"
     if (suite or {}).get("graph", run.get("graph")):
         mode += " + graph"
-    if (suite or {}).get("query_translation", run.get("query_translation")):
+    # On by default since lexml-fr-qt-v1: named only where a question was
+    # actually translated (same-language suites make no writer call).
+    if ((suite or {}).get("query_translation_outcomes") or {}).get("translated"):
         mode += " + query translation"
     versions = (suite or {}).get("versions") or run.get("versions")
     if versions and versions != "in_force":
