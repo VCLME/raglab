@@ -39,6 +39,10 @@ class CorpusCandidate(BaseModel):
     corpus_name: str
     index_run_id: str
     score: float
+    # Cross-language routing: score of the question translated into this
+    # corpus's language, when it was rescored (`score` is then the best of both).
+    original_score: float | None = None
+    translated_score: float | None = None
 
 
 class CorpusDecision(BaseModel):
@@ -62,6 +66,9 @@ class AbstentionDecision(BaseModel):
     # Score compared to the threshold: dense cosine or cross-encoder score.
     score_source: str
     best_score: float | None = None
+    # Cross-language routing: dense score of the question translated into the
+    # corpus language (`best_score` is then the best of both).
+    translated_score: float | None = None
     # None: no calibrated threshold for this corpus and score source.
     threshold: float | None = None
     # "legal_citation" when the question cites a law: never declined.

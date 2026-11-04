@@ -247,6 +247,14 @@ class Settings(BaseSettings):
     )
     # dense (cosine similarity) or rerank (cross-encoder score, phase 9.3).
     routing_score_source: str = "dense"
+    # Cross-language routing (docs/langues-croisees.md): with query
+    # translation on, a candidate corpus in another language than the
+    # question, within routing_translation_margin of the best centroid
+    # score, is rescored on the question translated into its language; the
+    # dense abstention score also reads the translated question. Off until
+    # measured on the lexml_fr set.
+    routing_cross_language: bool = False
+    routing_translation_margin: float = 0.05
 
     chunk_size: int = 900
     chunk_overlap: int = 150

@@ -37,6 +37,7 @@ from raglab.routing.citation import cited_text_in_run
 from raglab.routing.intent import decide_intent
 from raglab.routing.router import QueryRouter
 from raglab.routing.schemas import Intent
+from raglab.routing.step import cross_language_routing, translated_dense_score
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 ABSTENTION_PATH = REPO_ROOT / "benchmarks" / "abstention" / "questions.jsonl"
@@ -487,6 +488,7 @@ class RoutingExperimentService:
             "query_translation": query_translation,
         }
         translate = self.settings.query_translation if query_translation is None else query_translation
+        cross_language = cross_language_routing(retriever, query_translation)
         # Warm-up: model weights, example embeddings and corpus centroids are
         # loaded once per process and kept out of the latency figures.
         warm_up = router.route("warm-up", strategy=strategy, candidate_corpora=corpora or None)
@@ -503,7 +505,12 @@ class RoutingExperimentService:
             writer.enter_context(LocalLLMServer(self.settings, profile=self.settings.writer_model_profile))
         with writer:
             for case in cases:
-                decision = router.route(case.question, strategy=strategy, candidate_corpora=corpora or None)
+                decision = router.route(
+                    case.question,
+                    strategy=strategy,
+                    candidate_corpora=corpora or None,
+                    translator=retriever.translator if cross_language else None,
+                )
                 if decision.corpus.index_run_id is None:
                     raise ValueError("Aucun index compatible avec l'embedder du routeur : indexez au moins un corpus.")
                 outcome = retriever.retrieve(
@@ -514,6 +521,8 @@ class RoutingExperimentService:
                 )
                 chunks = [chunk.model_dump() for chunk in outcome.retrieved]
                 timings = outcome.timings_ms
+                original = best_score(outcome.retrieved, self.settings.routing_score_source)
+                translated = translated_dense_score(retriever, outcome) if cross_language else None
                 records.append(
                     {
                         **{k: v for k, v in asdict(case).items() if k != "expected_spans"},
@@ -526,7 +535,17 @@ class RoutingExperimentService:
                         # Same rule as the router: a cited text the index holds.
                         "legal_citation": decision.citation is not None
                         and cited_text_in_run(self.session, outcome.index_run, decision.citation),
-                        "best_score": best_score(outcome.retrieved, self.settings.routing_score_source),
+                        # The score the router compares to the threshold: with
+                        # cross-language routing, the better of the original and
+                        # the translated question (as in `QueryRouter.finish`).
+                        "best_score": (
+                            original
+                            if translated is None or (original is not None and original >= translated)
+                            else translated
+                        ),
+                        "best_score_original": original,
+                        "best_score_translated": translated,
+                        "corpus_candidates": [c.model_dump() for c in decision.corpus.candidates],
                         "scores": [round(chunk.score, 4) for chunk in outcome.retrieved],
                         "hit": any(_chunk_covers_span(chunk, span) for chunk in chunks for span in case.expected_spans),
                         "timings_ms": decision.timings_ms,
@@ -557,6 +576,9 @@ class RoutingExperimentService:
                     **retrieval_options,
                 )
                 score = best_score(outcome.retrieved, self.settings.routing_score_source)
+                translated = translated_dense_score(retriever, outcome) if cross_language else None
+                if translated is not None:
+                    score = translated if score is None else max(score, translated)
                 if score is not None:
                     calibration.setdefault(case.expected_corpus, []).append(score)
 
@@ -575,6 +597,8 @@ class RoutingExperimentService:
                 "rerank": self.settings.default_rerank if rerank is None else rerank,
                 "citations": self.settings.citation_resolver if citations is None else citations,
                 "query_translation": translate,
+                "routing_cross_language": cross_language,
+                "routing_translation_margin": self.settings.routing_translation_margin,
                 "score_source": self.settings.routing_score_source,
                 "intent_margin": self.settings.routing_intent_margin,
                 "abstention_threshold": self.settings.routing_abstention_threshold,
