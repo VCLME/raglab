@@ -137,7 +137,7 @@
     "routing_label": "Routage",
     "routing_title": "Détecter la langue et l'intention, choisir le corpus et s'abstenir quand les documents ne répondent pas",
     "corpus_auto": "Automatique (routeur)",
-    "routing_on": "activé"
+    "options_routing_short": "routeur"
   },
   "dashboard": {
     "pull_in_progress": "Téléchargement…",

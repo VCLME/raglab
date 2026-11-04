@@ -369,20 +369,15 @@ export function Chat() {
           </FieldLabelContext.Provider>
         </div>
 
-        <div className="compact-field" title={t("chat.routing_title")}>
-          <label>{t("chat.routing_label")}</label>
-          <label className="inline" style={{ gap: 4 }}>
-            <input
-              type="checkbox"
-              checked={routing}
-              onChange={(e) => setRouting(e.target.checked)}
-            />
-            {t("chat.routing_on")}
-          </label>
-        </div>
-
         <div className="settings-actions">
-          <ChatOptions value={options} onChange={setOptions} config={config} legalCorpus={legalCorpus} />
+          <ChatOptions
+            value={options}
+            onChange={setOptions}
+            config={config}
+            legalCorpus={legalCorpus}
+            routing={routing}
+            onRoutingChange={setRouting}
+          />
           {/* Always there (disabled when empty) so the bar does not reflow at the first answer. */}
           <button className="ghost sm" onClick={reset} disabled={turns.length === 0}>
             {t("chat.new_conversation")}
