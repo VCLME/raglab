@@ -22,8 +22,8 @@
 
 ### LLM
 
-- Ollama pour la génération locale
-- modèle de génération recommandé pour le MVP : `qwen2.5:7b`
+- rédacteur des réponses : Qwen3.6-35B-A3B (MoE) servi par llama.cpp, démarré à la demande par l'API ([§ 3 bis](#3-bis-pourquoi-qwen36-via-llamacpp-pour-rédiger-les-réponses))
+- repli et Docker : Ollama avec `qwen2.5:7b`, le générateur du MVP
 
 ### Embeddings
 
@@ -68,7 +68,31 @@ Raisons :
 Alternatives plus tard :
 
 - `llama3.2:3b` si la machine cible est plus contrainte
-- modèles plus gros si la machine cible le permet
+- modèles plus gros si la machine cible le permet : c'est ce qu'a fait le § 3 bis
+
+## 3 bis. Pourquoi Qwen3.6 via llama.cpp pour rédiger les réponses
+
+`qwen2.5:7b` a été le générateur de tous les runs jusqu'à `prompt-v4`. Le run `gen-qwen36-v1` a remplacé le seul générateur : mêmes questions, mêmes passages (hybride + re-ranking + références), même prompt, même juge (Gemma 4 26B-A4B, d'une autre famille que les deux générateurs), 100 réponses notées par jeu.
+
+| Métrique RAGAS | PIAF `prompt-v4` → `gen-qwen36-v1` | LexML `prompt-v4` → `gen-qwen36-v1` |
+|---|---|---|
+| answer correctness | 0,763 → **0,935** | 0,550 → **0,710** |
+| faithfulness | 0,970 → **0,995** | 0,895 → **0,980** |
+| answer relevancy | 0,890 → **0,975** | 0,875 → **0,965** |
+
+Le gain le plus net est sur LexML (portugais juridique, articles longs) : +16 points de correctness, et la fidélité au contexte passe de 0,895 à 0,980, ce qui compte pour un outil qui doit citer la loi sans l'inventer.
+
+Pourquoi ce modèle tient sur 8 Go : c'est un MoE de 35 milliards de paramètres dont environ 3 milliards servent à chaque token. Les couches d'attention et les poids partagés restent sur le GPU, les experts de 32 couches restent en RAM (`--n-cpu-moe 32`). La génération reste rapide (~26 tok/s) malgré 17 Go de poids.
+
+Pourquoi llama.cpp et pas Ollama : le déchargement des experts en RAM (`--n-cpu-moe`), le cache KV en `q8_0` et la taille de lot se règlent par profil dans llama-server ; c'est ce réglage qui fait tenir le modèle. Le serveur était déjà là pour le juge et le générateur de questions (`LocalLLMServer`).
+
+Ce que ça coûte :
+
+- **latence** : génération p50 de 7 à 9 s, contre 2,2 s (PIAF) et 4,3 s (LexML) pour `qwen2.5:7b` ([reranking.md](reranking.md)) ; le streaming affiche les premiers mots bien avant ;
+- **chargement** : le premier appel démarre llama-server (quelques dizaines de secondes) ; le serveur reste ensuite chargé ;
+- **mémoire** : environ 16 Go de RAM pour les experts, et un budget VRAM serré à côté du cross-encoder. Mesuré avec 10 questions : à 64k de contexte, l'ensemble déborde de la VRAM et la génération tombe à 2,9 tok/s ; le rédacteur tourne donc avec son propre profil, 16k de contexte et 34 couches d'experts en RAM (5,41 Go seul, 7,10 Go au pic avec le re-ranking, 33,6 tok/s, génération p50 7,2 s) ([run-and-test.md](run-and-test.md#rédacteur-qwen36-sur-llamacpp)).
+
+Le repli reste Ollama `qwen2.5:7b` : si llama.cpp ne répond pas et ne peut pas être démarré, s'il charge encore ou s'il sert un autre modèle (le juge d'un benchmark), la requête part sur Ollama et la réponse le dit (`generator_notice`). Une requête n'échoue jamais parce que llama.cpp est arrêté. Docker garde Ollama par défaut ; l'override `docker-compose.llamacpp.yml` ajoute le rédacteur dans son propre conteneur ([run-and-test.md](run-and-test.md#rédacteur-qwen36-sur-llamacpp)).
 
 ## 4. Réflexion pragmatique sur les embeddings
 

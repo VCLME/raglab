@@ -228,6 +228,9 @@ td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
 td.pending { color: var(--ink-3); font-style: italic; white-space: nowrap; }
 table.results tbody th { min-width: 13rem; }
 @media (min-width: 48rem) { table.results tbody th { min-width: 17rem; } }
+/* New corpora table: verdicts wrap under their value so the six columns fit the reading column. */
+table.corpora td { white-space: normal; min-width: 6.5rem; }
+@media (min-width: 48rem) { table.corpora tbody th { min-width: 12rem; } }
 .change { display: block; margin-top: 2px; font-weight: 400; font-size: var(--t-xs); color: var(--ink-3); }
 /* Status chips: one line, mono, above the stage name (the portfolio's stack chips). */
 .tag {

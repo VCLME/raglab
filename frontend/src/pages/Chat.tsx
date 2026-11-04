@@ -68,6 +68,8 @@ interface ChatTurn {
   rerank?: boolean | null;
   // "skipped_no_gpu" or "cpu" when the re-ranker had no GPU.
   rerank_notice?: string | null;
+  // Why the fallback model wrote this answer instead of the default writer.
+  generator_notice?: string | null;
   citation?: CitationInfo | null;
   lexemes?: string[];
   // Graph branch: whether it ran, why it was skipped, its counters.
@@ -229,6 +231,7 @@ export function Chat() {
       retrieval_mode: r.retrieval_mode ?? null,
       rerank: r.rerank ?? null,
       rerank_notice: r.rerank_notice ?? null,
+      generator_notice: r.generator_notice ?? null,
       citation: r.citation ?? null,
       lexemes: r.query_lexemes ?? [],
       graph: r.graph ?? null,
@@ -256,6 +259,8 @@ export function Chat() {
         first_token_ms: result.first_token_ms ?? null,
         streaming: false,
       }));
+      // The writer may have started (or stopped answering) meanwhile.
+      if (result.generator_notice || llms.data?.generator?.notice) llms.refresh();
     } catch (e) {
       if (controller.signal.aborted) {
         patchTurn(() => ({ streaming: false, stopped: true }));
@@ -315,9 +320,24 @@ export function Chat() {
   };
 
   const providers = llms.data?.providers ?? [];
-  const defaultModel = llms.data?.default_model ?? config?.generation_model ?? "qwen2.5:7b";
-  const defaultProvider =
-    providers.find((p) => p.name === (llms.data?.default_provider ?? config?.default_llm_provider))?.label ?? "Ollama";
+  const writer = llms.data?.generator ?? null;
+  const defaultModel = writer
+    ? writer.notice
+      ? writer.active_model ?? writer.active_provider_label
+      : writer.label
+    : llms.data?.default_model ?? config?.generation_model ?? "qwen2.5:7b";
+  const defaultProvider = writer
+    ? writer.active_provider_label
+    : providers.find((p) => p.name === (llms.data?.default_provider ?? config?.default_llm_provider))?.label ??
+      "Ollama";
+  // Default entry of the picker: the writer, or its fallback and why.
+  const defaultLlmLabel = writer?.notice
+    ? t("chat.llm_default_fallback", {
+        model: defaultModel,
+        provider: defaultProvider,
+        reason: t(`chat.llm_fallback_reason_${writer.notice}`, { defaultValue: writer.notice }),
+      })
+    : t("chat.llm_default", { model: defaultModel, provider: defaultProvider });
 
   const corpusList = corpora.data ?? [];
   const apiWaiting = corpora.error !== null && corpora.data === null;
@@ -441,12 +461,14 @@ export function Chat() {
               size="sm"
               value={llm}
               onChange={(e) => setLlm(e.target.value)}
-              title={t("chat.llm_title")}
+              title={
+                writer?.notice
+                  ? t(`chat.generator_notice_${writer.notice}`, { defaultValue: writer.notice })
+                  : t("chat.llm_title")
+              }
               aria-label={t("chat.llm_label")}
             >
-              <option value="">
-                {t("chat.llm_default", { model: defaultModel, provider: defaultProvider })}
-              </option>
+              <option value="">{defaultLlmLabel}</option>
               {providers.map((p) => (
                 <optgroup key={p.name} label={p.label}>
                   {p.available && p.models.length > 0 ? (
@@ -634,6 +656,11 @@ function ChatTurnView({
           {turn.rerank_notice ? (
             <p className="answer-notice" role="note">
               {t(`chat.rerank_notice_${turn.rerank_notice}`, { defaultValue: turn.rerank_notice, why: gpuWhy })}
+            </p>
+          ) : null}
+          {turn.generator_notice ? (
+            <p className="answer-notice" role="note">
+              {t(`chat.generator_notice_${turn.generator_notice}`, { defaultValue: turn.generator_notice })}
             </p>
           ) : null}
           <div className="answer-meta">

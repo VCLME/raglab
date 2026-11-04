@@ -141,10 +141,12 @@ Objectif : passer du laboratoire à un pipeline RAG prêt pour la production, ch
 
 | Mode d'échec | Brique | État |
 |---|---|---|
-| Identifiants (« art. 49 da Lei 8.078 ») | résolveur de citations (9.3b) | ✅ 9 % → 72 % |
-| Renvois (la réponse est dans l'article cité) | graphe des citations dans Neo4j (9.9) | à mesurer |
-| Versions (article abrogé ou réécrit cité comme en vigueur) | option `versions` : filtre par date, statut de version par chunk (9.10) | code en revue, à mesurer |
-| Hors périmètre | routeur et abstention (9.4) | mesuré sur l'ancien pipeline, à refaire |
+| Identifiants (« art. 49 da Lei 8.078 ») | résolveur de citations (9.3b) | ✅ 9 % → 72 % (LexML) ; questions à numéro d'article du Code de la consommation 0,46 → 1,00 |
+| Renvois (la réponse est dans l'article cité) | graphe des citations dans Neo4j (9.9) | mesuré, pas de gain significatif : +6,5 pts sur 46 questions de renvois (n.s.), −2,3 pts sur les textes de l'UE (n.s.) ; reste désactivé |
+| Versions (article abrogé ou réécrit cité comme en vigueur) | filtre `versions` (`in_force` par défaut), statut de version par chunk (9.10) | ✅ actif par défaut : Code de la consommation Recall@5 0,66 → 0,82, version périmée en tête 57 % → 0 % ; jeu « versions » 0,75 → 0,93, version périmée en tête 30 % → 0 % |
+| Hors périmètre | routeur et abstention (9.4) | re-mesuré sur le pipeline actuel ; point de fonctionnement à choisir. Candidat : précision 0,958 / rappel 0,850 à 3,8 % de fausses abstentions (score dense, `benchmarks/routing/router-dense-v1.json`) |
+
+Chiffres et précautions : [benchmarks/resultats-2026-11.md](benchmarks/resultats-2026-11.md).
 
 Toute nouvelle brique doit servir l'un de ces modes d'échec ou l'expérience de démonstration (mode Démo : comparer RAG classique et raglab sur des questions pièges).
 
@@ -212,10 +214,11 @@ Toute nouvelle brique doit servir l'un de ces modes d'échec ou l'expérience de
 - 9.9b 🚧 (code en revue, mesure à faire) : troisième branche de recherche en parallèle de la recherche dense et de BM25 (départs : l'article cité par la question et ceux des meilleurs passages ; `CITES` un saut), fusion RRF à trois sources, puis re-ranking ; un passage trouvé par renvoi reste groupé avec celui qui le cite. Sans Neo4j, la branche est sautée et la réponse le dit (`graph_notice`). Option `graph` sur la CLI, l'API et l'UI, désactivée par défaut tant qu'elle n'est pas mesurée. Générateur du jeu figé d'environ 100 questions « à renvoi » (`raglab lexml reference-questions`, partage `dev` / `heldout`) ; génération et comparaison appariée sur PIAF, LexML et le jeu « renvois » à lancer sur GPU.
 - 9.9c (plus tard) : profils markdown / documentation et articles de recherche (`Section`, `Topic`, `Source`, `Author`, `Reference`), avec un corpus de test dédié.
 
-**9.10 — Versions des textes 🚧 (code en revue, mesure à faire)** : mode d'échec « versions », voir [versions.md](versions.md)
+**9.10 — Versions des textes ✅ (PR #56, défaut `in_force` depuis la mesure)** : mode d'échec « versions », voir [versions.md](versions.md)
 
 - corpus : Code de la consommation avec tout son historique (1 352 articles réécrits, 1 586 versions abrogées, 321 numéros réutilisés en 2016) ; LexML : 70 lois sur 252 ont des articles réécrits (863 « Redação dada pela »), 79 ont des articles abrogés (1 084 « (Revogado) »), 1 239 articles insérés
-- option `versions` sur la CLI, l'API et l'UI, défaut livré `all` (toutes les versions, comme avant) tant que la mesure n'est pas faite : `in_force` (versions en vigueur aujourd'hui, ou à la date que demande la question, « avant 2016 », lue en français, portugais et anglais), `as_of=AAAA-MM-JJ`, `all` (comme un RAG classique) ; filtre SQL avant le classement sur les métadonnées de Légifrance, version de la date pour l'article cité, passages entièrement « (Revogado) » en fin de liste et dispositions abrogées masquées au modèle sur LexML ; état de chaque passage dans la réponse, le prompt, l'interface et une étape « Versions » du mode pédagogique
+- mesuré le 4 novembre 2026 (pipeline complet, appariée) : jeu « versions » Recall@5 0,750 → 0,930 (+18 / −0), version périmée classée au-dessus de la bonne 30 % → 0 %, réponses reprenant la version périmée 21 % → 1 %, justesse 0,738 → 0,815 mais fidélité 0,935 → 0,895 ; Code de la consommation 0,660 → 0,820 (+49 / −1), version périmée en tête 57 % → 0 % ; PIAF et LexML identiques ; recherche plus lente sur le corpus versionné (80 → 320 ms p50), optimisation à faire
+- option `versions` sur la CLI, l'API et l'UI, défaut `in_force` : versions en vigueur aujourd'hui, ou à la date que demande la question, « avant 2016 », lue en français, portugais et anglais), `as_of=AAAA-MM-JJ`, `all` (comme un RAG classique) ; filtre SQL avant le classement sur les métadonnées de Légifrance, version de la date pour l'article cité, passages entièrement « (Revogado) » en fin de liste et dispositions abrogées masquées au modèle sur LexML ; état de chaque passage dans la réponse, le prompt, l'interface et une étape « Versions » du mode pédagogique
 - générateur du jeu figé d'environ 100 questions pièges (`raglab legifrance version-questions`, suite `legi_versions` : réécrit, numéro réutilisé, article déplacé, question sur le passé ; `trap` et partie `dev` / `heldout`) ; métriques `outdated_hit@k` et `outdated_answer_rate`, comparées question par question par `raglab bench compare` ; génération et mesures à lancer sur GPU
 
 **Corpus français 🚧 (bloc C1 de l'audit)** : voir [corpus-legi.md](corpus-legi.md)

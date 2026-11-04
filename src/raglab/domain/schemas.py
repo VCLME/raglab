@@ -176,6 +176,12 @@ class QueryResponse(BaseModel):
     # Router decisions (language, intent, corpus, abstention) when the
     # request enabled routing; None otherwise.
     routing: RoutingDecision | None = None
+    # Provider that wrote the answer, and why it is not the default writer
+    # when it is its fallback: "llamacpp_unavailable" (down and not
+    # startable), "llamacpp_starting" (still loading) or "llamacpp_busy"
+    # (serving another model, e.g. a benchmark's judge).
+    llm_provider: str | None = None
+    generator_notice: str | None = None
 
 
 class ExperimentCase(BaseModel):

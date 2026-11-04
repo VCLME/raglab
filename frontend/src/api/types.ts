@@ -53,6 +53,32 @@ export interface ConfigResponse {
   default_llm_provider?: string;
 }
 
+/**
+ * Generation settings of a provider. `temperature` is the only value raglab
+ * sends; the others come from llama-server /props when it answers
+ * (`source: "server"`), else null: the server's default, unknown to raglab.
+ */
+export interface GenerationSettings {
+  temperature: number | null;
+  top_p: number | null;
+  /** null with source "server": until the end of the answer. */
+  max_tokens: number | null;
+  context: number | null;
+  sent_by_raglab: string[];
+  source: "raglab" | "server";
+}
+
+/** llama.cpp writer setup (booleans only, never the commands). */
+export interface LlamaCppServerInfo {
+  writer_profile: string;
+  /** Expected /v1/models id (llama-server --alias). */
+  writer_model: string;
+  start_command_configured: boolean;
+  stop_command_configured: boolean;
+  autostart: boolean;
+  profile_options: Record<string, { ctx_size?: number; n_cpu_moe?: number }>;
+}
+
 /** One generation backend of GET /api/llm/models. */
 export interface LlmProvider {
   name: string;
@@ -63,12 +89,60 @@ export interface LlmProvider {
   available: boolean;
   error: string | null;
   models: string[];
+  /** Newer APIs (writer-qwen36): absent on older ones. */
+  generation?: GenerationSettings | null;
+  llamacpp?: LlamaCppServerInfo | null;
+}
+
+/** Default answer writer (Qwen3.6 on llama.cpp) and who answers right now. */
+export interface GeneratorStatus {
+  provider: string;
+  model: string;
+  /** Name shown in the LLM picker ("Qwen3.6"). */
+  label: string;
+  profile: string;
+  /** ready, stopped (starts on the next query), starting, busy, down or failed. */
+  status: string;
+  /** Set when the fallback answers: llamacpp_unavailable, llamacpp_starting, llamacpp_busy. */
+  notice: string | null;
+  active_provider: string;
+  active_model: string | null;
+  active_provider_label: string;
+  fallback_provider: string | null;
+  autostart: boolean;
+  error: string | null;
 }
 
 export interface LlmModelsResponse {
   default_provider: string;
   default_model: string;
   providers: LlmProvider[];
+  /** Absent or null when the default provider is not llama.cpp. */
+  generator?: GeneratorStatus | null;
+}
+
+/** One store of GET /api/databases. */
+export interface DatabaseConnection {
+  kind: "postgres" | "neo4j" | string;
+  label: string;
+  status: "ok" | "unreachable" | string;
+  host: string;
+  port: number;
+  user: string;
+  /** Only the shipped dev default; null when the server keeps it. */
+  password: string | null;
+  password_is_default: boolean;
+  /** Variable that holds the password. */
+  password_env: string;
+  database: string | null;
+  /** Connection string, password masked. */
+  url: string | null;
+  web_url: string | null;
+  deep_link: string | null;
+}
+
+export interface DatabasesResponse {
+  databases: DatabaseConnection[];
 }
 
 export interface OllamaStatus {
@@ -259,6 +333,10 @@ export interface QueryResponse {
   citation?: CitationInfo | null;
   // "skipped_no_gpu" or "cpu" when re-ranking could not use a GPU.
   rerank_notice?: string | null;
+  // Provider that wrote the answer, and why the fallback did instead of the
+  // default writer: llamacpp_unavailable, llamacpp_starting, llamacpp_busy.
+  llm_provider?: string | null;
+  generator_notice?: string | null;
   // Graph branch: whether it ran, why it was skipped, its counters.
   graph?: boolean;
   graph_notice?: string | null;

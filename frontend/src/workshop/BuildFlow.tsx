@@ -83,6 +83,7 @@ export function WorkshopBar() {
             {t("workshop.overview")}
           </NavLink>
           <NavLink to="/workshop/models">{t("workshop.models")}</NavLink>
+          <NavLink to="/workshop/databases">{t("workshop.databases")}</NavLink>
         </nav>
         <label className="workshop-scope">
           <span className="workshop-scope-label">{t("workshop.scope_label")}</span>

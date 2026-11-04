@@ -134,3 +134,88 @@ test("Re-ranking without a GPU says why when the API tells: GPU turned off in th
     page.getByText(/Re-ranking désactivé \(GPU désactivé par la configuration, RAGLAB_RERANK_DEVICE=cpu\)/)
   ).toBeVisible();
 });
+
+test("Models: per-provider generation settings and the llama.cpp writer setup, when the API gives them", async ({ page, api }) => {
+  const [ollama, llamacpp] = data.llmModels.providers;
+  api.set(
+    "GET /api/llm/models",
+    json({
+      ...data.llmModels,
+      default_provider: "llamacpp",
+      default_model: "qwen3.6-35b-a3b",
+      generator: { provider: "llamacpp", model: "qwen3.6-35b-a3b", label: "Qwen3.6", profile: "qwen35b-moe", status: "stopped" },
+      providers: [
+        { ...ollama, generation: { temperature: 0.1, top_p: null, max_tokens: null, context: null, sent_by_raglab: ["temperature"], source: "raglab" }, llamacpp: null },
+        {
+          ...llamacpp,
+          models: ["qwen3.6-35b-a3b"],
+          generation: { temperature: 0.1, top_p: 0.95, max_tokens: null, context: 16384, sent_by_raglab: ["temperature"], source: "server" },
+          llamacpp: {
+            writer_profile: "qwen35b-moe",
+            writer_model: "qwen3.6-35b-a3b",
+            start_command_configured: true,
+            stop_command_configured: true,
+            autostart: true,
+            profile_options: { "qwen35b-moe": { ctx_size: 16384, n_cpu_moe: 30 }, "gemma4-moe": { ctx_size: 8192, n_cpu_moe: 20 } },
+          },
+        },
+      ],
+    })
+  );
+  await page.goto("/workshop/models");
+  const writer = page.getByRole("region", { name: "Rédacteur par défaut" });
+  await expect(writer).toContainText("qwen3.6-35b-a3b");
+  await expect(writer).toContainText("arrêté");
+
+  // The writer's tab opens first.
+  const tabs = page.getByRole("tablist", { name: "Serveurs de modèles" });
+  await expect(tabs.getByRole("tab", { name: /^llama\.cpp/ })).toHaveAttribute("aria-selected", "true");
+  const panel = page.getByRole("tabpanel");
+  const settings = panel.locator(".card").filter({ has: page.getByRole("heading", { name: "Paramètres de génération" }) });
+  await expect(settings).toContainText("0,95");
+  await expect(settings).toContainText("jusqu'à la fin de la réponse");
+  await expect(settings).toContainText("Lus sur le serveur llama.cpp");
+  const setup = panel.locator(".card").filter({ has: page.getByRole("heading", { name: "Rédacteur llama.cpp" }) });
+  await expect(setup).toContainText("qwen35b-moe");
+  await expect(setup).toContainText("servi");
+  await expect(setup.getByRole("row", { name: /gemma4-moe/ })).toContainText("8");
+
+  await tabs.getByRole("tab", { name: /^Ollama/ }).click();
+  await expect(page.getByRole("tabpanel")).toContainText("défaut du serveur, inconnu de raglab");
+});
+
+test("Databases: connection details per store, the password masked until asked, admin deep links", async ({ page, api }) => {
+  await page.goto("/workshop");
+  await page.getByRole("navigation", { name: "Atelier" }).getByRole("link", { name: "Bases de données" }).click();
+  await expect(page).toHaveURL(/\/workshop\/databases$/);
+  await expect(page.getByRole("heading", { name: "Bases de données", level: 2 })).toBeVisible();
+
+  const tabs = page.getByRole("tablist", { name: "Bases de données" });
+  await expect(tabs.getByRole("tab", { name: "PostgreSQL" })).toHaveAttribute("aria-selected", "true");
+  const panel = page.getByRole("tabpanel");
+  await expect(panel).toContainText("postgresql+psycopg://raglab:***@postgres:5432/raglab");
+  // Masked by default, shown on request.
+  await expect(panel.getByText("raglab", { exact: true }).first()).toBeVisible();
+  await expect(panel.getByText("••••••••")).toBeVisible();
+  await panel.getByRole("button", { name: "Afficher" }).click();
+  await expect(panel.getByRole("button", { name: "Masquer" })).toHaveAttribute("aria-pressed", "true");
+  await expect(panel.getByText("••••••••")).toHaveCount(0);
+  await expect(panel.getByRole("link", { name: "Ouvrir Adminer" })).toHaveAttribute(
+    "href",
+    "http://localhost:8080/?pgsql=postgres&username=raglab&db=raglab"
+  );
+
+  await tabs.getByRole("tab", { name: "Neo4j" }).click();
+  await expect(panel).toContainText("injoignable");
+  await expect(panel.getByRole("link", { name: "Ouvrir Neo4j Browser" })).toHaveAttribute("href", /connectURL=/);
+  await expect(panel.getByRole("link", { name: "Graphe" })).toBeVisible();
+
+  // A password that is not the dev default never reaches the page.
+  api.set(
+    "GET /api/databases",
+    json({ databases: data.databases.databases.map((d) => ({ ...d, password: null, password_is_default: false })) })
+  );
+  await page.reload();
+  await expect(page.getByRole("tabpanel")).toContainText("Défini sur le serveur par RAGLAB_DATABASE_URL, non affiché");
+  await expect(page.getByRole("button", { name: "Afficher" })).toHaveCount(0);
+});

@@ -191,7 +191,7 @@ L'état de chaque étape est calculé côté interface (`workshop/state.tsx`, `c
 - Le flux en grand : une carte par étape avec son état, ses chiffres, son rôle et la date du dernier passage.
 - Les corpus du lab (documents, runs) avec « Suivre » pour changer de corpus.
 - **Connexion à l'API** : champ de la cle envoyee dans l'en-tete `X-API-Key`. C'est la cle qui protege l'API raglab elle-meme, a renseigner seulement si le serveur definit `RAGLAB_API_KEY` ; ce n'est pas une cle de fournisseur LLM. Stockee dans `localStorage` de ce navigateur, jamais affichee.
-- Services : API, PostgreSQL, Ollama, Neo4j, le rédacteur par défaut (et son téléchargement s'il manque), Adminer.
+- Services : API, PostgreSQL, Ollama, Neo4j, le rédacteur par défaut (et son téléchargement s'il manque), lien vers Bases de données.
 
 #### Corpus (`/workshop/corpus`)
 
@@ -242,7 +242,18 @@ Le cœur experimental. Deux colonnes :
 - Un onglet par fournisseur, ouvert sur celui du rédacteur par défaut :
   - **Ollama** : serveur (adresse, état, modèle par défaut installé, rôle), paramètres de génération, modèles installés (taille, date, `Supprimer` avec confirmation, téléchargement d'un modèle) et le **banc d'essai** (ancien Playground) : le modèle seul, sans recherche, avec température, top_p, num_predict, num_ctx, seed et options JSON, conversation en bulles et requête envoyée affichée en JSON.
   - **llama.cpp** et **vLLM** (API compatible OpenAI) : adresse, état, modèle servi, rôle, mode de démarrage (llama.cpp : à la demande par l'API via `RAGLAB_LLAMACPP_START_COMMAND` / `RAGLAB_LLAMACPP_STOP_COMMAND` ; vLLM : serveur externe), modèles servis. Un fournisseur absent de `RAGLAB_LLM_PROVIDERS` affiche comment l'activer.
-- Paramètres de génération : l'API n'expose que la température (`/api/config`) ; top-p, tokens max et contexte sont affichés comme réglages du serveur non exposés. Le profil llama.cpp et un démarrage / arrêt manuel ne sont pas exposés non plus.
+- En tête, si le rédacteur par défaut est llama.cpp, son état (`generator.status` de `/api/llm/models` : prêt, arrêté, démarrage, occupé, injoignable, échec) et le fournisseur qui répond en attendant.
+- Paramètres de génération, par fournisseur (`providers[].generation` de `/api/llm/models`) : température (la seule valeur envoyée par raglab, marquée « envoyé par raglab »), top-p, tokens max et contexte. Pour llama.cpp ils sont lus sur le serveur (`/props`, « jusqu'à la fin de la réponse » quand il n'y a pas de limite) ; ailleurs ils restent « défaut du serveur, inconnu de raglab ». Avec une API plus ancienne, seule la température de `/api/config` s'affiche.
+- Onglet llama.cpp, carte « Rédacteur llama.cpp » (`providers[].llamacpp`) : profil du rédacteur, modèle attendu (servi ou non), commandes de démarrage et d'arrêt configurées (oui / non, jamais les commandes), démarrage automatique, et les profils avec leur contexte et leurs couches MoE sur CPU. Aucun bouton de démarrage : il chargerait un modèle sur le GPU.
+
+#### Bases de données (`/workshop/databases`)
+
+Reprend la page de la PR #25. Elle est à côté de Modèles dans la barre de l'Atelier et pas dans une étape, parce que les deux bases servent plusieurs étapes : PostgreSQL + pgvector porte Corpus, Découpage et Vectorisation (documents, chunks, vecteurs, BM25, historique des runs), Neo4j porte Graphe. Un onglet par base (`components/Tabs.tsx`), avec une pastille d'état dans l'onglet :
+
+- **Connexion** : hôte et port vus depuis le navigateur (les noms du réseau compose `postgres` / `neo4j` deviennent `localhost`), utilisateur, mot de passe, base, chaîne de connexion de l'API (mot de passe remplacé par `***`). Boutons « Copier » sur ce qu'on tape dans un formulaire de connexion.
+- **Mot de passe** : `GET /api/databases` ne le renvoie que s'il vaut la valeur de développement de `docker-compose.yml` (`raglab`, `raglab_neo4j`) ; il reste masqué (`••••••••`) jusqu'au clic sur « Afficher » (`aria-pressed`). Tout autre mot de passe reste sur le serveur et la page dit quelle variable le définit (`RAGLAB_DATABASE_URL`, `RAGLAB_NEO4J_PASSWORD`).
+- **Outil d'administration** : état, adresse, étapes dont la base garde les données, et un lien qui ouvre l'outil avec le formulaire rempli. Adminer reçoit `pgsql=postgres&username=…&db=…` (jamais le mot de passe) ; Neo4j Browser reçoit `connectURL=neo4j://user[:mot de passe]@hôte:port`, le mot de passe n'y figurant que s'il est la valeur de développement (l'URL reste dans l'historique du navigateur).
+- Pas d'iframe : Adminer et Neo4j Browser l'interdisent depuis une autre origine.
 
 #### Re-ranking sans GPU
 
@@ -279,6 +290,7 @@ Tous prefixes par `/api`. Swagger disponible sur http://localhost:8000/docs.
 | GET | `/api/graph/status?corpus=…` | État du graphe d'un index run et comptes relus dans Neo4j |
 | GET | `/api/graph/laws?index_run_id=…` | Lois du graphe, les plus reliées d'abord |
 | GET | `/api/graph/neighbourhood?index_run_id=…&law=…` | Loi → articles → renvois, pour Cytoscape |
+| GET | `/api/databases` | PostgreSQL et Neo4j : joignabilité, paramètres de connexion (mot de passe seulement s'il vaut la valeur de développement, chaîne de connexion masquée), liens Adminer / Neo4j Browser pré-remplis |
 
 ## Tests
 

@@ -100,7 +100,11 @@ def stream_query(
     """
     service = QueryService(session, settings)
     # Checked before the stream opens: an unknown provider is a plain 400.
-    llm_provider = resolve_llm_provider(settings, body.llm_provider) if body.generate else None
+    # An empty one stays None: the default writer (or its fallback) is
+    # picked when generation starts, after the sources are sent.
+    if body.generate and body.llm_provider:
+        resolve_llm_provider(settings, body.llm_provider)
+    llm_provider = body.llm_provider or None
     outcome = service.retrieve(
         question=body.question,
         corpus_name=body.corpus,

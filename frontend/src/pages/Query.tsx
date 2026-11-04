@@ -264,7 +264,7 @@ export function Query() {
               </label>
             </FieldRow>
             <FieldRow label={t("versions.label")} hint={t("versions.field_hint")}>
-              <VersionsField value={versions || config?.versions_default || "all"} onChange={setVersions} />
+              <VersionsField value={versions || config?.versions_default || "in_force"} onChange={setVersions} />
             </FieldRow>
             {retrievalMode === "hybrid" ? (
               <>

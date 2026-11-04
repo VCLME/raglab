@@ -1,0 +1,120 @@
+# Override optionnel : le redacteur Qwen3.6-35B-A3B servi par llama.cpp dans
+# Docker, a la place d'Ollama (qui reste le repli). Voir docs/run-and-test.md.
+#
+# Usage (une fois : telecharger le modele, ~16,8 Go, dans un volume nomme) :
+#   docker compose -f docker-compose.yml -f docker-compose.llamacpp.yml run --rm llamacpp-model
+# Puis :
+#   docker compose -f docker-compose.yml -f docker-compose.gpu.yml -f docker-compose.llamacpp.yml --profile app up -d
+#
+# Prerequis :
+#   - GPU Nvidia visible par Docker (memes prerequis que docker-compose.gpu.yml)
+#   - ~17 Go de RAM pour le conteneur : les experts du MoE restent en RAM.
+#     Sous Docker Desktop (WSL2), monter la limite dans %USERPROFILE%\.wslconfig
+#     ([wsl2] memory=26GB), puis `wsl --shutdown`.
+#
+# Reglages (variables d'environnement de l'hote ou .env de Compose) :
+#   RAGLAB_WRITER_GGUF        fichier GGUF dans le volume (defaut Qwen3.6-35B-A3B-UD-Q3_K_XL.gguf)
+#   RAGLAB_WRITER_CTX_SIZE    contexte en tokens (defaut 16384)
+#   RAGLAB_WRITER_N_CPU_MOE   couches d'experts gardees en RAM (defaut 34 : mesure 7,10 Go au pic avec
+#                             le re-ranking en natif ; 32 = plus rapide, 7,74 Go)
+#   RAGLAB_LLAMACPP_IMAGE_TAG image llama.cpp (defaut server-cuda13-b11429 ; server-cuda12-b11429
+#                             pour un pilote CUDA 12). Toujours un numero de build, jamais server-cuda.
+services:
+  llamacpp:
+    image: ghcr.io/ggml-org/llama.cpp:${RAGLAB_LLAMACPP_IMAGE_TAG:-server-cuda13-b11429}
+    container_name: raglab-llamacpp
+    restart: unless-stopped
+    # Publie sur la boucle locale seulement (8080 est pris par Adminer) ;
+    # l'API le joint par le reseau Compose.
+    ports:
+      - "127.0.0.1:8090:8080"
+    volumes:
+      - llamacpp_models:/models
+    command:
+      - -m
+      - /models/${RAGLAB_WRITER_GGUF:-Qwen3.6-35B-A3B-UD-Q3_K_XL.gguf}
+      - --alias
+      - qwen3.6-35b-a3b
+      - -c
+      - "${RAGLAB_WRITER_CTX_SIZE:-16384}"
+      - --n-cpu-moe
+      - "${RAGLAB_WRITER_N_CPU_MOE:-34}"
+      - -ngl
+      - all
+      - -np
+      - "1"
+      - -ub
+      - "1024"
+      - -b
+      - "2048"
+      - -fa
+      - "on"
+      - -ctk
+      - q8_0
+      - -ctv
+      - q8_0
+      - --jinja
+      - --reasoning
+      - "off"
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8080"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      # Chargement de ~17 Go de poids depuis le volume.
+      start_period: 300s
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  # Telechargement unique du GGUF dans le volume ; ne demarre pas avec `up`.
+  llamacpp-model:
+    image: curlimages/curl:8.11.1
+    volumes:
+      - llamacpp_models:/models
+    environment:
+      GGUF: ${RAGLAB_WRITER_GGUF:-Qwen3.6-35B-A3B-UD-Q3_K_XL.gguf}
+      GGUF_URL: ${RAGLAB_WRITER_GGUF_URL:-https://huggingface.co/unsloth/Qwen3.6-35B-A3B-GGUF/resolve/main/Qwen3.6-35B-A3B-UD-Q3_K_XL.gguf}
+    user: root
+    entrypoint:
+      - sh
+      - -c
+      - test -f "/models/$$GGUF" && echo "deja present" || (curl -fL --retry 5 -C - -o "/models/$$GGUF.part" "$$GGUF_URL" && mv "/models/$$GGUF.part" "/models/$$GGUF")
+    profiles:
+      - setup
+
+  # Le redacteur tourne dans son conteneur : l'API ne le demarre pas
+  # (RAGLAB_LLAMACPP_AUTOSTART=false) et repond avec Ollama tant qu'il charge.
+  api:
+    environment:
+      RAGLAB_LLM_PROVIDERS: llamacpp,ollama
+      RAGLAB_DEFAULT_LLM_PROVIDER: llamacpp
+      RAGLAB_LLAMACPP_BASE_URL: http://llamacpp:8080/v1
+      RAGLAB_LLAMACPP_AUTOSTART: "false"
+      RAGLAB_WRITER_MODEL: qwen3.6-35b-a3b
+    depends_on:
+      llamacpp:
+        condition: service_started
+
+  app:
+    environment:
+      RAGLAB_LLM_PROVIDERS: llamacpp,ollama
+      RAGLAB_DEFAULT_LLM_PROVIDER: llamacpp
+      RAGLAB_LLAMACPP_BASE_URL: http://llamacpp:8080/v1
+      RAGLAB_LLAMACPP_AUTOSTART: "false"
+      RAGLAB_WRITER_MODEL: qwen3.6-35b-a3b
+    depends_on:
+      llamacpp:
+        condition: service_started
+
+volumes:
+  llamacpp_models:
+    name: raglab_llamacpp_models
