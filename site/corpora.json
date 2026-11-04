@@ -34,5 +34,14 @@
     "runs": [null, "refs-full-v1", "refs-graph-v1"],
     "brick": "+ citation graph (9.9)",
     "types": {}
+  },
+  {
+    "suite": "br_expat",
+    "name": "Brazil expat (real questions)",
+    "about": "30 real questions of a French national settling in Brazil (immigration, company tax, INSS, personal tax) asked in French on 19 Brazilian federal texts, plus 8 colloquial paraphrases",
+    "failure": "cross-language, everyday words",
+    "runs": ["brexpat-naive-v1", "brexpat-full-v1", null],
+    "brick": "no dedicated brick yet",
+    "types": {"company_tax": "company tax", "paraphrase": "colloquial paraphrases"}
   }
 ]

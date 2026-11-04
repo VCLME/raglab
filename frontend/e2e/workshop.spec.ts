@@ -56,7 +56,7 @@ test("Former Expert routes redirect to the Atelier", async ({ page }) => {
 test("Tabs: one tablist, arrow keys move the selection, the indicator sits on the rule", async ({ page }) => {
   await page.goto("/workshop/corpus");
   const tabs = page.getByRole("tablist", { name: "Sources du corpus" });
-  await expect(tabs.getByRole("tab")).toHaveText(["Corpus1", "Dossier local", "Jeux de référence", "LexML Brasil", "Légifrance et EUR-Lex"]);
+  await expect(tabs.getByRole("tab")).toHaveText(["Corpus1", "Dossier local", "Jeux de référence", "LexML Brasil", "Sources officielles"]);
   const first = tabs.getByRole("tab", { name: /^Corpus/ });
   await expect(first).toHaveAttribute("aria-selected", "true");
   await expect(page.getByRole("tabpanel")).toContainText("constitution_fr");
@@ -67,14 +67,14 @@ test("Tabs: one tablist, arrow keys move the selection, the indicator sits on th
   await expect(folder).toHaveAttribute("aria-selected", "true");
   await expect(folder).toBeFocused();
   await page.keyboard.press("End");
-  await expect(tabs.getByRole("tab", { name: "Légifrance et EUR-Lex" })).toHaveAttribute("aria-selected", "true");
+  await expect(tabs.getByRole("tab", { name: "Sources officielles" })).toHaveAttribute("aria-selected", "true");
   await expect(page.getByRole("tabpanel")).toContainText("raglab legifrance fetch --code consommation");
   await expect(page.getByRole("tabpanel")).toContainText("raglab eurlex fetch");
 
   // The 2px indicator ends on the list's bottom edge, where the 1px rule is,
   // and spans the selected label exactly.
   const bar = tabs.locator(".slide-indicator");
-  const selected = tabs.getByRole("tab", { name: "Légifrance et EUR-Lex" });
+  const selected = tabs.getByRole("tab", { name: "Sources officielles" });
   await expect
     .poll(async () => {
       const [b, l, s] = [await bar.boundingBox(), await tabs.boundingBox(), await selected.boundingBox()];
