@@ -49,6 +49,8 @@ export interface ConfigResponse {
   citation_resolver?: boolean;
   /** Default of the versions option: in_force, all or as_of=YYYY-MM-DD. */
   versions_default?: string;
+  /** Default of the query-translation option (RAGLAB_QUERY_TRANSLATION). */
+  query_translation?: boolean;
   llm_providers?: string[];
   default_llm_provider?: string;
 }
@@ -342,6 +344,8 @@ export interface QueryResponse {
   graph_notice?: string | null;
   graph_stats?: Record<string, number>;
   versions?: VersionsInfo | null;
+  // Question translated into the corpus language for BM25 (query_translation option).
+  query_translation?: QueryTranslationInfo | null;
   answer: string | null;
   elapsed_ms: number;
   filters: unknown;
@@ -505,4 +509,14 @@ export interface GraphNeighbourhood {
   nodes: GraphNode[];
   edges: GraphEdge[];
   isolated_articles: number;
+}
+
+export interface QueryTranslationInfo {
+  text: string;
+  source_language: string;
+  target_language: string | null;
+  translated: boolean;
+  elapsed_ms: number;
+  // same_language, unknown_language, writer_unavailable, failed
+  notice?: string;
 }

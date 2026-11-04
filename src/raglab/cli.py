@@ -207,6 +207,11 @@ def bench_all(
         "--generator-profile",
         help="Profil llama.cpp a demarrer pour la generation (defaut : RAGLAB_WRITER_MODEL_PROFILE).",
     ),
+    query_translation: bool | None = typer.Option(
+        None,
+        "--query-translation/--no-query-translation",
+        help="Traduire la question dans la langue du corpus (redacteur llama.cpp) pour le BM25 seulement. Defaut: RAGLAB_QUERY_TRANSLATION.",
+    ),
 ) -> None:
     """Regenerer les chiffres de benchmark (PIAF + LexML, Code de la consommation sur demande) dans benchmarks/results/."""
     from raglab.benchmarks.suite import render_markdown, run_all
@@ -225,6 +230,7 @@ def bench_all(
         graph=graph,
         versions=versions,
         generator=GeneratorConfig(provider=generator_provider, model=generator_model, profile=generator_profile),
+        query_translation=query_translation,
     )
     output = Path("benchmarks/results") / f"{label}.json"
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -280,12 +286,22 @@ def bench_compare(
     before: str = typer.Argument(..., help="Run de reference (ex. baseline-v1)."),
     after: str = typer.Argument(..., help="Run compare (ex. hybrid-v1)."),
     k: int = typer.Option(5, "--k", help="Recall@k compare."),
+    suites: list[str] | None = typer.Option(
+        None,
+        "--suites",
+        help="Paire de suites a comparer, suite_avant:suite_apres (ex. lexml_fr_pt:lexml_fr, memes questions en deux langues). Defaut: les suites de meme nom.",
+    ),
 ) -> None:
     """Comparer deux runs question par question (McNemar sur le recall, bootstrap apparie sur le MRR)."""
     from raglab.benchmarks.compare import compare_runs, render
 
+    pairs: list[tuple[str, str]] | None = None
+    if suites:
+        if any(pair.count(":") != 1 for pair in suites):
+            raise typer.BadParameter("Format attendu: suite_avant:suite_apres.")
+        pairs = [(before_suite, after_suite) for before_suite, after_suite in (pair.split(":") for pair in suites)]
     load = lambda name: json.loads((Path("benchmarks/results") / f"{name}.json").read_text(encoding="utf-8"))  # noqa: E731
-    typer.echo(render(compare_runs(load(before), load(after), k=k), k=k))
+    typer.echo(render(compare_runs(load(before), load(after), k=k, pairs=pairs), k=k))
 
 
 @bench_app.command("report")
@@ -1091,6 +1107,12 @@ def query(
         help="Router la question (langue, intention, corpus si --corpus est absent) et s'abstenir "
         "quand le meilleur passage est trop faible.",
     ),
+    query_translation: bool | None = typer.Option(
+        None,
+        "--query-translation/--no-query-translation",
+        help="Question dans une autre langue que le corpus : la traduire (redacteur llama.cpp) pour le BM25 seulement. "
+        "Defaut: RAGLAB_QUERY_TRANSLATION.",
+    ),
 ) -> None:
     filters = build_retrieval_filters(
         document_ids=document_ids,
@@ -1117,6 +1139,7 @@ def query(
                 routing=routing,
                 graph=graph,
                 versions=versions,
+                query_translation=query_translation,
             )
             final: dict = {}
             for event, data in service.stream_answer(outcome, llm_model=llm_model, llm_provider=provider):
@@ -1145,6 +1168,7 @@ def query(
             llm_model=llm_model,
             routing=routing,
             llm_provider=provider,
+            query_translation=query_translation,
         )
     typer.echo(response.model_dump_json(indent=2))
 
@@ -1369,10 +1393,25 @@ def experiment_routing(
         "--citations/--no-citations",
         help="Resolution des citations juridiques (defaut: RAGLAB_CITATION_RESOLVER).",
     ),
+    query_translation: bool | None = typer.Option(
+        None,
+        "--query-translation/--no-query-translation",
+        help="Traduction de la question pour le BM25 quand sa langue differe du corpus (defaut: RAGLAB_QUERY_TRANSLATION).",
+    ),
+    in_scope: list[str] | None = typer.Option(
+        None,
+        "--in-scope",
+        help="Jeux de questions in-scope (repetable) : piaf, lexml_fulltext, legi_consommation, eurlex_compliance, "
+        "ou lexml_fr (questions francaises sur LexML, jamais dans le tirage par defaut). Defaut : les jeux par defaut.",
+    ),
 ) -> None:
     """Mesurer le routeur : abstention (precision / rappel / F1, courbe), intention, langue, corpus, latence."""
-    from raglab.experiments.routing import RoutingExperimentService, render_markdown
+    from raglab.experiments.routing import IN_SCOPE_SETS, RoutingExperimentService, named_sets, render_markdown
 
+    try:
+        sets = named_sets(in_scope) if in_scope else IN_SCOPE_SETS
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc)) from exc
     with session_scope() as session:
         report = RoutingExperimentService(session).run(
             corpora=corpus or None,
@@ -1384,6 +1423,8 @@ def experiment_routing(
             retrieval_mode=retrieval_mode,
             rerank=rerank,
             citations=citations,
+            query_translation=query_translation,
+            in_scope_sets=sets,
         )
     summary = {k: v for k, v in report["summary"].items() if k != "curve"}
     typer.echo(json.dumps({"report_path": report["report_path"], "summary": summary}, indent=2, ensure_ascii=False))

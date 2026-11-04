@@ -1,0 +1,1044 @@
+{
+  "label": "lexml-fr-qt-v1",
+  "strategy": "traditional",
+  "retrieval_mode": "hybrid",
+  "rerank": true,
+  "graph": false,
+  "versions": "in_force",
+  "query_translation": true,
+  "rerank_model": "BAAI/bge-reranker-v2-m3",
+  "rerank_candidates": 40,
+  "top_k": 5,
+  "ragas_limit": null,
+  "environment": {
+    "date": "2026-11-04T12:49:50+00:00",
+    "git_commit": "3bd0ec3",
+    "git_dirty": true,
+    "os": "Windows-11-10.0.26300-SP0",
+    "cpu": "Intel64 Family 6 Model 154 Stepping 3, GenuineIntel",
+    "cpu_count": 20,
+    "ram": "32 GiB",
+    "gpu": "NVIDIA GeForce RTX 3070 Ti Laptop GPU, 8192 MiB, 595.79",
+    "python": "3.12.10",
+    "torch": "2.11.0+cu128",
+    "transformers": "5.5.4",
+    "postgres": "16.13 (Debian 16.13-1.pgdg12+1)",
+    "pgvector": "0.8.2",
+    "embedding_model": "transformers:intfloat/multilingual-e5-small (cpu)",
+    "distance": "cosine",
+    "generation_model": "ollama:qwen2.5:7b (845dbda0ea48)",
+    "judge": null,
+    "command": "raglab bench all --label lexml-fr-qt-v1 --suite lexml_fr --ragas-limit 0 --query-translation"
+  },
+  "suites": [
+    {
+      "suite": "lexml_fr",
+      "language": "pt",
+      "corpus_name": "bench_lexml_pt",
+      "index_run_id": "63b704a5-04e9-494d-ac6b-9e813a8a9e1c",
+      "chunks": 6075,
+      "documents": 252,
+      "total_cases": 100,
+      "retrieval_mode": "hybrid",
+      "lexical_weight": 0.5,
+      "rrf_k": 60,
+      "rerank": true,
+      "citations": null,
+      "graph": null,
+      "graph_notices": null,
+      "versions": null,
+      "query_translation": true,
+      "query_translation_outcomes": {
+        "translated": 100
+      },
+      "summary": {
+        "recall@1": 0.73,
+        "recall@5": 0.89,
+        "recall@10": 0.91,
+        "precision@1": 0.73,
+        "precision@5": 0.1839999999999997,
+        "precision@10": 0.09499999999999983,
+        "mrr": 0.793357142857143,
+        "mean_first_relevant_rank": 1.4945054945054945,
+        "recall@1_ci_low": 0.64,
+        "recall@1_ci_high": 0.81,
+        "recall@5_ci_low": 0.82,
+        "recall@5_ci_high": 0.95,
+        "recall@10_ci_low": 0.84,
+        "recall@10_ci_high": 0.96,
+        "mrr_ci_low": 0.717,
+        "mrr_ci_high": 0.8608,
+        "latency_dense_p50_ms": 42.305,
+        "latency_dense_p95_ms": 51.402,
+        "latency_embed_p50_ms": 33.766,
+        "latency_embed_p95_ms": 47.519,
+        "latency_fusion_p50_ms": 0.941,
+        "latency_fusion_p95_ms": 1.255,
+        "latency_lexical_p50_ms": 62.535,
+        "latency_lexical_p95_ms": 105.468,
+        "latency_query_p50_ms": 3202.049,
+        "latency_query_p95_ms": 4527.489,
+        "latency_rerank_p50_ms": 671.058,
+        "latency_rerank_p95_ms": 855.86,
+        "latency_retrieval_p50_ms": 2481.173,
+        "latency_retrieval_p95_ms": 3795.572,
+        "latency_translation_p50_ms": 2374.807,
+        "latency_translation_p95_ms": 3663.996,
+        "latency_versions_p50_ms": 4.693,
+        "latency_versions_p95_ms": 5.464,
+        "rerank_cache_hit_rate": 0.0,
+        "outdated_hit@1": 0.0,
+        "outdated_hit@5": 0.0,
+        "outdated_hit@10": 0.0
+      },
+      "by_type": {
+        "entity": {
+          "cases": 48,
+          "recall@1": 0.8125,
+          "recall@5": 0.9375,
+          "recall@10": 0.9375,
+          "mrr": 0.8600694444444444,
+          "outdated_hit@1": 0.0,
+          "outdated_hit@5": 0.0,
+          "outdated_hit@10": 0.0
+        },
+        "paraphrase": {
+          "cases": 52,
+          "recall@1": 0.6538461538461539,
+          "recall@5": 0.8461538461538461,
+          "recall@10": 0.8846153846153846,
+          "mrr": 0.7317765567765567,
+          "outdated_hit@1": 0.0,
+          "outdated_hit@5": 0.0,
+          "outdated_hit@10": 0.0
+        }
+      },
+      "report_path": "data\\reports\\recall-lexml_fr-20261104-125616.json",
+      "experiment_run_id": "b58bfca3-a6f0-4dd6-9ec1-00e1b1d9d569",
+      "cases": [
+        {
+          "id": "lexml-0003",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0007",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0009",
+          "type": "entity",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0010",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "lexml-0013",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0015",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0016",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0018",
+          "type": "entity",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.25,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0019",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0022",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0036",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0037",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0039",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0040",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0042",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0046",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0049",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0051",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0054",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0058",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0060",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0064",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0067",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.2,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0069",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0070",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "lexml-0076",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "lexml-0078",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0079",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0081",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0084",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0085",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0091",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 1,
+          "reciprocal_rank": 0.14285714285714285,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0093",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0094",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0097",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "lexml-0099",
+          "type": "entity",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "lexml-0105",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0114",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0115",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0118",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0120",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0123",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0127",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0130",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "lexml-0133",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0136",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0139",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0141",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0144",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0145",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0147",
+          "type": "entity",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0148",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0150",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0151",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.2
+        },
+        {
+          "id": "lexml-0156",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0157",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0165",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0166",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0168",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0174",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0177",
+          "type": "entity",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.2,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0180",
+          "type": "entity",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0183",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0184",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0186",
+          "type": "entity",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0187",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0193",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0196",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.2,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0201",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0208",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0210",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0219",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0220",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "lexml-0222",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0231",
+          "type": "entity",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "lexml-0232",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0234",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0237",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0244",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 1,
+          "reciprocal_rank": 0.14285714285714285
+        },
+        {
+          "id": "lexml-0246",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0249",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0252",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0253",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "lexml-0259",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0261",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0264",
+          "type": "entity",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0268",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0271",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0273",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0274",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0277",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0279",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0280",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0282",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0286",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0288",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0289",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0295",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0298",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0300",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        }
+      ]
+    }
+  ]
+}

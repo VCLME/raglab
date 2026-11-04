@@ -166,6 +166,10 @@ class QueryResponse(BaseModel):
     # question's words it was read from; `scope` says what it could act on
     # ("metadata", "markers", "none") and `demoted` how many chunks moved.
     versions: dict[str, Any] | None = None
+    # Question translated into the corpus language for BM25 (query_translation
+    # option): text, source / target language, translated, elapsed_ms and,
+    # when it was not translated, why (same_language, writer_unavailable...).
+    query_translation: dict[str, Any] | None = None
     filters: RetrievalFilters | None = None
     answer: str | None = None
     elapsed_ms: float = 0.0

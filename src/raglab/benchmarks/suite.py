@@ -135,6 +135,27 @@ def default_suites(settings: Settings, repo_root: Path) -> list[Suite]:
             manifest_path=repo_root / "benchmarks" / "lexml_fulltext" / "corpus_manifest.json",
             default=False,
         ),
+        # Cross-language: French questions on the Portuguese LexML corpus, and
+        # the same cases with their original Portuguese question, for the
+        # paired comparison (`raglab bench compare --suites lexml_fr_pt:lexml_fr`).
+        Suite(
+            name="lexml_fr",
+            language="pt",
+            corpus_name="bench_lexml_pt",
+            corpus_dir=settings.lexml_fulltext_dir / "corpus",
+            dataset_path=repo_root / "benchmarks" / "lexml_fr" / "ground_truth.jsonl",
+            manifest_path=repo_root / "benchmarks" / "lexml_fulltext" / "corpus_manifest.json",
+            default=False,
+        ),
+        Suite(
+            name="lexml_fr_pt",
+            language="pt",
+            corpus_name="bench_lexml_pt",
+            corpus_dir=settings.lexml_fulltext_dir / "corpus",
+            dataset_path=repo_root / "benchmarks" / "lexml_fr" / "ground_truth_pt.jsonl",
+            manifest_path=repo_root / "benchmarks" / "lexml_fulltext" / "corpus_manifest.json",
+            default=False,
+        ),
     ]
 
 
@@ -160,7 +181,7 @@ def _ensure_corpus(suite: Suite, settings: Settings) -> None:
         from raglab.benchmarks.piaf import PIAFLoader
 
         PIAFLoader().download(suite.corpus_dir.parent, limit=500, sample_seed=42)
-    elif suite.name in ("lexml_fulltext", "lexml_references"):
+    elif suite.name in ("lexml_fulltext", "lexml_references", "lexml_fr", "lexml_fr_pt"):
         from raglab.lexml.fulltext import FullTextCollector
 
         FullTextCollector(settings).collect(
@@ -319,6 +340,7 @@ def run_suite(
     graph: bool | None = None,
     versions: str | None = None,
     generator: GeneratorConfig | None = None,
+    query_translation: bool | None = None,
 ) -> dict[str, Any]:
     from raglab.db import session_scope
     from raglab.experiments.recall import RecallBenchmarkService
@@ -393,6 +415,7 @@ def run_suite(
                 graph=graph,
                 versions=versions,
                 generator=generator,
+                query_translation=query_translation,
             )
         finally:
             service.close()
@@ -412,6 +435,12 @@ def run_suite(
         "graph": report.get("graph"),
         "graph_notices": report.get("graph_notices"),
         "versions": report.get("versions"),
+        **({"query_translation": report["query_translation"]} if report.get("query_translation") is not None else {}),
+        **(
+            {"query_translation_outcomes": report["query_translation_outcomes"]}
+            if report.get("query_translation_outcomes")
+            else {}
+        ),
         **({"graph_build": graph_build.get("status")} if graph_build else {}),
         "summary": report["summary"],
         "by_type": report.get("by_type") or {},
@@ -443,6 +472,7 @@ def run_all(
     graph: bool | None = None,
     versions: str | None = None,
     generator: GeneratorConfig | None = None,
+    query_translation: bool | None = None,
 ) -> dict[str, Any]:
     from raglab.db import initialize_database, session_scope
 
@@ -475,6 +505,7 @@ def run_all(
             graph=graph,
             versions=versions,
             generator=generator,
+            query_translation=query_translation,
         )
         for suite in selected
     ]
@@ -485,6 +516,7 @@ def run_all(
         "rerank": do_rerank,
         "graph": settings.graph_retrieval if graph is None else graph,
         "versions": settings.versions_default if versions is None else versions,
+        "query_translation": settings.query_translation if query_translation is None else query_translation,
         **({"generator": generator.label(settings)} if generator and generator.deferred else {}),
         **(
             {"rerank_model": settings.rerank_model_name, "rerank_candidates": settings.rerank_candidates}
@@ -529,6 +561,10 @@ def _retrieval_label(run: dict[str, Any], suite: dict[str, Any] | None) -> str:
         mode += f" + rerank ({run.get('rerank_candidates', '?')})"
     if (suite or {}).get("graph", run.get("graph")):
         mode += " + graph"
+    # On by default since lexml-fr-qt-v1: named only where a question was
+    # actually translated (same-language suites make no writer call).
+    if ((suite or {}).get("query_translation_outcomes") or {}).get("translated"):
+        mode += " + query translation"
     versions = (suite or {}).get("versions") or run.get("versions")
     if versions and versions != "in_force":
         mode += f" + versions={versions}"
@@ -553,6 +589,8 @@ def render_markdown(results: list[dict[str, Any]]) -> str:
         ("dont BM25 p50", "latency_lexical_p50_ms", _ms),
         ("dont BM25 p95", "latency_lexical_p95_ms", _ms),
         ("dont fusion RRF p50", "latency_fusion_p50_ms", _ms),
+        ("dont traduction de la question p50", "latency_translation_p50_ms", _ms),
+        ("dont traduction de la question p95", "latency_translation_p95_ms", _ms),
         ("dont re-ranking p50", "latency_rerank_p50_ms", _ms),
         ("dont re-ranking p95", "latency_rerank_p95_ms", _ms),
         ("Cache des scores de re-ranking (taux de hit)", "rerank_cache_hit_rate", _fmt),

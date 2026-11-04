@@ -22,6 +22,9 @@ def _isolated_reports_dir(tmp_path, monkeypatch):
     monkeypatch.setenv("RAGLAB_DEFAULT_RETRIEVAL_MODE", "dense")
     monkeypatch.setenv("RAGLAB_DEFAULT_RERANK", "false")
     monkeypatch.setenv("RAGLAB_CITATION_RESOLVER", "false")
+    # Query translation calls the llama.cpp writer: tested explicitly in
+    # test_query_translation.py, the shipped default in test_defaults.py.
+    monkeypatch.setenv("RAGLAB_QUERY_TRANSLATION", "false")
     # Indexing tests never reach Neo4j unless they ask for the graph.
     monkeypatch.setenv("RAGLAB_GRAPH_BUILD_ON_INDEX", "false")
     # Answers go to (mocked) Ollama: the shipped llama.cpp writer would probe

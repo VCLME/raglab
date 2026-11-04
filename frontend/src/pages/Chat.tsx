@@ -8,6 +8,7 @@ import type {
   IndexRunSummary,
   LlmModelsResponse,
   QueryResponse,
+  QueryTranslationInfo,
   RetrievalMode,
   RetrievedChunk,
   RoutingDecision,
@@ -79,6 +80,8 @@ interface ChatTurn {
   graph_stats?: Record<string, number> | null;
   // Version policy applied (versions option).
   versions?: VersionsInfo | null;
+  // Question translated into the corpus language for BM25 (query_translation).
+  query_translation?: QueryTranslationInfo | null;
 }
 
 function newTurnId(): string {
@@ -242,6 +245,7 @@ export function Chat() {
       graph_notice: r.graph_notice ?? null,
       graph_stats: r.graph_stats ?? null,
       versions: r.versions ?? null,
+      query_translation: r.query_translation ?? null,
       routing: r.routing ?? null,
     });
     try {
@@ -673,6 +677,11 @@ function ChatTurnView({
             </p>
           ) : null}
           <div className="answer-meta">
+            {turn.query_translation?.translated ? (
+              <span title={turn.query_translation.text}>
+                {t("chat.meta_translated", { lang: turn.query_translation.target_language })}
+              </span>
+            ) : null}
             {turn.retrieval_mode ? (
               <span>
                 {t("chat.meta_mode")} <code>{turn.retrieval_mode}{turn.rerank ? " + rerank" : ""}</code>

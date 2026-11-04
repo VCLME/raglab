@@ -468,6 +468,32 @@ def test_query_with_routing_uses_hybrid_and_rerank_when_it_answers(routed_env):
     assert routed_env.calls.count("Que dit la loi ?") == 1
 
 
+def test_routed_question_is_translated_for_bm25_into_the_routed_corpus_language(routed_env):
+    from raglab.retrieval.translation import Translation
+
+    service = _service([_chunk(0.9)], routing_abstention_threshold=0.8, query_translation=True)
+    run = service._resolve_index_run.return_value
+    run.corpus = SimpleNamespace(language="pt")
+    service.lexical_store = Mock()
+    service.lexical_store.search.return_value = ([], ["lei"])
+    service.reranker = Mock()
+    service.reranker.rerank.side_effect = lambda q, chunks, top_k: (chunks[:top_k], {})
+    service.translator = Mock()
+    service.translator.translate.return_value = Translation("O que diz a lei?", "fr", "pt", True, 900.0)
+    with patch("raglab.retrieval.service.rerank_gpu_available", return_value=True):
+        response = service.query(question="Que dit la loi ?", routing=True, retrieval_mode="hybrid", rerank=True)
+    # Routed first, then translated into the routed corpus's language, for BM25 only.
+    assert response.routing.corpus.corpus_name == "lexml"
+    service.translator.translate.assert_called_once_with("Que dit la loi ?", "pt")
+    assert service.lexical_store.search.call_args.kwargs["question"] == "O que diz a lei?"
+    assert service.reranker.rerank.call_args.args[0] == "Que dit la loi ?"
+    # Abstention reads the dense cosine of the original question.
+    assert response.routing.abstention.abstain is False
+    assert response.routing.abstention.best_score == pytest.approx(0.9)
+    assert response.answer == "Réponse générée"
+    assert service.generator.generate_answer.call_args.args[0] == "Que dit la loi ?"
+
+
 def test_query_without_routing_is_unchanged(routed_env):
     service = _service([_chunk(0.1)], routing_abstention_threshold=0.8)
     response = service.query(question="Que dit la loi ?", corpus_name="lexml")
@@ -677,3 +703,13 @@ def test_load_calibration_excludes_the_evaluated_questions(tmp_path):
     cases = load_calibration(in_scope_sets=sets, exclude_ids={"q0", "q1"}, size=20, seed=3)
     assert len(cases) == 8
     assert {c.id for c in cases}.isdisjoint({"q0", "q1"})
+
+
+def test_french_lexml_set_is_opt_in_for_the_routing_experiment():
+    from raglab.experiments.routing import IN_SCOPE_SETS, named_sets
+
+    assert "lexml_fr" not in {s.name for s in IN_SCOPE_SETS}
+    (french,) = named_sets(["lexml_fr"])
+    assert (french.corpus_name, french.language) == ("bench_lexml_pt", "fr")
+    with pytest.raises(ValueError):
+        named_sets(["nope"])
