@@ -263,7 +263,9 @@ def test_revoked_only_chunks_move_last_but_a_cited_article_stays():
 
 
 def test_prompt_tells_the_model_the_version_state():
-    current = prompt_line(metadata_version(_l121_21(4), TODAY))
+    # The reference date is only mentioned when it is not today: use the real
+    # date here so the expected line does not depend on when the test runs.
+    current = prompt_line(metadata_version(_l121_21(4), date.today()))
     assert current == "Statut : version de l'article L121-21 en vigueur depuis le 1er juillet 2016."
     old = prompt_line(metadata_version(_l121_21(3), TODAY))
     assert "ancienne version de l'article L121-21 (du 8 août 2015 au 1er juillet 2016)" in old
