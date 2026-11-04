@@ -153,7 +153,10 @@ QUESTIONS: list[dict[str, Any]] = [
                 "lei_9249_1995",
                 "15",
                 ["III - trinta e dois por cento, para as atividades de", "a) prestação de serviços em geral"],
-            )
+            ),
+            # The IN restates the rates (art. 33) and applies them to lucro presumido (art. 215).
+            ("in_rfb_1700_2017", "33", ["IV - 32% (trinta e dois por cento) sobre a receita bruta auferida"]),
+            ("in_rfb_1700_2017", "215", ["O lucro presumido será determinado mediante aplicação dos percentuais"]),
         ],
     },
     {
@@ -166,7 +169,8 @@ QUESTIONS: list[dict[str, Any]] = [
                 "lei_9249_1995",
                 "20",
                 ["I - 32% (trinta e dois por cento) para a receita bruta decorrente das atividades"],
-            )
+            ),
+            ("in_rfb_1700_2017", "34", ["§ 1º O percentual de que trata o caput será de 32%"]),
         ],
     },
     {
@@ -177,6 +181,7 @@ QUESTIONS: list[dict[str, Any]] = [
         "refs": [
             ("lei_9249_1995", "3", ["§ 1º A parcela do lucro real, presumido ou arbitrado, que exceder"]),
             ("lei_9430_1996", "4", ["§ 1º A parcela do lucro real, presumido ou arbitrado, que exceder"]),
+            ("in_rfb_1700_2017", "29", ["§ 1º A parcela do lucro real, presumido ou arbitrado que exceder"]),
         ],
     },
     {
@@ -186,6 +191,7 @@ QUESTIONS: list[dict[str, Any]] = [
         "answer": "Au trimestre (périodes closes au 31 mars, 30 juin, 30 septembre et 31 décembre), en quota unique le mois suivant ou, au choix, en trois quotas mensuelles.",
         "refs": [
             ("lei_9430_1996", "1", ["por períodos de apuração trimestrais"]),
+            ("in_rfb_1700_2017", "31", ["serão determinadas em períodos de apuração trimestrais"]),
             (
                 "lei_9430_1996",
                 "5",
@@ -255,6 +261,8 @@ QUESTIONS: list[dict[str, Any]] = [
                 ],
             ),
             ("lei_15270_2025", "6-A", ["em montante superior a R$ 50.000,00 (cinquenta mil reais) em um mesmo mês"]),
+            # The new wording of Lei 9.249 art. 10, quoted in the amending law.
+            ("lei_15270_2025", "“Art. 10.", ["não ficarão sujeitos à incidência do imposto"]),
         ],
     },
     {
@@ -472,22 +480,33 @@ QUESTIONS: list[dict[str, Any]] = [
 ]
 
 _NEXT_ARTICLE = re.compile(r"\n(?:Art\.\s*\.?\s*\d|Artigo\s+\d)")
+_NEXT_QUOTED_ARTICLE = re.compile(r"\n“?Art\.\s*\d")
 
 
-def article_span(text: str, article: str) -> tuple[int, int]:
-    """Offsets of an article: its heading line to the next article heading."""
+def article_span(text: str, article: str, anchor: str | None = None) -> tuple[int, int]:
+    """Offsets of an article: its heading line to the next article heading.
+
+    The first heading whose article contains `anchor` wins (an amending law
+    can quote the same article number of several laws)."""
+    following_re = _NEXT_ARTICLE
     if article.startswith("Artigo "):
         heading = re.compile(rf"(?:^|\n)Artigo\s+{re.escape(article.split()[1])}\s*\n")
+    elif article.startswith("“"):
+        # New wording quoted inside an amending law ("“Art. 10. ..."), up
+        # to the next article, quoted or not.
+        heading = re.compile(rf"(?:^|\n){re.escape(article)}\s")
+        following_re = _NEXT_QUOTED_ARTICLE
     else:
         number, _, letter = article.partition("-")
         suffix = rf"\s*[º°o]?\s*-\s*{letter}" if letter else ""
         heading = re.compile(rf"(?:^|\n)Art\.\s*\.?\s*{re.escape(number)}{suffix}\s*(?:[º°o]|\.|\s)(?![\d-])")
-    match = heading.search(text)
-    if match is None:
-        raise ValueError(f"article {article} not found")
-    start = match.start() + (1 if text[match.start()] == "\n" else 0)
-    following = _NEXT_ARTICLE.search(text, match.end())
-    return start, following.start() if following else len(text)
+    for match in heading.finditer(text):
+        start = match.start() + (1 if text[match.start()] == "\n" else 0)
+        following = following_re.search(text, match.end())
+        end = following.start() if following else len(text)
+        if anchor is None or anchor in text[start:end]:
+            return start, end
+    raise ValueError(f"article {article} not found")
 
 
 def line_span(text: str, start: int, end: int, anchor: str) -> tuple[int, int]:
@@ -515,7 +534,7 @@ def build(corpus_dir: Path) -> list[dict[str, Any]]:
         expected, provisions, references = [], [], []
         for stem, article, anchors in base["refs"]:
             text = text_of(stem)
-            start, end = article_span(text, article)
+            start, end = article_span(text, article, anchors[0] if anchors else None)
             file_name = f"{stem}.txt"
             if not any(span["file_name"] == file_name and span["start"] == start for span in expected):
                 expected.append({"file_name": file_name, "start": start, "end": end, "text": text[start:end]})

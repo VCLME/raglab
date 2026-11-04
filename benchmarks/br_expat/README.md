@@ -37,7 +37,7 @@ Huit questions reformulées comme on les tape vraiment, avec les références de
 
 ## Vérification des références
 
-Chaque référence a été relue dans le texte collecté (version compilée de Planalto, vue « vigente » de la Receita Federal). Quand la référence de départ était fausse ou incomplète, c'est **la référence** qui a été corrigée, jamais la recherche.
+Chaque référence a été relue dans le texte collecté (version compilée de Planalto, vue « vigente » de la Receita Federal). Quand la référence de départ était fausse ou incomplète, c'est **la référence** qui a été corrigée, jamais la recherche. Le corpus a ensuite été parcouru à la recherche d'autres passages qui donnent la même réponse (l'IN RFB 1.700 reprend les taux et les règles des lois) ; ceux-là sont ajoutés comme références alternatives, avant toute mesure publiée : les deux runs ci-dessous sont notés sur le même jeu.
 
 | Q | Référence de départ | Vérifié | Correction |
 |---|---|---|---|
@@ -50,14 +50,14 @@ Chaque référence a été relue dans le texte collecté (version compilée de P
 | 9 | Código Civil, art. 1.723 | oui | — |
 | 10 | Decreto 9.199, art. 67 (à vérifier) | **oui**, avec une nuance | L'art. 67 porte sur le **registro** (l'enregistrement après l'autorisation), pas sur le dépôt de la demande : inciso II (unité de la circonscription du domicile) et §2º (autre unité par décision motivée). La réponse attendue est la bonne pour l'enregistrement |
 | 11 | Lei 7.115/1983, art. 1º | oui | — (Planalto écrit « Art. . 1º - ») |
-| 12 | Lei 9.249, art. 15 §1º, III, a | oui | — (32 % ; le caput donne 8 %, piège de lecture) |
-| 13 | Lei 9.249, art. 20 | oui | Le 32 % est à l'**inciso I** (inséré par la LC 167/2019). Question réécrite pour être autonome |
-| 14 | Lei 9.249, art. 3º §1º ; Lei 9.430, art. 4º | oui | — (l'art. 4º de la Lei 9.430 est le texte modificatif de l'art. 3º) |
-| 15 | Lei 9.430, art. 1º et 5º | oui | Trimestre à l'art. 1º, trois quotas à l'art. 5º §1º |
+| 12 | Lei 9.249, art. 15 §1º, III, a | oui | Ajouté : **IN RFB 1.700, art. 33 §1º, IV** (même 32 %) et **art. 215** (le lucro presumido applique les taux de l'art. 33), trouvés quand la recherche naïve a remonté l'art. 33 §10. Le caput donne 8 % et l'art. 33 §10 donne 16 % pour les petits prestataires : deux pièges de lecture |
+| 13 | Lei 9.249, art. 20 | oui | Le 32 % est à l'**inciso I** (inséré par la LC 167/2019) ; ajouté : **IN RFB 1.700, art. 34 §1º**. Question réécrite pour être autonome |
+| 14 | Lei 9.249, art. 3º §1º ; Lei 9.430, art. 4º | oui | L'art. 4º de la Lei 9.430 est le texte modificatif de l'art. 3º ; ajouté : **IN RFB 1.700, art. 29 §1º** |
+| 15 | Lei 9.430, art. 1º et 5º | oui | Trimestre à l'art. 1º, trois quotas à l'art. 5º §1º ; ajouté : **IN RFB 1.700, art. 31** (trimestre) |
 | 16 | IN RFB 1.700/2017, art. 223 (à vérifier) | **oui** | — (« reconhecimento de suas receitas na medida do recebimento » et livro Caixa) |
 | 17 | LC 116/2003, art. 2º, I | oui | La condition « résultat à l'étranger » est au **parágrafo único** : ajouté aux passages |
 | 18 | Lei 10.833, art. 6º ; Lei 10.637, art. 5º | oui | — (inciso II, « ingresso de divisas ») |
-| 19 | Lei 9.249, art. 10 ; Lei 15.270/2025 | oui | Précisé : la retenue de 10 % au-delà de R$ 50 000/mois est l'**art. 6º-A de la Lei 9.250**, inséré par l'art. 2º de la Lei 15.270 (la Lei 9.250 n'est pas dans le corpus, le texte de l'article est dans la Lei 15.270) ; le non-résident est à l'**art. 10 §4º** de la Lei 9.249 |
+| 19 | Lei 9.249, art. 10 ; Lei 15.270/2025 | oui | Précisé : la retenue de 10 % au-delà de R$ 50 000/mois est l'**art. 6º-A de la Lei 9.250**, inséré par l'art. 2º de la Lei 15.270 (la Lei 9.250 n'est pas dans le corpus, le texte de l'article est dans la Lei 15.270) ; le non-résident est à l'**art. 10 §4º** de la Lei 9.249. Ajouté : la nouvelle rédaction de l'art. 10, citée entre guillemets dans la Lei 15.270 (art. 3º) |
 | 20 | LC 123/2006, art. 16 | oui | caput (irrévocable pour l'année) et §2º (en janvier) |
 | 21 | Lei 8.212, art. 12, V, f ; Lei 10.666, art. 4º | en partie | Le chiffre de **11 % n'est écrit nulle part pour ce cas** : il vient de l'**art. 21** de la Lei 8.212 (20 %) moins la déduction de l'**art. 30 §4º** (45 % de la part patronale, plafonnée à 9 %). Ajoutés. Attention : l'art. 21 §2º, I dit bien « 11 % », mais pour le plan simplifié, sans rapport avec le pró-labore |
 | 22 | Lei 8.212, art. 22, III | oui | — |

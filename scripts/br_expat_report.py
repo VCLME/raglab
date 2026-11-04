@@ -37,7 +37,7 @@ GENERATION_TOP_K = 5
 WRONG = 0.5  # answer_correctness below this is a wrong answer
 
 _REFUSAL = re.compile(
-    r"je ne trouve pas|ne (?:se )?trouve pas|n'(?:est|apparaît|figure) pas dans les documents|"
+    r"je ne trouve pas|ne (?:se )?trouve pas|ne (?:peux|peut) pas répondre|n'(?:est|apparaît|figure) pas dans les documents|"
     r"pas (?:dans|mentionn\w+ dans) les (?:documents|passages|extraits)|ne permettent? pas|"
     r"aucun(?:e)? (?:information|passage|mention)|ne contien\w+ pas|ne précisent? pas|ne fourni\w+ pas",
     re.IGNORECASE,
@@ -141,7 +141,9 @@ def per_question_table(runs: list[dict[str, Any]], outcomes: list[dict[str, dict
     ]
     for case_id, case in truth.items():
         ranks = [str(rows[case_id]["rank"] or "—") for rows in outcomes]
-        lines.append(f"| {case_id} | {', '.join(case['context']['references']) or 'aucune'} | " + " | ".join(ranks) + " |")
+        lines.append(
+            f"| {case_id} | {', '.join(case['context']['references']) or 'aucune'} | " + " | ".join(ranks) + " |"
+        )
     return "\n".join(lines)
 
 
