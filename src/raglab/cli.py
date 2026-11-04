@@ -295,11 +295,11 @@ def bench_compare(
     """Comparer deux runs question par question (McNemar sur le recall, bootstrap apparie sur le MRR)."""
     from raglab.benchmarks.compare import compare_runs, render
 
-    pairs = None
+    pairs: list[tuple[str, str]] | None = None
     if suites:
         if any(pair.count(":") != 1 for pair in suites):
             raise typer.BadParameter("Format attendu: suite_avant:suite_apres.")
-        pairs = [tuple(pair.split(":")) for pair in suites]
+        pairs = [(before_suite, after_suite) for before_suite, after_suite in (pair.split(":") for pair in suites)]
     load = lambda name: json.loads((Path("benchmarks/results") / f"{name}.json").read_text(encoding="utf-8"))  # noqa: E731
     typer.echo(render(compare_runs(load(before), load(after), k=k, pairs=pairs), k=k))
 
