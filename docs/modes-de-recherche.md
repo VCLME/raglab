@@ -50,7 +50,7 @@ flowchart LR
 | Passages donnés au LLM | entier | 5 | `--top-k` | `top_k` | `RAGLAB_DEFAULT_TOP_K` |
 | Fournisseur du LLM | `llamacpp`, `ollama`, `vllm` | `llamacpp` (Qwen3.6-35B-A3B, démarré à la demande), repli `ollama` (`qwen2.5:7b`) si llama.cpp ne peut pas servir | `--provider` | `llm_provider` (+ `llm_model`) ; la réponse porte `llm_provider` et `generator_notice` | `RAGLAB_LLM_PROVIDERS`, `RAGLAB_DEFAULT_LLM_PROVIDER`, `RAGLAB_LLM_FALLBACK_PROVIDER`, `RAGLAB_WRITER_MODEL_PROFILE`, `RAGLAB_LLAMACPP_AUTOSTART` |
 
-Dans l'interface, ces options sont dans « Options » du Chat et sur la page Retrieval (mode Expert), qui affiche en plus le score de chaque passage à chaque étape : vectoriel, BM25, fusion, graphe, re-ranking.
+Dans l'interface, ces options sont dans « Options » du Chat et sur la page Interrogation de l'Atelier, qui affiche en plus le score de chaque passage à chaque étape : vectoriel, BM25, fusion, graphe, re-ranking.
 
 ## Ce que chaque option a apporté
 

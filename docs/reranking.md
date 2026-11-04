@@ -31,7 +31,7 @@ Le re-ranking est un booléen `rerank`, modifiable à chaque requête. Absent, i
 | `raglab query` | `--rerank` / `--no-rerank` |
 | `raglab experiment recall`, `POST /api/experiments/recall` | `--rerank` / `"rerank": true` |
 | `raglab bench all` | `--rerank` (et `--retrieval-mode` pour re-classer les candidats hybrides) |
-| UI, page Retrieval (mode Expert) | liste « Re-ranking cross-encoder » |
+| UI, page Interrogation (Atelier) | liste « Re-ranking cross-encoder » |
 | UI, page Benchmarks | case « Re-ranking cross-encoder » au lancement |
 
 Avec `rerank`, le premier niveau renvoie `max(top_k, RAGLAB_RERANK_CANDIDATES)` chunks (40 par défaut). En mode hybride, chaque retriever en cherche au moins `RAGLAB_HYBRID_CANDIDATES` avant la fusion, comme sans re-ranking. Le cross-encoder note ces candidats et garde les `top_k` meilleurs. En cas d'égalité, l'ordre du premier niveau est conservé.
@@ -231,4 +231,4 @@ bge-reranker-v2-m3 classe 40 candidats en 0,4 à 0,6 s sur le GPU d'un portable,
 - **re-ranking par défaut** (la requête ne précise rien) sans GPU : il est **sauté** (`RAGLAB_RERANK_WITHOUT_GPU=skip`, défaut), un avertissement est journalisé (`rerank.no_gpu`) et la réponse porte `rerank_notice: "skipped_no_gpu"`, affiché dans la page Retrieval. `RAGLAB_RERANK_WITHOUT_GPU=cpu` le fait tourner quand même ;
 - **re-ranking demandé explicitement** (`rerank=true`, case « activé ») : il tourne, sur CPU si besoin, et la réponse porte `rerank_notice: "cpu"`.
 
-`/api/config` expose `rerank_gpu` pour que l'interface sache si le GPU est là. Cas typiques : le conteneur `api` (image torch CPU) et un `.venv` installé sans la version CUDA de torch (`pip install torch --index-url https://download.pytorch.org/whl/cu128`). Ce garde-fou vient d'un benchmark lancé depuis un `.venv` CPU : le re-ranking y tournait sur le processeur sans rien signaler.
+`/api/config` expose `rerank_gpu` pour que l'interface sache si le GPU est là, avec `rerank_device` et `rerank_gpu_status` (`ok`, `device_cpu`, `torch_missing`, `cuda_unavailable`) pour dire pourquoi il manque. Cas typiques : le conteneur `api` (image torch CPU) et un `.venv` installé sans la version CUDA de torch (`pip install torch --index-url https://download.pytorch.org/whl/cu128`). Ce garde-fou vient d'un benchmark lancé depuis un `.venv` CPU : le re-ranking y tournait sur le processeur sans rien signaler.

@@ -3,7 +3,7 @@ import { FieldLabelContext } from "./Select";
 
 interface Props {
   label: string;
-  hint?: string;
+  hint?: ReactNode;
   children: ReactNode;
 }
 

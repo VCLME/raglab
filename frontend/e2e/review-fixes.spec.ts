@@ -97,7 +97,7 @@ test("Retrieval: fields are labelled, citations are chips that point to their ch
     ...data.queryResponse,
     retrieved_chunks: data.chunks.map((c, i) => ({ ...c, rerank_score: [0.98, 0.41, 0.04][i], rerank_rank: i + 1 })),
   }));
-  await page.goto("/expert/query");
+  await page.goto("/workshop/retrieval");
   await page.getByLabel("Question", { exact: true }).fill(data.QUESTION);
   await expect(page.getByLabel("IDs de documents")).toBeVisible();
   await expect(page.getByLabel("Noms de fichiers")).toHaveAccessibleDescription("Séparés par virgules");

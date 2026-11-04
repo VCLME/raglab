@@ -1,8 +1,8 @@
 import { data, expect, json, test } from "./fixtures/mock-api";
 
 test("Retrieval page: a query lists chunk cards with file name and score", async ({ page }) => {
-  await page.goto("/expert/query");
-  await expect(page.getByRole("heading", { name: "Retrieval", level: 2 })).toBeVisible();
+  await page.goto("/workshop/retrieval");
+  await expect(page.getByRole("heading", { name: "Interrogation", level: 2 })).toBeVisible();
 
   await page
     .locator(".form-row")
@@ -39,7 +39,7 @@ test("Retrieval page: hybrid mode sends its settings and shows dense / BM25 / RR
       ],
     })(route);
   });
-  await page.goto("/expert/query");
+  await page.goto("/workshop/retrieval");
 
   const row = (label: RegExp) => page.locator(".form-row").filter({ has: page.locator("label", { hasText: label }) });
   await row(/^Question$/).locator("textarea").fill(data.QUESTION);
@@ -70,7 +70,7 @@ test("Retrieval page: the citations option pins the cited article and says which
       retrieved_chunks: [{ ...first, score: 1, citation_match: true }, { ...second, rank: 2 }],
     })(route);
   });
-  await page.goto("/expert/query");
+  await page.goto("/workshop/retrieval");
 
   const row = (label: RegExp) => page.locator(".form-row").filter({ has: page.locator("label", { hasText: label }) });
   await row(/^Question$/).locator("textarea").fill("O que dispõe o art. 49 da Lei nº 8.078?");
@@ -85,8 +85,8 @@ test("Retrieval page: the citations option pins the cited article and says which
 });
 
 test("Benchmarks page: history table renders the experiment runs", async ({ page }) => {
-  await page.goto("/expert/benchmarks");
-  await page.getByRole("button", { name: "Historique" }).click();
+  await page.goto("/workshop/evaluation");
+  await page.getByRole("tab", { name: "Historique" }).click();
 
   const table = page.getByRole("table");
   await expect(table.getByRole("columnheader", { name: "R@5" })).toBeVisible();

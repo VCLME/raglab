@@ -40,10 +40,7 @@ export function LexML() {
 
   return (
     <div>
-      <div className="page-header">
-        <h2>{t("lexml.title")}</h2>
-        <span className="muted">{t("lexml.subtitle")}</span>
-      </div>
+      <p className="muted card-lead">{t("lexml.subtitle")}</p>
       <div className="split">
         <div className="card">
           <h3>{t("lexml.get_data_title")}</h3>

@@ -23,7 +23,7 @@ test("Each Chat option has a one-line help on hover and keyboard focus", async (
   await expect(dialog.getByRole("button", { name: /Aide : / }).last()).toHaveAccessibleDescription(/renvois/);
 });
 
-test("No GPU: re-ranking reads off with (pas de GPU), never 'skipped', and can still be forced", async ({ page, api }) => {
+test("No GPU: re-ranking reads off with (GPU non disponible), never 'skipped', and can still be forced", async ({ page, api }) => {
   const bodies: Record<string, unknown>[] = [];
   api.set("GET /api/config", json({ ...data.config, default_rerank: true, rerank_gpu: false }));
   api.set("POST /api/query/stream", async (route) => {
@@ -37,19 +37,19 @@ test("No GPU: re-ranking reads off with (pas de GPU), never 'skipped', and can s
   const dialog = page.getByRole("dialog", { name: /Options de recherche/ });
   const sw = dialog.getByRole("switch", { name: /Re-ranking/ });
   await expect(sw).toHaveAttribute("aria-checked", "false");
-  await expect(dialog.getByText("(pas de GPU)")).toBeVisible();
+  await expect(dialog.getByText("(GPU non disponible)")).toBeVisible();
   await expect(dialog).toContainText("plusieurs secondes");
   await expect(dialog).not.toContainText(/saut/i);
 
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "Mode pédagogique" }).click();
-  await expect(page.getByRole("list", { name: /chemin/ })).toContainText("Désactivé (pas de GPU)");
+  await expect(page.getByRole("list", { name: /chemin/ })).toContainText("Désactivé (GPU non disponible pour l'API)");
   await expect(page.locator(".edu-strip")).not.toContainText(/saut/i);
 
   await trigger.click();
   await sw.click();
   await expect(sw).toHaveAttribute("aria-checked", "true");
-  await expect(dialog.getByText("(pas de GPU)")).toHaveCount(0);
+  await expect(dialog.getByText("(GPU non disponible)")).toHaveCount(0);
   await page.keyboard.press("Escape");
   await page.getByPlaceholder(/Pose ta question/).fill(data.QUESTION);
   await page.getByRole("button", { name: "Envoyer" }).click();

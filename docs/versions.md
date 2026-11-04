@@ -89,7 +89,7 @@ Chaque chunk porte `version` (source `metadata` ou `markers`, état, en vigueur 
 |---|---|
 | CLI | `raglab query "Que prévoyait l'article L. 121-21 avant 2016 ?" --corpus bench_legi_consommation_fr` ; `--versions all`, `--versions as_of=2015-06-01` |
 | API | `"versions": "in_force" \| "all" \| "as_of=AAAA-MM-JJ"` dans `POST /api/query`, `/api/query/stream`, `/api/experiments/recall` (422 sinon) ; défaut dans `/api/config` (`versions_default`) ; `features.version_history` dans `/api/corpora` |
-| UI | Chat : « Options » → « Versions des articles » (corpus de lois seulement) ; page Retrieval (mode Expert) : le même choix, un badge par passage (« en vigueur depuis le … », « ancienne version (… → …) », « abrogé le … », « dispositions abrogées ») et, en expert, ses dates, textes et successeur ; lancement des benchmarks |
+| UI | Chat : « Options » → « Versions des articles » (corpus de lois seulement) ; page Interrogation (Atelier) : le même choix, un badge par passage (« en vigueur depuis le … », « ancienne version (… → …) », « abrogé le … », « dispositions abrogées ») et, en expert, ses dates, textes et successeur ; lancement des benchmarks |
 | Mode pédagogique | une étape « Versions » après le re-ranking : la date utilisée, d'où elle vient, ce qui a été écarté, l'état des premiers passages, le code |
 | Benchmark | `raglab bench all --suite legi_versions --versions all` (référence) contre `--versions in_force` |
 | Par défaut | `RAGLAB_VERSIONS_DEFAULT=all` : la brique n'est pas encore mesurée, elle reste derrière l'option (règle du projet) ; `in_force` deviendra le défaut si la mesure montre un gain. Même sous `all`, chaque passage porte son état, affiché dans l'interface (pas donné au modèle) |

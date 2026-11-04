@@ -6,7 +6,7 @@ raglab expose desormais une interface web pour piloter ingestion, indexation, re
 
 - **API** : FastAPI expose dans `src/raglab/api/`, servie par uvicorn. Les handlers appellent directement les services existants (`IngestionService`, `IndexingService`, `QueryService`, `OllamaService`, `LexMLLoadService`, `RecallBenchmarkService`). Aucune invocation de la CLI Typer en sous-processus.
 - **Frontend** : application React + TypeScript + Vite dans `frontend/`. React Router pour les pages, `fetch` natif cote client, pas de dependance UI lourde. En production, bundle statique servi par nginx qui proxy `/api` vers le conteneur `api`.
-- **Reutilisation** : aucun duplicata de logique metier. La methode `OllamaService.chat(...)` a ete ajoutee pour le Prompt Playground, elle est aussi disponible en Python pur.
+- **Reutilisation** : aucun duplicata de logique metier. La methode `OllamaService.chat(...)` a ete ajoutee pour le banc d'essai Ollama (page Modèles), elle est aussi disponible en Python pur.
 
 Ports :
 
@@ -61,9 +61,9 @@ Ouvrir http://localhost:5173. Le serveur Vite proxy `/api` vers `http://localhos
 L'interface se scinde en deux modes accessibles via un toggle en haut a droite :
 
 - **Mode Chat** (route `/`, icone bulle) : interface conversationnelle epuree pour interroger le RAG. Un seul ecran avec barre de parametres compacte, suggestions de questions, conversation et composer.
-- **Mode Expert** (route `/expert`, icone fiole) : ensemble des ecrans techniques (Dashboard, RAG Query avec filtres fins, Playground Ollama, Ingestion, Indexation, LexML, Ollama, Experiments, Gestion).
+- **Atelier** (route `/workshop`, icone fiole ; anciennement « mode Expert ») : la construction de la base de connaissances, étape par étape (Corpus → Découpage → Vectorisation → Graphe → Évaluation → Interrogation), plus la page Modèles. Les anciennes routes `/expert/*` redirigent vers leur étape.
 
-Le top-bar affiche le mot-symbole `raglab`, le bouton « Mode pédagogique », un **selecteur de langue** (drapeau + code pays) et le toggle Chat/Expert, tous a la meme hauteur (`--control-h`, 32 px). L'etat de sante (`/api/health`, toutes les 15 s, toutes les 3 s tant que l'API ne repond pas) n'apparait que s'il y a un probleme : pastille « API injoignable » ou « Services dégradés » (PostgreSQL ou Ollama ; Neo4j, optionnel, n'est pas compte). La cle d'API n'est plus dans le top-bar : voir Dashboard.
+Le top-bar affiche le mot-symbole `raglab`, le bouton « Mode pédagogique », un **selecteur de langue** (drapeau + code pays) et le toggle Chat/Atelier, tous a la meme hauteur (`--control-h`, 32 px). L'etat de sante (`/api/health`, toutes les 15 s, toutes les 3 s tant que l'API ne repond pas) n'apparait que s'il y a un probleme : pastille « API injoignable » ou « Services dégradés » (PostgreSQL ou Ollama ; Neo4j, optionnel, n'est pas compte). La cle d'API n'est plus dans le top-bar : voir la vue d'ensemble de l'Atelier.
 
 ## Systeme de design (theme clair)
 
@@ -91,10 +91,10 @@ Composants et regles partages :
 - **Boutons** : icone et texte sur une meme ligne centree (`inline-flex`, `gap: 6px`) ; les icones sont des SVG de `components/Icon.tsx`.
 - **Focus** : anneau fin (1,5 px, `--focus`, contraste >= 3:1) pour le clavier seulement (`:focus-visible`) ; un clic souris n'affiche aucun anneau. Les champs texte ne prennent qu'une teinte de bordure. Une etape cliquee du schema pedagogique est remplie en vert, sans halo.
 - **Controles de barre d'outils** : boutons du top-bar et barre de parametres du Chat (listes, « Options », « Nouvelle conversation ») partagent hauteur (`--control-h`), bordure, rayon, survol et effet presse.
-- **Commandes segmentées et onglets** : l'indicateur actif glisse d'un segment à l'autre (`components/SlideIndicator.tsx`, 200 ms, même courbe ease-out que le portfolio développeur) : pastille du sélecteur Chat / Expert et du mode de recherche des Options (segments de largeur égale, seul `transform` est animé), soulignement des onglets Benchmarks et Corpus (barre de 1 px mise à l'échelle). Aucune animation au premier affichage ; `prefers-reduced-motion` la coupe.
+- **Commandes segmentées et onglets** : l'indicateur actif glisse d'un segment à l'autre (`components/SlideIndicator.tsx`, 200 ms, même courbe ease-out que le portfolio développeur) : pastille du sélecteur Chat / Atelier et du mode de recherche des Options (segments de largeur égale, seul `transform` est animé), soulignement des onglets (barre de 1 px mise à l'échelle). Les onglets passent tous par `components/Tabs.tsx` (voir « Onglets » plus bas). Aucune animation au premier affichage ; `prefers-reduced-motion` la coupe.
 - **Interrupteurs** : `components/Switch.tsx`, un vrai `button role="switch"` (`aria-checked`), piste en pilule et pastille ronde qui glisse (pas de case a cocher stylee).
 - **Scores multiples** : `.score-grid` contient des `.score-cell.dense|bm25|fused|rerank` (libelle, valeur monospace, barre coloree). Prevu pour afficher dense, BM25, fusion et reranker cote a cote sur un chunk.
-- **Etats** : `Spinner` est annonce aux lecteurs d'ecran (`role="status"`). `ErrorBanner` reconnait une API injoignable (erreur reseau, 502/503/504, ou 5xx sans corps renvoye par le proxy Vite) et affiche un titre, la commande pour demarrer le backend et l'erreur brute ; avec `compact`, il se reduit a une ligne quand une autre banniere de la page explique deja la panne (cas du Dashboard). Les bannieres d'avertissement utilisent `.error-banner.warn`.
+- **Etats** : `Spinner` est annonce aux lecteurs d'ecran (`role="status"`). `ErrorBanner` reconnait une API injoignable (erreur reseau, 502/503/504, ou 5xx sans corps renvoye par le proxy Vite) et affiche un titre, la commande pour demarrer le backend et l'erreur brute ; avec `compact`, il se reduit a une ligne quand une autre banniere de la page explique deja la panne (cas de la vue d'ensemble de l'Atelier). Les bannieres d'avertissement utilisent `.error-banner.warn`.
 - **Responsive** : sous 960 px, la barre laterale devient une bande horizontale defilante (le lien actif reste visible) et les mises en page en deux colonnes passent sur une seule ; les tableaux larges defilent dans leur carte. Teste a 375 px sans defilement horizontal de la page.
 - **Mouvement** : transitions courtes (160 ms, ease-out) et `prefers-reduced-motion` respecte.
 
@@ -124,7 +124,7 @@ Ecran par defaut. Trois elements verticaux :
    - **Corpus** : liste les corpus indexes, auto-selection du premier.
    - **Index** : liste les `index_run` disponibles pour ce corpus, chaque option etiquetee `strategie · modele_embedding · date`. Option par defaut `(plus recent) · <label du run le plus recent>`. Message explicite `— aucun index pour ce corpus —` si rien n'a ete indexe.
 
-   - **Options** : petit panneau (non modal, Echap ou clic exterieur pour fermer) avec les options de retrieval de l'API : mode de recherche (vectorielle / mots-clés / hybride), re-ranking (interrupteur) et « Références d'articles de loi » (« art. 49 da Lei 8.078 », « article L. 221-18 du Code de la consommation »). Cette derniere option n'apparait que si le corpus choisi contient des articles de loi ou de code (`features.legal_citations` de `/api/corpora`, vrai des qu'un document porte la metadonnee `number` (LexML) ou `article_number` (Legifrance)) ; ailleurs elle est masquee, jamais envoyee, et le mode pedagogique ne dessine pas l'etape « Référence ». Les valeurs par defaut viennent de `/api/config` (`default_retrieval_mode`, `default_rerank`, `citation_resolver`) ; seules les options modifiees sont envoyees, le reste suit le serveur. Le bouton resume l'etat (`Hybride · re-ranking · articles de loi`). Sans GPU (`rerank_gpu: false`), le re-ranking s'affiche simplement **désactivé**, avec « (pas de GPU) » a cote de son nom, jamais « sauté » ; l'activer le force sur CPU (plusieurs secondes). La reponse affiche alors le `rerank_notice` (« Re-ranking désactivé (pas de GPU)… » ou « fait sur CPU »), et le mode pedagogique « désactivé (pas de GPU) ». Une branche graphe qui n'a pas pu tourner (Neo4j absent) est dite « indisponible ». Chaque option porte une aide d'une ligne (« ? », au survol et au focus clavier) reprise de [modes-de-recherche.md](modes-de-recherche.md).
+   - **Options** : petit panneau (non modal, Echap ou clic exterieur pour fermer) avec les options de retrieval de l'API : mode de recherche (vectorielle / mots-clés / hybride), re-ranking (interrupteur) et « Références d'articles de loi » (« art. 49 da Lei 8.078 », « article L. 221-18 du Code de la consommation »). Cette derniere option n'apparait que si le corpus choisi contient des articles de loi ou de code (`features.legal_citations` de `/api/corpora`, vrai des qu'un document porte la metadonnee `number` (LexML) ou `article_number` (Legifrance)) ; ailleurs elle est masquee, jamais envoyee, et le mode pedagogique ne dessine pas l'etape « Référence ». Les valeurs par defaut viennent de `/api/config` (`default_retrieval_mode`, `default_rerank`, `citation_resolver`) ; seules les options modifiees sont envoyees, le reste suit le serveur. Le bouton resume l'etat (`Hybride · re-ranking · articles de loi`). Sans GPU (`rerank_gpu: false`), le re-ranking s'affiche simplement **désactivé**, avec « (GPU non disponible) » a cote de son nom, jamais « sauté » ; l'activer le force sur CPU (plusieurs secondes). La reponse affiche alors le `rerank_notice` avec sa raison (« Re-ranking désactivé (GPU désactivé par la configuration, RAGLAB_RERANK_DEVICE=cpu)… » ou « fait sur CPU »), et le mode pedagogique « désactivé (…) » ; voir « Re-ranking sans GPU ». Une branche graphe qui n'a pas pu tourner (Neo4j absent) est dite « indisponible ». Chaque option porte une aide d'une ligne (« ? », au survol et au focus clavier) reprise de [modes-de-recherche.md](modes-de-recherche.md).
 
    La strategie de chunking et le modele d'embedding ne sont **plus** des selecteurs separes : ils sont figes par l'`index_run` choisi (ce sont des proprietes de l'indexation, pas du query). Voir [data-model.md](data-model.md) section 4.
 
@@ -137,7 +137,7 @@ Ecran par defaut. Trois elements verticaux :
 
 3. **Composer** sticky en bas : textarea (Ctrl/Cmd + Entree pour envoyer), selecteur compact du modele LLM groupe par fournisseur (Ollama, llama.cpp, vLLM, d'apres `GET /api/llm/models` ; un serveur injoignable apparait grise dans son groupe) avec la valeur par defaut visible (`qwen2.5:7b · Ollama (défaut)`), bouton envoyer, bouton « Nouvelle conversation » dans la barre de parametres pour reset. Le choix envoie `llm_provider` + `llm_model` (voir [api-production.md](api-production.md), section fournisseurs LLM). Pendant une requete, « Envoyer » devient **« Arrêter »** (AbortController sur le flux SSE ; la reponse partielle reste affichee avec « Génération arrêtée. », sans repli sur `/api/query`). « Nouvelle conversation » est toujours present (desactive tant qu'il n'y a pas d'echange) pour que la barre ne bouge pas a la premiere reponse ; « Envoyer » reste a droite a toutes les largeurs. Le defilement automatique suit les nouveaux messages et la reponse qui s'ecrit, pas les mises a jour du schema pedagogique.
 
-Chaque envoi declenche un appel `/api/query/stream` independant (SSE ; repli sur `/api/query` si le flux est indisponible). L'historique conversationnel est conserve cote React (pas de multi-tour cote backend : le Playground couvre ce cas sans RAG).
+Chaque envoi declenche un appel `/api/query/stream` independant (SSE ; repli sur `/api/query` si le flux est indisponible). L'historique conversationnel est conserve cote React (pas de multi-tour cote backend : le banc d'essai de la page Modèles couvre ce cas sans RAG).
 
 ## Mode pédagogique (schéma du pipeline en direct)
 
@@ -164,96 +164,93 @@ Format des événements : voir [api-production.md](api-production.md#mode-pédag
 
 ## Pages de l'interface
 
-### Dashboard (`/expert`)
+### L'Atelier : la construction de la base, étape par étape
 
-- Cartes d'etat : API, PostgreSQL, Ollama, Adminer.
-- Badge « installe / manquant » sur le modele de generation par defaut + bouton de pull direct.
-- Liste des corpus avec nombre de documents et de index runs.
-- Tableau des 10 derniers index runs avec strategie, statut, nombre de chunks.
+Le nom affiché vient de la clé i18n `topbar.workshop` (« Atelier », « Workshop », « Oficina ») : il se change sans toucher au code. Noms écartés : « Base de connaissances » (exact mais long dans le sélecteur, et le Chat interroge lui aussi la base), « Labo » (dit l'expérimentation mais pas ce qu'on y construit). La route reste `/workshop`, indépendante du libellé.
+
+Au-dessus de chaque page de l'Atelier, une barre porte :
+
+- **le corpus suivi** (sélecteur à droite, mémorisé dans `localStorage` sous `raglab.workshop.corpus`) : toutes les étapes affichent leur état pour ce corpus et les formulaires le présélectionnent ;
+- **Vue d'ensemble** et **Modèles** ;
+- **le flux de construction** (`workshop/BuildFlow.tsx`, une `<ol>` de liens dans une `nav` nommée « Étapes de construction de la base ») : six étapes, chacune avec une pastille d'état et une ligne de chiffres. Sur téléphone, la bande défile horizontalement et garde l'étape courante visible.
+
+L'état de chaque étape est calculé côté interface (`workshop/state.tsx`, `computeStatus`) à partir des endpoints existants (`/api/corpora`, `/api/index-runs`, `/api/experiments/history`, `/api/graph/status`, `/api/config`) :
+
+| Étape | Fait quand | À refaire quand |
+| --- | --- | --- |
+| Corpus | le corpus a des documents | — |
+| Découpage | un run d'indexation terminé existe (échec / en cours si le plus récent l'est) | — |
+| Vectorisation | le dernier run terminé a ses vecteurs | son modèle d'embedding diffère de celui du serveur |
+| Graphe | Neo4j a le graphe du dernier run (sans objet hors corpus de lois, inconnu si Neo4j ne répond pas) | le graphe a été construit sur un run plus ancien |
+| Évaluation | un benchmark terminé existe sur ce corpus (R@5 affiché) | il date d'avant le dernier index |
+| Interrogation | un index existe | — |
+
+#### Vue d'ensemble (`/workshop`)
+
+- La prochaine étape à faire (la première « à faire », « à refaire » ou « en échec »), avec un bouton qui l'ouvre.
+- Le flux en grand : une carte par étape avec son état, ses chiffres, son rôle et la date du dernier passage.
+- Les corpus du lab (documents, runs) avec « Suivre » pour changer de corpus.
 - **Connexion à l'API** : champ de la cle envoyee dans l'en-tete `X-API-Key`. C'est la cle qui protege l'API raglab elle-meme, a renseigner seulement si le serveur definit `RAGLAB_API_KEY` ; ce n'est pas une cle de fournisseur LLM. Stockee dans `localStorage` de ce navigateur, jamais affichee.
+- Services : API, PostgreSQL, Ollama, Neo4j, le rédacteur par défaut (et son téléchargement s'il manque), Adminer.
 
-### RAG Query (`/expert/query`)
+#### Corpus (`/workshop/corpus`)
+
+Onglets :
+
+- **Corpus** : les corpus du lab, avec description, documents, runs, « Suivre » et « Supprimer » (confirmation, cascade `documents -> chunks -> embeddings` + `index_runs`).
+- **Dossier local** : chemin de dossier **cote serveur** (memes semantiques que la CLI), nom de corpus, description, tags ; resume `ingeres / maj / ignores`.
+- **Jeux de référence** : télécharge un jeu Q/R (PIAF, FQuAD…) qui produit un corpus et son ground truth.
+- **LexML Brasil** : `get-data` (collecte) et `load` (collecte + ingest + indexation, long).
+- **Légifrance et EUR-Lex** : le Code de la consommation ([corpus-legi.md](corpus-legi.md)) et les textes européens de conformité ([corpus-eurlex.md](corpus-eurlex.md)). L'API n'a pas d'endpoint pour les récupérer : l'onglet donne les commandes (`raglab legifrance fetch --code consommation`, `raglab eurlex fetch`), la source et la licence, et dit si le corpus (`bench_legi_consommation_fr`, `bench_eurlex_compliance`) est déjà dans le lab.
+
+#### Découpage (`/workshop/chunking`)
+
+- Les trois stratégies côte à côte (`traditional`, `slide`, `late`) avec leurs paramètres réels (`/api/config`) et leurs runs sur le corpus suivi.
+- « Lancer une indexation » : corpus, stratégie, nom du run, fournisseur et modèle d'embedding optionnels, incrémental. Un run découpe, vectorise et remplit l'index plein texte en une passe.
+- Les runs d'indexation du corpus (stratégie, statut, chunks, ancienneté).
+
+#### Vectorisation (`/workshop/embedding`)
+
+- Espace vectoriel du dernier index : fournisseur, modèle, dimension, stockage (pgvector), nombre de vecteurs, modèle du serveur. Un avertissement apparaît quand ils diffèrent (réindexer).
+- Plein texte et fusion : mode de recherche par défaut, BM25 `k1` / `b`, poids du BM25, constante k de la RRF (réglages du serveur, modifiables par requête sur Interrogation).
+- Les index du corpus avec leur modèle et leur dimension.
+
+#### Graphe (`/workshop/graph`)
+
+- Choix du corpus et de l'index run ; état du graphe dans Neo4j (construit ou non, profil, date, comptes par type de nœud et de relation) et bouton « Construire / Reconstruire le graphe » (`POST /api/graph/build`) ; la construction met à jour le flux.
+- Liste des lois du graphe, les plus reliées d'abord, avec recherche par numéro ou mot du titre.
+- Voisinage de la loi choisie (Cytoscape), en diagramme en arcs : les articles de la loi sur un axe dans l'ordre de lecture, les renvois entre eux en arcs au-dessus (plus hauts quand ils portent loin), et en dessous, sur deux ou trois rangées, tout ce qui est hors de la loi (articles d'autres lois du corpus, lois du corpus, lois hors corpus), chacun sous les articles auxquels il est relié. Couleurs des jetons de la charte (`--graph-*` dans `styles.css`) : loi en vert accent, articles de la loi en vert clair, articles d'autres lois en bleu-vert, lois hors corpus en gris ; `CITES` violet, `AMENDS` ambre, `REVOKES` rouge pointillé, avec la légende sous le graphe. Cliquer un nœud, ou un article dans la liste sous le graphe (accessible au clavier), estompe le reste et zoome sur ses voisins ; « Voir les renvois de cet article » le place au centre d'une étoile de ses voisins.
+- La requête Cypher équivalente, à coller dans Neo4j Browser. Voir [graphe.md](graphe.md).
+- Les pages du store à entités (phase 8) deviennent des onglets de cette étape (`/workshop/graph/entities`, `/workshop/graph/entities/query`) seulement avec `RAGLAB_ENTITY_GRAPH_ENABLED=true`.
+
+#### Évaluation (`/workshop/evaluation`)
+
+Onglets Lancer / Historique / Créer un dataset : lancement d'un benchmark recall (corpus suivi présélectionné), historique comparé (R@k, MRR, latences), création d'un jeu de questions.
+
+#### Interrogation (`/workshop/retrieval`)
 
 Le cœur experimental. Deux colonnes :
 
-- Colonne gauche : parametres (question, corpus, strategie, index_run_id explicite, top_k, toggle generation) et filtres de retrieval (`document_ids`, `file_names`, `source_path_contains`, `tags`, `metadata_equals` au format `cle=valeur` par ligne).
-- Colonne droite : reponse LLM (si generation activee) avec ses citations `[Rank N]` rendues en pastilles comme dans le Chat (clic : la carte du chunk cite est mise en evidence et amenee a l'ecran), liste des `ChunkCard` avec score, rank, file_name, source_path et apercu du texte, temps d'execution, reponse brute (JSON). La barre de score d'une carte montre le score final et prend la couleur de l'etape qui l'a produit (rerank, RRF, BM25 ou dense), nommee a cote du score. Meme rendu des citations sur Retrieval graphe.
-- Versions des articles (9.10, [versions.md](versions.md)) : choix « En vigueur / Toutes / À une date » (avec la date) ; chaque carte porte un badge d'état (« en vigueur depuis le … », « ancienne version (… → …) », « abrogé le … », « dispositions abrogées ») et, sous les scores, l'état, les dates, les textes qui ont créé et clos la version et la version suivante ; une ligne dit quelle date a été utilisée et d'où elle vient (option, ou lue dans la question). Le même choix est dans les options du Chat (corpus de lois seulement) et au lancement des benchmarks ; le mode pédagogique a une étape « Versions ».
+- Colonne gauche : parametres (question, corpus, strategie, index_run_id explicite, mode de recherche, re-ranking, références d'articles, graphe, versions, top_k, toggle generation avec le rédacteur qui répondra et un lien vers Modèles) et filtres de retrieval (`document_ids`, `file_names`, `source_path_contains`, `tags`, `metadata_equals` au format `cle=valeur` par ligne).
+- Colonne droite : reponse LLM (si generation activee) avec ses citations `[Rank N]` rendues en pastilles comme dans le Chat (clic : la carte du chunk cite est mise en evidence et amenee a l'ecran), liste des `ChunkCard` avec score, rank, file_name, source_path et apercu du texte, temps d'execution, reponse brute (JSON). La barre de score d'une carte montre le score final et prend la couleur de l'etape qui l'a produit (rerank, RRF, BM25 ou dense), nommee a cote du score.
+- Versions des articles (9.10, [versions.md](versions.md)) : choix « En vigueur / Toutes / À une date » ; chaque carte porte un badge d'état et, sous les scores, l'état, les dates, les textes qui ont créé et clos la version et la version suivante.
 - Historique local (localStorage, 20 dernieres requetes) avec bouton « Rejouer ».
 
-### Prompt Playground (`/expert/playground`)
+#### Modèles (`/workshop/models`)
 
-Dialogue direct avec Ollama, **sans** retrieval. Conforme a la suggestion de livrable « interaction directe avec le modele Ollama ».
+- En tête : le **rédacteur par défaut** (fournisseur, modèle, joignable ou non), lu dans `/api/llm/models`.
+- Un onglet par fournisseur, ouvert sur celui du rédacteur par défaut :
+  - **Ollama** : serveur (adresse, état, modèle par défaut installé, rôle), paramètres de génération, modèles installés (taille, date, `Supprimer` avec confirmation, téléchargement d'un modèle) et le **banc d'essai** (ancien Playground) : le modèle seul, sans recherche, avec température, top_p, num_predict, num_ctx, seed et options JSON, conversation en bulles et requête envoyée affichée en JSON.
+  - **llama.cpp** et **vLLM** (API compatible OpenAI) : adresse, état, modèle servi, rôle, mode de démarrage (llama.cpp : à la demande par l'API via `RAGLAB_LLAMACPP_START_COMMAND` / `RAGLAB_LLAMACPP_STOP_COMMAND` ; vLLM : serveur externe), modèles servis. Un fournisseur absent de `RAGLAB_LLM_PROVIDERS` affiche comment l'activer.
+- Paramètres de génération : l'API n'expose que la température (`/api/config`) ; top-p, tokens max et contexte sont affichés comme réglages du serveur non exposés. Le profil llama.cpp et un démarrage / arrêt manuel ne sont pas exposés non plus.
 
-Parametres :
+#### Re-ranking sans GPU
 
-| Champ | Role |
-| --- | --- |
-| Modele | Modele Ollama (dropdown alimente par `/api/ollama/models`). Vide = defaut serveur. |
-| System prompt | Message systeme optionnel. |
-| Temperature | Slider 0 → 2. |
-| top_p | Slider 0 → 1. |
-| num_predict | Nombre max de tokens en sortie. |
-| num_ctx | Taille de la fenetre de contexte. |
-| seed | Graine pour la reproductibilite. |
-| options JSON | Objet JSON additionnel, fusionne avec les champs ci-dessus (ex : `{"repeat_penalty": 1.1}`). |
+`/api/config` donne le device demandé (`rerank_device`) et la raison (`rerank_gpu_status`) : `ok`, `device_cpu` (« GPU désactivé par la configuration, RAGLAB_RERANK_DEVICE=cpu »), `torch_missing` (« PyTorch absent de l'API ») ou `cuda_unavailable` (« aucun GPU CUDA visible par l'API » : pas de GPU, torch sans CUDA, ou pilote inaccessible au processus). Les avis de re-ranking du Chat, d'Interrogation et du mode pédagogique reprennent cette raison (`hooks/useGpuWhy.ts`) ; une API plus ancienne, sans ce champ, donne « GPU non disponible pour l'API ». Un GPU occupé par un autre travail n'est pas détecté : la sonde ne fait que `torch.cuda.is_available()`, sans réserver de mémoire.
 
-Affichage :
+### Onglets
 
-- Conversation en bulles (user / assistant) persistee en memoire React.
-- Payload envoye a Ollama affiche en JSON pour comprendre exactement ce qui a ete transmis.
-- Temps d'execution (ms) renvoye par l'API.
-- Bouton « Reset » pour repartir d'une conversation vide.
-
-### Ingestion (`/expert/ingest`)
-
-- Chemin de dossier **cote serveur** (memes semantiques que la CLI — le front n'upload pas de fichier pour le MVP).
-- Nom de corpus, description optionnelle, tags separes par virgules.
-- Resume visuel des compteurs `ingeres / maj / ignores` + payload JSON complet.
-
-### Indexation (`/expert/index`)
-
-- Corpus via dropdown alimente depuis `/api/corpora`.
-- Strategie radio `traditional` / `slide` / `late`.
-- Run name, embedding provider et embedding model optionnels.
-- Toggle incremental pour reutiliser le dernier run compatible.
-
-### LexML (`/expert/lexml`)
-
-Deux cartes :
-
-- **get-data** : `output_dir` et `page_limit`. Lance `getDataFromLexML`.
-- **load** : orchestration complete (collecte + ingest + indexation). Parametres corpus, strategie, tags, `page_limit`, incremental.
-
-Note : `load` est tres long. Le spinner indique simplement que l'appel est en cours — laissez la page ouverte.
-
-### Ollama (`/expert/ollama`)
-
-- Statut (URL, joignabilite, nombre de modeles, modele par defaut, installation).
-- Tableau des modeles installes avec nom, taille, date, digest tronque. `qwen2.5:7b` est mis en valeur par la ligne surlignee « defaut ». Bouton `Supprimer` par ligne (avec confirmation ; avertissement special si c'est le modele de generation par defaut).
-- Formulaire pour `pull` d'un modele arbitraire.
-
-### Graphe des renvois (`/expert/graph`)
-
-- Choix du corpus et de l'index run ; état du graphe dans Neo4j (construit ou non, profil, date, comptes par type de nœud et de relation) et bouton « Construire / Reconstruire le graphe » (`POST /api/graph/build`).
-- Liste des lois du graphe, les plus reliées d'abord, avec recherche par numéro ou mot du titre.
-- Voisinage de la loi choisie (Cytoscape), en diagramme en arcs : les articles de la loi sur un axe dans l'ordre de lecture, les renvois entre eux en arcs au-dessus (plus hauts quand ils portent loin), et en dessous, sur deux ou trois rangées, tout ce qui est hors de la loi (articles d'autres lois du corpus, lois du corpus, lois hors corpus), chacun sous les articles auxquels il est relié. Couleurs des jetons de la charte (`--graph-*` dans `styles.css`) : loi en vert accent, articles de la loi en vert clair, articles d'autres lois en bleu-vert, lois hors corpus en gris ; `CITES` violet, `AMENDS` ambre, `REVOKES` rouge pointillé, avec la légende sous le graphe. Les noms apparaissent avec le zoom (les numéros d'articles d'abord). Cliquer un nœud, ou un article dans la liste sous le graphe (accessible au clavier), estompe le reste et zoome sur ses voisins ; le panneau montre ses renvois avec la phrase qui les porte, et « Voir les renvois de cet article » le place au centre d'une étoile de ses voisins. « Vue d'ensemble » revient au graphe entier.
-- La requête Cypher équivalente, à coller dans Neo4j Browser. Voir [graphe.md](graphe.md).
-- Les anciennes pages du store à entités (phase 8) n'apparaissent qu'avec `RAGLAB_ENTITY_GRAPH_ENABLED=true`.
-
-### Experiments (`/expert/experiments`)
-
-- Exposition du benchmark Recall existant. Parametres corpus, strategie, `dataset_path` optionnel, `case_limit`.
-- Reponse affichee en JSON.
-
-### Gestion (`/expert/manage`)
-
-Ecran de maintenance pour garder une base et un stock de modeles propres. Deux cartes :
-
-- **Corpus** : tableau des corpus avec compteurs documents / index runs + bouton `Supprimer` (confirmation navigateur, cascade `documents -> chunks -> embeddings` + `index_runs`). Boutons `Importer un dossier…` et `Charger depuis LexML…` qui redirigent vers les pages dediees.
-- **Modeles Ollama** : tableau des modeles installes avec taille et bouton `Supprimer` par ligne (refuse par defaut si c'est le modele de generation, simple avertissement via `confirm`). Formulaire `Importer un modele` pour declencher un `ollama pull` sans quitter la page.
-
-La meme capacite de suppression est exposee sur la page Ollama (`/expert/ollama`) ligne par ligne.
+Un seul composant, `components/Tabs.tsx` : `role="tablist"` nommé, `role="tab"` avec `aria-selected` et `aria-controls`, panneau `role="tabpanel"` (`tabPanelProps`), activation automatique, flèches gauche / droite, Début / Fin. Le trait de 1 px est une ombre interne de la liste et l'indicateur de 2 px est posé dessus, au même endroit ; aucun onglet ne dessine de bordure, et l'onglet actif garde la même graisse (sa largeur ne change pas, les écarts restent égaux). L'indicateur glisse au clic et saute à la touche.
 
 ## Endpoints API
 
@@ -306,8 +303,8 @@ Smoke test manuel :
 
 1. `docker compose up -d postgres ollama adminer` puis `raglab db init`.
 2. `raglab serve --dev` et `cd frontend && npm run dev`.
-3. Ouvrir http://localhost:5173, verifier que le Dashboard affiche les statuts.
-4. Aller dans Prompt Playground, envoyer « Bonjour » → reponse attendue d'Ollama.
+3. Ouvrir http://localhost:5173, verifier que la vue d'ensemble de l'Atelier affiche les statuts.
+4. Aller dans Atelier → Modèles → banc d'essai, envoyer « Bonjour » → reponse attendue d'Ollama.
 5. Apres une ingestion et une indexation, aller dans RAG Query, poser une question et verifier les chunks + reponse.
 
 ### Tests de bout en bout
@@ -324,8 +321,9 @@ La configuration (`frontend/playwright.config.ts`) construit le bundle de produc
 
 - Chat : reponse streamee, citation `[Rank N]` cliquable qui filtre ses passages, erreur affichee quand l'API repond 503, absence de debordement horizontal a 375 px.
 - Mode pedagogique : schema visible, etapes allumees avec leurs durees, etat conserve apres rechargement.
-- Retrieval (expert) : cartes de chunks avec nom de fichier et score.
-- Benchmarks : tableau d'historique rempli depuis `/api/experiments/history`.
+- Interrogation (Atelier) : cartes de chunks avec nom de fichier et score.
+- Évaluation : tableau d'historique rempli depuis `/api/experiments/history`.
+- Atelier : état de chaque étape et prochaine étape, étape « à refaire » (graphe sur un ancien run, autre modèle d'embedding), redirection des anciennes routes `/expert/*`, onglets au clavier et indicateur posé sur le trait, page Modèles par fournisseur, libellé du re-ranking sans GPU.
 - Langue : le passage a l'anglais change les libelles.
 
 En CI, le job `e2e` lance la suite et publie le rapport HTML en artefact en cas d'echec.
@@ -334,7 +332,7 @@ En CI, le job `e2e` lance la suite et publie le rapport HTML en artefact en cas 
 
 1. Collecter LexML et indexer en une commande via l'UI : `LexML → load` avec `corpus=lexml_real`, `strategy=traditional`, `page_limit=1`.
 2. Aller dans `RAG Query`, choisir `corpus=lexml_real`, poser une question : l'UI affiche les chunks et la reponse generee.
-3. Basculer sur `Prompt Playground` pour comparer la meme question envoyee directement au modele, sans contexte : utile pour documenter l'apport du RAG.
+3. Basculer sur le banc d'essai (Atelier → Modèles) pour comparer la meme question envoyee directement au modele, sans contexte : utile pour documenter l'apport du RAG.
 
 ## Variables d'environnement ajoutees
 

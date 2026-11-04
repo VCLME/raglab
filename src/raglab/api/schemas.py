@@ -86,6 +86,10 @@ class ConfigResponse(BaseModel):
     bm25_b: float
     default_rerank: bool = False
     rerank_gpu: bool = False
+    # RAGLAB_RERANK_DEVICE and why it can or cannot use a GPU: ok,
+    # device_cpu, torch_missing or cuda_unavailable (rerank_gpu_status).
+    rerank_device: str = ""
+    rerank_gpu_status: str = ""
     rerank_model_name: str = ""
     rerank_candidates: int = 0
     # Phase-8 entity store pages (Expert flag).

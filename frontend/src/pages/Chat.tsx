@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useGpuWhy } from "../hooks/useGpuWhy";
 import { ApiError, extractErrorDetail, get, queryWithStreaming } from "../api/client";
 import type {
   CitationInfo,
@@ -546,6 +547,7 @@ function ChatTurnView({
   onSelectSource,
 }: TurnProps) {
   const { t } = useTranslation();
+  const gpuWhy = useGpuWhy();
   const [showDetail, setShowDetail] = useState(false);
   const visibleChunks = highlight
     ? turn.chunks.filter((c) => c.file_name === highlight)
@@ -632,7 +634,7 @@ function ChatTurnView({
           ) : null}
           {turn.rerank_notice ? (
             <p className="answer-notice" role="note">
-              {t(`chat.rerank_notice_${turn.rerank_notice}`, { defaultValue: turn.rerank_notice })}
+              {t(`chat.rerank_notice_${turn.rerank_notice}`, { defaultValue: turn.rerank_notice, why: gpuWhy })}
             </p>
           ) : null}
           {turn.generator_notice ? (

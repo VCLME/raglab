@@ -241,6 +241,25 @@ def _reranker_key(settings: Settings) -> tuple:
 
 
 @lru_cache(maxsize=8)
+def rerank_gpu_status(device: str) -> str:
+    """Why the re-ranker can or cannot use a GPU, for the UI.
+
+    "ok": a CUDA device torch can use; "device_cpu": RAGLAB_RERANK_DEVICE is
+    not a CUDA device (GPU off by configuration, torch is not imported);
+    "torch_missing": the API environment has no torch; "cuda_unavailable":
+    torch sees no CUDA device (no GPU, a CPU-only torch build, or a driver
+    the API process cannot reach). Only device availability is probed: no
+    memory is allocated, so a GPU busy with another job still reads "ok".
+    """
+    if not device.startswith("cuda"):
+        return "device_cpu"
+    try:
+        import torch
+    except ImportError:
+        return "torch_missing"
+    return "ok" if torch.cuda.is_available() else "cuda_unavailable"
+
+
 def rerank_gpu_available(device: str) -> bool:
     """True when the configured rerank device is a CUDA device torch can use.
 
@@ -248,13 +267,7 @@ def rerank_gpu_available(device: str) -> bool:
     several seconds on CPU; the query path checks this before re-ranking by
     default (see `QueryService.retrieve`).
     """
-    if not device.startswith("cuda"):
-        return False
-    try:
-        import torch
-    except ImportError:
-        return False
-    return bool(torch.cuda.is_available())
+    return rerank_gpu_status(device) == "ok"
 
 
 def get_reranker(settings: Settings | None = None) -> Reranker:

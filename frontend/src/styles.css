@@ -352,93 +352,6 @@ pre {
   flex-shrink: 0;
 }
 
-.body {
-  flex: 1;
-  display: flex;
-  min-height: 0;
-}
-
-.sidebar {
-  width: 224px;
-  flex-shrink: 0;
-  padding: 18px 0;
-  border-right: 1px solid var(--border);
-  background: var(--bg-panel);
-}
-.sidebar nav {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  padding: 0 10px;
-}
-.sidebar nav a {
-  display: block;
-  padding: 7px 12px;
-  color: var(--muted);
-  border-radius: var(--radius-sm);
-  font-size: 13.5px;
-  font-weight: 500;
-  text-decoration: none;
-  white-space: nowrap;
-  transition: background var(--dur) var(--ease-out), color var(--dur) var(--ease-out);
-}
-.sidebar nav a:hover {
-  background: var(--surface-hover);
-  color: var(--text);
-}
-.sidebar nav a.active {
-  background: var(--surface);
-  color: var(--accent-strong);
-  font-weight: 600;
-  box-shadow: 0 0 0 1px var(--border), var(--shadow-card);
-}
-.sidebar .section-title {
-  padding: 0 22px 8px;
-  font-size: 11.5px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--dim);
-  font-weight: 600;
-}
-.sidebar-group {
-  margin-top: 14px;
-}
-.sidebar-group-title {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  width: 100%;
-  background: transparent;
-  border: none;
-  padding: 4px 12px;
-  font-size: 11.5px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--dim);
-  font-weight: 600;
-  cursor: pointer;
-  text-align: left;
-}
-.sidebar-group-title:hover {
-  color: var(--text);
-  background: transparent;
-}
-.sidebar-group-chevron {
-  display: inline-block;
-  width: 10px;
-  font-size: 10px;
-  color: inherit;
-}
-.sidebar-group-children {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  margin-top: 2px;
-}
-.sidebar-group-children a {
-  font-size: 13.5px;
-}
-
 .content {
   flex: 1;
   padding: 28px 40px 48px;
@@ -546,41 +459,6 @@ pre {
   }
 }
 @media (max-width: 960px) {
-  .body {
-    flex-direction: column;
-  }
-  .sidebar {
-    width: 100%;
-    padding: 8px 0;
-    border-right: none;
-    border-bottom: 1px solid var(--border);
-    position: sticky;
-    top: 56px;
-    z-index: 15;
-  }
-  .sidebar .section-title {
-    display: none;
-  }
-  /* Flatten the groups into one horizontal strip; group titles stay as toggles. */
-  .sidebar nav {
-    flex-direction: row;
-    align-items: center;
-    gap: 4px;
-    overflow-x: auto;
-    scrollbar-width: none;
-    padding: 0 12px;
-  }
-  .sidebar-group,
-  .sidebar-group-children {
-    display: contents;
-  }
-  .sidebar-group-title {
-    width: auto;
-    flex-shrink: 0;
-    margin-left: 8px;
-    padding: 7px 6px;
-    white-space: nowrap;
-  }
   .content {
     padding: 20px 16px 40px;
   }
@@ -761,7 +639,6 @@ button > svg {
 }
 /* List-like buttons keep their content on the left. */
 .lang-menu button,
-.sidebar-group-title,
 .suggestion,
 .details-toggle {
   justify-content: flex-start;
@@ -843,6 +720,12 @@ button.sm {
   background: var(--accent-soft);
   border-color: var(--accent-border);
   color: var(--accent-strong);
+}
+/* Nothing known either way (an optional service not configured). */
+.badge.neutral {
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: var(--muted);
 }
 
 /* ——— json ——— */
@@ -1974,43 +1857,71 @@ button.sm {
 
 /* ——— tabs ——— */
 
-.tabs {
+/* Underline tabs (components/Tabs.tsx). The rule is an inset shadow on the
+ * list and the indicator is drawn over it, on the same 2px band: nothing
+ * else draws a bottom border. Tabs keep one weight, so the selected tab
+ * never changes width and the gaps stay even. */
+.tablist {
   position: relative;
   display: flex;
-  gap: 4px;
-  margin-bottom: 18px;
-  border-bottom: 1px solid var(--border);
+  gap: 24px;
+  margin-bottom: 20px;
+  box-shadow: inset 0 -1px 0 var(--border);
   overflow-x: auto;
   scrollbar-width: none;
 }
-.tabs button {
+.tablist::-webkit-scrollbar {
+  display: none;
+}
+.tablist [role="tab"] {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  min-height: 0;
+  padding: 0;
   background: transparent;
-  color: var(--muted);
   border: none;
-  padding: 9px 12px;
   border-radius: 0;
-  font-weight: 500;
+  color: var(--muted);
   font-size: 13.5px;
-  cursor: pointer;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
+  font-weight: 500;
   white-space: nowrap;
+  cursor: pointer;
+  transition: color var(--dur) var(--ease-out);
 }
-.tabs button:hover {
-  color: var(--text);
+.tablist [role="tab"]:hover {
   background: transparent;
-  border-bottom-color: var(--border-strong);
-}
-.tabs button.active {
   color: var(--text);
-  font-weight: 600;
-  background: transparent;
 }
-.tabs button.active:hover {
-  border-bottom-color: transparent;
+.tablist [role="tab"][aria-selected="true"] {
+  color: var(--text);
 }
-.tabs button:active {
+.tablist [role="tab"]:active {
   transform: none;
+}
+.tablist [role="tab"]:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+  border-radius: 4px;
+}
+.tablist .slide-indicator.underline {
+  bottom: 0;
+}
+/* Keyboard moves jump: no animation on an action repeated by the key. */
+.tablist[data-instant] .slide-indicator {
+  transition: none;
+}
+.tab-count {
+  color: var(--dim);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+[role="tabpanel"]:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 4px;
+  border-radius: var(--radius-sm);
 }
 
 /* ——— benchmarks chart ——— */
@@ -3551,4 +3462,552 @@ button.icon-only {
 .edu-version.outdated,
 .edu-version.demoted {
   color: var(--err);
+}
+
+/* ——— Atelier (knowledge-base workshop) ——— */
+
+.workshop {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.workshop-bar {
+  background: var(--bg-panel);
+  box-shadow: inset 0 -1px 0 var(--border);
+  padding: 0 40px;
+}
+.workshop-bar-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 48px;
+}
+.workshop-links {
+  display: flex;
+  gap: 4px;
+}
+.workshop-links a {
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  font-size: 13.5px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background var(--dur) var(--ease-out), color var(--dur) var(--ease-out);
+}
+.workshop-links a:hover {
+  color: var(--text);
+  background: var(--surface-hover);
+}
+.workshop-links a.active {
+  color: var(--text);
+  background: var(--surface-hover);
+}
+.workshop-scope {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.workshop-scope-label {
+  color: var(--muted);
+  font-size: 13px;
+}
+.workshop-scope .select-trigger {
+  min-width: 200px;
+}
+.workshop-content {
+  padding-top: 24px;
+}
+.workshop-lead {
+  margin: -8px 0 16px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* The build flow: an ordered list of step links, joined by a line. */
+.build-flow ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+.build-flow li {
+  position: relative;
+  min-width: 0;
+}
+.flow-step {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  color: var(--text);
+  text-decoration: none;
+}
+.flow-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.flow-name {
+  font-weight: 600;
+  white-space: nowrap;
+}
+.flow-meta {
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.flow-dot {
+  flex-shrink: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1.5px var(--border-input);
+  background: var(--surface);
+}
+.flow-step[data-state="done"] .flow-dot {
+  background: var(--accent);
+  box-shadow: none;
+}
+.flow-step[data-state="stale"] .flow-dot {
+  background: var(--warn);
+  box-shadow: none;
+}
+.flow-step[data-state="failed"] .flow-dot {
+  background: var(--err);
+  box-shadow: none;
+}
+.flow-step[data-state="running"] .flow-dot {
+  background: var(--surface);
+  box-shadow: inset 0 0 0 3px var(--accent);
+}
+.flow-step[data-state="na"] .flow-dot,
+.flow-step[data-state="unknown"] .flow-dot {
+  background: var(--border);
+  box-shadow: none;
+}
+
+/* Strip: above every step page. Steps sit on one line, joined by a rule
+ * that runs from one dot to the next. */
+.build-flow.strip {
+  margin: 0 -8px;
+}
+/* The rule runs from a step's name to the end of its column, up to the next dot. */
+.build-flow.strip li:not(:last-child) .flow-head::after {
+  content: "";
+  flex: 1;
+  min-width: 12px;
+  height: 1px;
+  margin: 0 -24px 0 4px;
+  background: var(--border-strong);
+}
+.build-flow.strip .flow-step {
+  position: relative;
+  padding: 12px 8px 12px;
+  margin: 0 8px;
+}
+.build-flow.strip .flow-name {
+  font-size: 13.5px;
+  color: var(--muted);
+}
+.build-flow.strip .flow-step:hover .flow-name {
+  color: var(--text);
+}
+.build-flow.strip .flow-step.active .flow-name {
+  color: var(--text);
+}
+.build-flow.strip .flow-step::after {
+  content: "";
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 0;
+  height: 2px;
+  background: transparent;
+}
+.build-flow.strip .flow-step.active::after {
+  background: var(--accent);
+}
+.build-flow.strip .flow-step:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+  border-radius: var(--radius-sm);
+}
+
+/* Board: the overview's large flow. One panel per step, a line between. */
+.build-flow.board {
+  margin-bottom: 16px;
+}
+.build-flow.board ol {
+  gap: 16px;
+}
+.build-flow.board li + li::before {
+  content: "";
+  position: absolute;
+  top: 27px;
+  left: -16px;
+  width: 16px;
+  height: 1px;
+  background: var(--border-strong);
+}
+.build-flow.board .flow-step {
+  height: 100%;
+  gap: 6px;
+  padding: 20px 16px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  transition: border-color var(--dur) var(--ease-out), background var(--dur) var(--ease-out);
+}
+.build-flow.board .flow-step:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+}
+.build-flow.board .flow-step:active {
+  transform: scale(0.98);
+}
+.build-flow.board .flow-step:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.build-flow.board .flow-name {
+  font-size: 15px;
+}
+.build-flow.board .flow-meta {
+  font-size: 13px;
+  color: var(--text);
+  white-space: normal;
+}
+.flow-state {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.flow-state.stale {
+  color: var(--warn);
+}
+.flow-state.failed {
+  color: var(--err);
+}
+.flow-state.done {
+  color: var(--accent-strong);
+}
+.flow-what {
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+.flow-when {
+  min-height: 24px;
+  margin-top: auto;
+  padding-top: 6px;
+  color: var(--dim);
+  font-size: 12px;
+}
+
+.next-step {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius);
+  font-size: 14px;
+}
+.next-step.complete {
+  background: var(--surface);
+  border-color: var(--border);
+}
+.button-link {
+  display: inline-flex;
+  align-items: center;
+  height: var(--control-h);
+  padding: 0 14px;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 13.5px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background var(--dur) var(--ease-out), transform 120ms var(--ease-out);
+}
+.button-link:hover {
+  background: var(--accent-strong);
+  color: var(--on-accent);
+}
+.button-link:active {
+  transform: scale(0.97);
+}
+
+.workshop-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+.workshop-grid > .card {
+  margin-bottom: 16px;
+}
+.workshop-foot {
+  margin: 12px 0 0;
+  font-size: 12.5px;
+}
+.card-lead {
+  margin: -6px 0 14px;
+}
+.card-foot {
+  margin: 12px 0 0;
+  font-size: 12.5px;
+}
+.notice-line {
+  display: inline-flex;
+  margin-bottom: 14px;
+}
+
+/* Label / value pairs: the label column, then the value. */
+.kv,
+.service-list {
+  margin: 0;
+  display: grid;
+  grid-template-columns: minmax(120px, max-content) minmax(0, 1fr);
+  font-size: 13.5px;
+}
+.kv > div,
+.service-list > div {
+  display: contents;
+}
+.kv dt,
+.service-list dt {
+  color: var(--muted);
+  padding: 8px 16px 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+.kv dd,
+.service-list dd {
+  margin: 0;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.kv > div:last-child > *,
+.service-list > div:last-child > * {
+  border-bottom: none;
+}
+.num-text {
+  font-variant-numeric: tabular-nums;
+}
+.table th.num,
+.table td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.row-actions {
+  white-space: nowrap;
+}
+.row-actions > * + * {
+  margin-left: 6px;
+}
+.tag-gap {
+  margin-left: 6px;
+}
+
+/* Découpage: the three strategies side by side in one divided panel. */
+.strategy-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.strategy {
+  padding: 0 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.strategy:first-child {
+  padding-left: 0;
+}
+.strategy + .strategy {
+  border-left: 1px solid var(--border);
+}
+.strategy p {
+  margin: 0;
+  font-size: 13.5px;
+}
+.strategy-params {
+  font-size: 12.5px;
+}
+.strategy-runs {
+  margin-top: auto;
+  padding-top: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Modèles */
+.writer-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+.writer-label {
+  color: var(--muted);
+}
+.pull-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 16px;
+}
+.pull-row .form-row {
+  flex: 1;
+  margin-bottom: 0;
+}
+.pull-row > button {
+  margin-top: 25px;
+}
+.plain-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.plain-list li {
+  padding: 6px 0;
+}
+.code-line,
+.command-block pre {
+  margin: 8px 0 12px;
+  padding: 10px 12px;
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  font-family: var(--mono);
+  font-size: 12.5px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.command-block {
+  margin-top: 14px;
+  font-size: 12.5px;
+}
+.source-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 1180px) {
+  .build-flow.board ol {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    row-gap: 16px;
+  }
+  .build-flow.board li:nth-child(3n + 1)::before {
+    display: none;
+  }
+}
+@media (max-width: 960px) {
+  .workshop-bar {
+    padding: 0 16px;
+    position: sticky;
+    top: 56px;
+    z-index: 15;
+  }
+  .build-flow.strip {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .build-flow.strip::-webkit-scrollbar {
+    display: none;
+  }
+  .build-flow.strip ol {
+    display: flex;
+  }
+  .build-flow.strip li {
+    flex-shrink: 0;
+  }
+  .build-flow.strip .flow-meta {
+    display: none;
+  }
+  .workshop-grid,
+  .source-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .workshop-grid > .card {
+    margin-bottom: 0;
+  }
+  .workshop-grid {
+    margin-bottom: 16px;
+  }
+}
+@media (max-width: 640px) {
+  .workshop-bar-row {
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    padding: 6px 0;
+  }
+  .workshop-scope {
+    flex-basis: 100%;
+  }
+  .workshop-scope .select-trigger {
+    min-width: 0;
+    flex: 1;
+  }
+  /* Phone: the flow reads top to bottom, joined by a vertical line. */
+  .build-flow.board ol {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 8px;
+  }
+  .build-flow.board li:nth-child(n + 2)::before {
+    display: block;
+    top: -8px;
+    left: 20px;
+    width: 1px;
+    height: 8px;
+  }
+  .build-flow.board .flow-step {
+    padding: 14px 14px 12px;
+  }
+  .build-flow.board .flow-what,
+  .build-flow.board .flow-when:empty {
+    display: none;
+  }
+  .pull-row > button {
+    margin-top: 0;
+  }
+  .strategy-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .strategy,
+  .strategy:first-child {
+    padding: 12px 0;
+  }
+  .strategy + .strategy {
+    border-left: none;
+    border-top: 1px solid var(--border);
+  }
+  .pull-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .next-step .button-link {
+    width: 100%;
+    justify-content: center;
+  }
 }

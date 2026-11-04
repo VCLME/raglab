@@ -13,7 +13,7 @@ export function EntityGraphGate({ children }: { children: ReactNode }) {
     <div className="card">
       <h3>{t("graph.entity_disabled_title")}</h3>
       <p className="muted">{t("graph.entity_disabled_body")}</p>
-      <Link to="/expert/graph">{t("graph.entity_disabled_link")}</Link>
+      <Link to="/workshop/graph">{t("graph.entity_disabled_link")}</Link>
     </div>
   );
 }

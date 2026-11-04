@@ -36,6 +36,9 @@ export interface ConfigResponse {
   bm25_b: number;
   default_rerank?: boolean;
   rerank_gpu?: boolean;
+  /** RAGLAB_RERANK_DEVICE, and why it has a GPU or not: ok, device_cpu, torch_missing, cuda_unavailable. */
+  rerank_device?: string;
+  rerank_gpu_status?: string;
   rerank_model_name?: string;
   rerank_candidates?: number;
   /** Phase-8 entity store pages (Expert flag RAGLAB_ENTITY_GRAPH_ENABLED). */

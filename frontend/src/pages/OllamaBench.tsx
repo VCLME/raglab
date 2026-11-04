@@ -8,13 +8,13 @@ import type {
   OllamaModelsResponse,
 } from "../api/types";
 import { ErrorBanner } from "../components/ErrorBanner";
-import { ExplainBanner } from "../components/ExplainBanner";
 import { FieldRow } from "../components/FieldRow";
 import { JsonViewer } from "../components/JsonViewer";
 import { Spinner } from "../components/Spinner";
 import { Select } from "../components/Select";
 
-export function Playground() {
+/** Ollama test bench (formerly the Playground page): the model alone, no retrieval, every sampling parameter. */
+export function OllamaBench() {
   const { t } = useTranslation();
   const modelsLoad = useApiLoad<OllamaModelsResponse>(() => get("/api/ollama/models"));
   const [model, setModel] = useState("");
@@ -76,19 +76,11 @@ export function Playground() {
 
   return (
     <div>
-      <div className="page-header">
-        <h2>{t("playground.title")}</h2>
-        <span className="muted">{t("playground.subtitle")}</span>
-      </div>
-      <ExplainBanner
-        subtitle={t("playground.subtitle")}
-        body={t("playground.explain_body")}
-        storageKey="raglab.explain.playground"
-      />
       <div className="split">
         <div>
           <div className="card">
-            <h3>{t("playground.model_params")}</h3>
+            <h3>{t("models.bench_title")}</h3>
+            <p className="muted card-lead">{t("models.bench_lead")}</p>
             <FieldRow
               label={t("playground.model_label")}
               hint={t("playground.model_default_hint", { value: defaultModel })}
