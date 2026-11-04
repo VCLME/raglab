@@ -1,0 +1,499 @@
+{
+  "label": "brexpat-full-v1",
+  "strategy": "traditional",
+  "retrieval_mode": "hybrid",
+  "rerank": true,
+  "graph": false,
+  "versions": "in_force",
+  "generator": "llamacpp:qwen35b-moe-rag",
+  "rerank_model": "BAAI/bge-reranker-v2-m3",
+  "rerank_candidates": 40,
+  "top_k": 5,
+  "ragas_limit": 38,
+  "environment": {
+    "date": "2026-11-04T13:52:28+00:00",
+    "git_commit": "f3fd1be",
+    "git_dirty": true,
+    "os": "Windows-11-10.0.26300-SP0",
+    "cpu": "Intel64 Family 6 Model 154 Stepping 3, GenuineIntel",
+    "cpu_count": 20,
+    "ram": "32 GiB",
+    "gpu": "NVIDIA GeForce RTX 3070 Ti Laptop GPU, 8192 MiB, 595.79",
+    "python": "3.12.10",
+    "torch": "2.11.0+cu128",
+    "transformers": "5.5.4",
+    "postgres": "16.13 (Debian 16.13-1.pgdg12+1)",
+    "pgvector": "0.8.2",
+    "embedding_model": "transformers:intfloat/multilingual-e5-small (cpu)",
+    "distance": "cosine",
+    "generation_model": "ollama:qwen2.5:7b (845dbda0ea48)",
+    "judge": "llamacpp:gemma4-26b-a4b",
+    "command": "raglab bench all --suite br_expat --ragas-limit 38 --generator-provider llamacpp --generator-profile qwen35b-moe-rag --label brexpat-full-v1"
+  },
+  "suites": [
+    {
+      "suite": "br_expat",
+      "language": "pt",
+      "corpus_name": "bench_br_expat_pt",
+      "index_run_id": "0e88055e-6a24-4dc1-840e-8a3eee03722b",
+      "chunks": 3578,
+      "documents": 19,
+      "total_cases": 38,
+      "retrieval_mode": "hybrid",
+      "lexical_weight": 0.5,
+      "rrf_k": 60,
+      "rerank": true,
+      "citations": null,
+      "graph": null,
+      "graph_notices": null,
+      "versions": null,
+      "summary": {
+        "recall@1": 0.23684210526315788,
+        "recall@5": 0.5263157894736842,
+        "recall@10": 0.6052631578947368,
+        "precision@1": 0.23684210526315788,
+        "precision@5": 0.1578947368421053,
+        "precision@10": 0.11315789473684212,
+        "mrr": 0.35006265664160396,
+        "mean_first_relevant_rank": 2.8260869565217392,
+        "recall@1_ci_low": 0.1053,
+        "recall@1_ci_high": 0.3684,
+        "recall@5_ci_low": 0.3684,
+        "recall@5_ci_high": 0.6842,
+        "recall@10_ci_low": 0.4737,
+        "recall@10_ci_high": 0.7368,
+        "mrr_ci_low": 0.2315,
+        "mrr_ci_high": 0.4786,
+        "latency_dense_p50_ms": 24.638,
+        "latency_dense_p95_ms": 64.481,
+        "latency_embed_p50_ms": 17.979,
+        "latency_embed_p95_ms": 272.553,
+        "latency_fusion_p50_ms": 0.733,
+        "latency_fusion_p95_ms": 1.1,
+        "latency_generation_p50_ms": 8637.334,
+        "latency_generation_p95_ms": 22045.393,
+        "latency_lexical_p50_ms": 19.903,
+        "latency_lexical_p95_ms": 44.409,
+        "latency_query_p50_ms": 379.091,
+        "latency_query_p95_ms": 599.097,
+        "latency_rerank_p50_ms": 309.138,
+        "latency_rerank_p95_ms": 387.705,
+        "latency_retrieval_p50_ms": 49.021,
+        "latency_retrieval_p95_ms": 97.592,
+        "latency_versions_p50_ms": 3.42,
+        "latency_versions_p95_ms": 4.485,
+        "generation_tokens_per_second_p50": 24.62,
+        "rerank_cache_hit_rate": 0.0,
+        "outdated_hit@1": 0.0,
+        "outdated_hit@5": 0.0,
+        "outdated_hit@10": 0.0,
+        "faithfulness_mean": 0.9736842105263158,
+        "faithfulness_judged": 38,
+        "answer_relevancy_mean": 0.8552631578947368,
+        "answer_relevancy_judged": 38,
+        "answer_correctness_mean": 0.5552631578947369,
+        "answer_correctness_judged": 38
+      },
+      "by_type": {
+        "company_tax": {
+          "cases": 9,
+          "recall@1": 0.1111111111111111,
+          "recall@5": 0.4444444444444444,
+          "recall@10": 0.5555555555555556,
+          "mrr": 0.26296296296296295,
+          "outdated_hit@1": 0.0,
+          "outdated_hit@5": 0.0,
+          "outdated_hit@10": 0.0
+        },
+        "immigration": {
+          "cases": 11,
+          "recall@1": 0.36363636363636365,
+          "recall@5": 0.7272727272727273,
+          "recall@10": 0.7272727272727273,
+          "mrr": 0.49242424242424243,
+          "outdated_hit@1": 0.0,
+          "outdated_hit@5": 0.0,
+          "outdated_hit@10": 0.0
+        },
+        "inss_personal_tax": {
+          "cases": 8,
+          "recall@1": 0.0,
+          "recall@5": 0.25,
+          "recall@10": 0.5,
+          "mrr": 0.13988095238095238,
+          "outdated_hit@1": 0.0,
+          "outdated_hit@5": 0.0,
+          "outdated_hit@10": 0.0
+        },
+        "paraphrase": {
+          "cases": 8,
+          "recall@1": 0.375,
+          "recall@5": 0.625,
+          "recall@10": 0.625,
+          "mrr": 0.425,
+          "outdated_hit@1": 0.0,
+          "outdated_hit@5": 0.0,
+          "outdated_hit@10": 0.0
+        },
+        "trap": {
+          "cases": 2,
+          "recall@1": 0.5,
+          "recall@5": 0.5,
+          "recall@10": 0.5,
+          "mrr": 0.5,
+          "outdated_hit@1": 0.0,
+          "outdated_hit@5": 0.0,
+          "outdated_hit@10": 0.0
+        }
+      },
+      "report_path": "data\\reports\\recall-br_expat-20261104-141324.json",
+      "experiment_run_id": "fdb67c83-ae79-4a08-85e9-df70b57e52dc",
+      "cases": [
+        {
+          "id": "brx-01",
+          "type": "immigration",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.25,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "brx-02",
+          "type": "immigration",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "brx-03",
+          "type": "immigration",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "brx-04",
+          "type": "immigration",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "brx-05",
+          "type": "immigration",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "brx-06",
+          "type": "immigration",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "brx-07",
+          "type": "immigration",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "brx-08",
+          "type": "immigration",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "brx-09",
+          "type": "immigration",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "brx-10",
+          "type": "immigration",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "brx-11",
+          "type": "immigration",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "brx-12",
+          "type": "company_tax",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "brx-13",
+          "type": "company_tax",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 1,
+          "reciprocal_rank": 0.16666666666666666
+        },
+        {
+          "id": "brx-14",
+          "type": "company_tax",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "brx-15",
+          "type": "company_tax",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "brx-16",
+          "type": "company_tax",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "brx-17",
+          "type": "company_tax",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "brx-18",
+          "type": "company_tax",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "brx-19",
+          "type": "company_tax",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.2
+        },
+        {
+          "id": "brx-20",
+          "type": "company_tax",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "brx-21",
+          "type": "inss_personal_tax",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "brx-22",
+          "type": "inss_personal_tax",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 1,
+          "reciprocal_rank": 0.14285714285714285,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "brx-23",
+          "type": "inss_personal_tax",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "brx-24",
+          "type": "inss_personal_tax",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "brx-25",
+          "type": "inss_personal_tax",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 1,
+          "reciprocal_rank": 0.14285714285714285,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "brx-26",
+          "type": "inss_personal_tax",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "brx-27",
+          "type": "inss_personal_tax",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "brx-28",
+          "type": "inss_personal_tax",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "brx-29",
+          "type": "trap",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "brx-30",
+          "type": "trap",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "brx-p07",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "brx-p01",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.2
+        },
+        {
+          "id": "brx-p11",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "brx-p12",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "brx-p17",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "brx-p19",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "brx-p23",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.2
+        },
+        {
+          "id": "brx-p26",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        }
+      ]
+    }
+  ]
+}

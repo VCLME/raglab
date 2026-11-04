@@ -111,6 +111,19 @@ def default_suites(settings: Settings, repo_root: Path) -> list[Suite]:
             manifest_path=repo_root / "benchmarks" / "eurlex_compliance" / "corpus_manifest.json",
             default=False,
         ),
+        # The owner's 30 real questions as a French national settling in
+        # Brazil (immigration, company tax, social security, personal tax),
+        # on the 19 federal texts that answer them, in Portuguese: run when
+        # named, `--suite br_expat`.
+        Suite(
+            name="br_expat",
+            language="pt",
+            corpus_name="bench_br_expat_pt",
+            corpus_dir=settings.br_expat_dir / "corpus",
+            dataset_path=repo_root / "benchmarks" / "br_expat" / "ground_truth.jsonl",
+            manifest_path=repo_root / "benchmarks" / "br_expat" / "corpus_manifest.json",
+            default=False,
+        ),
         # Questions whose answer is in the article cited by another (9.9b), on
         # the LexML corpus: run when named, `--suite lexml_references`.
         Suite(
@@ -182,6 +195,10 @@ def _ensure_corpus(suite: Suite, settings: Settings) -> None:
         from raglab.eurlex.collector import EurlexCollector
 
         EurlexCollector(settings).collect(output_dir=suite.corpus_dir.parent)
+    elif suite.name == "br_expat":
+        from raglab.lexml.br_expat import BrExpatCollector
+
+        BrExpatCollector(settings).collect(output_dir=suite.corpus_dir.parent)
     else:
         raise ValueError(f"Corpus absent et pas de recette pour le produire: {suite.corpus_dir}")
 

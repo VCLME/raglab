@@ -181,6 +181,7 @@ class Settings(BaseSettings):
     lexml_documents_dir: Path = Field(default_factory=lambda: Path("data/lexml/documents"))
     lexml_benchmark_dir: Path = Field(default_factory=lambda: Path("data/lexml/benchmark"))
     lexml_fulltext_dir: Path = Field(default_factory=lambda: Path("data/lexml/fulltext"))
+    br_expat_dir: Path = Field(default_factory=lambda: Path("data/lexml/br_expat"))
     # French codes with their version history (`raglab legifrance fetch`).
     legifrance_dir: Path = Field(default_factory=lambda: Path("data/legifrance"))
     # EU acts from EUR-Lex / CELLAR (`raglab eurlex fetch`).

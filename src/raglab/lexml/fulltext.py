@@ -131,8 +131,11 @@ class _PlanaltoTextParser(HTMLParser):
             self.parts.append(re.sub(r"\s+", " ", data))
 
 
-def extract_planalto_text(html: str) -> str:
-    """Turn a Planalto law page into plain text, one paragraph per line."""
+def extract_planalto_text(html: str, heading: re.Pattern[str] = _HEADING_RE) -> str:
+    """Turn a Planalto law page into plain text, one paragraph per line.
+
+    `heading` matches the line that opens the text (a decree or an amendment
+    does not start with "LEI N")."""
     parser = _PlanaltoTextParser()
     parser.feed(html)
     parser.close()
@@ -142,7 +145,7 @@ def extract_planalto_text(html: str) -> str:
     # Drop the masthead (Presidência / Casa Civil / links to regulations)
     # that precedes the law heading on every page.
     for index, line in enumerate(lines):
-        if _HEADING_RE.match(line):
+        if heading.match(line):
             lines = lines[index:]
             break
     # One paragraph per line, so the chunkers' sentence splitter sees

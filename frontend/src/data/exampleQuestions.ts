@@ -3,7 +3,9 @@
 // sets: someone who does not know the law can still click one and see the
 // pipeline at work. Every question is answered by a passage of its corpus
 // (checked with retrieval). The Brazilian corpus keeps French and English
-// questions on purpose: retrieval is multilingual.
+// questions on purpose: retrieval is multilingual. The Brazil expat corpus is
+// the exception: its examples are real questions of its frozen set, in every
+// language with the article in the top 5 of the default pipeline.
 
 export type ExampleLanguage = "fr" | "en" | "pt";
 
@@ -46,6 +48,27 @@ const LEXML: Record<ExampleLanguage, string[]> = {
     "O que a lei prevê para a educação ambiental?",
     "Estou no Brasil com visto de turista. Posso ser pago por uma empresa brasileira?",
     "Dá para conseguir autorização de residência mesmo em situação migratória irregular?",
+  ],
+};
+
+const BR_EXPAT: Record<ExampleLanguage, string[]> = {
+  fr: [
+    "Je suis au Brésil avec un visa touriste. Ai-je le droit d'être payé par une entreprise brésilienne ?",
+    "La prolongation du séjour visiteur est-elle possible pour tous les pays ?",
+    "À partir de quel montant s'applique l'adicional de 10 % d'IRPJ ?",
+    "Si je me verse des dividendes de ma société, est-ce que je paie de l'impôt dessus ?",
+  ],
+  en: [
+    "I am in Brazil on a tourist visa. Can a Brazilian company pay me?",
+    "Can a visitor's stay in Brazil be extended for nationals of every country?",
+    "Above what amount does the 10% IRPJ surcharge apply?",
+    "If I pay myself dividends from my company, are they taxed?",
+  ],
+  pt: [
+    "Estou no Brasil com visto de turista. Posso ser pago por uma empresa brasileira?",
+    "A prorrogação do prazo de estada do visto de visita vale para nacionais de qualquer país?",
+    "A partir de qual valor incide o adicional de 10% do IRPJ?",
+    "Se eu distribuir lucros da minha empresa para mim, pago imposto?",
   ],
 };
 
@@ -95,6 +118,7 @@ const BY_CORPUS: Record<string, Record<ExampleLanguage, string[]>> = {
   bench_legi_consommation_fr: LEGI_CONSOMMATION,
   bench_lexml_pt: LEXML,
   lexml_real: LEXML,
+  bench_br_expat_pt: BR_EXPAT,
   bench_eurlex_compliance: EURLEX,
   bench_piaf_fr: PIAF,
   piaf_fr: PIAF,

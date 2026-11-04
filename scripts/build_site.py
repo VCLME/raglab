@@ -279,7 +279,7 @@ CORPORA_NOTE = (
     "same questions; p is McNemar's exact test, n.s. means not significant (p ≥ 0.05). Outdated version ranked "
     "first: share of questions where an outdated version of the article ranks above the one that answers, in the "
     "top 5 (lower is better). These question sets were written by a model, filtered by rules and spot-checked on "
-    "a sample."
+    "a sample, except Brazil expat: real questions, references checked by hand."
 )
 
 

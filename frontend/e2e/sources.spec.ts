@@ -30,7 +30,7 @@ test("Official sources: fetch the Code de la consommation, follow the job, refre
   });
 
   await page.goto("/workshop/corpus");
-  await page.getByRole("tab", { name: "Légifrance et EUR-Lex" }).click();
+  await page.getByRole("tab", { name: "Sources officielles" }).click();
   const card = legiCard(page);
   await expect(card).toContainText("pas encore ingéré");
   // The CLI stays shown as the alternative.
@@ -66,7 +66,7 @@ test("Official sources: a failed job shows the API error, a running one resumes 
   );
 
   await page.goto("/workshop/corpus");
-  await page.getByRole("tab", { name: "Légifrance et EUR-Lex" }).click();
+  await page.getByRole("tab", { name: "Sources officielles" }).click();
   const card = page.locator("section.card").filter({ has: page.getByRole("heading", { name: "Conformité européenne" }) });
   await expect(card.getByRole("status")).toContainText("Collecte · 12 / 60");
   await expect(card.getByRole("alert")).toHaveText("CELLAR injoignable pour eurlex. — Max retries exceeded");

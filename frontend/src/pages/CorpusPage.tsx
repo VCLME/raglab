@@ -197,7 +197,7 @@ function CorporaTab() {
 }
 
 interface OfficialSource {
-  key: "legi" | "eurlex";
+  key: "legi" | "eurlex" | "br_expat";
   corpus: string;
   fetch: string;
 }
@@ -205,6 +205,7 @@ interface OfficialSource {
 const OFFICIAL_SOURCES: OfficialSource[] = [
   { key: "legi", corpus: "bench_legi_consommation_fr", fetch: "raglab legifrance fetch --code consommation" },
   { key: "eurlex", corpus: "bench_eurlex_compliance", fetch: "raglab eurlex fetch" },
+  { key: "br_expat", corpus: "bench_br_expat_pt", fetch: "raglab lexml br-expat" },
 ];
 
 /** `GET /api/sources/{name}/status`: the fetch job of an official source. */
