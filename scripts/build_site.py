@@ -32,6 +32,10 @@ import site_charts
 ROOT = Path(__file__).resolve().parent.parent
 SITE_SRC = ROOT / "site"
 RESULTS_DIR = ROOT / "benchmarks" / "results"
+# Router and abstention (9.4): the re-measure on the current pipeline, and the operating point shown
+# on the site (the best recall with at most 5% of answerable questions refused).
+ROUTER_RUN = ROOT / "benchmarks" / "routing" / "router-dense-v1.json"
+ROUTER_POINT = "max_recall_false_abstention_le_5pct"
 CALIBRATION = ROOT / "benchmarks" / "judge_calibration.json"
 REPORT_PDF = ROOT / "docs" / "rapport" / "raglab-rapport.pdf"
 README = ROOT / "README.md"
@@ -485,7 +489,14 @@ def headline(runs: dict[str, dict[str, Any]]) -> dict[str, str]:
         return f"{'+' if d >= 0 else '−'}{abs(d):.1f} pts"
 
     refs_cases = (suite(refs_full, "lexml_references") or {}).get("total_cases")
+    router: dict[str, Any] = {}
+    if ROUTER_RUN.exists():
+        router = json.loads(ROUTER_RUN.read_text(encoding="utf-8"))["summary"]["candidates"].get(ROUTER_POINT, {})
+    far = router.get("false_abstention_rate")
     return {
+        "router_precision": fmt_ratio(router.get("precision")),
+        "router_recall": fmt_ratio(router.get("recall")),
+        "router_false_abstention": "—" if far is None else f"{far * 100:.1f}%",
         "legi_ref_r5_base": fmt_ratio(by_type(legi[1], legi[0], "reference", "recall@5")),
         "legi_ref_r5_full": fmt_ratio(by_type(legi[2], legi[0], "reference", "recall@5")),
         "legi_out_full": fmt_pct(metric(legi[2], legi[0], "outdated_hit@5")),
