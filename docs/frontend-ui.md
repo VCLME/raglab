@@ -98,7 +98,10 @@ Composants et regles partages :
 - **Responsive** : sous 960 px, la barre laterale devient une bande horizontale defilante (le lien actif reste visible) et les mises en page en deux colonnes passent sur une seule ; les tableaux larges defilent dans leur carte. Teste a 375 px sans defilement horizontal de la page.
 - **Mouvement** : transitions courtes (160 ms, ease-out) et `prefers-reduced-motion` respecte.
 
-Les captures de `docs/images/` se regenerent avec `node scripts/snap-screenshots.mjs <url>` (API demarree pour avoir des donnees reelles).
+Les captures de `docs/images/` (`atelier-*.png`, une par page de l'Atelier, et `chat-welcome.png`) se régénèrent avec `scripts/snap-screenshots.mjs`, lancé depuis la racine du dépôt après `npm ci` et `npx playwright install chromium` dans `frontend/` :
+
+- `node scripts/snap-screenshots.mjs --mock` démarre un serveur Vite et répond à chaque appel `/api/*` avec les données des tests e2e (`frontend/e2e/fixtures/data.ts`) : ni backend, ni GPU. Il saute `chat-welcome.png`, l'image d'accueil du README et du site, qui demande des données réelles.
+- `node scripts/snap-screenshots.mjs <url>` capture une pile démarrée (par défaut `http://localhost:8081`), `chat-welcome.png` compris.
 
 ## Internationalisation (i18n)
 
