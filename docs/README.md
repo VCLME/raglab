@@ -15,6 +15,7 @@ Par où commencer selon ce que vous voulez faire. Le [README du dépôt](../READ
 | [versions.md](versions.md) | les versions des textes : articles abrogés, réécrits, numéros réutilisés ; l'option `versions`, le jeu « versions » et sa métrique |
 | [langues-croisees.md](langues-croisees.md) | questions en français sur les lois brésiliennes : ce que coûte la langue, la traduction de la question pour le BM25 (option `query_translation`), sa mesure et son coût |
 | [routage-multilingue.md](routage-multilingue.md) | le routeur face aux questions dans une autre langue que le corpus : seuils d'abstention par langue, choix du corpus sur questions exemples, comparaison mesurée des approches |
+| [intentions.md](intentions.md) | l'intention du routeur lue sur les questions voisines et une régression logistique, et l'abstention qui lit intention et score ensemble : options comparées, mesure du rappel d'abstention |
 | [roadmap.md](roadmap.md) | ce qui est livré, phase par phase, et ce qui vient |
 
 ## Le faire tourner
