@@ -66,7 +66,16 @@ def valid_at_condition(day: str):
     )
 
 
-def ranked_in_force(session: Session, ranked, sort_keys, *, day: str, top_k: int, full: Callable[[], Any]):
+def ranked_in_force(
+    session: Session,
+    ranked,
+    sort_keys,
+    *,
+    day: str,
+    top_k: int,
+    full: Callable[[], Any],
+    finish: Callable[[Any], Any] = lambda stmt: stmt,
+):
     """The top_k rows of `ranked` (ordered, with a `document_id` column)
     whose document is in force on `day`.
 
@@ -76,15 +85,19 @@ def ranked_in_force(session: Session, ranked, sort_keys, *, day: str, top_k: int
     every row, so the ranking does not depend on it: the first
     `VALID_AT_DEPTH * top_k` rows are ranked unfiltered and only those are
     checked. When fewer than top_k survive, `full()` (the filtered query)
-    runs instead, so the result is the same as filtering first.
+    runs instead, so the result is the same as filtering first. `finish`
+    wraps the top_k statement before it runs (the dense search adds the
+    chunk text there).
     """
     inner = ranked.limit(VALID_AT_DEPTH * top_k).subquery("ranked")
     rows = session.execute(
-        select(*inner.c)
-        .join(Document, Document.id == inner.c.document_id)
-        .where(valid_at_condition(day))
-        .order_by(*sort_keys(inner))
-        .limit(top_k)
+        finish(
+            select(*inner.c)
+            .join(Document, Document.id == inner.c.document_id)
+            .where(valid_at_condition(day))
+            .order_by(*sort_keys(inner))
+            .limit(top_k)
+        )
     ).all()
     if len(rows) < top_k:
         rows = session.execute(full()).all()
@@ -164,21 +177,14 @@ class PostgresVectorStore:
         # Vector (the operator itself takes two Vector operands).
         distance = typed_embedding.op("<=>", return_type=Float())(query_param)
 
+        # The ranking selects only ids and the distance; the text and the
+        # document columns are joined on the top_k rows (`with_details`).
+        # Ranking the full rows (the 384-d embedding and the chunk text, ~1.5
+        # kB each) made PostgreSQL sort every embedding of the space before
+        # joining the run's chunks, with no LIMIT bound: an external merge
+        # sort of ~70 MB per query on the Code de la consommation.
         stmt = (
-            # Only the columns a result needs: selecting the Document entity
-            # loaded each candidate's full text (whole laws for LexML), which
-            # cost ~13 ms per query at 50 candidates.
-            select(
-                Chunk.id,
-                Chunk.text,
-                Chunk.char_start,
-                Chunk.char_end,
-                Document.id.label("document_id"),
-                Document.file_name,
-                Document.source_path,
-                distance.label("distance"),
-            )
-            .join(Document, Document.id == Chunk.document_id)
+            select(Chunk.id, Chunk.document_id, distance.label("distance"))
             .join(ChunkEmbedding, ChunkEmbedding.chunk_id == Chunk.id)
             .where(
                 Chunk.index_run_id == index_run.id,
@@ -201,8 +207,34 @@ class PostgresVectorStore:
         # second sort key makes PostgreSQL skip the index for a full sort.
         order = (distance, Chunk.id) if self.search_mode == "exact" else (distance,)
 
+        def filtered(filters: RetrievalFilters | None):
+            if filters is None or filters.is_empty():
+                return stmt
+            return self._apply_filters(stmt.join(Document, Document.id == Chunk.document_id), filters)
+
+        def with_details(top):
+            # Only the columns a result needs: selecting the Document entity
+            # loaded each candidate's full text (whole laws for LexML), which
+            # cost ~13 ms per query at 50 candidates.
+            top = top.subquery("top")
+            return (
+                select(
+                    top.c.id,
+                    Chunk.text,
+                    Chunk.char_start,
+                    Chunk.char_end,
+                    top.c.document_id,
+                    Document.file_name,
+                    Document.source_path,
+                    top.c.distance,
+                )
+                .join(Chunk, Chunk.id == top.c.id)
+                .join(Document, Document.id == top.c.document_id)
+                .order_by(top.c.distance, top.c.id)
+            )
+
         def full():
-            return self._apply_filters(stmt, filters).order_by(*order).limit(top_k)
+            return with_details(filtered(filters).order_by(*order).limit(top_k))
 
         # The HNSW index is shared by every index run of the same dimension,
         # and pgvector applies the WHERE clause (this run, filters) after the
@@ -216,11 +248,12 @@ class PostgresVectorStore:
         if day:
             rows = ranked_in_force(
                 session,
-                self._apply_filters(stmt, without_valid_at(filters)).order_by(*order),
+                filtered(without_valid_at(filters)).order_by(*order),
                 lambda inner: [inner.c.distance, inner.c.id],
                 day=day,
                 top_k=top_k,
                 full=full,
+                finish=with_details,
             )
         else:
             rows = session.execute(full()).all()

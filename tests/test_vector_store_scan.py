@@ -121,7 +121,28 @@ def test_versions_filter_is_checked_after_the_exact_ranking():
     # query runs when too few rows pass (none here).
     assert "FROM (SELECT" in ranked
     assert ranked.index("metadata_json ->>") > ranked.index(") AS ranked")
-    assert "FROM (SELECT" not in full and "metadata_json ->>" in full
+    assert "AS ranked" not in full and "metadata_json ->>" in full
+
+
+@pytest.mark.parametrize("valid_at", [None, "2026-11-03"])
+def test_ranking_sorts_ids_and_distances_only(valid_at):
+    # Ranking the full rows (embedding, chunk text) made PostgreSQL sort
+    # every embedding of the space with no LIMIT bound: an external merge
+    # sort of ~70 MB per query on the Code de la consommation. The text and
+    # the document columns are joined on the top_k rows.
+    session = MagicMock()
+    session.execute.return_value.all.return_value = []
+    PostgresVectorStore().search(
+        session,
+        index_run=_index_run(),
+        query_embedding=[0.0] * 384,
+        top_k=5,
+        filters=RetrievalFilters(valid_at=valid_at),
+    )
+    statement = _statements(session)[0]
+    outer, ranking = re.split(r"\sFROM \(SELECT\s", statement, maxsplit=1)
+    assert "chunks.text" in outer and "documents.file_name" in outer
+    assert "chunks.text" not in ranking and "documents.file_name" not in ranking
 
 
 # The distance expression, then the chunk id (SQLAlchemy renders the
