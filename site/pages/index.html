@@ -37,25 +37,25 @@ nav: index
       <h3>Identifiers</h3>
       <p>Embeddings blur numbers: “art. 49 da Lei 8.078” comes back as art. 94.</p>
       <p class="failure-brick">Citation resolver (9.3b)</p>
-      <p class="state is-measured">Measured: {{ref_r5_v1}} → {{ref_r5_full}} of article-number questions answered from the right passage</p>
+      <p class="state is-measured">Measured: article-number questions {{ref_r5_v1}} → {{ref_r5_full}} on LexML, and Recall@5 {{legi_ref_r5_base}} → {{legi_ref_r5_full}} on those of the Code de la consommation</p>
     </li>
     <li>
       <h3>Cross-references</h3>
       <p>The answer sits in the article the retrieved one cites: the penalties for art. 5 are in art. 12.</p>
       <p class="failure-brick">Citation graph in Neo4j (9.9)</p>
-      <p class="state">In measurement</p>
+      <p class="state">Measured, no significant gain yet: {{refs_graph_delta}} on {{refs_cases}} reference questions, {{eurlex_graph_delta}} on EU texts; stays off</p>
     </li>
     <li>
       <h3>Versions</h3>
       <p>A revoked or rewritten article is quoted as if it were in force (“Revogado”, “Redação dada pela Lei nº 14.026”).</p>
       <p class="failure-brick">Version status per passage (9.10)</p>
-      <p class="state">In progress</p>
+      <p class="state is-measured">Measured on the Code de la consommation: outdated version ranked first {{legi_out_full}} → {{legi_out_versions}}, Recall@5 {{legi_r5_full}} → {{legi_r5_versions}}; an option today, default switch in progress</p>
     </li>
     <li>
       <h3>Out of scope</h3>
       <p>The model answers anyway, for instance a French-law question asked of a Brazilian corpus.</p>
       <p class="failure-brick">Router and abstention (9.4)</p>
-      <p class="state">Measured on an earlier pipeline; re-measure pending</p>
+      <p class="state">Re-measured on the current pipeline; decision pending</p>
     </li>
   </ol>
 </section>
@@ -97,6 +97,9 @@ nav: index
   {{chart_tradeoff}}
   <p>The full table: each row adds one component to the previous one. Rows marked <em>measuring</em> have code but no recorded run yet.</p>
   {{results_table}}
+  <h3 class="sub-title">New corpora and failure modes</h3>
+  <p>Each failure mode gets its own frozen question set: naive RAG, then the raglab full pipeline, then the brick built for that failure mode, on the same questions.</p>
+  {{corpora_table}}
   <p class="note">The embedder cache cut search latency from {{latency_v0}} to {{latency_cache}} per question (the model was being reloaded from disk for every question). Every run, with all its metrics and the exact command, is on the <a href="results.html">results page</a>.</p>
 </section>
 
@@ -139,8 +142,9 @@ docker compose exec ollama ollama pull qwen2.5:7b</code></pre>
   <div>
     <h2 id="limits">Limits</h2>
     <ul>
-      <li>Measured on two corpora so far: French Wikipedia and Brazilian federal law. The Code de la consommation (French, with every article's version history) is collected and indexed, its question set and runs are pending; EU compliance texts from EUR-Lex (GDPR, AI Act, DORA, NIS2, in English, French and Portuguese) are in progress. Your documents may behave differently, which is why the benchmark tooling ships with it.</li>
-      <li>LexML questions were written by a model, then filtered and spot-checked by hand.</li>
+      <li>Measured on five sets: French Wikipedia, Brazilian federal law, the Code de la consommation with its version history, EU compliance texts (GDPR, AI Act, DORA, NIS2 in English, French and Portuguese) and a set of Brazilian cross-reference questions. Your documents may behave differently, which is why the benchmark tooling ships with it.</li>
+      <li>Apart from PIAF, the questions were written by a model, filtered by rules and spot-checked by hand on a sample, not reviewed one by one.</li>
+      <li>The cross-reference set is small ({{refs_cases}} questions after filtering): a few questions decide the verdict.</li>
       <li>Judge calibration covers French only, with synthetic errors: an optimistic bound on its reliability.</li>
       <li>No OCR for scanned PDFs; ingestion and indexing run synchronously.</li>
       <li>Re-ranking is the price of the gains: search takes {{latency_default}} p50 on PIAF ({{latency_default_lexml}} on LexML), against {{latency_v1}} for dense search alone. Twenty candidates instead of forty bring PIAF to {{latency_fast}} for a LexML Recall@5 of {{lexml_r5_fast}}. Measured on one laptop GPU; latency will differ on your hardware.</li>
@@ -149,9 +153,10 @@ docker compose exec ollama ollama pull qwen2.5:7b</code></pre>
   <div>
     <h2 id="next">What I'd do next</h2>
     <ul>
-      <li>Cross-references: the citation graph is built and wired as a third search branch (9.9); it is in measurement on a frozen set of questions whose answer is in a cited article.</li>
-      <li>Versions: flag revoked and rewritten articles at indexing time (9.10, in progress), measured on the Code de la consommation's version history.</li>
-      <li>Re-measure the router and abstention (9.4) on the current pipeline, with its 80 unanswerable questions.</li>
+      <li>A bigger cross-reference set, so the citation graph's effect can be told from noise.</li>
+      <li>The weak spots on EU texts: questions whose answer sits in a referenced article, and questions asked in another language than the text.</li>
+      <li>Make the version filter the default, and decide on the router and abstention (9.4) now that it is re-measured.</li>
+      <li>Qwen3.6 as the default answer writer, once it is checked to fit the 8 GB GPU next to the rest.</li>
       <li>Run the benchmark on a client's own documents before any deployment.</li>
     </ul>
   </div>

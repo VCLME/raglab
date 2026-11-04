@@ -141,10 +141,12 @@ Objectif : passer du laboratoire à un pipeline RAG prêt pour la production, ch
 
 | Mode d'échec | Brique | État |
 |---|---|---|
-| Identifiants (« art. 49 da Lei 8.078 ») | résolveur de citations (9.3b) | ✅ 9 % → 72 % |
-| Renvois (la réponse est dans l'article cité) | graphe des citations dans Neo4j (9.9) | à mesurer |
-| Versions (article abrogé ou réécrit cité comme en vigueur) | option `versions` : filtre par date, statut de version par chunk (9.10) | code en revue, à mesurer |
-| Hors périmètre | routeur et abstention (9.4) | mesuré sur l'ancien pipeline, à refaire |
+| Identifiants (« art. 49 da Lei 8.078 ») | résolveur de citations (9.3b) | ✅ 9 % → 72 % (LexML) ; questions à numéro d'article du Code de la consommation 0,46 → 1,00 |
+| Renvois (la réponse est dans l'article cité) | graphe des citations dans Neo4j (9.9) | mesuré, pas de gain significatif : +6,5 pts sur 46 questions de renvois (n.s.), −2,3 pts sur les textes de l'UE (n.s.) ; reste désactivé |
+| Versions (article abrogé ou réécrit cité comme en vigueur) | option `versions` : filtre par date, statut de version par chunk (9.10) | ✅ mesuré : version périmée en tête 57 % → 0 %, Recall@5 0,66 → 0,82 (Code de la consommation) ; option, passage par défaut en cours |
+| Hors périmètre | routeur et abstention (9.4) | re-mesuré sur le pipeline actuel, décision en attente |
+
+Chiffres et précautions : [benchmarks/resultats-2026-11.md](benchmarks/resultats-2026-11.md).
 
 Toute nouvelle brique doit servir l'un de ces modes d'échec ou l'expérience de démonstration (mode Démo : comparer RAG classique et raglab sur des questions pièges).
 

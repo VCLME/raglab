@@ -1,6 +1,6 @@
 # Protocole de benchmark
 
-Ce document décrit comment raglab mesure la qualité du retrieval, et pourquoi les jeux de données ont été refaits avant la baseline de la phase 9.1. Les chiffres eux-mêmes vivent dans [baseline.md](baseline.md) (phase 9.1b).
+Ce document décrit comment raglab mesure la qualité du retrieval, et pourquoi les jeux de données ont été refaits avant la baseline de la phase 9.1. Les chiffres eux-mêmes vivent dans [baseline.md](baseline.md) (phase 9.1b) et, pour les nouveaux corpus et modes d'échec, dans [resultats-2026-11.md](resultats-2026-11.md).
 
 ## Pourquoi refaire les jeux
 
