@@ -790,12 +790,12 @@ def live_abstentions(report: dict[str, Any]) -> list[bool]:
     language_thresholds = config.get("language_abstention_thresholds") or {}
     by_language = bool(config.get("routing_language_thresholds"))
 
-    def threshold(record: dict[str, Any]) -> float | None:
+    def threshold(record: dict[str, Any]) -> float:
         corpus = record["corpus_routed"] or ""
         value = (language_thresholds.get(corpus) or {}).get(record.get("language_detected") or "")
         if by_language and value is not None:
             return float(value)
-        return corpus_thresholds.get(corpus, config.get("abstention_threshold"))
+        return float(corpus_thresholds.get(corpus, config.get("abstention_threshold") or 0.0))
 
     return [
         predict_abstain(record, margin=config.get("intent_margin"), threshold=threshold(record)) for record in records
