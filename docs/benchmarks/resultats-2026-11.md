@@ -25,7 +25,7 @@ Sur PIAF et LexML, `graph-v1` et `versions-v1` servent de contrôle de non-régr
 
 ## Ce que disent ces chiffres
 
-**Versions (9.10).** Le pipeline complet améliore déjà le Recall@5 du Code de la consommation (0,360 → 0,660), mais classe encore une version périmée au-dessus de la bonne dans 57 % des cas. Le filtre de versions ramène ce taux à 0 % et monte le Recall@5 à 0,820. Sur le jeu piège, le pipeline complet sans filtre fait même un peu pire que le RAG naïf sur les versions périmées (27 % → 30 %) : un meilleur classement remonte aussi les anciennes versions. Le filtre les élimine (0 %), l'exactitude jugée passe de 0,738 à 0,815, la fidélité baisse un peu (0,935 → 0,895). La brique est une option aujourd'hui ; son passage par défaut est en cours.
+**Versions (9.10).** Le pipeline complet améliore déjà le Recall@5 du Code de la consommation (0,360 → 0,660), mais classe encore une version périmée au-dessus de la bonne dans 57 % des cas. Le filtre de versions ramène ce taux à 0 % et monte le Recall@5 à 0,820. Sur le jeu piège, le pipeline complet sans filtre fait même un peu pire que le RAG naïf sur les versions périmées (27 % → 30 %) : un meilleur classement remonte aussi les anciennes versions. Le filtre les élimine (0 %), l'exactitude jugée passe de 0,738 à 0,815, la fidélité baisse un peu (0,935 → 0,895). Le filtre (`in_force`) est actif par défaut depuis la PR #69.
 
 **Identifiants.** Sur les questions qui citent un numéro d'article du Code de la consommation, le Recall@5 passe de 0,458 à 1,000 avec le pipeline complet : le résolveur de citations fonctionne aussi sur un code français.
 

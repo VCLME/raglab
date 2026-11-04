@@ -49,7 +49,7 @@ nav: index
       <h3>Versions</h3>
       <p>A revoked or rewritten article is quoted as if it were in force (“Revogado”, “Redação dada pela Lei nº 14.026”).</p>
       <p class="failure-brick">Version status per passage (9.10)</p>
-      <p class="state is-measured">Measured on the Code de la consommation: outdated version ranked first {{legi_out_full}} → {{legi_out_versions}}, Recall@5 {{legi_r5_full}} → {{legi_r5_versions}}; an option today, default switch in progress</p>
+      <p class="state is-measured">Measured on the Code de la consommation: outdated version ranked first {{legi_out_full}} → {{legi_out_versions}}, Recall@5 {{legi_r5_full}} → {{legi_r5_versions}}; on by default</p>
     </li>
     <li>
       <h3>Out of scope</h3>
@@ -155,7 +155,7 @@ docker compose exec ollama ollama pull qwen2.5:7b</code></pre>
     <ul>
       <li>A bigger cross-reference set, so the citation graph's effect can be told from noise.</li>
       <li>The weak spots on EU texts: questions whose answer sits in a referenced article, and questions asked in another language than the text.</li>
-      <li>Make the version filter the default, and choose the operating point of the router and abstention (9.4), now re-measured.</li>
+      <li>Choose the operating point of the router and abstention (9.4), now re-measured.</li>
       <li>Qwen3.6 as the default answer writer, once it is checked to fit the 8 GB GPU next to the rest.</li>
       <li>Run the benchmark on a client's own documents before any deployment.</li>
     </ul>

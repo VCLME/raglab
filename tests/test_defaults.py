@@ -12,5 +12,5 @@ def test_shipped_default_is_the_measured_best_pipeline(monkeypatch):
     assert settings.default_retrieval_mode == "hybrid"
     assert settings.default_rerank is True
     assert settings.citation_resolver is True
-    # Not measured yet (9.10): every version, as before, until it is.
-    assert settings.versions_default == "all"
+    # Measured in versions-full-v1 (9.10): versions set Recall@5 0.75 -> 0.93.
+    assert settings.versions_default == "in_force"

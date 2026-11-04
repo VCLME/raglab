@@ -98,7 +98,7 @@
   {
     "label": "versions-v1",
     "name": "Version filter",
-    "change": "full pipeline + only versions in force are searched (no-regression check on these sets; measured on its own sets below)",
-    "status": "9.10 · comparison"
+    "change": "full pipeline + only versions in force are searched (on by default; no regression on these sets, measured on its own sets below)",
+    "status": "9.10 · default"
   }
 ]

@@ -716,7 +716,7 @@
       "versions_opt_in_force": "em vigor",
       "versions_opt_as_of": "em uma data",
       "versions_opt_all": "todas",
-      "versions_in_force_planned": "Em vigor hoje, ou na data que a pergunta pede.",
+      "versions_in_force_planned": "Em vigor, ou na data da pergunta.",
       "versions_as_of_planned": "As versões em vigor na data escolhida.",
       "versions_all_planned": "Todas as versões, revogadas incluídas.",
       "versions_in_force": "Versões em vigor em {{date}}.",

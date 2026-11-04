@@ -513,7 +513,7 @@ def _retrieval_label(run: dict[str, Any], suite: dict[str, Any] | None) -> str:
     if (suite or {}).get("graph", run.get("graph")):
         mode += " + graph"
     versions = (suite or {}).get("versions") or run.get("versions")
-    if versions and versions != "all":
+    if versions and versions != "in_force":
         mode += f" + versions={versions}"
     return mode
 
