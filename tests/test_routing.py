@@ -34,7 +34,7 @@ from raglab.routing.examples import iter_examples
 from raglab.routing.intent import IntentClassifier, clear_intent_cache, decide_intent
 from raglab.routing.language import detect_language
 from raglab.routing.router import QueryRouter
-from raglab.routing.schemas import Intent
+from raglab.routing.schemas import CorpusDecision, Intent, IntentDecision, LanguageDecision, RoutingDecision
 
 # Fake embedding space: one axis per theme, so similarities are predictable.
 AXES = {
@@ -918,7 +918,7 @@ def test_language_thresholds_come_first_when_on():
         "routing_rerank_abstention_thresholds": {"lexml": -3.0},
         "routing_rerank_language_abstention_thresholds": {"lexml": {"fr": -4.0}},
     }
-    off = Settings(**tables)
+    off = Settings(routing_language_thresholds=False, **tables)
     on = Settings(routing_language_thresholds=True, **tables)
     assert threshold_for(off, "lexml", "dense", "fr") == pytest.approx(0.85)
     assert threshold_for(on, "lexml", "dense", "fr") == pytest.approx(0.82)
@@ -927,23 +927,86 @@ def test_language_thresholds_come_first_when_on():
     assert threshold_for(on, "lexml", "dense", "pt") == pytest.approx(0.85)
 
 
-def test_language_thresholds_read_the_original_score_without_a_second_search(routed_env):
+def _cross_language_service(**overrides):
     from raglab.retrieval.translation import Translation
 
     service = _service(
         [_chunk(0.82)],
         routing_abstention_threshold=0.85,
         query_translation=True,
+        routing_cross_language=True,
         routing_language_thresholds=True,
-        routing_language_abstention_thresholds={},
+        **overrides,
     )
     service._resolve_index_run.return_value.corpus = SimpleNamespace(language="pt")
     service.lexical_store = Mock()
     service.lexical_store.search.return_value = ([], [])
     service.translator = Mock()
     service.translator.translate.return_value = Translation("O que diz a lei?", "fr", "pt", True, 10.0)
+    return service
+
+
+def test_language_thresholds_read_the_original_score_without_a_second_search(routed_env):
+    service = _cross_language_service(routing_language_abstention_thresholds={"lexml": {"fr": 0.8}})
     response = service.query(question="Que dit la loi ?", routing=True, retrieval_mode="hybrid", rerank=False)
     abstention = response.routing.abstention
+    assert abstention.abstain is False
+    assert abstention.threshold == pytest.approx(0.8)
     assert abstention.translated_score is None
     assert abstention.best_score == pytest.approx(0.82)
     assert service.vector_store.search.call_count == 1
+
+
+def test_a_language_without_its_own_threshold_keeps_the_translated_score(routed_env):
+    # Only Portuguese is calibrated on lexml: a French question falls back to
+    # the corpus threshold, calibrated on the translated score (#76).
+    service = _cross_language_service(routing_language_abstention_thresholds={"lexml": {"pt": 0.9}})
+    service.vector_store.search.side_effect = [[_chunk(0.82)], [_chunk(0.88)]]
+    response = service.query(question="Que dit la loi ?", routing=True, retrieval_mode="hybrid", rerank=False)
+    abstention = response.routing.abstention
+    assert abstention.abstain is False
+    assert abstention.threshold == pytest.approx(0.85)
+    assert abstention.translated_score == pytest.approx(0.88)
+    assert abstention.best_score == pytest.approx(0.88)
+    assert service.vector_store.search.call_count == 2
+
+
+def test_an_empty_language_table_behaves_like_cross_language_routing(routed_env):
+    service = _cross_language_service(routing_language_abstention_thresholds={})
+    service.vector_store.search.side_effect = [[_chunk(0.82)], [_chunk(0.88)]]
+    response = service.query(question="Que dit la loi ?", routing=True, retrieval_mode="hybrid", rerank=False)
+    assert response.routing.abstention.best_score == pytest.approx(0.88)
+    assert response.routing.abstention.abstain is False
+
+
+def test_finish_ignores_a_translated_score_when_the_language_has_its_own_threshold():
+    settings = Settings(
+        routing_language_thresholds=True,
+        routing_abstention_thresholds={"lexml": 0.85},
+        routing_language_abstention_thresholds={"lexml": {"fr": 0.9}},
+    )
+    router = QueryRouter(Mock(), settings)
+    decision = RoutingDecision(
+        language=LanguageDecision(language="fr", method="lexical"),
+        intent=IntentDecision(intent=Intent.DOCUMENTARY, margin=0.02),
+        corpus=CorpusDecision(corpus_name="lexml", index_run_id="run", suggested_corpus="lexml"),
+    )
+    finished = router.finish(decision, [_chunk(0.88)], translated_score=0.95)
+    assert finished.abstention.best_score == pytest.approx(0.88)
+    assert finished.abstention.translated_score is None
+    assert finished.abstention.abstain is True
+
+
+def test_translated_abstention_depends_on_the_pair():
+    from raglab.routing.step import translated_abstention
+
+    settings = Settings(
+        routing_language_thresholds=True, routing_language_abstention_thresholds={"lexml": {"pt": 0.86}}
+    )
+    service = SimpleNamespace(settings=settings)
+    assert translated_abstention(service, True, "lexml", "pt") is False
+    assert translated_abstention(service, True, "lexml", "fr") is True
+    assert translated_abstention(service, True, "eurlex", "pt") is True
+    assert translated_abstention(service, False, "lexml", "fr") is False
+    off = SimpleNamespace(settings=Settings(routing_language_thresholds=False))
+    assert translated_abstention(off, True, "lexml", "pt") is True

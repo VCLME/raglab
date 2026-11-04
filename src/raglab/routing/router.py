@@ -13,7 +13,13 @@ from raglab.domain.errors import run_with_timeout
 from raglab.embeddings.factory import build_embedding_provider
 from raglab.retrieval.citations import Citation, parse_citation
 from raglab.retrieval.translation import LANGUAGE_NAMES
-from raglab.routing.abstention import best_score, decide_abstention, fallback_answer, threshold_for
+from raglab.routing.abstention import (
+    best_score,
+    decide_abstention,
+    fallback_answer,
+    language_threshold,
+    threshold_for,
+)
 from raglab.routing.citation import cited_text_in_run
 from raglab.routing.corpus import (
     embedding_identity,
@@ -254,15 +260,21 @@ class QueryRouter:
         `translated_score` (cross-language routing): dense score of the
         question translated into the corpus language, on the same passages;
         the threshold, calibrated on questions in that language, is compared
-        to the better of the two."""
+        to the better of the two. It is ignored when the question's language
+        has its own threshold (`routing_language_thresholds`), calibrated on
+        the original question's score."""
         source = self.settings.routing_score_source
         score = best_score(retrieved, source)
+        language = decision.language.language
+        if language_threshold(self.settings, decision.corpus.corpus_name, source, language) is not None:
+            # Calibrated on the original question in its own language.
+            translated_score = None
         if translated_score is not None and source == "dense":
             score = translated_score if score is None else max(score, translated_score)
         abstention = decide_abstention(
             intent=decision.intent.intent,
             score=score,
-            threshold=threshold_for(self.settings, decision.corpus.corpus_name, source, decision.language.language),
+            threshold=threshold_for(self.settings, decision.corpus.corpus_name, source, language),
             score_source=source,
             legal_citation=decision.legal_citation_found,
         )

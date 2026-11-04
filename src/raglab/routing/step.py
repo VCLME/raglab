@@ -10,6 +10,7 @@ from __future__ import annotations
 from time import perf_counter
 from typing import TYPE_CHECKING, Any
 
+from raglab.routing.abstention import language_threshold
 from raglab.routing.citation import cited_text_in_run
 from raglab.routing.router import QueryRouter
 
@@ -49,7 +50,11 @@ def route_and_retrieve(service: QueryService, **kwargs: Any) -> RetrievalOutcome
             else cited_text_in_run(service.session, outcome.index_run, decision.citation)
         )
         decision = decision.model_copy(update={"legal_citation_found": found})
-    translated = translated_dense_score(service, outcome) if translated_abstention(service, cross_language) else None
+    translated = (
+        translated_dense_score(service, outcome)
+        if translated_abstention(service, cross_language, decision.corpus.corpus_name, decision.language.language)
+        else None
+    )
     outcome.routing = router.finish(decision, outcome.retrieved, translated_score=translated)
     outcome.timings_ms["routing"] = decision.timings_ms["total"]
     # The request started with the router, not with retrieval.
@@ -66,13 +71,18 @@ def cross_language_routing(service: QueryService, query_translation: bool | None
     return bool(settings.routing_cross_language and translate and settings.routing_score_source == "dense")
 
 
-def translated_abstention(service: QueryService, cross_language: bool) -> bool:
+def translated_abstention(
+    service: QueryService, cross_language: bool, corpus_name: str | None, language: str | None
+) -> bool:
     """Whether abstention reads the translated question's dense score.
 
-    Per-language thresholds (`routing_language_thresholds`) calibrate the
-    original question's score in its own language, which makes that second
-    search unnecessary: the two corrections are not stacked."""
-    return cross_language and not service.settings.routing_language_thresholds
+    A per-language threshold (`routing_language_thresholds`) is calibrated
+    on the original question's score in its own language, which makes that
+    second search unnecessary: the two corrections are not stacked. A
+    (corpus, language) pair without one keeps the corpus threshold, which
+    is calibrated on the translated score (#76)."""
+    settings = service.settings
+    return cross_language and language_threshold(settings, corpus_name, settings.routing_score_source, language) is None
 
 
 def translated_dense_score(service: QueryService, outcome: RetrievalOutcome) -> float | None:

@@ -88,6 +88,10 @@ EXTRA_SETS = {
     "lexml_fr_pt": InScopeSet(
         "lexml_fr_pt", REPO_ROOT / "benchmarks" / "lexml_fr" / "ground_truth_pt.jsonl", "bench_lexml_pt", "pt"
     ),
+    # French questions of Brazil expats on the Portuguese federal texts.
+    "br_expat": InScopeSet(
+        "br_expat", REPO_ROOT / "benchmarks" / "br_expat" / "ground_truth.jsonl", "bench_br_expat_pt", "fr"
+    ),
 }
 
 
@@ -536,7 +540,9 @@ class RoutingExperimentService:
                 original = best_score(outcome.retrieved, self.settings.routing_score_source)
                 translated = (
                     translated_dense_score(retriever, outcome)
-                    if translated_abstention(retriever, cross_language)
+                    if translated_abstention(
+                        retriever, cross_language, decision.corpus.corpus_name, decision.language.language
+                    )
                     else None
                 )
                 records.append(
@@ -594,7 +600,7 @@ class RoutingExperimentService:
                 score = best_score(outcome.retrieved, self.settings.routing_score_source)
                 translated = (
                     translated_dense_score(retriever, outcome)
-                    if translated_abstention(retriever, cross_language)
+                    if translated_abstention(retriever, cross_language, case.expected_corpus, case.language)
                     else None
                 )
                 if translated is not None:

@@ -2,7 +2,7 @@
 
 Suite de [langues-croisees.md](langues-croisees.md). Le routeur (phase 9.4, [routing.md](routing.md)) prend deux décisions sur l'embedding de la question : le corpus, avant la recherche, et l'abstention, après. Pour une question posée dans une autre langue que son corpus, les deux se trompaient. Le routage multilingue de #76 (`RAGLAB_ROUTING_CROSS_LANGUAGE`, activé par défaut) en corrige l'essentiel ; ce document compare d'autres corrections, toutes **sans LLM supplémentaire dans le routeur**, et recalibre l'abstention par langue.
 
-Résultat en une phrase : des seuils d'abstention **par (langue, corpus)** gardent 58 refus justifiés sur 80 au lieu de 46 (+12, aucun perdu, p < 0,001), sans perte sur les questions françaises ni portugaises, avec 4,0 % de faux refus. Le choix du corpus sur des **questions exemples** route 96 questions françaises sur 100 vers LexML (84 aujourd'hui) mais fait perdre des questions PIAF : il reste désactivé. L'objectif de rappel 0,85 n'est pas atteint (0,725) : même un seuil réglé sur les questions évaluées plafonne vers 0,75.
+Résultat en une phrase : des seuils d'abstention **par (langue, corpus)**, activés par défaut depuis (`RAGLAB_ROUTING_LANGUAGE_THRESHOLDS=true`), gardent 55 refus justifiés sur 80 au lieu de 46 (+9, aucun perdu, p = 0,004), sans perte sur les questions françaises ni portugaises, avec 3,3 % de faux refus. La première version en gardait 58, mais lisait le score de la question d'origine même pour un couple sans seuil propre (voir [le correctif](#correctif--repli-sur-le-score-traduit)). Avec BR Expat et EUR-Lex parmi les corpus candidats, le gain se confirme (45 → 50 refus, aucune réponse perdue). Le choix du corpus sur des **questions exemples** route 96 questions françaises sur 100 vers LexML (84 aujourd'hui) mais fait perdre des questions PIAF : il reste désactivé. L'objectif de rappel 0,85 n'est pas atteint (0,725) : même un seuil réglé sur les questions évaluées plafonne vers 0,75.
 
 ## Le protocole
 
@@ -33,7 +33,7 @@ Rapport : [`router-languages-collect-v1.json`](../benchmarks/routing/router-lang
 
 - **(b)** Un seuil au même quantile de chaque distribution (langue, corpus) **est déjà** une normalisation par quantile : (a) et la normalisation par quantile prennent exactement les mêmes décisions. Reste le z-score, qui suppose des scores à peu près gaussiens : mesuré, il fait un peu moins bien que (a) (55 refus, 3,0 %).
 - **(d)** Le cross-encoder ne sépare pas mieux que le cosinus sur ces questions : 56 refus mais 3 perdus face au défaut (refus gagnés ailleurs), à 4,3 % de faux refus. Ses seuils par langue sont calibrés et livrés pour la source `rerank`, sans gain à signaler.
-- **br_expat** n'est pas mesuré ici : son corpus (`bench_br_expat`) n'est pas un des deux corpus candidats du jeu de #76, et 38 questions n'ajouteraient pas de puissance.
+- **BR Expat et EUR-Lex** ne sont pas dans cette comparaison (leurs corpus ne sont pas candidats du jeu de #76) : ils sont mesurés à part, sur un routeur à quatre corpus ([Généralisation](#généralisation-à-quatre-corpus)).
 
 ## Résultats
 
@@ -43,7 +43,8 @@ Rejeu hors ligne ; McNemar apparié face au **défaut actuel** (routage multilin
 |---|---|---|---|---|---|---|---|---|---|
 | **défaut** (#76) | passages + re-notation 0,02 | dense max(orig., trad.), seuils point A | 84 | 75 | 85 | 94 | 46 | 2,3 % | 2 835 / 4 066 ms |
 | sans #76 | passages | dense, seuils point A | 62 | 33 (−42, p < 0,001) | 87 (+2, n.s.) | 94 | 50 (+4, n.s.) | 11,7 % | 2 662 / 3 955 ms |
-| **(a)** | passages + re-notation 0,02 | **dense (question d'origine), par (langue, corpus), q 3 %** | 84 | 75 | 85 | 91 (−3, n.s.) | **58 (+12 / −0, p < 0,001)** | 4,0 % | 2 777 / 3 955 ms |
+| **(a)**, version livrée | passages + re-notation 0,02 | **dense (question d'origine), par (langue, corpus), q 3 % ; couple sans seuil : seuil du corpus sur max(orig., trad.)** | 84 | 75 | 85 | 91 (−3, n.s.) | **55 (+9 / −0, p = 0,004)** | 3,3 % | 2 777 / 3 955 ms |
+| (a), première version | passages + re-notation 0,02 | dense (question d'origine) partout, par (langue, corpus), q 3 % | 84 | 75 | 85 | 91 (−3, n.s.) | 58 (+12 / −0, p < 0,001) | 4,0 % | 2 777 / 3 955 ms |
 | (a) sur le score traduit | passages + re-notation 0,02 | dense max(orig., trad.), par (langue, corpus), q 3 % | 84 | 75 | 85 | 91 (−3, n.s.) | 56 (+10, p = 0,002) | 4,0 % | 2 835 / 4 066 ms |
 | recalibration par corpus seule | passages + re-notation 0,02 | dense max(orig., trad.), par corpus, q 3 % | 84 | 75 | 85 | 91 (−3, n.s.) | 56 (+10, p = 0,002) | 4,0 % | 2 835 / 4 066 ms |
 | (b) z-score | passages + re-notation 0,02 | dense max(orig., trad.), z = 2 par (langue, corpus) | 84 | 75 | 85 | 93 (−1, n.s.) | 55 (+9, p = 0,004) | 3,0 % | 2 835 / 4 066 ms |
@@ -63,6 +64,8 @@ Seuils de (a), quantile 3 % de chaque groupe de calibration (cosinus dense de la
 | `bench_lexml_pt` | 0,8095 | 0,8611 | 0,8485 (seuil du corpus) |
 | `bench_piaf_fr` | 0,797 | 0,7929 (seuil du corpus) | 0,7929 (seuil du corpus) |
 
+Un couple sans valeur propre (« seuil du corpus » ci-dessus, et tout corpus absent de la table, comme BR Expat ou EUR-Lex) garde le seuil du corpus, lu sur le meilleur des scores de la question d'origine et de la question traduite, comme avec #76 : ce seuil a été calibré sur ce score.
+
 ### Ce que montrent ces chiffres
 
 **L'écart de langue sur l'abstention est réel et mesurable.** Le cosinus d'une question française sur les passages portugais de LexML est bien plus bas : quantile 3 % à 0,8095 pour les questions françaises contre 0,8611 pour les mêmes en portugais. Un seuil unique par corpus calibré sur la langue du corpus (0,8611), appliqué au score de la question d'origine, refuse 72 des 100 questions françaises et n'en laisse que 14 répondues ; #76 le contournait en relisant le score sur la question traduite (une recherche dense de plus, et seulement si le rédacteur répond). Un seuil par langue fait aussi bien sur le français (75 répondues dans les deux cas), **sans question traduite** : il n'a besoin ni du rédacteur ni d'une seconde recherche, et reste juste quand la traduction échoue.
@@ -75,7 +78,7 @@ Seuils de (a), quantile 3 % de chaque groupe de calibration (cosinus dense de la
 
 ### Confirmation en direct
 
-Le réglage (a) a été mesuré en direct avec `raglab experiment routing` (même commande que #76, `RAGLAB_ROUTING_LANGUAGE_THRESHOLDS=true`), 4 novembre 2026 : [`router-language-thresholds-v1.json`](../benchmarks/routing/router-language-thresholds-v1.json). Il redonne exactement le rejeu. McNemar apparié face à la mesure en direct du défaut ([`router-crosslang-m02-v1.json`](../benchmarks/routing/router-crosslang-m02-v1.json)) :
+Première version du réglage (a), mesurée en direct avec `raglab experiment routing` (même commande que #76, `RAGLAB_ROUTING_LANGUAGE_THRESHOLDS=true`), 4 novembre 2026 : [`router-language-thresholds-v1.json`](../benchmarks/routing/router-language-thresholds-v1.json). Elle redonne exactement le rejeu. La version livrée est mesurée plus bas ([correctif](#correctif--repli-sur-le-score-traduit)). McNemar apparié face à la mesure en direct du défaut ([`router-crosslang-m02-v1.json`](../benchmarks/routing/router-crosslang-m02-v1.json)) :
 
 | | Défaut (#76) | Seuils par langue | Écart apparié |
 |---|---|---|---|
@@ -92,22 +95,64 @@ Le réglage (a) a été mesuré en direct avec `raglab experiment routing` (mêm
 
 Face à la mesure sans #76 ([`router-crosslang-off-v1.json`](../benchmarks/routing/router-crosslang-off-v1.json)) : 50 → 58 refus (9 gagnés, 1 perdu, p = 0,021), faux refus 35 → 12. Les 4 refus que #76 avait perdus sont donc plus que rattrapés. Par catégorie : conversationnelles 30/30, hors périmètre 16/27, « presque dans le sujet » 12/23.
 
+### Correctif : repli sur le score traduit
+
+La première version lisait toujours le score de la question d'origine dès l'option active, même pour un couple (corpus, langue) sans seuil propre. Elle comparait alors ce score à un seuil de corpus calibré sur le score traduit : deux échelles différentes. Le cas se présente pour les questions portugaises routées vers PIAF, et pour tout corpus absent de la table (BR Expat, EUR-Lex, un nouveau corpus). Le correctif : un couple avec son propre seuil lit le score d'origine, sans seconde recherche ; un couple sans seuil propre garde le mécanisme de #76 (seuil du corpus, meilleur des scores d'origine et traduit). Tests de non-régression dans `tests/test_routing.py` (repli sur le score traduit, table vide, `finish` qui ignore le score traduit d'un couple calibré) et `tests/test_routing_languages.py` (même règle dans le rejeu).
+
+Mesure en direct, même commande : [`router-language-thresholds-v2.json`](../benchmarks/routing/router-language-thresholds-v2.json). Elle redonne exactement le rejeu corrigé.
+
+| | Défaut (#76) | Première version | **Version livrée** | Livrée face au défaut |
+|---|---|---|---|---|
+| Répondues, français / portugais / PIAF | 75 / 85 / 94 | 75 / 85 / 91 | 75 / 85 / 91 | 0 / 0 · 0 / 0 · 0 / 3, p = 0,25 (n.s.) |
+| Refus gardés (sur 80) | 46 | 58 | **55** | 9 gagnés, 0 perdu, p = 0,004 |
+| Faux refus (sur 300) | 7 (2,3 %) | 12 (4,0 %) | 10 (3,3 %) | sous le plafond de 5 % |
+| Précision / rappel de l'abstention | 0,868 / 0,575 | 0,829 / 0,725 | 0,846 / 0,688 | |
+| p50 / p95 routeur + recherche, français | 2 696 / 3 710 ms | 2 698 / 3 626 ms | 3 146 / 4 302 ms | voir ci-dessous |
+
+Les 3 refus rendus par le correctif sont des questions portugaises hors sujet routées vers PIAF (« Qual é a receita tradicional de feijoada? », « Quantos deputados federais tem o Estado de Minas Gerais? »…). Leur score traduit en français passe le seuil de PIAF, ce qui était déjà le coût connu de #76. Les rattraper demanderait un seuil (PIAF, portugais), donc des questions de calibration portugaises sur PIAF : il n'y en a pas, et le seuil n'est pas inventé. Par catégorie : conversationnelles 30/30, hors périmètre 15/27, « presque dans le sujet » 10/23. Face à la mesure sans #76 : 50 → 55 refus (9 gagnés, 4 perdus, n.s.), faux refus 35 → 10.
+
+Latence : la version livrée fait au plus les recherches de la première, plus une recherche traduite pour les seuls couples sans seuil propre. L'écart de p50 sur cette mesure vient du re-ranker : +113 ms sur PIAF, dont le chemin n'a pas changé (387 → 500 ms). C'est donc une variation de la machine pendant la mesure, pas un effet du correctif.
+
+### Généralisation à quatre corpus
+
+Pour vérifier que l'option ne dégrade pas les autres corpus : routeur à quatre candidats (`bench_piaf_fr`, `bench_lexml_pt`, `bench_br_expat_pt`, `bench_eurlex_compliance`), les 38 questions BR Expat (françaises, sur des textes fédéraux brésiliens ; jeu `br_expat` ajouté à `--in-scope`), 100 questions EUR-Lex (anglais, français, portugais, graine 42) et les 80 questions d'abstention. Défaut contre option, même commande :
+
+```bash
+raglab experiment routing --corpus bench_piaf_fr --corpus bench_lexml_pt --corpus bench_br_expat_pt --corpus bench_eurlex_compliance --in-scope br_expat --in-scope eurlex_compliance --sample-size 200 --calibration-size 20
+```
+
+Rapports : [`router-generalization-default-v1.json`](../benchmarks/routing/router-generalization-default-v1.json), [`router-generalization-language-v1.json`](../benchmarks/routing/router-generalization-language-v1.json).
+
+| | Défaut (#76) | Seuils par langue | Écart apparié |
+|---|---|---|---|
+| BR Expat : bien routées / répondues depuis le bon passage (sur 38) | 28 / 16 | 28 / 16 | 0 / 0 |
+| BR Expat : faux refus | 3 | 3 | 1 gagné, 1 perdu (deux questions mal routées) |
+| EUR-Lex : bien routées / répondues (sur 100) | 92 / 63 | 92 / 63 | 0 / 0 |
+| EUR-Lex : faux refus | 0 | 1 | une question portugaise mal routée vers LexML |
+| Refus gardés (sur 80) | 45 | **50** | 5 gagnés, 0 perdu, p = 0,063 |
+| Faux refus (sur 138) | 3 (2,2 %) | 4 (2,9 %) | |
+| p50 / p95 routeur + recherche, BR Expat | 2 411 / 3 240 ms | 2 503 / 3 380 ms | |
+| p50 / p95, EUR-Lex | 1 023 / 1 323 ms | 900 / 1 114 ms | |
+
+Aucune réponse perdue sur les deux corpus. BR Expat et EUR-Lex n'ont pas de seuil par langue et gardent le mécanisme de #76 : les seules décisions qui changent concernent des questions mal routées vers LexML ou PIAF. Les 5 refus gagnés sont deux questions françaises hors sujet sur PIAF et trois portugaises sur LexML, comme sur le jeu de #76. Constat à part : ces deux corpus n'ont **aucun seuil d'abstention calibré** (seuil global 0). Une question hors sujet routée vers eux n'est refusée que par l'intention. C'est un chantier de calibration distinct, pas un effet de l'option.
+
 ## Options
 
 | Option | Défaut | Variable | Effet |
 |---|---|---|---|
-| Seuils par langue | non | `RAGLAB_ROUTING_LANGUAGE_THRESHOLDS`, tables `RAGLAB_ROUTING_LANGUAGE_ABSTENTION_THRESHOLDS` (dense) et `RAGLAB_ROUTING_RERANK_LANGUAGE_ABSTENTION_THRESHOLDS` (re-ranker), JSON corpus → langue → seuil | le seuil de la langue de la question passe avant celui du corpus ; une langue sans valeur garde le seuil du corpus ; l'abstention lit alors le score de la question d'origine (la recherche dense sur la question traduite de #76 n'est plus faite) |
+| Seuils par langue | **oui** | `RAGLAB_ROUTING_LANGUAGE_THRESHOLDS`, tables `RAGLAB_ROUTING_LANGUAGE_ABSTENTION_THRESHOLDS` (dense) et `RAGLAB_ROUTING_RERANK_LANGUAGE_ABSTENTION_THRESHOLDS` (re-ranker), JSON corpus → langue → seuil | le seuil de la langue de la question passe avant celui du corpus, et l'abstention lit alors le score de la question d'origine (pas de recherche dense sur la question traduite) ; un couple (corpus, langue) sans valeur garde le seuil du corpus et le score traduit de #76 |
 | Corpus sur questions exemples | non | `RAGLAB_ROUTING_CORPUS_EXAMPLES`, `RAGLAB_ROUTING_CORPUS_EXAMPLES_PATH` (JSONL `corpus`, `language`, `question`) | chaque corpus est noté sur le centroïde de ses questions exemples dans la langue la plus proche ; seulement si tous les corpus candidats ont des exemples |
 
 Ce sont des réglages du routeur, comme `RAGLAB_ROUTING_CROSS_LANGUAGE` : la requête (CLI `--routing`, API `routing: true`, interface : interrupteur « Routage ») les applique. En mode expert, le panneau du routeur affiche la base de notation des corpus (passages ou questions exemples), les scores d'origine et traduit d'un corpus re-noté, et le score dense de la question traduite quand il est lu.
 
-## Décision proposée au propriétaire
+## Décision
 
-Activer les **seuils par langue** par défaut : +12 refus justifiés sur 80 (p < 0,001, aucun perdu), français et portugais inchangés, PIAF −3 (n.s.), faux refus 2,3 % → 4,0 %, une recherche dense de moins par question traduite. L'option reste désactivée tant que le propriétaire n'a pas tranché. Le choix du corpus sur questions exemples reste désactivé : gain net sur le français, perte significative sur PIAF dès qu'on le combine.
+**Seuils par langue activés par défaut** (décision du propriétaire, 4 novembre 2026, après le correctif) : +9 refus justifiés sur 80 (p = 0,004, aucun perdu), français et portugais inchangés, PIAF −3 (n.s.), faux refus 2,3 % → 3,3 %. Sur quatre corpus : +5 refus, aucune réponse perdue sur BR Expat ni EUR-Lex. Le choix du corpus sur questions exemples reste désactivé : gain net sur le français, mais perte significative sur PIAF dès qu'on le combine. L'objectif de rappel 0,85 relève de l'intention et est traité à part.
 
 ## Limites
 
 - Le quantile est choisi sur les questions évaluées, comme pour le point A ; les seuils eux-mêmes viennent de la calibration disjointe.
 - 75 questions de calibration par langue sur LexML : le quantile 3 % est la deuxième plus basse ; un point de quantile déplace le seuil de quelques millièmes.
 - Les questions françaises sont des traductions (écrites par un LLM, relues sur échantillon pour le jeu figé, pas pour la calibration) : une question spontanée peut s'en écarter.
-- Deux corpus seulement : un corpus sans questions de calibration garde son seuil par corpus, et l'option (c) ne s'applique que si tous les candidats ont des exemples.
+- Seuils par langue pour deux corpus seulement : un corpus sans questions de calibration par langue garde le mécanisme de #76, et l'option (c) ne s'applique que si tous les candidats ont des exemples.
+- La généralisation repose sur 38 questions BR Expat et 100 EUR-Lex. Elle montre l'absence de régression, pas un gain propre à ces corpus, qui n'ont pas de seuil par langue.
