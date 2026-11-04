@@ -88,5 +88,17 @@
     "name": "Qwen3.6 answer writer",
     "change": "same pipeline and prompt, answers written by Qwen3.6-35B-A3B (MoE) on llama.cpp instead of qwen2.5:7b",
     "status": "next default, VRAM check pending"
+  },
+  {
+    "label": "graph-v1",
+    "name": "Citation graph",
+    "change": "full pipeline + citation graph in Neo4j as a third search branch (no-regression check on these sets; measured on its own sets below)",
+    "status": "9.9 · comparison"
+  },
+  {
+    "label": "versions-v1",
+    "name": "Version filter",
+    "change": "full pipeline + only versions in force are searched (on by default; no regression on these sets, measured on its own sets below)",
+    "status": "9.10 · default"
   }
 ]

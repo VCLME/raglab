@@ -1,0 +1,6212 @@
+{
+  "label": "versions-v1",
+  "strategy": "traditional",
+  "retrieval_mode": "hybrid",
+  "rerank": true,
+  "graph": false,
+  "versions": "in_force",
+  "rerank_model": "BAAI/bge-reranker-v2-m3",
+  "rerank_candidates": 40,
+  "top_k": 5,
+  "ragas_limit": null,
+  "environment": {
+    "date": "2026-11-04T05:00:45+00:00",
+    "git_commit": "b01428f",
+    "git_dirty": false,
+    "os": "Windows-11-10.0.26300-SP0",
+    "cpu": "Intel64 Family 6 Model 154 Stepping 3, GenuineIntel",
+    "cpu_count": 20,
+    "ram": "32 GiB",
+    "gpu": "NVIDIA GeForce RTX 3070 Ti Laptop GPU, 8192 MiB, 595.79",
+    "python": "3.12.10",
+    "torch": "2.11.0+cu128",
+    "transformers": "5.5.4",
+    "postgres": "16.13 (Debian 16.13-1.pgdg12+1)",
+    "pgvector": "0.8.2",
+    "embedding_model": "transformers:intfloat/multilingual-e5-small (cpu)",
+    "distance": "cosine",
+    "generation_model": "ollama:qwen2.5:7b (845dbda0ea48)",
+    "judge": null,
+    "command": "raglab bench all --label versions-v1 --versions in_force --ragas-limit 0"
+  },
+  "suites": [
+    {
+      "suite": "piaf",
+      "language": "fr",
+      "corpus_name": "bench_piaf_fr",
+      "index_run_id": "64bfd53f-c617-4091-8f13-bc18b1a4124f",
+      "chunks": 833,
+      "documents": 761,
+      "total_cases": 500,
+      "retrieval_mode": "hybrid",
+      "lexical_weight": 0.5,
+      "rrf_k": 60,
+      "rerank": true,
+      "citations": null,
+      "graph": null,
+      "graph_notices": null,
+      "versions": "in_force",
+      "summary": {
+        "recall@1": 0.846,
+        "recall@5": 0.966,
+        "recall@10": 0.97,
+        "precision@1": 0.846,
+        "precision@5": 0.19360000000000166,
+        "precision@10": 0.09720000000000084,
+        "mrr": 0.8998380952380951,
+        "mean_first_relevant_rank": 1.202061855670103,
+        "recall@1_ci_low": 0.814,
+        "recall@1_ci_high": 0.876,
+        "recall@5_ci_low": 0.95,
+        "recall@5_ci_high": 0.98,
+        "recall@10_ci_low": 0.954,
+        "recall@10_ci_high": 0.984,
+        "mrr_ci_low": 0.8769,
+        "mrr_ci_high": 0.9205,
+        "latency_dense_p50_ms": 10.105,
+        "latency_dense_p95_ms": 16.989,
+        "latency_embed_p50_ms": 18.129,
+        "latency_embed_p95_ms": 33.369,
+        "latency_fusion_p50_ms": 0.463,
+        "latency_fusion_p95_ms": 0.718,
+        "latency_lexical_p50_ms": 10.208,
+        "latency_lexical_p95_ms": 20.202,
+        "latency_query_p50_ms": 347.533,
+        "latency_query_p95_ms": 449.261,
+        "latency_rerank_p50_ms": 264.343,
+        "latency_rerank_p95_ms": 372.977,
+        "latency_retrieval_p50_ms": 52.522,
+        "latency_retrieval_p95_ms": 65.255,
+        "rerank_cache_hit_rate": 0.0
+      },
+      "by_type": {},
+      "report_path": "data\\reports\\recall-piaf-20261104-050412.json",
+      "experiment_run_id": "c767d9ce-a100-4d67-bf62-d0e914f584b4",
+      "cases": [
+        {
+          "id": "piaf-p140295201616448",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295201617456",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295201618464",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295201637216",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295201637648",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295201638152",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295201639160",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295201866952",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295201869112",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295201888800",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295201890096",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295201909352",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295201910432",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295201925088",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295201926024",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295201926384",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295201926600",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295201968848",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295201971368",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295201997880",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295201998816",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202029712",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202030000",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202030144",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202032232",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202033600",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202050552",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202051056",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202051560",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202051992",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202052136",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202052280",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202053432",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202053792",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "piaf-p140295202067872",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202068160",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202069672",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "piaf-p140295202091080",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202091368",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "piaf-p140295202091800",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202092016",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "piaf-p140295202092304",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202092520",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202093600",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202093888",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202094680",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202115728",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202117168",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202119472",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333
+        },
+        {
+          "id": "piaf-p140295202128304",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202128592",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202129744",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202148712",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "piaf-p140295202149648",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202152384",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202169840",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202169984",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202170632",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202170776",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202171424",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202189600",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202189744",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "piaf-p140295202190536",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202190896",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202191904",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202192552",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202209864",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202210080",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "piaf-p140295202211016",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202213104",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202213536",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202227472",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202227760",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "piaf-p140295202228984",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202229272",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202259880",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202260456",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202288336",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333
+        },
+        {
+          "id": "piaf-p140295202289056",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202308240",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "piaf-p140295202308960",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202310832",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202337272",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202338280",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202338424",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333
+        },
+        {
+          "id": "piaf-p140295202339648",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202366952",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202367888",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "piaf-p140295202368392",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202390880",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202439456",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202440824",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202441112",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202442552",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202442840",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202443128",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202468776",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202469064",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202470000",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202470792",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202471440",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202497016",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202497376",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202498168",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "piaf-p140295202509952",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "piaf-p140295202527488",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202567728",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202569456",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202588712",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202589072",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202589864",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202590440",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202636280",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202637720",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "piaf-p140295202639448",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202652232",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202655976",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202677312",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202677816",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202678248",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202678824",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202679256",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202679616",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202679904",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202680696",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202702968",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202703688",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202704120",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202704336",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202704840",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202723304",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202724384",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202746944",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "piaf-p140295202747664",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202747808",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202748456",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202750256",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202750400",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202772600",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202773392",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202774400",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202803784",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202804288",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "piaf-p140295202805368",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202806880",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202807672",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202824480",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202824624",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202825488",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202825920",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202826712",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202827216",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202828008",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202861776",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202861992",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202881040",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202890592",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202890880",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202891384",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202891672",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "piaf-p140295202891888",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202892104",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202892248",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202892392",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202893328",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202893472",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202918616",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202919984",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202921640",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202944056",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202945136",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "piaf-p140295202945928",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202946072",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202946216",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202973376",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202988104",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202988248",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295202990984",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203009952",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203010384",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203012472",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203046672",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203047320",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203047608",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203066072",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203069312",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203096832",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203098200",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203123272",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "piaf-p140295203123632",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203124280",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203124712",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203138512",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203138656",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203163304",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203179904",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "piaf-p140295203197288",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203198296",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203198944",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "piaf-p140295203200672",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333
+        },
+        {
+          "id": "piaf-p140295203225960",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "piaf-p140295203229560",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203258160",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203266992",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203269656",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203288336",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203288480",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203289200",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203290568",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203314208",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203314712",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203337344",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "piaf-p140295203337704",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "piaf-p140295203361488",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203361848",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203362136",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203362568",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203363720",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203386496",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "piaf-p140295203402952",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203423000",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203423216",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203425232",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203425376",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203463384",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203463600",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203464536",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333
+        },
+        {
+          "id": "piaf-p140295203465256",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203467056",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203488104",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203490840",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "piaf-p140295203537832",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203538048",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "piaf-p140295203539704",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203539848",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203540136",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.2
+        },
+        {
+          "id": "piaf-p140295203540280",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203540496",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203540640",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203568952",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203583104",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 1,
+          "reciprocal_rank": 0.14285714285714285
+        },
+        {
+          "id": "piaf-p140295203585696",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203612640",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203636856",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203648784",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "piaf-p140295203649144",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203650728",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203676592",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203676808",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203677600",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203678968",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203679760",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203680120",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "piaf-p140295203705192",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203707352",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203707496",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203735232",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203736168",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "piaf-p140295203759952",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203760096",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203761536",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203783304",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203786400",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203813704",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203813848",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203813992",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203814496",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203840504",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203843888",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.2
+        },
+        {
+          "id": "piaf-p140295203860272",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203877728",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203879240",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203880896",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203897488",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203897848",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "piaf-p140295203899072",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203899216",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203900512",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203924080",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203939240",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295203951456",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295218123256",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333
+        },
+        {
+          "id": "piaf-p140295218124048",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.2
+        },
+        {
+          "id": "piaf-p140295218124264",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295218125056",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "piaf-p140295218125560",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295218126496",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295218156240",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295218157896",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "piaf-p140295218158400",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295218158832",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295218180312",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295218180456",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295218180672",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295218181536",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "piaf-p140295218182616",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295218183552",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295218201080",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295218201224",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295218204464",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295218225584",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295218227096",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295218227960",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "piaf-p140295218228248",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295218228752",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295218250232",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295218251024",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295218274664",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295218274880",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295218275960",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295218277472",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295218295144",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295218296728",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295218297520",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295218321664",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295218322384",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295218348176",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295218348320",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295218351344",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295218351632",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295218364488",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295218367152",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295218367296",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295218367728",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295218925640",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333
+        },
+        {
+          "id": "piaf-p140295218928448",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295218928808",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295218929384",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295218954312",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295218956256",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295218978888",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295218979968",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295218980832",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295218981912",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295219012232",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295219012448",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295219014176",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295219022872",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295219023448",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295219049600",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295219052480",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295219070368",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295219071088",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295219072816",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333
+        },
+        {
+          "id": "piaf-p140295219087328",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "piaf-p140295219087472",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295219087832",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295219088336",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295219119376",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295219119664",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295219120168",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295219120888",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295219134680",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295219136408",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295219136984",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "piaf-p140295219138208",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295219155808",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295219157536",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295219158400",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295219158688",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295222080064",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295222081432",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295222082512",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "piaf-p140295222083160",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295222096520",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295222097096",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "piaf-p140295222098176",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295222121888",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295222122680",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295222123112",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295222123472",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295222124336",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "piaf-p140295222154296",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295222155520",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295222156528",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295222175712",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295222175856",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295222176792",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.25
+        },
+        {
+          "id": "piaf-p140295222202584",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295222203520",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "piaf-p140295222205248",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295222205752",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333
+        },
+        {
+          "id": "piaf-p140295222227448",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295222244264",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295222245272",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295222247216",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295222263952",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295222265176",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295222265824",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "piaf-p140295222301032",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295222304560",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295222314832",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295222314976",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295222316128",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295222316272",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295222316632",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295223112184",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295223113048",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295223114056",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295223114920",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295223138776",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295223139352",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295223139784",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295223139928",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295223156880",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295223157744",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295223160552",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295223181600",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295223184552",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295223185272",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295223206248",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295223208048",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295223209488",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295223218392",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295223220552",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "piaf-p140295223221272",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "piaf-p140295223242968",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295223244264",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295223244624",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295223246784",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "piaf-p140295223260288",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.25
+        },
+        {
+          "id": "piaf-p140295223261080",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295223261728",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295223262448",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295223284432",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "piaf-p140295223286304",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295223286448",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295223314112",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295223316128",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295223342496",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "piaf-p140295223358232",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "piaf-p140295223358664",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295223359024",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295223359384",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "piaf-p140295442360936",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295442399808",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295442402760",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.2
+        },
+        {
+          "id": "piaf-p140295442403192",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295442428480",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295442428624",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295442428984",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295442429272",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295442430352",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295442455504",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295442456080",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295442471816",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295442510040",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295442511624",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295442512128",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295442513568",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295442539504",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295442572200",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295442573064",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295442574864",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295442588656",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295442602528",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295442603968",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295442633640",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295442634288",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295442635008",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "piaf-p140295442635296",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295442635584",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295442636304",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295442658936",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295442659584",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295442677976",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "piaf-p140295442678408",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295442678840",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "piaf-p140295442679848",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "piaf-p140295442680136",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295442702984",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "piaf-p140295442703272",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295442704856",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295442705792",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "piaf-p140295442729576",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333
+        },
+        {
+          "id": "piaf-p140295442729720",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 1,
+          "reciprocal_rank": 0.14285714285714285
+        },
+        {
+          "id": "piaf-p140295442730008",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "piaf-p140295442741360",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295442742584",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295442743088",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295442773624",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295442775640",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "piaf-p140295442775784",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295442791952",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "piaf-p140295442816888",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295443288712",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "piaf-p140295443289432",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295443291376",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295443291520",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295443296472",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295443297624",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295443297768",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "piaf-p140295443297912",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295443299064",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295443299856",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295443353816",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295443354248",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295443356048",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295443357488",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "piaf-p140295460357608",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        }
+      ]
+    },
+    {
+      "suite": "lexml_fulltext",
+      "language": "pt",
+      "corpus_name": "bench_lexml_pt",
+      "index_run_id": "63b704a5-04e9-494d-ac6b-9e813a8a9e1c",
+      "chunks": 6075,
+      "documents": 252,
+      "total_cases": 277,
+      "retrieval_mode": "hybrid",
+      "lexical_weight": 0.5,
+      "rrf_k": 60,
+      "rerank": true,
+      "citations": null,
+      "graph": null,
+      "graph_notices": null,
+      "versions": "in_force",
+      "summary": {
+        "recall@1": 0.5992779783393501,
+        "recall@5": 0.8158844765342961,
+        "recall@10": 0.8628158844765343,
+        "precision@1": 0.5992779783393501,
+        "precision@5": 0.17328519855595714,
+        "precision@10": 0.09169675090252737,
+        "mrr": 0.6939215517735372,
+        "mean_first_relevant_rank": 1.8242677824267783,
+        "recall@1_ci_low": 0.5415,
+        "recall@1_ci_high": 0.657,
+        "recall@5_ci_low": 0.769,
+        "recall@5_ci_high": 0.8592,
+        "recall@10_ci_low": 0.8231,
+        "recall@10_ci_high": 0.9025,
+        "mrr_ci_low": 0.6476,
+        "mrr_ci_high": 0.7397,
+        "latency_citation_p50_ms": 3.327,
+        "latency_citation_p95_ms": 5.065,
+        "latency_dense_p50_ms": 28.459,
+        "latency_dense_p95_ms": 54.576,
+        "latency_embed_p50_ms": 18.827,
+        "latency_embed_p95_ms": 32.5,
+        "latency_fusion_p50_ms": 0.495,
+        "latency_fusion_p95_ms": 0.781,
+        "latency_lexical_p50_ms": 25.028,
+        "latency_lexical_p95_ms": 46.848,
+        "latency_query_p50_ms": 572.613,
+        "latency_query_p95_ms": 704.7,
+        "latency_rerank_p50_ms": 453.395,
+        "latency_rerank_p95_ms": 576.681,
+        "latency_retrieval_p50_ms": 97.08,
+        "latency_retrieval_p95_ms": 122.268,
+        "latency_versions_p50_ms": 31.683,
+        "latency_versions_p95_ms": 40.66,
+        "rerank_cache_hit_rate": 0.0043,
+        "outdated_hit@1": 0.0,
+        "outdated_hit@5": 0.0,
+        "outdated_hit@10": 0.0
+      },
+      "by_type": {
+        "entity": {
+          "cases": 87,
+          "recall@1": 0.8160919540229885,
+          "recall@5": 0.9425287356321839,
+          "recall@10": 0.9425287356321839,
+          "mrr": 0.8745210727969348,
+          "outdated_hit@1": 0.0,
+          "outdated_hit@5": 0.0,
+          "outdated_hit@10": 0.0
+        },
+        "paraphrase": {
+          "cases": 93,
+          "recall@1": 0.6559139784946236,
+          "recall@5": 0.7956989247311828,
+          "recall@10": 0.8279569892473119,
+          "mrr": 0.7158730158730159,
+          "outdated_hit@1": 0.0,
+          "outdated_hit@5": 0.0,
+          "outdated_hit@10": 0.0
+        },
+        "reference": {
+          "cases": 97,
+          "recall@1": 0.35051546391752575,
+          "recall@5": 0.7216494845360825,
+          "recall@10": 0.8247422680412371,
+          "mrr": 0.5108942889870725,
+          "outdated_hit@1": 0.0,
+          "outdated_hit@5": 0.0,
+          "outdated_hit@10": 0.0
+        }
+      },
+      "report_path": "data\\reports\\recall-lexml_fulltext-20261104-050643.json",
+      "experiment_run_id": "8cb26f79-ffdf-477b-a346-f507b632fa3d",
+      "cases": [
+        {
+          "id": "lexml-0001",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0002",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 1,
+          "reciprocal_rank": 0.125,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0003",
+          "type": "entity",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "lexml-0004",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0005",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "lexml-0006",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0007",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0009",
+          "type": "entity",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0010",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0011",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0012",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0013",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0014",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0015",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0016",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0017",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 1,
+          "reciprocal_rank": 0.16666666666666666,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0018",
+          "type": "entity",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "lexml-0019",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0020",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0022",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0023",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 1,
+          "reciprocal_rank": 0.1
+        },
+        {
+          "id": "lexml-0024",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0025",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 1,
+          "reciprocal_rank": 0.14285714285714285
+        },
+        {
+          "id": "lexml-0026",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0027",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0028",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0029",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 1,
+          "reciprocal_rank": 0.16666666666666666,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0031",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0032",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0033",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0034",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0035",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0036",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0037",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0038",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333
+        },
+        {
+          "id": "lexml-0039",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0040",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0041",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0042",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0044",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0045",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0046",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0047",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0048",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0049",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0050",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0051",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0052",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0053",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0054",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0055",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0056",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "lexml-0057",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0058",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0059",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0060",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0061",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0062",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "lexml-0064",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0065",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333
+        },
+        {
+          "id": "lexml-0066",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0067",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0068",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0069",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0070",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0071",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.25
+        },
+        {
+          "id": "lexml-0072",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0073",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0074",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0075",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0076",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "lexml-0077",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.25
+        },
+        {
+          "id": "lexml-0078",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0079",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0080",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "lexml-0081",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0082",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0083",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.2,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0084",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0085",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0086",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0087",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0088",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0089",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0090",
+          "type": "entity",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333
+        },
+        {
+          "id": "lexml-0091",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 1,
+          "reciprocal_rank": 0.1,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0092",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "lexml-0093",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0094",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0095",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0097",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "lexml-0098",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 1,
+          "reciprocal_rank": 0.1111111111111111,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0099",
+          "type": "entity",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "lexml-0100",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "lexml-0101",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.25
+        },
+        {
+          "id": "lexml-0102",
+          "type": "entity",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "lexml-0103",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0104",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0105",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0106",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0107",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0108",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0110",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "lexml-0111",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0112",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0113",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0114",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0115",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0116",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "lexml-0117",
+          "type": "entity",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0118",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.2,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0119",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333
+        },
+        {
+          "id": "lexml-0120",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0121",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0122",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0123",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0124",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0125",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.25,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0127",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0128",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 1,
+          "reciprocal_rank": 0.14285714285714285
+        },
+        {
+          "id": "lexml-0129",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0130",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0131",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0132",
+          "type": "entity",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0133",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333
+        },
+        {
+          "id": "lexml-0134",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0136",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0137",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0139",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0140",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0141",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0142",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0143",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 1,
+          "reciprocal_rank": 0.16666666666666666
+        },
+        {
+          "id": "lexml-0144",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0145",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0146",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "lexml-0147",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0148",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0149",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0150",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0151",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0152",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "lexml-0153",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0155",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0156",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0157",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0158",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0159",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0160",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0161",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0162",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0163",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0164",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 1,
+          "reciprocal_rank": 0.1111111111111111,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0165",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0166",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0167",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0168",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0169",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0170",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0171",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0172",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0173",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "lexml-0174",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0175",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0176",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0177",
+          "type": "entity",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.25,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0178",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0179",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "lexml-0180",
+          "type": "entity",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0182",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0183",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0184",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0185",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0186",
+          "type": "entity",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0187",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0188",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "lexml-0189",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0190",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0191",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0192",
+          "type": "entity",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0193",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0194",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0196",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333
+        },
+        {
+          "id": "lexml-0197",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333
+        },
+        {
+          "id": "lexml-0198",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0199",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0200",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.25,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0201",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0202",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0204",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0205",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0206",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0207",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0208",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0209",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0210",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0211",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0212",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0213",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0214",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0215",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0216",
+          "type": "entity",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "lexml-0217",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0218",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0219",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0220",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "lexml-0221",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.2
+        },
+        {
+          "id": "lexml-0222",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0223",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0224",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0226",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0227",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.25
+        },
+        {
+          "id": "lexml-0228",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0229",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0230",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0231",
+          "type": "entity",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0232",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0233",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333
+        },
+        {
+          "id": "lexml-0234",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0235",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0236",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0237",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0239",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "lexml-0240",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0241",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 1,
+          "reciprocal_rank": 0.1,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0242",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0243",
+          "type": "entity",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "lexml-0244",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0245",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0246",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0247",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0248",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0249",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0250",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "lexml-0251",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0252",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0253",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "lexml-0254",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.2,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0255",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0257",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 1,
+          "reciprocal_rank": 0.1
+        },
+        {
+          "id": "lexml-0259",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0260",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0261",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0262",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0263",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "lexml-0264",
+          "type": "entity",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "lexml-0265",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0266",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0268",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.2,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0269",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0270",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "lexml-0271",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0272",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0273",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0274",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "lexml-0275",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 1,
+          "reciprocal_rank": 0.1,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0277",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0278",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0279",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0280",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0281",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0282",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0283",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0284",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0286",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0288",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0289",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0290",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0291",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0292",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "lexml-0293",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333
+        },
+        {
+          "id": "lexml-0294",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0295",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0296",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0298",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0299",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0300",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        }
+      ]
+    }
+  ]
+}

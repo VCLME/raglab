@@ -141,10 +141,12 @@ Objectif : passer du laboratoire à un pipeline RAG prêt pour la production, ch
 
 | Mode d'échec | Brique | État |
 |---|---|---|
-| Identifiants (« art. 49 da Lei 8.078 ») | résolveur de citations (9.3b) | ✅ 9 % → 72 % |
-| Renvois (la réponse est dans l'article cité) | graphe des citations dans Neo4j (9.9) | à mesurer |
-| Versions (article abrogé ou réécrit cité comme en vigueur) | option `versions` : filtre par date, statut de version par chunk (9.10) | ✅ jeu « versions » 0,75 → 0,93 ; version périmée en tête 30 % → 0 % |
-| Hors périmètre | routeur et abstention (9.4) | mesuré sur l'ancien pipeline, à refaire |
+| Identifiants (« art. 49 da Lei 8.078 ») | résolveur de citations (9.3b) | ✅ 9 % → 72 % (LexML) ; questions à numéro d'article du Code de la consommation 0,46 → 1,00 |
+| Renvois (la réponse est dans l'article cité) | graphe des citations dans Neo4j (9.9) | mesuré, pas de gain significatif : +6,5 pts sur 46 questions de renvois (n.s.), −2,3 pts sur les textes de l'UE (n.s.) ; reste désactivé |
+| Versions (article abrogé ou réécrit cité comme en vigueur) | filtre `versions` (`in_force` par défaut), statut de version par chunk (9.10) | ✅ actif par défaut : Code de la consommation Recall@5 0,66 → 0,82, version périmée en tête 57 % → 0 % ; jeu « versions » 0,75 → 0,93, version périmée en tête 30 % → 0 % |
+| Hors périmètre | routeur et abstention (9.4) | re-mesuré sur le pipeline actuel ; point de fonctionnement à choisir. Candidat : précision 0,958 / rappel 0,850 à 3,8 % de fausses abstentions (score dense, `benchmarks/routing/router-dense-v1.json`) |
+
+Chiffres et précautions : [benchmarks/resultats-2026-11.md](benchmarks/resultats-2026-11.md).
 
 Toute nouvelle brique doit servir l'un de ces modes d'échec ou l'expérience de démonstration (mode Démo : comparer RAG classique et raglab sur des questions pièges).
 
