@@ -1,0 +1,80 @@
+{"id": "val-abs-001", "language": "fr", "category": "out_of_scope", "subtype": "live_weather", "question": "Quel temps fera-t-il à Lyon ce week-end ?"}
+{"id": "val-abs-002", "language": "fr", "category": "out_of_scope", "subtype": "task_translate", "question": "Tu peux me traduire ce mail en anglais : « Bonjour, merci pour votre retour rapide, je reviens vers vous lundi »"}
+{"id": "val-abs-003", "language": "fr", "category": "out_of_scope", "subtype": "live_price", "question": "Combien coûte un billet d'avion Paris–São Paulo pour décembre ?"}
+{"id": "val-abs-004", "language": "fr", "category": "out_of_scope", "subtype": "task_write", "question": "Écris-moi un petit poème pour les 60 ans de ma mère"}
+{"id": "val-abs-005", "language": "fr", "category": "out_of_scope", "subtype": "live_score", "question": "c'était combien le score de PSG–OM hier soir"}
+{"id": "val-abs-006", "language": "fr", "category": "out_of_scope", "subtype": "task_code", "question": "Donne-moi une fonction Python qui trie une liste de dictionnaires par date"}
+{"id": "val-abs-007", "language": "fr", "category": "out_of_scope", "subtype": "task_compute", "question": "Combien font 17 % de 2 350 euros ?"}
+{"id": "val-abs-008", "language": "fr", "category": "out_of_scope", "subtype": "opinion", "question": "À ton avis, vaut-il mieux acheter ou louer son appartement en ce moment ?"}
+{"id": "val-abs-009", "language": "fr", "category": "out_of_scope", "subtype": "personal_data", "question": "Il me reste combien de jours de congés cette année ?"}
+{"id": "val-abs-010", "language": "fr", "category": "out_of_scope", "subtype": "live_news", "question": "Quelles sont les dernières infos sur la grève SNCF de cette semaine ?"}
+{"id": "val-abs-011", "language": "fr", "category": "out_of_scope", "subtype": "private_company", "question": "Tu peux me résumer la réunion d'équipe de mardi dernier ?"}
+{"id": "val-abs-012", "language": "fr", "category": "out_of_scope", "subtype": "advice_medical", "question": "Je suis crevé depuis deux semaines, quel médicament je devrais prendre ?"}
+{"id": "val-abs-013", "language": "fr", "category": "out_of_scope", "subtype": "live_price", "question": "Le real est à combien face à l'euro aujourd'hui"}
+{"id": "val-abs-014", "language": "fr", "category": "out_of_scope", "subtype": "task_write", "question": "Rédige une lettre de motivation pour un poste de data analyst junior"}
+{"id": "val-abs-015", "language": "fr", "category": "out_of_scope", "subtype": "private_company", "question": "Quelle est la politique de télétravail de notre boîte pour les nouveaux arrivants ?"}
+{"id": "val-abs-016", "language": "fr", "category": "out_of_scope", "subtype": "advice", "question": "Tu me conseilles quel resto italien près de chez moi ce soir ?"}
+{"id": "val-abs-017", "language": "pt", "category": "out_of_scope", "subtype": "live_weather", "question": "Vai chover amanhã em Curitiba?"}
+{"id": "val-abs-018", "language": "pt", "category": "out_of_scope", "subtype": "live_price", "question": "Qual é a cotação do dólar hoje?"}
+{"id": "val-abs-019", "language": "pt", "category": "out_of_scope", "subtype": "task_write", "question": "Escreve um e-mail para o meu chefe pedindo férias em janeiro"}
+{"id": "val-abs-020", "language": "pt", "category": "out_of_scope", "subtype": "task_translate", "question": "Traduz pro inglês: o prazo de entrega foi prorrogado para sexta"}
+{"id": "val-abs-021", "language": "pt", "category": "out_of_scope", "subtype": "live_score", "question": "Quanto ficou o jogo do Flamengo ontem?"}
+{"id": "val-abs-022", "language": "pt", "category": "out_of_scope", "subtype": "task_code", "question": "Me ajuda a escrever uma query SQL que conte os pedidos por cliente"}
+{"id": "val-abs-023", "language": "pt", "category": "out_of_scope", "subtype": "task_compute", "question": "Quanto dá 12% de juros sobre 8.500 reais em 3 meses?"}
+{"id": "val-abs-024", "language": "pt", "category": "out_of_scope", "subtype": "advice_financial", "question": "Na sua opinião vale a pena investir em criptomoedas agora?"}
+{"id": "val-abs-025", "language": "pt", "category": "out_of_scope", "subtype": "personal_data", "question": "Qual é o meu CPF cadastrado no sistema?"}
+{"id": "val-abs-026", "language": "pt", "category": "out_of_scope", "subtype": "private_company", "question": "Quais são as metas de vendas da nossa equipe para o próximo trimestre?"}
+{"id": "val-abs-027", "language": "pt", "category": "out_of_scope", "subtype": "advice", "question": "me recomenda uma série boa pra ver no fim de semana"}
+{"id": "val-abs-028", "language": "pt", "category": "out_of_scope", "subtype": "live_news", "question": "Quais as últimas notícias sobre o preço da gasolina?"}
+{"id": "val-abs-029", "language": "en", "category": "out_of_scope", "subtype": "live_weather", "question": "What's the weather going to be like in Lisbon tomorrow?"}
+{"id": "val-abs-030", "language": "en", "category": "out_of_scope", "subtype": "task_write", "question": "Can you write me a cover letter for a junior developer job?"}
+{"id": "val-abs-031", "language": "en", "category": "out_of_scope", "subtype": "task_translate", "question": "Translate 'we look forward to working with you' into German"}
+{"id": "val-abs-032", "language": "en", "category": "out_of_scope", "subtype": "live_score", "question": "who won the champions league game last night"}
+{"id": "val-abs-033", "language": "en", "category": "out_of_scope", "subtype": "task_code", "question": "Write a bash script that renames all the .jpg files in a folder by date"}
+{"id": "val-abs-034", "language": "en", "category": "out_of_scope", "subtype": "task_compute", "question": "What's a 15% tip on an $86 dinner bill?"}
+{"id": "val-abs-035", "language": "en", "category": "out_of_scope", "subtype": "advice", "question": "Should I quit my job to open a bakery? Honest opinion please"}
+{"id": "val-abs-036", "language": "en", "category": "out_of_scope", "subtype": "personal_data", "question": "What's the status of my order #48213?"}
+{"id": "val-abs-037", "language": "en", "category": "out_of_scope", "subtype": "live_price", "question": "What is the current price of Bitcoin?"}
+{"id": "val-abs-038", "language": "en", "category": "out_of_scope", "subtype": "private_company", "question": "Summarize the minutes of our Q3 board meeting for me"}
+{"id": "val-abs-039", "language": "en", "category": "out_of_scope", "subtype": "private_company", "question": "What's our company's parental leave policy?"}
+{"id": "val-abs-040", "language": "en", "category": "out_of_scope", "subtype": "advice", "question": "Any good hiking trails near Denver you'd recommend?"}
+{"id": "val-abs-041", "language": "fr", "category": "near_miss", "subtype": "foreign_law", "question": "Quelles sont les conditions du visa D7 pour s'installer au Portugal ?"}
+{"id": "val-abs-042", "language": "fr", "category": "near_miss", "subtype": "foreign_law", "question": "Que dit la Loi 25 du Québec sur la protection des renseignements personnels ?"}
+{"id": "val-abs-043", "language": "fr", "category": "near_miss", "subtype": "invented_law", "question": "Que prévoit la loi brésilienne n° 15.987 de 2027 sur les cryptomonnaies ?"}
+{"id": "val-abs-044", "language": "fr", "category": "near_miss", "subtype": "invented_article", "question": "Que dit l'article 412-B du statut des fonctionnaires fédéraux brésiliens sur le télétravail ?"}
+{"id": "val-abs-045", "language": "fr", "category": "near_miss", "subtype": "after_2025", "question": "Qui a remporté le Tour de France 2026 ?"}
+{"id": "val-abs-046", "language": "fr", "category": "near_miss", "subtype": "absent_entity", "question": "En quelle année est mort le compositeur Karlheinz Stockhausen ?"}
+{"id": "val-abs-047", "language": "fr", "category": "near_miss", "subtype": "absent_entity", "question": "Quand a été fondée la ville de Ouarzazate au Maroc ?"}
+{"id": "val-abs-048", "language": "fr", "category": "near_miss", "subtype": "foreign_law", "question": "Que prévoit la CCPA californienne sur la vente de données personnelles ?"}
+{"id": "val-abs-049", "language": "fr", "category": "near_miss", "subtype": "foreign_law", "question": "Quel est le régime fiscal des résidents non habituels au Portugal ?"}
+{"id": "val-abs-050", "language": "fr", "category": "near_miss", "subtype": "absent_entity", "question": "Quelle est la biographie du peintre Joan Miró ?"}
+{"id": "val-abs-051", "language": "fr", "category": "near_miss", "subtype": "after_2025", "question": "Qu'a changé la réforme brésilienne de l'impôt sur le revenu adoptée en 2027 ?"}
+{"id": "val-abs-052", "language": "pt", "category": "near_miss", "subtype": "foreign_law", "question": "O que diz o Código do Trabalho português sobre o teletrabalho?"}
+{"id": "val-abs-053", "language": "pt", "category": "near_miss", "subtype": "foreign_law", "question": "Quais os requisitos do visto de nômade digital em Portugal?"}
+{"id": "val-abs-054", "language": "pt", "category": "near_miss", "subtype": "invented_law", "question": "O que prevê a Lei 15.940 de 2027 sobre inteligência artificial no Brasil?"}
+{"id": "val-abs-055", "language": "pt", "category": "near_miss", "subtype": "after_2025", "question": "Quem venceu a Copa do Mundo de 2026?"}
+{"id": "val-abs-056", "language": "pt", "category": "near_miss", "subtype": "other_eu_act", "question": "O que o Digital Markets Act exige dos gatekeepers?"}
+{"id": "val-abs-057", "language": "pt", "category": "near_miss", "subtype": "absent_entity", "question": "Em que ano nasceu o escritor Machado de Assis?"}
+{"id": "val-abs-058", "language": "pt", "category": "near_miss", "subtype": "invented_article", "question": "O que diz o artigo 214-C da Lei do MEI sobre o limite de faturamento de 2027?"}
+{"id": "val-abs-059", "language": "en", "category": "near_miss", "subtype": "foreign_law", "question": "What does the California Consumer Privacy Act say about selling personal information?"}
+{"id": "val-abs-060", "language": "en", "category": "near_miss", "subtype": "foreign_law", "question": "Under Canada's PIPEDA, when is consent required for collecting personal data?"}
+{"id": "val-abs-061", "language": "en", "category": "near_miss", "subtype": "other_eu_act", "question": "What are gatekeepers' obligations under the Digital Markets Act?"}
+{"id": "val-abs-062", "language": "en", "category": "near_miss", "subtype": "invented_article", "question": "What does Article 147 of the GDPR say about blockchain data?"}
+{"id": "val-abs-063", "language": "en", "category": "near_miss", "subtype": "after_2025", "question": "Who won the 2026 FIFA World Cup final?"}
+{"id": "val-abs-064", "language": "en", "category": "near_miss", "subtype": "foreign_law", "question": "What does the UK Online Safety Act require for age verification?"}
+{"id": "val-abs-065", "language": "en", "category": "near_miss", "subtype": "absent_entity", "question": "When was the Sydney Opera House completed?"}
+{"id": "val-abs-066", "language": "en", "category": "near_miss", "subtype": "invented_law", "question": "What new penalties does the NIS3 directive introduce?"}
+{"id": "val-abs-067", "language": "fr", "category": "near_miss", "subtype": "foreign_law", "question": "Qu'impose la loi Toubon sur l'usage du français dans les contrats de travail ?"}
+{"id": "val-abs-068", "language": "pt", "category": "near_miss", "subtype": "foreign_law", "question": "O que exige a Local Law 144 de Nova York sobre IA em processos seletivos?"}
+{"id": "val-abs-069", "language": "pt", "category": "near_miss", "subtype": "foreign_law", "question": "Quais as regras do NRAU português para despejo de inquilinos?"}
+{"id": "val-abs-070", "language": "en", "category": "near_miss", "subtype": "foreign_law", "question": "What does New York City's Local Law 144 require for AI hiring tools?"}
+{"id": "val-abs-071", "language": "fr", "category": "conversational", "subtype": "greeting", "question": "Bonjour !"}
+{"id": "val-abs-072", "language": "fr", "category": "conversational", "subtype": "thanks", "question": "Merci beaucoup, c'est super clair"}
+{"id": "val-abs-073", "language": "fr", "category": "conversational", "subtype": "meta", "question": "Tu es qui exactement ?"}
+{"id": "val-abs-074", "language": "fr", "category": "conversational", "subtype": "goodbye", "question": "ok parfait, à plus"}
+{"id": "val-abs-075", "language": "pt", "category": "conversational", "subtype": "greeting", "question": "Oi, tudo bem?"}
+{"id": "val-abs-076", "language": "pt", "category": "conversational", "subtype": "thanks", "question": "Valeu pela ajuda!"}
+{"id": "val-abs-077", "language": "pt", "category": "conversational", "subtype": "meta", "question": "O que você sabe fazer?"}
+{"id": "val-abs-078", "language": "en", "category": "conversational", "subtype": "greeting", "question": "Hi there!"}
+{"id": "val-abs-079", "language": "en", "category": "conversational", "subtype": "thanks", "question": "Thanks, that's all for now"}
+{"id": "val-abs-080", "language": "en", "category": "conversational", "subtype": "meta", "question": "Are you a real person?"}

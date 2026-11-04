@@ -297,6 +297,20 @@ class Settings(BaseSettings):
     # declines first-person questions of real users (BR Expat false refusals
     # 3 -> 15 of 38): off keeps the kNN gate and the joint rule only.
     routing_intent_logistic: bool = True
+    # Labelled examples added to the kNN neighbours and the logistic training
+    # when the calibration file says `"examples": "first_person"`
+    # (first-person documentary questions, docs/intentions.md).
+    # Intent method: "centroids" (default), "knn" (same as
+    # routing_intent_knn=true) or "logistic": the logistic regression of
+    # routing_intent_logistic_path (trained with first-person documentary
+    # examples) decides alone; abstention keeps the plain thresholds (no
+    # joint rule). docs/intentions.md. Measured on four sets, two of them
+    # independent validation sets of user-style questions: +6 to +10
+    # justified refusals, no documentary answer lost, false refusals 1.9 to
+    # 4.0 %. On by default (owner decision, 4 November 2026).
+    routing_intent_method: str = "logistic"
+    routing_intent_logistic_path: Path = Field(default_factory=lambda: Path("benchmarks/routing/intent_logistic.json"))
+    routing_intent_training_path: Path = Field(default_factory=lambda: Path("benchmarks/routing/intent_training.jsonl"))
     routing_intent_calibration_path: Path = Field(
         default_factory=lambda: Path("benchmarks/routing/intent_calibration.json")
     )

@@ -144,7 +144,7 @@ Objectif : passer du laboratoire à un pipeline RAG prêt pour la production, ch
 | Identifiants (« art. 49 da Lei 8.078 ») | résolveur de citations (9.3b) | ✅ 9 % → 72 % (LexML) ; questions à numéro d'article du Code de la consommation 0,46 → 1,00 |
 | Renvois (la réponse est dans l'article cité) | graphe des citations dans Neo4j (9.9) | mesuré, pas de gain significatif : +6,5 pts sur 46 questions de renvois (n.s.), −2,3 pts sur les textes de l'UE (n.s.) ; reste désactivé |
 | Versions (article abrogé ou réécrit cité comme en vigueur) | filtre `versions` (`in_force` par défaut), statut de version par chunk (9.10) | ✅ actif par défaut : Code de la consommation Recall@5 0,66 → 0,82, version périmée en tête 57 % → 0 % ; jeu « versions » 0,75 → 0,93, version périmée en tête 30 % → 0 % |
-| Hors périmètre | routeur et abstention (9.4) | ✅ derrière un flag (`routing`), point A prudent : précision 1,00 / rappel 0,625 / 0 % de fausses abstentions (score dense, pipeline actuel). Objectif suivant : rappel 0,85 avec moins de 5 % de faux refus, atteint à q10 % sur ce tirage (0,850 / 3,8 %), à confirmer |
+| Hors périmètre | routeur et abstention (9.4) | ✅ derrière un flag (`routing`) ; seuils par langue (#79) et intention par régression logistique avec exemples à la première personne (défaut, [intentions.md](intentions.md)) : rappel d'abstention 0,66 à 0,80 selon le jeu, faux refus 1,9 à 4,0 %, mesuré sur deux jeux de validation indépendants. Objectif 0,85 non atteint : les questions « presque dans le sujet » (intention documentaire, réponse absente du corpus) demandent un signal de couverture, hors de l'intention |
 
 Chiffres et précautions : [benchmarks/resultats-2026-11.md](benchmarks/resultats-2026-11.md).
 

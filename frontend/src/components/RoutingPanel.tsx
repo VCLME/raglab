@@ -77,7 +77,11 @@ export function RoutingPanel({ routing, detailed = false }: Props) {
                         documentary: fmt(intent.documentary_margin),
                         probability: fmt(intent.not_documentary_probability, 2),
                       })
-                    : t("routing.intent_rule", { margin: fmt(intent.margin, 2) })}
+                    : intent.method === "logistic"
+                      ? t("routing.intent_rule_logistic", {
+                          probability: fmt(intent.not_documentary_probability, 2),
+                        })
+                      : t("routing.intent_rule", { margin: fmt(intent.margin, 2) })}
                   {intent.nearest_example
                     ? ` — ${t("routing.nearest_example", { text: intent.nearest_example })}`
                     : ""}

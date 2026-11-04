@@ -41,6 +41,8 @@ from raglab.routing.step import cross_language_routing, translated_abstention, t
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 ABSTENTION_PATH = REPO_ROOT / "benchmarks" / "abstention" / "questions.jsonl"
+# Corpus of a set whose rows each name their own (`expected_corpus`).
+MULTI_CORPUS = "multi"
 
 
 @dataclass(frozen=True)
@@ -92,7 +94,66 @@ EXTRA_SETS = {
     "br_expat": InScopeSet(
         "br_expat", REPO_ROOT / "benchmarks" / "br_expat" / "ground_truth.jsonl", "bench_br_expat_pt", "fr"
     ),
+    # Independent validation set of the intent work (docs/intentions.md):
+    # user-style questions on the four corpora, each row names its corpus.
+    "validation": InScopeSet(
+        "validation", REPO_ROOT / "benchmarks" / "routing_validation" / "in_scope.jsonl", MULTI_CORPUS, "multi"
+    ),
+    # Second one, written after the first was read, to test the variant chosen in between.
+    "validation_2": InScopeSet(
+        "validation_2", REPO_ROOT / "benchmarks" / "routing_validation_2" / "in_scope.jsonl", MULTI_CORPUS, "multi"
+    ),
 }
+VALIDATION_ABSTENTION_PATH = REPO_ROOT / "benchmarks" / "routing_validation" / "abstention.jsonl"
+
+
+@dataclass(frozen=True)
+class CalibrationFile:
+    """In-scope questions written or drawn for calibration only (never
+    evaluated); a row names its corpus and language, or takes the defaults."""
+
+    name: str
+    path: Path
+    corpus_name: str | None = None
+    language: str | None = None
+
+
+# Calibration files by name (`--calibration-file`), retrieved on their own corpus.
+CALIBRATION_FILES = {
+    "lexml_fr": CalibrationFile(
+        "lexml_fr", REPO_ROOT / "benchmarks" / "lexml_fr" / "calibration.jsonl", "bench_lexml_pt", "fr"
+    ),
+    "lexml_pt": CalibrationFile(
+        "lexml_pt", REPO_ROOT / "benchmarks" / "lexml_fr" / "calibration_pt.jsonl", "bench_lexml_pt", "pt"
+    ),
+    "br_expat": CalibrationFile("br_expat", REPO_ROOT / "benchmarks" / "br_expat" / "calibration.jsonl"),
+    "eurlex": CalibrationFile("eurlex", REPO_ROOT / "benchmarks" / "eurlex_compliance" / "calibration.jsonl"),
+}
+
+
+def load_calibration_files(names: list[str]) -> list[RoutingCase]:
+    unknown = sorted(set(names) - set(CALIBRATION_FILES))
+    if unknown:
+        raise ValueError(
+            f"Calibration inconnue: {', '.join(unknown)}. Fichiers: {', '.join(sorted(CALIBRATION_FILES))}"
+        )
+    cases: list[RoutingCase] = []
+    for name in names:
+        calibration = CALIBRATION_FILES[name]
+        for row in _read_jsonl(calibration.path):
+            if row.get("review_status") == "rejected":
+                continue
+            cases.append(
+                RoutingCase(
+                    id=row["id"],
+                    question=row["question"],
+                    category="in_scope",
+                    language=row.get("language") or calibration.language or "",
+                    source=f"calibration:{name}",
+                    expected_corpus=row.get("corpus") or calibration.corpus_name,
+                )
+            )
+    return cases
 
 
 def named_sets(names: list[str]) -> tuple[InScopeSet, ...]:
@@ -111,7 +172,11 @@ def available_sets(in_scope_sets: tuple[InScopeSet, ...], corpora: list[str] | N
     `--corpus bench_piaf_fr --corpus bench_lexml_pt` keeps measuring exactly
     the PIAF + LexML sample, whatever other corpora are indexed.
     """
-    return tuple(s for s in in_scope_sets if s.path.exists() and (not corpora or s.corpus_name in corpora))
+    return tuple(
+        s
+        for s in in_scope_sets
+        if s.path.exists() and (not corpora or s.corpus_name in corpora or s.corpus_name == MULTI_CORPUS)
+    )
 
 
 def _row_language(in_scope: InScopeSet, row: dict[str, Any]) -> str:
@@ -200,7 +265,7 @@ def load_cases(
                     language=_row_language(in_scope, row),
                     source=in_scope.name,
                     subtype=row.get("question_type"),
-                    expected_corpus=in_scope.corpus_name,
+                    expected_corpus=row.get("expected_corpus") or in_scope.corpus_name,
                     expected_spans=row.get("expected_spans") or [],
                 )
             )
@@ -238,7 +303,7 @@ def load_calibration(
                     category="in_scope",
                     language=_row_language(in_scope, row),
                     source=in_scope.name,
-                    expected_corpus=in_scope.corpus_name,
+                    expected_corpus=row.get("expected_corpus") or in_scope.corpus_name,
                 )
             )
     return cases
@@ -502,7 +567,11 @@ class RoutingExperimentService:
         query_translation: bool | None = None,
         abstention_path: Path = ABSTENTION_PATH,
         in_scope_sets: tuple[InScopeSet, ...] = IN_SCOPE_SETS,
+        calibration_files: list[str] | None = None,
     ) -> dict[str, Any]:
+        """`calibration_files`: names of `CALIBRATION_FILES` retrieved on
+        their own corpus, recorded question by question with the default
+        calibration draw (`calibration_records`)."""
         in_scope_sets = available_sets(in_scope_sets, corpora)
         cases = load_cases(
             abstention_path=abstention_path, in_scope_sets=in_scope_sets, sample_size=sample_size, seed=seed
@@ -593,6 +662,8 @@ class RoutingExperimentService:
                             else translated
                         ),
                         "best_score_original": original,
+                        # Dense cosine of the original question, whatever the score source.
+                        "dense_original": best_score(outcome.retrieved, "dense"),
                         "best_score_translated": translated,
                         "corpus_candidates": [c.model_dump() for c in decision.corpus.candidates],
                         "scores": [round(chunk.score, 4) for chunk in outcome.retrieved],
@@ -610,11 +681,12 @@ class RoutingExperimentService:
             # Calibration questions go through the same retrieval (translation included).
             calibration: dict[str, list[float]] = {}
             calibration_cases = load_calibration(
-                in_scope_sets=in_scope_sets,
+                in_scope_sets=tuple(s for s in in_scope_sets if s.corpus_name != MULTI_CORPUS),
                 exclude_ids={case.id for case in cases},
                 size=calibration_size,
                 seed=seed + 1,
-            )
+            ) + load_calibration_files(calibration_files or [])
+            calibration_records: list[dict[str, Any]] = []
             for case in calibration_cases:
                 if case.expected_corpus not in runs:
                     continue
@@ -630,10 +702,22 @@ class RoutingExperimentService:
                     if translated_abstention(retriever, cross_language, case.expected_corpus, case.language)
                     else None
                 )
+                calibration_records.append(
+                    {
+                        "id": case.id,
+                        "question": case.question,
+                        "source": case.source,
+                        "corpus": case.expected_corpus,
+                        "language": case.language,
+                        "dense": best_score(outcome.retrieved, "dense"),
+                        "dense_translated": translated,
+                        "rerank": best_score(outcome.retrieved, "rerank"),
+                    }
+                )
                 if translated is not None:
                     score = translated if score is None else max(score, translated)
                 if score is not None:
-                    calibration.setdefault(case.expected_corpus, []).append(score)
+                    calibration.setdefault(case.expected_corpus or "", []).append(score)
 
         report = {
             "kind": "routing",
@@ -646,6 +730,8 @@ class RoutingExperimentService:
                 "top_k": top_k,
                 "calibration_size": calibration_size,
                 "in_scope_sets": [s.name for s in in_scope_sets],
+                "abstention_path": str(abstention_path),
+                "calibration_files": calibration_files or [],
                 "retrieval_mode": (retrieval_mode or RetrievalMode(self.settings.default_retrieval_mode)).value,
                 "rerank": self.settings.default_rerank if rerank is None else rerank,
                 "citations": self.settings.citation_resolver if citations is None else citations,
@@ -668,6 +754,7 @@ class RoutingExperimentService:
             },
             "summary": summarize(records, self.settings, calibration),
             "records": records,
+            "calibration_records": calibration_records,
         }
         report["report_path"] = str(self._write_report(report))
         return report

@@ -1405,9 +1405,23 @@ def experiment_routing(
         "ou lexml_fr / lexml_fr_pt (questions francaises sur LexML et les memes en portugais) et br_expat (questions "
         "francaises sur les textes federaux bresiliens), jamais dans le tirage par defaut. Defaut : les jeux par defaut.",
     ),
+    abstention_path: Path | None = typer.Option(
+        None, "--abstention", help="Jeu de questions a refuser (defaut : benchmarks/abstention/questions.jsonl)."
+    ),
+    calibration_file: list[str] | None = typer.Option(
+        None,
+        "--calibration-file",
+        help="Questions de calibration supplementaires (repetable) : lexml_fr, lexml_pt, br_expat, eurlex.",
+    ),
 ) -> None:
     """Mesurer le routeur : abstention (precision / rappel / F1, courbe), intention, langue, corpus, latence."""
-    from raglab.experiments.routing import IN_SCOPE_SETS, RoutingExperimentService, named_sets, render_markdown
+    from raglab.experiments.routing import (
+        ABSTENTION_PATH,
+        IN_SCOPE_SETS,
+        RoutingExperimentService,
+        named_sets,
+        render_markdown,
+    )
 
     try:
         sets = named_sets(in_scope) if in_scope else IN_SCOPE_SETS
@@ -1426,10 +1440,53 @@ def experiment_routing(
             citations=citations,
             query_translation=query_translation,
             in_scope_sets=sets,
+            abstention_path=abstention_path or ABSTENTION_PATH,
+            calibration_files=calibration_file or None,
         )
     summary = {k: v for k, v in report["summary"].items() if k != "curve"}
     typer.echo(json.dumps({"report_path": report["report_path"], "summary": summary}, indent=2, ensure_ascii=False))
     typer.echo(render_markdown(report["summary"]), err=True)
+
+
+@experiment_app.command("intent-generalization")
+def experiment_intent_generalization(
+    dev: list[Path] = typer.Option(..., "--dev", help="Rapports `experiment routing` qui choisissent la variante."),
+    test: list[Path] | None = typer.Option(
+        None, "--test", help="Rapports de validation independants, lus une fois la variante choisie."
+    ),
+    collect: Path = typer.Option(
+        Path("benchmarks/routing/router-languages-collect-v1.json"),
+        "--collect",
+        help="Collecte de #78 (calibration PIAF et LexML).",
+    ),
+    output: Path | None = typer.Option(None, "--output", help="Ecrire le resultat complet en JSON."),
+    export: str | None = typer.Option(
+        None, "--export", help="Au lieu de l'etude : ecrire le modele d'une variante logistique (voir --output)."
+    ),
+) -> None:
+    """Variantes d'intention rejouees sur des rapports en direct (docs/intentions.md), sans GPU."""
+    from raglab.embeddings.factory import build_embedding_provider
+    from raglab.experiments.intent_generalization import calibration_rows, export_logistic, render, study
+
+    settings = get_settings()
+    read = lambda path: json.loads(path.read_text(encoding="utf-8"))  # noqa: E731
+    dev_reports = {path.stem: read(path) for path in dev}
+    test_reports = {path.stem: read(path) for path in test or []}
+    calibration = calibration_rows(
+        read(collect), settings.routing_corpus_examples_path, [*dev_reports.values(), *test_reports.values()]
+    )
+    if export is not None:
+        payload = export_logistic(export, calibration, build_embedding_provider(settings))
+        target = output or settings.routing_intent_logistic_path
+        target.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+        typer.echo(json.dumps({"variant": export, "path": str(target), "threshold": payload["logistic"]["threshold"]}))
+        return
+    result = study(dev_reports, test_reports, calibration, build_embedding_provider(settings))
+    if output is not None:
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(json.dumps(result, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    typer.echo(json.dumps({"selected": result["selected"], "best_by_family": result["best_by_family"]}, indent=2))
+    typer.echo(render(result), err=True)
 
 
 @experiment_app.command("routing-compare")

@@ -564,7 +564,8 @@
       "examples": "questions exemples par langue"
     },
     "intent_rule_knn": "documentaire sauf si ses voisins (k plus proches) l'emportent de plus de {{margin}} ou si la régression logistique dépasse son seuil — écart documentaire {{documentary}}, probabilité non documentaire {{probability}}",
-    "joint_score": "règle jointe : {{score}} (seuil {{threshold}}, intention et score dense lus ensemble ; remplace le seuil seul)"
+    "joint_score": "règle jointe : {{score}} (seuil {{threshold}}, intention et score dense lus ensemble ; remplace le seuil seul)",
+    "intent_rule_logistic": "intention décidée par la régression logistique : probabilité non documentaire {{probability}} (refus au-dessus de sa coupure) ; scores des centroïdes pour nommer le refus"
   },
   "edu": {
     "title": "Le pipeline en direct",
