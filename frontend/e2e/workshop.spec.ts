@@ -182,6 +182,7 @@ test("Models: per-provider generation settings and the llama.cpp writer setup, w
 
   await tabs.getByRole("tab", { name: /^Ollama/ }).click();
   await expect(page.getByRole("tabpanel")).toContainText("défaut du serveur, inconnu de raglab");
+});
 
 test("Databases: connection details per store, the password masked until asked, admin deep links", async ({ page, api }) => {
   await page.goto("/workshop");
