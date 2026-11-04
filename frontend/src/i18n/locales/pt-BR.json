@@ -563,7 +563,8 @@
       "examples": "perguntas de exemplo por idioma"
     },
     "intent_rule_knn": "documental, salvo se os vizinhos mais próximos vencerem por mais de {{margin}} ou se a regressão logística passar do corte — margem documental {{documentary}}, probabilidade não documental {{probability}}",
-    "joint_score": "regra conjunta: {{score}} (limiar {{threshold}}, intenção e score denso lidos juntos; substitui o limiar simples)"
+    "joint_score": "regra conjunta: {{score}} (limiar {{threshold}}, intenção e score denso lidos juntos; substitui o limiar simples)",
+    "intent_rule_logistic": "intenção decidida pela regressão logística: probabilidade não documental {{probability}} (recusa acima do corte); os scores dos centroides nomeiam a recusa"
   },
   "edu": {
     "title": "O pipeline ao vivo",

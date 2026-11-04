@@ -367,7 +367,7 @@ export interface RoutingDecision {
     margin: number;
     nearest_example: string | null;
     // "knn" (RAGLAB_ROUTING_INTENT_KNN): scores are k-nearest-neighbour means.
-    method?: "centroids" | "knn";
+    method?: "centroids" | "knn" | "logistic";
     documentary_margin?: number | null;
     not_documentary_probability?: number | null;
   };

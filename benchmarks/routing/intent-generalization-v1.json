@@ -6363,6 +6363,83 @@
             "p_value": 1.0
           }
         }
+      },
+      "router-validation2-logistic-v1": {
+        "refusals_kept": 43,
+        "declinable": 72,
+        "recall": 0.5972,
+        "by_category": {
+          "conversational": 8,
+          "near_miss": 8,
+          "out_of_scope": 27
+        },
+        "false_refusals": 5,
+        "in_scope": 159,
+        "false_refusal_rate": 0.0314,
+        "answered": 108,
+        "by_set": {
+          "validation_2:bench_br_expat_pt": {
+            "questions": 40,
+            "refused": 1,
+            "answered": 21
+          },
+          "validation_2:bench_eurlex_compliance": {
+            "questions": 39,
+            "refused": 1,
+            "answered": 26
+          },
+          "validation_2:bench_lexml_pt": {
+            "questions": 40,
+            "refused": 3,
+            "answered": 24
+          },
+          "validation_2:bench_piaf_fr": {
+            "questions": 40,
+            "refused": 0,
+            "answered": 37
+          }
+        },
+        "by_language": {
+          "en": {
+            "questions": 14,
+            "refused": 0
+          },
+          "fr": {
+            "questions": 112,
+            "refused": 3
+          },
+          "pt": {
+            "questions": 33,
+            "refused": 2
+          }
+        },
+        "paired": {
+          "abstention": {
+            "gained": 0,
+            "lost": 0,
+            "p_value": 1.0
+          },
+          "validation_2:bench_br_expat_pt": {
+            "gained": 0,
+            "lost": 0,
+            "p_value": 1.0
+          },
+          "validation_2:bench_eurlex_compliance": {
+            "gained": 0,
+            "lost": 0,
+            "p_value": 1.0
+          },
+          "validation_2:bench_lexml_pt": {
+            "gained": 0,
+            "lost": 0,
+            "p_value": 1.0
+          },
+          "validation_2:bench_piaf_fr": {
+            "gained": 0,
+            "lost": 0,
+            "p_value": 1.0
+          }
+        }
       }
     },
     "pr80": {
@@ -6440,6 +6517,83 @@
             "gained": 0,
             "lost": 4,
             "p_value": 0.125
+          }
+        }
+      },
+      "router-validation2-logistic-v1": {
+        "refusals_kept": 51,
+        "declinable": 72,
+        "recall": 0.7083,
+        "by_category": {
+          "conversational": 8,
+          "near_miss": 9,
+          "out_of_scope": 34
+        },
+        "false_refusals": 35,
+        "in_scope": 159,
+        "false_refusal_rate": 0.2201,
+        "answered": 91,
+        "by_set": {
+          "validation_2:bench_br_expat_pt": {
+            "questions": 40,
+            "refused": 8,
+            "answered": 18
+          },
+          "validation_2:bench_eurlex_compliance": {
+            "questions": 39,
+            "refused": 7,
+            "answered": 23
+          },
+          "validation_2:bench_lexml_pt": {
+            "questions": 40,
+            "refused": 15,
+            "answered": 15
+          },
+          "validation_2:bench_piaf_fr": {
+            "questions": 40,
+            "refused": 5,
+            "answered": 35
+          }
+        },
+        "by_language": {
+          "en": {
+            "questions": 14,
+            "refused": 3
+          },
+          "fr": {
+            "questions": 112,
+            "refused": 16
+          },
+          "pt": {
+            "questions": 33,
+            "refused": 16
+          }
+        },
+        "paired": {
+          "abstention": {
+            "gained": 10,
+            "lost": 2,
+            "p_value": 0.0386
+          },
+          "validation_2:bench_br_expat_pt": {
+            "gained": 0,
+            "lost": 3,
+            "p_value": 0.25
+          },
+          "validation_2:bench_eurlex_compliance": {
+            "gained": 0,
+            "lost": 3,
+            "p_value": 0.25
+          },
+          "validation_2:bench_lexml_pt": {
+            "gained": 0,
+            "lost": 9,
+            "p_value": 0.0039
+          },
+          "validation_2:bench_piaf_fr": {
+            "gained": 0,
+            "lost": 2,
+            "p_value": 0.5
           }
         }
       }
@@ -6521,6 +6675,83 @@
             "p_value": 1.0
           }
         }
+      },
+      "router-validation2-logistic-v1": {
+        "refusals_kept": 29,
+        "declinable": 72,
+        "recall": 0.4028,
+        "by_category": {
+          "conversational": 8,
+          "near_miss": 7,
+          "out_of_scope": 14
+        },
+        "false_refusals": 3,
+        "in_scope": 159,
+        "false_refusal_rate": 0.0189,
+        "answered": 108,
+        "by_set": {
+          "validation_2:bench_br_expat_pt": {
+            "questions": 40,
+            "refused": 0,
+            "answered": 21
+          },
+          "validation_2:bench_eurlex_compliance": {
+            "questions": 39,
+            "refused": 1,
+            "answered": 26
+          },
+          "validation_2:bench_lexml_pt": {
+            "questions": 40,
+            "refused": 2,
+            "answered": 24
+          },
+          "validation_2:bench_piaf_fr": {
+            "questions": 40,
+            "refused": 0,
+            "answered": 37
+          }
+        },
+        "by_language": {
+          "en": {
+            "questions": 14,
+            "refused": 0
+          },
+          "fr": {
+            "questions": 112,
+            "refused": 1
+          },
+          "pt": {
+            "questions": 33,
+            "refused": 2
+          }
+        },
+        "paired": {
+          "abstention": {
+            "gained": 0,
+            "lost": 14,
+            "p_value": 0.0001
+          },
+          "validation_2:bench_br_expat_pt": {
+            "gained": 0,
+            "lost": 0,
+            "p_value": 1.0
+          },
+          "validation_2:bench_eurlex_compliance": {
+            "gained": 0,
+            "lost": 0,
+            "p_value": 1.0
+          },
+          "validation_2:bench_lexml_pt": {
+            "gained": 0,
+            "lost": 0,
+            "p_value": 1.0
+          },
+          "validation_2:bench_piaf_fr": {
+            "gained": 0,
+            "lost": 0,
+            "p_value": 1.0
+          }
+        }
       }
     },
     "centroids_first_person_all": {
@@ -6595,6 +6826,83 @@
             "p_value": 1.0
           },
           "validation:bench_piaf_fr": {
+            "gained": 0,
+            "lost": 0,
+            "p_value": 1.0
+          }
+        }
+      },
+      "router-validation2-logistic-v1": {
+        "refusals_kept": 29,
+        "declinable": 72,
+        "recall": 0.4028,
+        "by_category": {
+          "conversational": 8,
+          "near_miss": 7,
+          "out_of_scope": 14
+        },
+        "false_refusals": 3,
+        "in_scope": 159,
+        "false_refusal_rate": 0.0189,
+        "answered": 108,
+        "by_set": {
+          "validation_2:bench_br_expat_pt": {
+            "questions": 40,
+            "refused": 0,
+            "answered": 21
+          },
+          "validation_2:bench_eurlex_compliance": {
+            "questions": 39,
+            "refused": 1,
+            "answered": 26
+          },
+          "validation_2:bench_lexml_pt": {
+            "questions": 40,
+            "refused": 2,
+            "answered": 24
+          },
+          "validation_2:bench_piaf_fr": {
+            "questions": 40,
+            "refused": 0,
+            "answered": 37
+          }
+        },
+        "by_language": {
+          "en": {
+            "questions": 14,
+            "refused": 0
+          },
+          "fr": {
+            "questions": 112,
+            "refused": 1
+          },
+          "pt": {
+            "questions": 33,
+            "refused": 2
+          }
+        },
+        "paired": {
+          "abstention": {
+            "gained": 0,
+            "lost": 14,
+            "p_value": 0.0001
+          },
+          "validation_2:bench_br_expat_pt": {
+            "gained": 0,
+            "lost": 0,
+            "p_value": 1.0
+          },
+          "validation_2:bench_eurlex_compliance": {
+            "gained": 0,
+            "lost": 0,
+            "p_value": 1.0
+          },
+          "validation_2:bench_lexml_pt": {
+            "gained": 0,
+            "lost": 0,
+            "p_value": 1.0
+          },
+          "validation_2:bench_piaf_fr": {
             "gained": 0,
             "lost": 0,
             "p_value": 1.0
@@ -6679,6 +6987,83 @@
             "p_value": 1.0
           }
         }
+      },
+      "router-validation2-logistic-v1": {
+        "refusals_kept": 35,
+        "declinable": 72,
+        "recall": 0.4861,
+        "by_category": {
+          "conversational": 8,
+          "near_miss": 7,
+          "out_of_scope": 20
+        },
+        "false_refusals": 3,
+        "in_scope": 159,
+        "false_refusal_rate": 0.0189,
+        "answered": 108,
+        "by_set": {
+          "validation_2:bench_br_expat_pt": {
+            "questions": 40,
+            "refused": 0,
+            "answered": 21
+          },
+          "validation_2:bench_eurlex_compliance": {
+            "questions": 39,
+            "refused": 1,
+            "answered": 26
+          },
+          "validation_2:bench_lexml_pt": {
+            "questions": 40,
+            "refused": 2,
+            "answered": 24
+          },
+          "validation_2:bench_piaf_fr": {
+            "questions": 40,
+            "refused": 0,
+            "answered": 37
+          }
+        },
+        "by_language": {
+          "en": {
+            "questions": 14,
+            "refused": 0
+          },
+          "fr": {
+            "questions": 112,
+            "refused": 1
+          },
+          "pt": {
+            "questions": 33,
+            "refused": 2
+          }
+        },
+        "paired": {
+          "abstention": {
+            "gained": 2,
+            "lost": 10,
+            "p_value": 0.0386
+          },
+          "validation_2:bench_br_expat_pt": {
+            "gained": 0,
+            "lost": 0,
+            "p_value": 1.0
+          },
+          "validation_2:bench_eurlex_compliance": {
+            "gained": 0,
+            "lost": 0,
+            "p_value": 1.0
+          },
+          "validation_2:bench_lexml_pt": {
+            "gained": 0,
+            "lost": 0,
+            "p_value": 1.0
+          },
+          "validation_2:bench_piaf_fr": {
+            "gained": 0,
+            "lost": 0,
+            "p_value": 1.0
+          }
+        }
       }
     },
     "knn_fp_first_k10_j0.03": {
@@ -6753,6 +7138,83 @@
             "p_value": 0.0625
           },
           "validation:bench_piaf_fr": {
+            "gained": 0,
+            "lost": 0,
+            "p_value": 1.0
+          }
+        }
+      },
+      "router-validation2-logistic-v1": {
+        "refusals_kept": 47,
+        "declinable": 72,
+        "recall": 0.6528,
+        "by_category": {
+          "conversational": 8,
+          "near_miss": 10,
+          "out_of_scope": 29
+        },
+        "false_refusals": 12,
+        "in_scope": 159,
+        "false_refusal_rate": 0.0755,
+        "answered": 105,
+        "by_set": {
+          "validation_2:bench_br_expat_pt": {
+            "questions": 40,
+            "refused": 2,
+            "answered": 21
+          },
+          "validation_2:bench_eurlex_compliance": {
+            "questions": 39,
+            "refused": 4,
+            "answered": 26
+          },
+          "validation_2:bench_lexml_pt": {
+            "questions": 40,
+            "refused": 4,
+            "answered": 21
+          },
+          "validation_2:bench_piaf_fr": {
+            "questions": 40,
+            "refused": 2,
+            "answered": 37
+          }
+        },
+        "by_language": {
+          "en": {
+            "questions": 14,
+            "refused": 0
+          },
+          "fr": {
+            "questions": 112,
+            "refused": 4
+          },
+          "pt": {
+            "questions": 33,
+            "refused": 8
+          }
+        },
+        "paired": {
+          "abstention": {
+            "gained": 9,
+            "lost": 5,
+            "p_value": 0.424
+          },
+          "validation_2:bench_br_expat_pt": {
+            "gained": 0,
+            "lost": 0,
+            "p_value": 1.0
+          },
+          "validation_2:bench_eurlex_compliance": {
+            "gained": 0,
+            "lost": 0,
+            "p_value": 1.0
+          },
+          "validation_2:bench_lexml_pt": {
+            "gained": 0,
+            "lost": 3,
+            "p_value": 0.25
+          },
+          "validation_2:bench_piaf_fr": {
             "gained": 0,
             "lost": 0,
             "p_value": 1.0
@@ -6837,6 +7299,83 @@
             "p_value": 1.0
           }
         }
+      },
+      "router-validation2-logistic-v1": {
+        "refusals_kept": 52,
+        "declinable": 72,
+        "recall": 0.7222,
+        "by_category": {
+          "conversational": 8,
+          "near_miss": 10,
+          "out_of_scope": 34
+        },
+        "false_refusals": 12,
+        "in_scope": 159,
+        "false_refusal_rate": 0.0755,
+        "answered": 105,
+        "by_set": {
+          "validation_2:bench_br_expat_pt": {
+            "questions": 40,
+            "refused": 2,
+            "answered": 21
+          },
+          "validation_2:bench_eurlex_compliance": {
+            "questions": 39,
+            "refused": 4,
+            "answered": 26
+          },
+          "validation_2:bench_lexml_pt": {
+            "questions": 40,
+            "refused": 4,
+            "answered": 21
+          },
+          "validation_2:bench_piaf_fr": {
+            "questions": 40,
+            "refused": 2,
+            "answered": 37
+          }
+        },
+        "by_language": {
+          "en": {
+            "questions": 14,
+            "refused": 0
+          },
+          "fr": {
+            "questions": 112,
+            "refused": 4
+          },
+          "pt": {
+            "questions": 33,
+            "refused": 8
+          }
+        },
+        "paired": {
+          "abstention": {
+            "gained": 10,
+            "lost": 1,
+            "p_value": 0.0117
+          },
+          "validation_2:bench_br_expat_pt": {
+            "gained": 0,
+            "lost": 0,
+            "p_value": 1.0
+          },
+          "validation_2:bench_eurlex_compliance": {
+            "gained": 0,
+            "lost": 0,
+            "p_value": 1.0
+          },
+          "validation_2:bench_lexml_pt": {
+            "gained": 0,
+            "lost": 3,
+            "p_value": 0.25
+          },
+          "validation_2:bench_piaf_fr": {
+            "gained": 0,
+            "lost": 0,
+            "p_value": 1.0
+          }
+        }
       }
     },
     "lr_fp_first_c0.97": {
@@ -6916,6 +7455,83 @@
             "p_value": 1.0
           }
         }
+      },
+      "router-validation2-logistic-v1": {
+        "refusals_kept": 49,
+        "declinable": 72,
+        "recall": 0.6806,
+        "by_category": {
+          "conversational": 8,
+          "near_miss": 7,
+          "out_of_scope": 34
+        },
+        "false_refusals": 3,
+        "in_scope": 159,
+        "false_refusal_rate": 0.0189,
+        "answered": 108,
+        "by_set": {
+          "validation_2:bench_br_expat_pt": {
+            "questions": 40,
+            "refused": 0,
+            "answered": 21
+          },
+          "validation_2:bench_eurlex_compliance": {
+            "questions": 39,
+            "refused": 1,
+            "answered": 26
+          },
+          "validation_2:bench_lexml_pt": {
+            "questions": 40,
+            "refused": 2,
+            "answered": 24
+          },
+          "validation_2:bench_piaf_fr": {
+            "questions": 40,
+            "refused": 0,
+            "answered": 37
+          }
+        },
+        "by_language": {
+          "en": {
+            "questions": 14,
+            "refused": 0
+          },
+          "fr": {
+            "questions": 112,
+            "refused": 1
+          },
+          "pt": {
+            "questions": 33,
+            "refused": 2
+          }
+        },
+        "paired": {
+          "abstention": {
+            "gained": 7,
+            "lost": 1,
+            "p_value": 0.0703
+          },
+          "validation_2:bench_br_expat_pt": {
+            "gained": 0,
+            "lost": 0,
+            "p_value": 1.0
+          },
+          "validation_2:bench_eurlex_compliance": {
+            "gained": 0,
+            "lost": 0,
+            "p_value": 1.0
+          },
+          "validation_2:bench_lexml_pt": {
+            "gained": 0,
+            "lost": 0,
+            "p_value": 1.0
+          },
+          "validation_2:bench_piaf_fr": {
+            "gained": 0,
+            "lost": 0,
+            "p_value": 1.0
+          }
+        }
       }
     },
     "knn_fp_all_k10": {
@@ -6990,6 +7606,83 @@
             "p_value": 1.0
           },
           "validation:bench_piaf_fr": {
+            "gained": 0,
+            "lost": 0,
+            "p_value": 1.0
+          }
+        }
+      },
+      "router-validation2-logistic-v1": {
+        "refusals_kept": 34,
+        "declinable": 72,
+        "recall": 0.4722,
+        "by_category": {
+          "conversational": 8,
+          "near_miss": 7,
+          "out_of_scope": 19
+        },
+        "false_refusals": 3,
+        "in_scope": 159,
+        "false_refusal_rate": 0.0189,
+        "answered": 108,
+        "by_set": {
+          "validation_2:bench_br_expat_pt": {
+            "questions": 40,
+            "refused": 0,
+            "answered": 21
+          },
+          "validation_2:bench_eurlex_compliance": {
+            "questions": 39,
+            "refused": 1,
+            "answered": 26
+          },
+          "validation_2:bench_lexml_pt": {
+            "questions": 40,
+            "refused": 2,
+            "answered": 24
+          },
+          "validation_2:bench_piaf_fr": {
+            "questions": 40,
+            "refused": 0,
+            "answered": 37
+          }
+        },
+        "by_language": {
+          "en": {
+            "questions": 14,
+            "refused": 0
+          },
+          "fr": {
+            "questions": 112,
+            "refused": 1
+          },
+          "pt": {
+            "questions": 33,
+            "refused": 2
+          }
+        },
+        "paired": {
+          "abstention": {
+            "gained": 1,
+            "lost": 10,
+            "p_value": 0.0117
+          },
+          "validation_2:bench_br_expat_pt": {
+            "gained": 0,
+            "lost": 0,
+            "p_value": 1.0
+          },
+          "validation_2:bench_eurlex_compliance": {
+            "gained": 0,
+            "lost": 0,
+            "p_value": 1.0
+          },
+          "validation_2:bench_lexml_pt": {
+            "gained": 0,
+            "lost": 0,
+            "p_value": 1.0
+          },
+          "validation_2:bench_piaf_fr": {
             "gained": 0,
             "lost": 0,
             "p_value": 1.0
@@ -7074,49 +7767,126 @@
             "p_value": 1.0
           }
         }
+      },
+      "router-validation2-logistic-v1": {
+        "refusals_kept": 48,
+        "declinable": 72,
+        "recall": 0.6667,
+        "by_category": {
+          "conversational": 8,
+          "near_miss": 7,
+          "out_of_scope": 33
+        },
+        "false_refusals": 3,
+        "in_scope": 159,
+        "false_refusal_rate": 0.0189,
+        "answered": 108,
+        "by_set": {
+          "validation_2:bench_br_expat_pt": {
+            "questions": 40,
+            "refused": 0,
+            "answered": 21
+          },
+          "validation_2:bench_eurlex_compliance": {
+            "questions": 39,
+            "refused": 1,
+            "answered": 26
+          },
+          "validation_2:bench_lexml_pt": {
+            "questions": 40,
+            "refused": 2,
+            "answered": 24
+          },
+          "validation_2:bench_piaf_fr": {
+            "questions": 40,
+            "refused": 0,
+            "answered": 37
+          }
+        },
+        "by_language": {
+          "en": {
+            "questions": 14,
+            "refused": 0
+          },
+          "fr": {
+            "questions": 112,
+            "refused": 1
+          },
+          "pt": {
+            "questions": 33,
+            "refused": 2
+          }
+        },
+        "paired": {
+          "abstention": {
+            "gained": 7,
+            "lost": 2,
+            "p_value": 0.1797
+          },
+          "validation_2:bench_br_expat_pt": {
+            "gained": 0,
+            "lost": 0,
+            "p_value": 1.0
+          },
+          "validation_2:bench_eurlex_compliance": {
+            "gained": 0,
+            "lost": 0,
+            "p_value": 1.0
+          },
+          "validation_2:bench_lexml_pt": {
+            "gained": 0,
+            "lost": 0,
+            "p_value": 1.0
+          },
+          "validation_2:bench_piaf_fr": {
+            "gained": 0,
+            "lost": 0,
+            "p_value": 1.0
+          }
+        }
       }
     }
   },
   "intent_latency": {
     "default": {
-      "p50_ms": 0.014,
-      "p95_ms": 0.017
+      "p50_ms": 0.052,
+      "p95_ms": 0.064
     },
     "pr80": {
-      "p50_ms": 0.063,
-      "p95_ms": 0.093
+      "p50_ms": 0.173,
+      "p95_ms": 0.329
     },
     "centroids_first_person_first": {
-      "p50_ms": 0.014,
-      "p95_ms": 0.042
+      "p50_ms": 0.044,
+      "p95_ms": 0.046
     },
     "centroids_first_person_all": {
-      "p50_ms": 0.014,
-      "p95_ms": 0.019
+      "p50_ms": 0.044,
+      "p95_ms": 0.046
     },
     "knn_fp_first_k10": {
-      "p50_ms": 0.04,
-      "p95_ms": 0.067
-    },
-    "knn_fp_first_k10_j0.03": {
-      "p50_ms": 0.08,
-      "p95_ms": 0.147
-    },
-    "knn_lr_fp_first_k10_c0.97_j0.03": {
-      "p50_ms": 0.084,
+      "p50_ms": 0.101,
       "p95_ms": 0.176
     },
+    "knn_fp_first_k10_j0.03": {
+      "p50_ms": 0.215,
+      "p95_ms": 0.356
+    },
+    "knn_lr_fp_first_k10_c0.97_j0.03": {
+      "p50_ms": 0.259,
+      "p95_ms": 0.481
+    },
     "lr_fp_first_c0.97": {
-      "p50_ms": 0.002,
-      "p95_ms": 0.002
+      "p50_ms": 0.007,
+      "p95_ms": 0.008
     },
     "knn_fp_all_k10": {
-      "p50_ms": 0.05,
-      "p95_ms": 0.101
+      "p50_ms": 0.121,
+      "p95_ms": 0.261
     },
     "lr_fp_all_c0.98": {
-      "p50_ms": 0.002,
-      "p95_ms": 0.002
+      "p50_ms": 0.009,
+      "p95_ms": 0.013
     }
   }
 }

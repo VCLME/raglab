@@ -564,7 +564,8 @@
       "examples": "example questions per language"
     },
     "intent_rule_knn": "documentary unless its k nearest neighbours win by more than {{margin}} or the logistic regression passes its cut — documentary margin {{documentary}}, not-documentary probability {{probability}}",
-    "joint_score": "joint rule: {{score}} (threshold {{threshold}}, intent and dense score read together; replaces the plain threshold)"
+    "joint_score": "joint rule: {{score}} (threshold {{threshold}}, intent and dense score read together; replaces the plain threshold)",
+    "intent_rule_logistic": "intent decided by the logistic regression: not-documentary probability {{probability}} (declined above its cut); centroid scores name the refusal"
   },
   "edu": {
     "title": "The pipeline, live",

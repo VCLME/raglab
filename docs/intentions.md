@@ -1,4 +1,6 @@
-# Intention et abstention : voisins proches et règle jointe
+# Intention et abstention : voisins proches, règle jointe et généralisation
+
+> **Mise à jour (deuxième partie, plus bas).** L'option de #80 ne généralise pas aux questions réelles. Une régression logistique entraînée avec des questions documentaires à la première personne, seule, améliore les quatre jeux mesurés (+6 à +10 refus justifiés, aucune réponse perdue, faux refus 1,9 % à 4,0 %), confirmée en direct sur un jeu de validation indépendant écrit après son choix ; le rappel reste entre 0,66 et 0,80. Voir [Deuxième partie : généralisation](#deuxième-partie--généralisation-questions-réelles).
 
 Suite de [routage-multilingue.md](routage-multilingue.md) et de [routing.md](routing.md) (phase 9.4, mode d'échec « hors périmètre »). Avec les seuils par langue, le routeur garde 55 refus justifiés sur 80 : le rappel d'abstention plafonne vers 0,7, même avec des seuils réglés sur les questions évaluées. Les questions manquées ne sont plus un problème de langue ni de seuil : ce sont des demandes de tâche, des questions personnelles ou de culture générale, dont le score de passage ressemble à celui d'une question du corpus. Ce document compare des façons de mieux lire **l'intention**, toutes **sans LLM dans le routeur**, et retient la meilleure derrière une option.
 
@@ -151,3 +153,104 @@ Pistes pour la suite, à valider avant toute mesure : des questions documentaire
 - **Les voisins documentaires ressemblent aux questions évaluées** : les questions de calibration viennent des mêmes jeux (même style, même rédacteur pour LexML). Sur des questions réelles d'utilisateurs, le kNN aurait moins de voisins aussi proches, et refuserait plus.
 - **Trois couples calibrés seulement** : (LexML, français), (LexML, portugais), (PIAF, français). Ailleurs, la règle jointe ne joue pas ; seule l'intention change.
 - Les nouveaux exemples ont été écrits par la même personne qui a lu les catégories du jeu d'abstention (tâches, données personnelles, temps réel) : ils couvrent ces catégories, pas leurs questions.
+
+## Deuxième partie : généralisation (questions réelles)
+
+La première partie s'arrête sur un constat : la régression logistique de #80 a appris la **forme** des exemples hors périmètre (la première personne) plus que le besoin, et refuse les vraies questions d'utilisateurs. Cette partie corrige les données d'apprentissage, complète la calibration, mesure sur **deux jeux de validation indépendants** et compare les approches sans LLM. Résultat en une phrase : **la régression logistique entraînée avec des questions documentaires à la première personne, seule, sans kNN ni règle jointe**, garde 6 à 10 refus justifiés de plus que le défaut sur chacun des quatre jeux mesurés, avec des faux refus au niveau du défaut (1,9 % à 4,0 %) et **aucune réponse documentaire perdue** ; le rappel reste entre 0,66 et 0,80 : **l'objectif de 0,85 n'est atteint sur aucun jeu**, et ne peut pas l'être par l'intention seule.
+
+### Données, et qui a vu quoi
+
+Trois rôles séparés, écrits par des agents distincts qui n'avaient pas accès aux fichiers des autres ni aux jeux figés :
+
+| Rôle | Contenu | Fichier |
+|---|---|---|
+| apprentissage | 242 exemples : 150 questions documentaires **à la première personne** ou en situation (fr 60, pt 50, en 40 : droit de la consommation, travail, droit fédéral brésilien, conformité UE vue d'une entreprise, culture générale « je prépare un exposé… »), 77 hors périmètre dont deux tiers **impersonnels** (pour casser le raccourci « je = hors sujet »), 15 conversationnelles | [`intent_training.jsonl`](../benchmarks/routing/intent_training.jsonl) |
+| calibration BR Expat | 58 questions françaises d'expatrié, écrites sur les documents d'indice **pair** du corpus | [`br_expat/calibration.jsonl`](../benchmarks/br_expat/calibration.jsonl) |
+| calibration EUR-Lex | 120 questions (40 par langue) tirées (graine 43) de la vérité terrain, **hors des 100 évaluées** | [`eurlex_compliance/calibration.jsonl`](../benchmarks/eurlex_compliance/calibration.jsonl) |
+| validation 1 | 160 questions in-scope au style utilisateur (moitié à la première personne) sur les quatre corpus, ancrées dans un passage relu (documents BR Expat d'indice **impair**) ; 80 à refuser (40 hors périmètre, 30 « presque dans le sujet » dont l'absence des corpus est vérifiée en SQL, 10 conversationnelles) | [`routing_validation/`](../benchmarks/routing_validation/README.md) |
+| validation 2 | même cahier des charges, autre graine (2027), écrit **après** la lecture de la validation 1, pour tester la variante choisie entre-temps ; 9 questions trop proches (cosinus ≥ 0,95) d'un texte d'apprentissage retirées avant la mesure : 159 + 72 | [`routing_validation_2/`](../benchmarks/routing_validation_2/README.md) |
+
+Contrôles : un test vérifie qu'aucun texte d'apprentissage ou de calibration n'apparaît dans un jeu évalué ; avant chaque mesure, les quasi-doublons (cosinus ≥ 0,95) ont été retirés, côté apprentissage (13 exemples, 2 questions de calibration) puis côté validation 2 (9 questions) une fois le modèle figé.
+
+### Protocole
+
+Le routage et la recherche ne dépendent pas de l'intention : chaque variante est **rejouée sur des mesures en direct** (mêmes corpus, mêmes passages, mêmes scores), seule la décision change ([`intent_generalization.py`](../src/raglab/experiments/intent_generalization.py)). Le rejeu redonne à la décision près les quatre mesures en direct déjà publiées (défaut et option de #80, deux corpus et quatre corpus : 0 écart sur 1 196 décisions), puis la mesure en direct de la validation 2 (0 écart sur 231).
+
+```bash
+raglab experiment intent-generalization \
+  --dev benchmarks/routing/router-intent-knn-v1.json --dev benchmarks/routing/router-generalization-intent-knn-v1.json \
+  --test benchmarks/routing/router-validation-v1.json --test benchmarks/routing/router-validation2-logistic-v1.json \
+  --output benchmarks/routing/intent-generalization-v1.json
+```
+
+1. **Choix sur les jeux de développement** (les jeux figés, à deux et à quatre corpus) : 42 variantes (centroïdes, kNN, kNN + règle jointe, régression logistique, kNN + logistique + règle jointe ; exemples de #80 ou étendus ; calibration des seuls couples de #78 ou de tous) ; règle du propriétaire sur **chacun** des deux jeux (faux refus strictement sous 5 %, aucune perte significative de réponses), puis le plus de refus sur le pire des deux.
+2. **Validation 1, lue une fois** pour la variante choisie et la meilleure de chaque famille.
+3. La variante choisie échoue sur la validation 1 (voir plus bas) ; une variante est alors **pré-enregistrée** (commit 946fab7, avant que la validation 2 n'existe) : la meilleure, par la même règle, des familles sans règle jointe, soit la régression logistique (exemples étendus, positifs des couples de #78, coupure au quantile 97 % de la calibration hors pli).
+4. **Validation 2, mesurée en direct** avec le code du routeur (`RAGLAB_ROUTING_INTENT_METHOD=logistic`) : [`router-validation2-logistic-v1.json`](../benchmarks/routing/router-validation2-logistic-v1.json).
+
+### Résultats
+
+Refus gardés (rappel), faux refus, réponses depuis le bon passage ; entre parenthèses, McNemar apparié face au défaut actuel sur les mêmes questions.
+
+| Variante | Jeu figé, 2 corpus (80 / 300) | Jeu figé, 4 corpus (80 / 138) | **Validation 1** (80 / 160) | **Validation 2, en direct** (72 / 159) |
+|---|---|---|---|---|
+| **défaut** (centroïdes + seuils) | 55 (0,69), 3,3 %, 251 rép. | 50 (0,63), 2,9 %, 79 | 47 (0,59), 3,1 %, 109 | 43 (0,60), 3,1 %, 108 |
+| option de #80 (kNN + logistique + règle jointe) | 70, 4,7 %, 245 | 67, **15,2 %**, 74 | 60, **24,4 %**, 88 (LexML −11, p = 0,001) | 51, **22,0 %**, 91 (LexML −9, p = 0,004) |
+| choisie sur le développement : kNN k = 10 + logistique + règle jointe, exemples à la 1re personne | 69, 3,3 %, 248 | 65, 2,9 %, 80 | 58, **11,3 %**, 104 | 52, **7,5 %**, 105 |
+| kNN + règle jointe, exemples à la 1re personne | 65, 2,7 %, 250 | 58, 2,9 %, 80 | 53, **10,6 %**, 105 | 47, **7,5 %**, 105 |
+| kNN seul, exemples à la 1re personne | 53, 3,0 %, 251 | 49, 2,2 %, 80 | 43 (−4 net), 2,5 %, 110 | 35 (**−8, p = 0,04**), 1,9 %, 108 |
+| seuils calibrés pour BR Expat et EUR-Lex (intention inchangée) | 55, 3,3 %, 251 | 51, **6,5 %**, 77 | non lu (écarté au développement) | non lu |
+| centroïdes, exemples à la 1re personne | 46, 3,0 %, 251 | 42, 2,2 %, 80 | 36 (**−11, p = 0,001**), 2,5 %, 110 | 29 (**−14, p < 0,001**), 1,9 %, 108 |
+| **régression logistique seule, exemples à la 1re personne** (pré-enregistrée) | **64 (0,80)** (+9 / −0, p = 0,004), 4,0 %, 249 | **60 (0,75)** (+10 / −0, p = 0,002), 2,2 %, 80 | **53 (0,66)** (+7 / −1, p = 0,07), 3,7 %, 109 | **49 (0,68)** (+7 / −1, p = 0,07), **1,9 %**, 108 |
+
+Réponses perdues par la variante pré-enregistrée, par jeu et par corpus (McNemar) : jeu figé 2 corpus, français 75 = 75, portugais 85 = 85, PIAF 91 → 89 (−2, p = 0,5) ; 4 corpus, BR Expat 16 → 17, EUR-Lex 63 = 63 ; validation 1, BR Expat 20 → 21, PIAF 37 → 36, LexML et EUR-Lex inchangés ; validation 2, aucune différence sur aucun corpus. Aucune perte significative nulle part.
+
+**Faux refus par corpus et par langue** (pré-enregistrée / défaut) :
+
+| | PIAF | LexML | BR Expat | EUR-Lex | fr | pt | en |
+|---|---|---|---|---|---|---|---|
+| validation 1 | 1 / 0 (sur 40) | 3 / 3 | 2 / 2 | 0 / 0 | 5 / 4 (sur 113) | 1 / 1 (33) | 0 / 0 (14) |
+| validation 2 | 0 / 0 | 2 / 3 | 0 / 1 | 1 / 1 (39) | 1 / 3 (112) | 2 / 2 (33) | 0 / 0 (14) |
+
+**Par catégorie** (pré-enregistrée, défaut entre parenthèses) : hors périmètre 23 / 27 (15) sur le jeu figé, 38 / 40 (31) en validation 1, **34 / 34** (27) en validation 2 ; conversationnelles toutes refusées partout ; « presque dans le sujet » 11 / 23 (10), 5 / 30 (6), 7 / 30 (8).
+
+**Latence** : l'étape « intention » du routeur passe de 0,2 ms à 2,4 ms au p95 en direct (embedding déjà calculé ; un produit scalaire de 384 poids plus les centroïdes pour nommer le refus) ; le p95 routeur + recherche ne bouge pas (3 543 ms en validation 1 avec l'option kNN, 3 457 ms en validation 2). Le kNN coûte 4,7 ms au p95.
+
+### Ce que montrent ces chiffres
+
+**La règle jointe ne généralise pas.** Elle classe une question parmi les questions de calibration de son couple (corpus, langue). Ces questions ont été écrites dans le style des jeux figés ; des questions au style utilisateur, surtout sur LexML et EUR-Lex, ont un écart documentaire et un score dense plus bas, et tombent sous le seuil : 17 à 18 faux refus sur 160 en validation 1, 12 sur 159 en validation 2, alors que le jeu de développement ne montrait rien (2,9 %). C'est ce qui a fait échouer la variante choisie sur le développement ; le choix des niveaux sur des questions du même style que la calibration était le point faible signalé dans la première partie, et il s'est vérifié.
+
+**Les exemples à la première personne corrigent la régression logistique.** Avec eux, elle ne refuse plus les questions d'expatriés (BR Expat : 15 faux refus avec #80, 2 avec la nouvelle, 3 avec le défaut) et refuse presque toutes les demandes hors périmètre (34 sur 34 en validation 2, 38 sur 40 en validation 1), à la première personne comme à l'impersonnel.
+
+**Les centroïdes et le kNN « durcis » perdent des refus** : avec les exemples à la première personne, les questions personnelles hors sujet ressemblent davantage aux documentaires, et la marge de 0,02 les laisse passer (−11 à −14 refus en validation). Le classifieur linéaire apprend la frontière là où une distance moyenne ne la voit pas.
+
+**Pourquoi 0,85 est hors de portée de l'intention.** En validation 2, la régression logistique refuse toutes les demandes hors périmètre et toutes les conversations ; il reste 23 questions « presque dans le sujet » (loi d'un autre pays, événement de 2026, numéro de loi inventé, entité absente de PIAF) dont l'intention est documentaire : seul le contenu des corpus dit qu'elles n'ont pas de réponse. Même un classifieur d'intention parfait plafonnerait à (34 + 8 + 8) / 72 = 0,69 sur ce jeu, 0,70 en validation 1. Les gagner demande un autre signal (couverture du sujet par le corpus, vérification de la réponse), hors du périmètre « intention sans LLM ».
+
+### L'option livrée
+
+| Variable | Défaut | Effet |
+|---|---|---|
+| `RAGLAB_ROUTING_INTENT_METHOD` | `centroids` | `logistic` : la régression logistique de `RAGLAB_ROUTING_INTENT_LOGISTIC_PATH` décide seule de l'intention (au-dessus de sa coupure, refus nommé d'après les centroïdes : conversationnelle ou hors périmètre) ; l'abstention garde les seuils seuls ; `knn` = l'option de #80 |
+| `RAGLAB_ROUTING_INTENT_LOGISTIC_PATH` | `benchmarks/routing/intent_logistic.json` | poids, biais, coupure (0,4912, quantile 97 % des questions de calibration hors pli) ; écrit par `raglab experiment intent-generalization ... --export lr_fp_first_c0.97` |
+| `RAGLAB_ROUTING_INTENT_TRAINING_PATH` | `benchmarks/routing/intent_training.jsonl` | exemples à la première personne, lus par l'option kNN quand sa calibration le demande |
+
+Mêmes surfaces que les autres réglages du routeur (CLI `--routing`, API `routing: true`, interrupteur « Routage ») ; en mode expert, le panneau du routeur affiche la probabilité « non documentaire » à côté des scores des centroïdes.
+
+### Recommandation
+
+**Activer `RAGLAB_ROUTING_INTENT_METHOD=logistic` par défaut est défendable, et je le propose au propriétaire sans le faire** :
+
+- c'est la seule variante qui améliore les quatre jeux à la fois : +6 à +10 refus justifiés, sans perte de réponse documentaire sur aucun corpus, avec des faux refus entre 1,9 % et 4,0 % (le défaut : 2,9 % à 3,3 %) ;
+- elle a été choisie avant la validation 2 et confirmée en direct sur celle-ci, avec le code du routeur ;
+- coût : 2 ms au p95, aucun modèle de plus d'1 Go, aucun appel LLM.
+
+Ce qu'elle ne fait pas : atteindre 0,85 (0,66 à 0,80 selon le jeu). L'option kNN et la règle jointe de #80 restent désactivées, et devraient le rester : elles échouent sur les deux jeux indépendants.
+
+Prochaine étape pour le rappel : un signal de **couverture** pour les questions « presque dans le sujet » (par exemple la présence des entités nommées de la question dans le corpus, ou une vérification de la réponse par le juge local), mesuré sur ces mêmes jeux de validation.
+
+### Limites
+
+- Les deux jeux de validation et les exemples d'apprentissage sont **écrits par un LLM** au style utilisateur, pas tirés de vrais journaux ; les agents étaient séparés, mais un style d'écriture commun reste possible. Un jeu tiré d'usages réels reste la vraie validation.
+- Une validation lue, puis une variante choisie, puis une seconde validation : la variante pré-enregistrée n'a été testée qu'**une fois** à l'aveugle (validation 2). Ses gains sur chaque validation, pris seuls, sont à p = 0,07.
+- **Seuils des nouveaux couples non retenus.** Les couples (BR Expat, français) et (EUR-Lex, anglais / français / portugais) sont maintenant calibrés (quantile 2 ou 3 % de leurs questions de calibration, score dense de la question d'origine) ; ces seuils gagnent un refus à quatre corpus (51 au lieu de 50) mais montent les faux refus de 2,9 % à 6,5 % : la calibration BR Expat vient des documents pairs, les questions BR Expat évaluées de textes en partie différents, et un seuil par couple réglé sur une centaine de questions ne transfère pas. Aucune variante qui s'en sert (seuils ou règle jointe sur « tous les couples ») ne passe le développement ; le défaut garde le seuil du corpus sur le score traduit pour ces couples (#79).
+- Les questions LexML de la validation 1 portent souvent sur des tableaux budgétaires (ce qu'est une bonne part du corpus) ; la validation 2 les a évités.
