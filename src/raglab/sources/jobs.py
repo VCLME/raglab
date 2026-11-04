@@ -98,6 +98,7 @@ class SourceJobs:
         self.sources = official_sources(self.settings, repo_root)
         self._lock = threading.Lock()
         self._jobs = {name: SourceJob(name, suite.corpus_name) for name, suite in self.sources.items()}
+        self._threads: dict[str, threading.Thread] = {}
 
     def _job(self, name: str) -> SourceJob:
         if name not in self._jobs:
@@ -131,7 +132,15 @@ class SourceJobs:
             name=f"raglab-source-{name}",
             daemon=True,
         )
+        self._threads[name] = thread
         thread.start()
+        return self.status(name)
+
+    def wait(self, name: str, timeout: float | None = None) -> dict[str, Any]:
+        """Wait for the thread of the last `start(name)` and return the status."""
+        thread = self._threads.get(name)
+        if thread is not None:
+            thread.join(timeout)
         return self.status(name)
 
     def run(self, name: str, *, ingest: bool = True) -> dict[str, Any]:

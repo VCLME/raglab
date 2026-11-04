@@ -40,6 +40,13 @@ def _freeze(repo_root: Path, suite: str, text: str) -> None:
     manifest.write_text(json.dumps({"documents": [{"file_name": "a.txt", "sha256": digest}]}), encoding="utf-8")
 
 
+@pytest.fixture(autouse=True)
+def no_job_outlives_its_test():
+    yield
+    alive = [thread.name for thread in threading.enumerate() if thread.name.startswith("raglab-source-")]
+    assert alive == [], "a fetch job thread outlived its test (join it with SourceJobs.wait)"
+
+
 @pytest.fixture
 def ingested(monkeypatch) -> list[str]:
     calls: list[str] = []
@@ -184,13 +191,11 @@ def test_one_job_per_source_at_a_time(tmp_path, monkeypatch, ingested):
     assert jobs.status("eurlex")["state"] == "idle"
 
     release.set()
-    deadline = time.monotonic() + 5
-    while jobs.status("legi")["state"] == "running" and time.monotonic() < deadline:
-        time.sleep(0.01)
-    assert jobs.status("legi")["state"] == "succeeded"
-    # A finished job can be started again.
+    assert jobs.wait("legi", timeout=5)["state"] == "succeeded"
+    # A finished job can be started again. Wait for it: a thread that
+    # outlives the test would run the real ingestion once the fakes are gone.
     assert jobs.start("legi")["state"] == "running"
-    release.set()
+    assert jobs.wait("legi", timeout=5)["state"] == "succeeded"
 
 
 def test_unknown_source(tmp_path):
