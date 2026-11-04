@@ -1402,7 +1402,8 @@ def experiment_routing(
         None,
         "--in-scope",
         help="Jeux de questions in-scope (repetable) : piaf, lexml_fulltext, legi_consommation, eurlex_compliance, "
-        "ou lexml_fr (questions francaises sur LexML, jamais dans le tirage par defaut). Defaut : les jeux par defaut.",
+        "ou lexml_fr / lexml_fr_pt (questions francaises sur LexML et les memes en portugais, jamais dans le tirage "
+        "par defaut). Defaut : les jeux par defaut.",
     ),
 ) -> None:
     """Mesurer le routeur : abstention (precision / rappel / F1, courbe), intention, langue, corpus, latence."""

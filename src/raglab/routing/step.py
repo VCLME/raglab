@@ -26,11 +26,13 @@ def route_and_retrieve(service: QueryService, **kwargs: Any) -> RetrievalOutcome
     """
     started = perf_counter()
     router = QueryRouter(service.session, service.settings)
+    cross_language = cross_language_routing(service, kwargs.get("query_translation"))
     decision = router.route(
         kwargs["question"],
         corpus_name=kwargs.get("corpus_name"),
         index_run_id=kwargs.get("index_run_id"),
         strategy=kwargs.get("strategy"),
+        translator=service.translator if cross_language else None,
     )
     if decision.corpus.source in ("routed", "citation"):
         kwargs["corpus_name"] = decision.corpus.corpus_name
@@ -47,9 +49,45 @@ def route_and_retrieve(service: QueryService, **kwargs: Any) -> RetrievalOutcome
             else cited_text_in_run(service.session, outcome.index_run, decision.citation)
         )
         decision = decision.model_copy(update={"legal_citation_found": found})
-    outcome.routing = router.finish(decision, outcome.retrieved)
+    translated = translated_dense_score(service, outcome) if cross_language else None
+    outcome.routing = router.finish(decision, outcome.retrieved, translated_score=translated)
     outcome.timings_ms["routing"] = decision.timings_ms["total"]
     # The request started with the router, not with retrieval.
     outcome.started = started
     outcome.routing.timings_ms["abstention"] = round((perf_counter() - finished) * 1000, 3)
     return outcome
+
+
+def cross_language_routing(service: QueryService, query_translation: bool | None) -> bool:
+    """Cross-language corpus choice and abstention: needs the query
+    translation it builds on, and the dense abstention score it corrects."""
+    settings = service.settings
+    translate = settings.query_translation if query_translation is None else query_translation
+    return bool(settings.routing_cross_language and translate and settings.routing_score_source == "dense")
+
+
+def translated_dense_score(service: QueryService, outcome: RetrievalOutcome) -> float | None:
+    """Best cosine of the translated question over the retrieved passages.
+
+    The per-corpus threshold was calibrated on questions in the corpus
+    language; a French question scores ~0.03 lower on Portuguese passages
+    than the same question in Portuguese. The translated question is
+    embedded and searched (dense) over the same index and filters; its best
+    cosine among the passages actually retrieved is the score on the
+    calibrated scale. None when the question was not translated or none of
+    those passages comes back.
+    """
+    info = outcome.query_translation or {}
+    if not info.get("translated") or not outcome.retrieved:
+        return None
+    embedding = service._embed_question(outcome.index_run, info["text"])
+    hits = service.vector_store.search(
+        service.session,
+        index_run=outcome.index_run,
+        query_embedding=embedding,
+        top_k=max(service.settings.rerank_candidates, len(outcome.retrieved)),
+        filters=outcome.filters,
+    )
+    kept = {chunk.chunk_id for chunk in outcome.retrieved}
+    scores = [float(hit.score) for hit in hits if hit.chunk_id in kept]
+    return max(scores) if scores else None

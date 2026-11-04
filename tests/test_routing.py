@@ -708,8 +708,111 @@ def test_load_calibration_excludes_the_evaluated_questions(tmp_path):
 def test_french_lexml_set_is_opt_in_for_the_routing_experiment():
     from raglab.experiments.routing import IN_SCOPE_SETS, named_sets
 
-    assert "lexml_fr" not in {s.name for s in IN_SCOPE_SETS}
+    assert {"lexml_fr", "lexml_fr_pt"}.isdisjoint({s.name for s in IN_SCOPE_SETS})
     (french,) = named_sets(["lexml_fr"])
     assert (french.corpus_name, french.language) == ("bench_lexml_pt", "fr")
     with pytest.raises(ValueError):
         named_sets(["nope"])
+
+
+# --- cross-language routing ----------------------------------------------------
+
+
+class _Translator:
+    def __init__(self, text: str):
+        self.text = text
+        self.calls: list[tuple[str, str]] = []
+
+    def translate(self, question, target):
+        from raglab.retrieval.translation import Translation
+
+        self.calls.append((question, target))
+        return Translation(self.text, "fr", target, True)
+
+
+def _language_runs():
+    return [
+        SimpleNamespace(id="run-lexml", corpus=SimpleNamespace(name="lexml", language="pt")),
+        SimpleNamespace(id="run-piaf", corpus=SimpleNamespace(name="piaf", language="fr")),
+    ]
+
+
+def test_other_language_corpus_is_rescored_on_the_translated_question():
+    router = _router(routing_translation_margin=1.0)
+    translator = _Translator("o que diz a lei")
+    with (
+        patch("raglab.routing.router.list_candidate_runs", return_value=_language_runs()),
+        patch("raglab.routing.intent.iter_examples", return_value=EXAMPLES),
+    ):
+        plain = router.route("Quel musée musée et la loi ?")
+        crossed = router.route("Quel musée musée et la loi ?", translator=translator)
+    # In French the question sits closer to the French corpus...
+    assert plain.corpus.corpus_name == "piaf"
+    # ...translated into Portuguese, it is closer to the Portuguese one.
+    assert crossed.corpus.corpus_name == "lexml"
+    lexml = next(c for c in crossed.corpus.candidates if c.corpus_name == "lexml")
+    assert lexml.translated_score > lexml.original_score
+    # Only the corpus in another language is translated, once.
+    assert translator.calls == [("Quel musée musée et la loi ?", "pt")]
+
+
+def test_corpus_far_behind_is_not_translated():
+    router = _router(routing_translation_margin=0.05)
+    translator = _Translator("o que diz a lei")
+    with (
+        patch("raglab.routing.router.list_candidate_runs", return_value=_language_runs()),
+        patch("raglab.routing.intent.iter_examples", return_value=EXAMPLES),
+    ):
+        decision = router.route("Quel musée musée et la loi ?", translator=translator)
+    assert decision.corpus.corpus_name == "piaf"
+    assert translator.calls == []
+
+
+def test_a_requested_corpus_is_never_rescored():
+    router = _router(routing_translation_margin=1.0)
+    translator = _Translator("o que diz a lei")
+    with (
+        patch("raglab.routing.router.list_candidate_runs", return_value=_language_runs()),
+        patch("raglab.routing.intent.iter_examples", return_value=EXAMPLES),
+    ):
+        decision = router.route("Quel musée ?", corpus_name="lexml", translator=translator)
+    assert decision.corpus.source == "requested"
+    assert translator.calls == []
+
+
+def test_abstention_reads_the_translated_score_on_the_calibrated_scale(routed_env):
+    from raglab.retrieval.translation import Translation
+
+    service = _service(
+        [_chunk(0.82)], routing_abstention_threshold=0.85, query_translation=True, routing_cross_language=True
+    )
+    service._resolve_index_run.return_value.corpus = SimpleNamespace(language="pt")
+    service.lexical_store = Mock()
+    service.lexical_store.search.return_value = ([], [])
+    service.translator = Mock()
+    service.translator.translate.return_value = Translation("O que diz a lei?", "fr", "pt", True, 10.0)
+    # Original search, then the translated question's search over the same index.
+    service.vector_store.search.side_effect = [[_chunk(0.82)], [_chunk(0.88), _chunk(0.95, rank=7)]]
+    response = service.query(question="Que dit la loi ?", routing=True, retrieval_mode="hybrid", rerank=False)
+    abstention = response.routing.abstention
+    assert abstention.abstain is False
+    # Best translated cosine among the passages actually retrieved (c1), not c7.
+    assert abstention.translated_score == pytest.approx(0.88)
+    assert abstention.best_score == pytest.approx(0.88)
+
+
+def test_cross_language_routing_can_be_turned_off(routed_env):
+    service = _service(
+        [_chunk(0.82)], routing_abstention_threshold=0.85, query_translation=True, routing_cross_language=False
+    )
+    service._resolve_index_run.return_value.corpus = SimpleNamespace(language="pt")
+    service.lexical_store = Mock()
+    service.lexical_store.search.return_value = ([], [])
+    service.translator = Mock()
+    from raglab.retrieval.translation import Translation
+
+    service.translator.translate.return_value = Translation("O que diz a lei?", "fr", "pt", True, 10.0)
+    response = service.query(question="Que dit la loi ?", routing=True, retrieval_mode="hybrid", rerank=False)
+    assert response.routing.abstention.abstain is True
+    assert response.routing.abstention.translated_score is None
+    assert service.vector_store.search.call_count == 1

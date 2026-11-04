@@ -48,6 +48,8 @@ Pourquoi un seuil par corpus : les scores denses n'ont pas la même échelle d'u
 | `RAGLAB_ROUTING_ABSTENTION_THRESHOLD` | `0.0` | seuil dense des corpus sans seuil propre (0 = pas d'abstention par score) |
 | `RAGLAB_ROUTING_RERANK_ABSTENTION_THRESHOLDS` | `{"bench_piaf_fr": -5.4414, "bench_lexml_pt": -3.9102}` | seuils par corpus sur le score du **reranker**, en JSON (point A) ; un corpus absent n'a pas d'abstention par score |
 | `RAGLAB_ROUTING_SCORE_SOURCE` | `dense` | `dense` ou `rerank` |
+| `RAGLAB_ROUTING_CROSS_LANGUAGE` | `true` | question dans une autre langue que le corpus : re-noter le corpus de l'autre langue sur la question traduite, et lire le score d'abstention dense sur la question traduite ; ne joue qu'avec `RAGLAB_QUERY_TRANSLATION` et la source `dense` ([langues-croisees.md](langues-croisees.md#routage-multilingue)) |
+| `RAGLAB_ROUTING_TRANSLATION_MARGIN` | `0.02` | écart maximal au meilleur score de centroïde pour qu'un corpus d'une autre langue soit re-noté (0,05 attirait des questions PIAF vers LexML) |
 
 **Point de fonctionnement retenu : A (prudent)**, choisi par le propriétaire le 3 novembre 2026 et confirmé le 4 novembre après la re-mesure sur le pipeline complet : marge d'intention 0,02, seuils au quantile 2 % de la calibration, **recalibrés pour chaque source de score** sur le pipeline par défaut (hybride + re-ranking + citations). Un seuil dense ne sert jamais pour le score du reranker, et inversement : les deux échelles n'ont rien en commun (cosinus entre 0 et 1, logit du cross-encoder entre −10 et +10 environ).
 

@@ -9,6 +9,7 @@ def test_shipped_default_is_the_measured_best_pipeline(monkeypatch):
     monkeypatch.delenv("RAGLAB_CITATION_RESOLVER", raising=False)
     monkeypatch.delenv("RAGLAB_VERSIONS_DEFAULT", raising=False)
     monkeypatch.delenv("RAGLAB_QUERY_TRANSLATION", raising=False)
+    monkeypatch.delenv("RAGLAB_ROUTING_CROSS_LANGUAGE", raising=False)
     settings = Settings(_env_file=None)
     assert settings.default_retrieval_mode == "hybrid"
     assert settings.default_rerank is True
@@ -17,6 +18,9 @@ def test_shipped_default_is_the_measured_best_pipeline(monkeypatch):
     assert settings.versions_default == "in_force"
     # Measured in lexml-fr-qt-v1: French questions on LexML Recall@5 0.790 -> 0.890.
     assert settings.query_translation is True
+    # router-crosslang-m02-v1: French questions on LexML answered 33 -> 75 of 100.
+    assert settings.routing_cross_language is True
+    assert settings.routing_translation_margin == 0.02
 
 
 def test_shipped_writer_is_qwen36_on_llamacpp_with_an_ollama_fallback(monkeypatch):
