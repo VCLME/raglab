@@ -40,7 +40,7 @@ import re
 import statistics
 import subprocess
 from collections import Counter, defaultdict
-from collections.abc import Iterable, Iterator
+from collections.abc import Callable, Iterable, Iterator
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from html import unescape
@@ -440,6 +440,9 @@ class CodeCollector:
         self.settings = settings or get_settings()
 
     def ensure_repository(self, code: CodeSpec, repository: Path, commit: str) -> None:
+        # The clone and fetch talk to the network; a stalled one raises
+        # subprocess.TimeoutExpired past RAGLAB_LEGIFRANCE_GIT_TIMEOUT_SECONDS.
+        timeout = self.settings.legifrance_git_timeout_seconds or None
         if not (repository / "HEAD").exists():
             repository.parent.mkdir(parents=True, exist_ok=True)
             log_event(LOGGER, logging.INFO, "legifrance.clone", url=code.repository_url, target=repository)
@@ -447,6 +450,7 @@ class CodeCollector:
                 ["git", "clone", "--bare", "--quiet", code.repository_url, str(repository)],
                 check=True,
                 capture_output=True,
+                timeout=timeout,
             )
         probe = subprocess.run(
             ["git", "-C", str(repository), "cat-file", "-e", f"{commit}^{{commit}}"], capture_output=True
@@ -456,6 +460,7 @@ class CodeCollector:
                 ["git", "-C", str(repository), "fetch", "--quiet", "origin", "+refs/heads/*:refs/heads/*"],
                 check=True,
                 capture_output=True,
+                timeout=timeout,
             )
 
     def collect(
@@ -465,11 +470,13 @@ class CodeCollector:
         output_dir: Path | None = None,
         commit: str | None = None,
         versions: str = "all",
+        progress: Callable[[int, int], None] | None = None,
     ) -> dict[str, Any]:
         """Write the corpus of `code` as of `commit` (default: the pinned one).
 
         `versions="current"` keeps only the versions in force, for an
         ablation without history; the benchmark uses "all".
+        `progress(done, total)` is called after each article version.
         """
         if versions not in ("all", "current"):
             raise ValueError(f"versions doit valoir all ou current, pas {versions}")
@@ -499,9 +506,14 @@ class CodeCollector:
             documents: list[dict[str, Any]] = []
             manifest_rows: list[dict[str, Any]] = []
             skipped = {"empty": 0, "not_in_force": 0}
+            total = sum(len(rows) for rows in by_number.values())
+            done = 0
             for number in sorted(by_number):
                 siblings = by_number[number]
                 for position, version in enumerate(siblings, start=1):
+                    done += 1
+                    if progress is not None:
+                        progress(done, total)
                     if not version.body:
                         skipped["empty"] += 1
                         continue

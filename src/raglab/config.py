@@ -137,6 +137,13 @@ class Settings(BaseSettings):
     legifrance_dir: Path = Field(default_factory=lambda: Path("data/legifrance"))
     # EU acts from EUR-Lex / CELLAR (`raglab eurlex fetch`).
     eurlex_dir: Path = Field(default_factory=lambda: Path("data/eurlex"))
+    # Fetch jobs of the official sources (`POST /api/sources/{name}/fetch`,
+    # `raglab sources fetch`): budget of the whole job (0 = no limit), of one
+    # git call, and the pace and timeout of the CELLAR requests.
+    source_fetch_timeout_seconds: float = 3600.0
+    legifrance_git_timeout_seconds: float = 600.0
+    eurlex_request_delay_seconds: float = Field(default=1.0, ge=0.2)
+    eurlex_request_timeout_seconds: float = 60.0
 
     generation_model: str = "qwen2.5:7b"
     generation_temperature: float = 0.1
