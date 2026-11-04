@@ -1,13 +1,48 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Any
 
+import numpy as np
 from pgvector.sqlalchemy import VECTOR
 from sqlalchemy import Float, and_, bindparam, cast, func, not_, or_, select, text
 from sqlalchemy.orm import Session
 
 from raglab.db.models import Chunk, ChunkEmbedding, Document, IndexRun
 from raglab.domain.schemas import RetrievalFilters, RetrievedChunk
+
+# Ranked rows per result that may be checked by the versions filter (see
+# `ranked_in_force`); PostgreSQL stops once top_k rows pass. Measured on the
+# Code de la consommation (300 questions, top_k 5, ~30% of the chunks in
+# force, older versions of an article ranking side by side), questions
+# that ran out of rows and fell back to the filtered query: 8x, 6 (BM25) and
+# 19 (dense); 16x, 0 and 1; 32x, none, at the same p50.
+VALID_AT_DEPTH = 32
+
+
+class QueryVector(VECTOR):
+    """`VECTOR` for the query embedding, sent as the shortest text of each
+    float32. pgvector writes the float64 form of the same float32 values
+    (`0.03319903463125229` for `0.033199035`): 7.7 kB for 384 dimensions
+    instead of 4.4 kB. PostgreSQL reads both as the same float4 vector, but
+    on Docker Desktop for Windows every request over 8 kB waits ~55 ms
+    (measured), and the 384-d search sat just under that limit.
+    """
+
+    cache_ok = True
+
+    def bind_processor(self, dialect):
+        dim = self.dim
+
+        def process(value):
+            if value is None:
+                return None
+            values = np.asarray(value, dtype=np.float32)
+            if values.ndim != 1 or (dim is not None and len(values) != dim):
+                raise ValueError(f"expected a {dim or 'flat'}-dimension vector, got shape {values.shape}")
+            return "[" + ",".join(map(str, values)) + "]"
+
+        return process
 
 
 def valid_at_condition(day: str):
@@ -29,6 +64,36 @@ def valid_at_condition(day: str):
             or_(end.is_(None), end > day),
         ),
     )
+
+
+def ranked_in_force(session: Session, ranked, sort_keys, *, day: str, top_k: int, full: Callable[[], Any]):
+    """The top_k rows of `ranked` (ordered, with a `document_id` column)
+    whose document is in force on `day`.
+
+    Filtering every candidate reads each document's metadata (a ~1.2 kB
+    JSONB) five times: on the Code de la consommation that cost the dense
+    search 35 -> 220 ms and BM25 40 -> 100 ms. The filter is the same for
+    every row, so the ranking does not depend on it: the first
+    `VALID_AT_DEPTH * top_k` rows are ranked unfiltered and only those are
+    checked. When fewer than top_k survive, `full()` (the filtered query)
+    runs instead, so the result is the same as filtering first.
+    """
+    inner = ranked.limit(VALID_AT_DEPTH * top_k).subquery("ranked")
+    rows = session.execute(
+        select(*inner.c)
+        .join(Document, Document.id == inner.c.document_id)
+        .where(valid_at_condition(day))
+        .order_by(*sort_keys(inner))
+        .limit(top_k)
+    ).all()
+    if len(rows) < top_k:
+        rows = session.execute(full()).all()
+    return rows
+
+
+def without_valid_at(filters: RetrievalFilters) -> RetrievalFilters:
+    """The same filters, the versions one left to `ranked_in_force`."""
+    return filters.model_copy(update={"valid_at": None})
 
 
 class PostgresVectorStore:
@@ -90,10 +155,10 @@ class PostgresVectorStore:
             # No cast: the expression no longer matches the partial HNSW
             # index, so Postgres computes the exact distance for the run's rows.
             typed_embedding: Any = ChunkEmbedding.embedding
-            query_param = bindparam("query_vec", query_embedding, type_=VECTOR())
+            query_param = bindparam("query_vec", query_embedding, type_=QueryVector())
         else:
             typed_embedding = cast(ChunkEmbedding.embedding, VECTOR(dim))
-            query_param = bindparam("query_vec", query_embedding, type_=VECTOR(dim))
+            query_param = bindparam("query_vec", query_embedding, type_=QueryVector(dim))
         # `<=>` returns a scalar float (cosine distance). We pin the
         # return_type so SQLAlchemy doesn't try to parse the result as a
         # Vector (the operator itself takes two Vector operands).
@@ -125,8 +190,13 @@ class PostgresVectorStore:
             # Exact mode leaves it out: it would force evaluating every
             # embedding of the table instead of starting from the run's chunks.
             stmt = stmt.where(func.vector_dims(ChunkEmbedding.embedding) == dim)
-        stmt = self._apply_filters(stmt, filters)
-        stmt = stmt.order_by(distance).limit(top_k)
+        # The versions filter goes after the ranking (`ranked_in_force`).
+        # HNSW keeps it in the scan: its iterative scan needs the full
+        # filter to know when it has enough rows.
+        day = filters.valid_at if filters is not None and self.search_mode == "exact" else None
+
+        def full():
+            return self._apply_filters(stmt, filters).order_by(distance).limit(top_k)
 
         # The HNSW index is shared by every index run of the same dimension,
         # and pgvector applies the WHERE clause (this run, filters) after the
@@ -137,7 +207,17 @@ class PostgresVectorStore:
         if self.search_mode == "hnsw" and self.iterative_scan:
             session.execute(text("SET LOCAL hnsw.iterative_scan = strict_order"))
             session.execute(text(f"SET LOCAL hnsw.ef_search = {max(40, int(top_k))}"))
-        rows = session.execute(stmt).all()
+        if day:
+            rows = ranked_in_force(
+                session,
+                self._apply_filters(stmt, without_valid_at(filters)).order_by(distance),
+                lambda inner: [inner.c.distance],
+                day=day,
+                top_k=top_k,
+                full=full,
+            )
+        else:
+            rows = session.execute(full()).all()
         results: list[RetrievedChunk] = []
         for rank, row in enumerate(rows, start=1):
             distance_value = float(row.distance or 0.0)
