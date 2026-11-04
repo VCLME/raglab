@@ -76,7 +76,8 @@ Chaque référence a été relue dans le texte collecté (version compilée de P
 raglab lexml br-expat                       # collecte (19 textes, environ 20 s)
 python scripts/br_expat_ground_truth.py     # recalcule les positions, échoue si un texte a bougé
 raglab bench all --suite br_expat --label brexpat-naive-v1 --retrieval-mode dense --no-rerank --no-citations --versions all --ragas-limit 0
-raglab bench all --suite br_expat --label brexpat-full-v1 --ragas-limit 0
+raglab bench all --suite br_expat --label brexpat-full-v1 --no-query-translation --ragas-limit 0
+raglab bench all --suite br_expat --label brexpat-qt-v1 --ragas-limit 0    # défaut actuel, avec la traduction des questions
 ```
 
 Planalto met ses textes compilés à jour en place : une collecte ultérieure peut différer (Lei 9.249 et Lei 10.666 ont été modifiées en 2026). Comparez les `sha256` de `corpus_manifest.json` avec ceux de `data/lexml/br_expat/manifest.json` ; `raglab bench` refuse de tourner si un texte a changé.

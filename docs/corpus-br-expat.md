@@ -69,7 +69,7 @@ python scripts/br_expat_report.py brexpat-naive-v1 brexpat-full-v1 --answers bre
 - **Pipeline complet** (défaut) : hybride BM25 + dense (RRF), re-ranking bge-reranker-v2-m3, résolveur de citations, versions `in_force`.
 - Dans les deux cas, réponses écrites par **Qwen3.6-35B-A3B** (llama.cpp, profil `qwen35b-moe-rag`) avec le prompt V4 (réponse dans la langue de la question, citation d'abord), à partir des 5 premiers passages, et notées par le juge habituel (Gemma 4 26B-A4B) : exactitude par rapport à la réponse attendue, fidélité au contexte.
 - Mesures du 4 novembre 2026 sur une RTX 3070 Ti 8 Go, commit `f3fd1be`.
-- La **traduction des questions pour le BM25** ([langues-croisees.md](langues-croisees.md)) est devenue le défaut pendant ces mesures (PR #75) : `brexpat-full-v1` est le pipeline complet **sans** elle, tel qu'il était au début du travail.
+- La **traduction des questions pour le BM25** ([langues-croisees.md](langues-croisees.md)) est devenue le défaut pendant ces mesures (PR #75) : `brexpat-full-v1` est le pipeline complet **sans** elle, tel qu'il était au début du travail ; `brexpat-qt-v1` est le pipeline complet **avec** elle, le défaut actuel (section suivante).
 
 ### Recherche, niveau article
 
@@ -114,7 +114,36 @@ Sur 37 questions (sans Q30) : 13 réponses justes en naïf, 16 avec le pipeline 
 
 **Q29 : à moitié.** Les deux réponses citent l'art. 20 §2º (la réciprocité) et le pipeline complet ne répond plus « oui » ; mais **aucune ne dit que la liste des pays qui accordent la réciprocité manque dans les documents**, ce qui était la réponse attendue. Le juge leur donne 1,0 : il juge la condition de réciprocité, pas l'aveu de ce qui manque. Verdict relu à la main : piège non déjoué, réponse naïve la plus dangereuse (elle commence par « Oui »).
 
+### Avec la traduction des questions (le défaut depuis la PR #75)
+
+```bash
+raglab bench all --suite br_expat --label brexpat-qt-v1 --query-translation --ragas-limit 38 --generator-provider llamacpp --generator-profile qwen35b-moe-rag
+```
+
+Le rédacteur traduit la question française en portugais pour le BM25 (la recherche dense et le re-ranking gardent la question d'origine). Même jeu, mêmes juges :
+
+| Thème | R@5 complet | R@5 + traduction | MRR complet | MRR + traduction | Exactitude complet | Exactitude + traduction |
+|---|---|---|---|---|---|---|
+| Immigration | 0,727 | **0,909** | 0,492 | 0,598 | 0,727 | 0,891 |
+| Société et impôts | 0,444 | **0,556** | 0,263 | 0,393 | 0,556 | 0,589 |
+| INSS et fiscalité perso. | 0,250 | **0,500** | 0,140 | 0,289 | 0,125 | 0,125 |
+| Piège Q29 | 1,000 | 1,000 | 1,000 | 1,000 | | |
+| Paraphrases | 0,625 | **0,750** | 0,425 | 0,494 | 0,637 | 0,600 |
+| **Total (37 ; exactitude sur 38)** | **0,541** | **0,703** | **0,360** | **0,470** | **0,555** | **0,603** |
+
+Recall@3 : 0,432 → 0,514. Comparaison appariée avec le pipeline complet sans traduction : **6 questions gagnées, aucune perdue** (McNemar p = 0,031, significatif) ; MRR +0,107, IC 95 % [+0,027 ; +0,210]. Par rapport au RAG naïf : 9 gagnées, aucune perdue (p = 0,004). C'est la seule brique qui fait une différence significative sur ce jeu : les questions gagnées sont celles où les mots de la loi n'apparaissaient pas dans la question française (Q4 « amende » → multa, rang 1 ; Q5, rang 4 ; Q17 « client à l'étranger » → exportações de serviços, rang 1 ; Q24 « montant de la retraite », rang 1 ; Q22 et p26).
+
+Ce que la traduction ne règle pas :
+
+- **La Q29 régresse** : la réponse commence maintenant par « Oui, un Français peut prolonger son séjour de visiteur au-delà de 90 jours » avant de rappeler la réciprocité. Le juge lui donne encore 1,0. Verdict relu à la main : piège raté, comme en naïf.
+- **Le bon passage n'empêche pas les erreurs** : avec l'article dans le contexte, 3 réponses sont fausses (Q21, Q22, Q24) contre 1 sans traduction. Q22 a l'inciso III de l'art. 22 (20 %) au rang 5 mais répond, comme Q21, sur l'impôt sur le revenu du pró-labore (le passage du Simples Nacional qui contient ce mot) ; Q24 trouve l'art. 26 de l'EC 103 sans son §2º et donne 100 % de la moyenne (une autre règle du même article).
+- **Toujours introuvables** : Q11 et p11 (Lei 7.115), Q18 (PIS/Cofins), Q26 (IN SRF 208, art. 2º), Q28 (IOF : les quatre chunks dupliqués de l'art. 22 sont encore en tête), p17.
+- **Niveau article contre disposition** : les paraphrases trouvent le bon article (0,750) mais moins souvent la bonne ligne (0,375) : p12 tombe sur l'art. 33 de l'IN 1.700 sans son inciso IV, p23 sur l'art. 19 de l'EC 103 sans son caput.
+- **Latence** : la question coûte 1,95 s au p50 (dont 1,35 s de traduction par Qwen3.6) contre 0,38 s sans traduction, génération exclue.
+
 ## Analyse des échecs
+
+L'analyse ci-dessous porte sur `brexpat-full-v1` (pipeline complet sans traduction) ; avec la traduction, les mêmes causes demeurent, dans d'autres proportions : 26 questions sur 37 ont le bon article dans le contexte (contre 20), dont 23 justes ou à moitié ; sans le passage, 7 refus, 2 réponses fausses (Q26, Q28) et 2 justes (Q15, Q16).
 
 Les 37 questions du pipeline complet (Q30 exclue), selon qu'un passage de l'article attendu était ou non dans les 5 passages donnés au rédacteur, et selon la note d'exactitude :
 
