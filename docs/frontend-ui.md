@@ -242,7 +242,9 @@ Le cœur experimental. Deux colonnes :
 - Un onglet par fournisseur, ouvert sur celui du rédacteur par défaut :
   - **Ollama** : serveur (adresse, état, modèle par défaut installé, rôle), paramètres de génération, modèles installés (taille, date, `Supprimer` avec confirmation, téléchargement d'un modèle) et le **banc d'essai** (ancien Playground) : le modèle seul, sans recherche, avec température, top_p, num_predict, num_ctx, seed et options JSON, conversation en bulles et requête envoyée affichée en JSON.
   - **llama.cpp** et **vLLM** (API compatible OpenAI) : adresse, état, modèle servi, rôle, mode de démarrage (llama.cpp : à la demande par l'API via `RAGLAB_LLAMACPP_START_COMMAND` / `RAGLAB_LLAMACPP_STOP_COMMAND` ; vLLM : serveur externe), modèles servis. Un fournisseur absent de `RAGLAB_LLM_PROVIDERS` affiche comment l'activer.
-- Paramètres de génération : l'API n'expose que la température (`/api/config`) ; top-p, tokens max et contexte sont affichés comme réglages du serveur non exposés. Le profil llama.cpp et un démarrage / arrêt manuel ne sont pas exposés non plus.
+- En tête, si le rédacteur par défaut est llama.cpp, son état (`generator.status` de `/api/llm/models` : prêt, arrêté, démarrage, occupé, injoignable, échec) et le fournisseur qui répond en attendant.
+- Paramètres de génération, par fournisseur (`providers[].generation` de `/api/llm/models`) : température (la seule valeur envoyée par raglab, marquée « envoyé par raglab »), top-p, tokens max et contexte. Pour llama.cpp ils sont lus sur le serveur (`/props`, « jusqu'à la fin de la réponse » quand il n'y a pas de limite) ; ailleurs ils restent « défaut du serveur, inconnu de raglab ». Avec une API plus ancienne, seule la température de `/api/config` s'affiche.
+- Onglet llama.cpp, carte « Rédacteur llama.cpp » (`providers[].llamacpp`) : profil du rédacteur, modèle attendu (servi ou non), commandes de démarrage et d'arrêt configurées (oui / non, jamais les commandes), démarrage automatique, et les profils avec leur contexte et leurs couches MoE sur CPU. Aucun bouton de démarrage : il chargerait un modèle sur le GPU.
 
 #### Re-ranking sans GPU
 

@@ -4011,3 +4011,6 @@ button.icon-only {
     justify-content: center;
   }
 }
+.profile-table {
+  margin-top: 16px;
+}
