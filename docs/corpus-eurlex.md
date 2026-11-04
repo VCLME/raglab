@@ -55,6 +55,8 @@ raglab eurlex fetch --acts gdpr,ai_act,dora,nis2 --lang fr,en
 raglab eurlex acts --check                # consolidations publiées depuis le gel
 ```
 
+Sans la ligne de commande : l'onglet Corpus › « Légifrance et EUR-Lex » de l'Atelier (bouton « Collecter et ingérer ») lance la collecte des 15 actes en tâche de fond, puis ingère le corpus dans `bench_eurlex_compliance` sans l'indexer (`POST /api/sources/eurlex/fetch`, ou `raglab sources fetch eurlex` ; voir [api-production.md](api-production.md#collecte-des-sources-officielles--apisources)). L'espacement des requêtes vient alors de `RAGLAB_EURLEX_REQUEST_DELAY_SECONDS` (1 s par défaut).
+
 Sortie dans `data/eurlex/compliance/` (hors git) :
 
 - `raw/` : le XHTML téléchargé, un fichier par CELEX et par langue ;

@@ -31,6 +31,7 @@ function defaultRoutes(): Record<string, Reply> {
     "GET /api/graph/status": json(data.graphStatus),
     "GET /api/bench/suggestions": json(data.suggestions),
     "GET /api/bench/datasets": json([]),
+    "GET /api/sources": json(data.sources),
     "GET /api/experiments/history": json(data.experimentsHistory),
     "POST /api/query": json(data.queryResponse),
     "POST /api/query/stream": sse(data.streamEvents()),

@@ -107,7 +107,7 @@ class FakeCellar:
         return Download(celex, language, path, None, hashlib.sha256(markup.encode()).hexdigest(), cached=True)
 
 
-def _collect(tmp_path: Path) -> dict:
+def _collect(tmp_path: Path, progress=None) -> dict:
     files = {
         (DORA, "en"): _dora(),
         ("02022R2554-20221227", "en"): _dora_consolidated(),
@@ -116,8 +116,17 @@ def _collect(tmp_path: Path) -> dict:
     (tmp_path / "raw").mkdir()
     client = FakeCellar(tmp_path / "raw", files)
     return EurlexCollector(client=client).collect(
-        acts=["dora", "dora_rts_ict_risk"], languages=["en"], output_dir=tmp_path
+        acts=["dora", "dora_rts_ict_risk"], languages=["en"], output_dir=tmp_path, progress=progress
     )
+
+
+def test_progress_counts_every_cellar_document(tmp_path: Path):
+    calls: list[tuple[int, int]] = []
+    _collect(tmp_path, progress=lambda done, total: calls.append((done, total)))
+    totals = {total for _, total in calls}
+    assert len(totals) == 1
+    total = totals.pop()
+    assert [done for done, _ in calls] == list(range(1, total + 1))
 
 
 def _sidecar(tmp_path: Path, name: str) -> dict:

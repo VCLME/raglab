@@ -35,6 +35,7 @@ import logging
 import re
 import statistics
 from collections import Counter
+from collections.abc import Callable
 from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
 from pathlib import Path
@@ -402,7 +403,10 @@ class EurlexCollector:
         languages: list[str] | None = None,
         output_dir: Path | None = None,
         delay: float = 1.0,
+        progress: Callable[[int, int], None] | None = None,
     ) -> dict[str, Any]:
+        """`progress(done, total)` is called after each CELLAR document
+        (downloaded or read from the cache)."""
         specs = [get_act(key) for key in (acts or [act.key for act in ACTS])]
         languages = languages or list(LANGUAGES)
         unknown = [language for language in languages if language not in LANGUAGES]
@@ -413,7 +417,17 @@ class EurlexCollector:
         corpus_dir.mkdir(parents=True, exist_ok=True)
         for stale in [*corpus_dir.glob("*.txt"), *corpus_dir.glob("*.json")]:
             stale.unlink()
-        client = self._client or CellarClient(base_dir / "raw", delay=delay)
+        client = self._client or CellarClient(
+            base_dir / "raw", delay=delay, timeout=self.settings.eurlex_request_timeout_seconds
+        )
+        total = sum(len(languages) * (1 + len(act.consolidations)) for act in specs)
+        fetched = 0
+
+        def advance() -> None:
+            nonlocal fetched
+            fetched += 1
+            if progress is not None:
+                progress(fetched, total)
 
         documents: list[dict[str, Any]] = []
         manifest_rows: list[dict[str, Any]] = []
@@ -423,11 +437,13 @@ class EurlexCollector:
             for language in languages:
                 original_download = client.fetch(act.celex, language)
                 assert original_download is not None
+                advance()
                 downloads.append(_download_row(original_download))
                 original = parse_act(original_download.path.read_bytes())
                 consolidated: list[tuple[str, ParsedAct]] = []
                 for celex in act.consolidations:
                     download = client.fetch(celex, language, missing_ok=True)
+                    advance()
                     if download is None:
                         downloads.append({"celex": celex, "language": language, "missing": True, "bytes": 0})
                         continue

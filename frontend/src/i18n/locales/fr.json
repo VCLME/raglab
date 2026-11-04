@@ -465,8 +465,18 @@
     "official_loaded_other": "{{value}} documents",
     "official_missing": "pas encore ingéré",
     "official_source": "Source",
-    "official_commands": "En ligne de commande (l'API n'a pas d'endpoint pour ces sources) :",
-    "official_ingest_cmd": "raglab bench all --suite <suite> --ragas-limit 0   # ingère et indexe {{corpus}}"
+    "official_commands": "Ou en ligne de commande (collecte, puis ingestion et indexation par le benchmark) :",
+    "official_ingest_cmd": "raglab bench all --suite <suite> --ragas-limit 0   # ingère et indexe {{corpus}}",
+    "official_fetch_button": "Collecter et ingérer",
+    "official_fetching": "Collecte en cours…",
+    "official_stage_fetch": "Collecte",
+    "official_stage_verify": "Vérification du manifeste",
+    "official_stage_ingest": "Ingestion",
+    "official_done_ingested": "{{documents}} documents collectés, {{ingested}} ingérés",
+    "official_done_files": "{{documents}} documents collectés (non ingérés)",
+    "official_manifest_drift_one": "{{count}} fichier diffère du manifeste figé : les réponses attendues du benchmark ne sont plus fiables",
+    "official_manifest_drift_other": "{{count}} fichiers diffèrent du manifeste figé : les réponses attendues du benchmark ne sont plus fiables",
+    "official_next_step": "Étape suivante : Découpage puis Vectorisation (la collecte n'indexe pas)."
   },
   "manage": {
     "title": "Gestion",

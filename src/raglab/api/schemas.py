@@ -532,3 +532,26 @@ class DriftRequest(BaseModel):
     alpha: float = Field(default=0.05, gt=0, lt=1)
     mean_threshold: float = Field(default=0.05, ge=0)
     min_samples: int = Field(default=10, ge=2)
+
+
+class SourceFetchRequest(BaseModel):
+    # False writes the files only; the Atelier ingests by default.
+    ingest: bool = True
+
+
+class SourceJobProgress(BaseModel):
+    done: int = 0
+    total: int | None = None
+
+
+class SourceJobStatus(BaseModel):
+    source: str
+    corpus: str
+    state: str
+    stage: str | None = None
+    progress: SourceJobProgress
+    started_at: datetime | None = None
+    finished_at: datetime | None = None
+    error: dict[str, Any] | None = None
+    result: dict[str, Any] | None = None
+    command: str
