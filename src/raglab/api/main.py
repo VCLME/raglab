@@ -8,6 +8,7 @@ from raglab.api.middleware import ApiKeyRateLimitMiddleware, MetricsMiddleware, 
 from raglab.api.routers import (
     bench,
     corpora,
+    databases,
     experiments,
     graph,
     health,
@@ -72,6 +73,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(bench.router)
     app.include_router(graph.router)
     app.include_router(sources.router)
+    app.include_router(databases.router)
 
     return app
 

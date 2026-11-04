@@ -1041,7 +1041,9 @@
       "unreachable": "unreachable",
       "degraded": "degraded",
       "error": "error"
-    }
+    },
+    "databases": "Databases",
+    "databases_link": "Credentials and access"
   },
   "chunking": {
     "title": "Chunking",
@@ -1125,5 +1127,41 @@
     "why_torch_missing": "no PyTorch in the API",
     "why_cuda_unavailable": "no CUDA GPU visible to the API",
     "why_unknown": "no GPU available to the API"
+  },
+  "databases": {
+    "title": "Databases",
+    "subtitle": "The two stores behind the Workshop: PostgreSQL (documents, chunks, vectors, BM25) and Neo4j (citation graph).",
+    "explain_body": "PostgreSQL + pgvector holds the corpora, their documents, the chunks, the vectors and the BM25 full-text index, plus the history of runs and benchmarks. Neo4j holds the citation graph between articles.\n\nEach tab gives the store's state, its connection details and a link that opens the admin tool with the login form already filled in: Adminer for PostgreSQL, Neo4j Browser for Neo4j.\n\nPasswords are shown only when they are the development ones shipped with docker-compose, masked until you ask to see them. Any other password stays on the server: the page says which variable sets it.",
+    "tabs_label": "Databases",
+    "tab_postgres": "PostgreSQL",
+    "tab_neo4j": "Neo4j",
+    "connection_title": "Connection",
+    "host": "Host",
+    "port": "Port",
+    "user": "User",
+    "password": "Password",
+    "password_hidden": "password hidden",
+    "password_server": "Set on the server by {{env}}, not shown",
+    "dev_default": "development value",
+    "show": "Show",
+    "hide": "Hide",
+    "database": "Database",
+    "url": "API connection string",
+    "copy": "Copy",
+    "copied": "Copied",
+    "copy_label": "Copy: {{field}}",
+    "tool_postgres": "Adminer",
+    "tool_neo4j": "Neo4j Browser",
+    "tool_title": "{{tool}}",
+    "state": "State",
+    "reachable": "reachable",
+    "unreachable": "unreachable",
+    "address": "Address",
+    "holds": "Holds the data of",
+    "open": "Open {{tool}}",
+    "tool_note_postgres": "The link fills in the server, user and database; Adminer never reads the password from the URL: copy it from the Connection card.",
+    "tool_note_postgres_no_password": "The link fills in the server, user and database; the password is the one in RAGLAB_DATABASE_URL.",
+    "tool_note_neo4j": "The link fills in the whole connection card, password included (development value): just click Connect.",
+    "tool_note_neo4j_no_password": "The link fills in the address and user; the password is RAGLAB_NEO4J_PASSWORD."
   }
 }

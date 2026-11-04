@@ -154,11 +154,9 @@ export function WorkshopHome() {
                 </dd>
               </div>
               <div>
-                <dt>Adminer</dt>
+                <dt>{t("workshop.databases")}</dt>
                 <dd>
-                  <a href={health.data.adminer_url} target="_blank" rel="noreferrer">
-                    {health.data.adminer_url}
-                  </a>
+                  <Link to="/workshop/databases">{t("workshop.databases_link")}</Link>
                 </dd>
               </div>
             </dl>

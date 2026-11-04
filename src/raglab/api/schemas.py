@@ -428,6 +428,31 @@ class SubgraphResponse(BaseModel):
     mentions: list[SubgraphEdge]
 
 
+class DatabaseConnection(BaseModel):
+    """One store of GET /api/databases (design of PR #25)."""
+
+    kind: str  # "postgres" | "neo4j"
+    label: str
+    status: str  # "ok" | "unreachable"
+    host: str
+    port: int
+    user: str
+    # Only the shipped dev default; any other password stays on the server.
+    password: str | None = None
+    password_is_default: bool = False
+    # Variable that holds the password, for when it is not shown.
+    password_env: str
+    database: str | None = None
+    # Connection string, password masked.
+    url: str | None = None
+    web_url: str | None = None
+    deep_link: str | None = None
+
+
+class DatabasesResponse(BaseModel):
+    databases: list[DatabaseConnection]
+
+
 class GraphBuildRequest(BaseModel):
     # One of corpus (latest pgvector index run) or index_run_id.
     corpus: str | None = None
