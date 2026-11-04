@@ -1460,10 +1460,13 @@ def experiment_intent_generalization(
         help="Collecte de #78 (calibration PIAF et LexML).",
     ),
     output: Path | None = typer.Option(None, "--output", help="Ecrire le resultat complet en JSON."),
+    export: str | None = typer.Option(
+        None, "--export", help="Au lieu de l'etude : ecrire le modele d'une variante logistique (voir --output)."
+    ),
 ) -> None:
     """Variantes d'intention rejouees sur des rapports en direct (docs/intentions.md), sans GPU."""
     from raglab.embeddings.factory import build_embedding_provider
-    from raglab.experiments.intent_generalization import calibration_rows, render, study
+    from raglab.experiments.intent_generalization import calibration_rows, export_logistic, render, study
 
     settings = get_settings()
     read = lambda path: json.loads(path.read_text(encoding="utf-8"))  # noqa: E731
@@ -1472,6 +1475,12 @@ def experiment_intent_generalization(
     calibration = calibration_rows(
         read(collect), settings.routing_corpus_examples_path, [*dev_reports.values(), *test_reports.values()]
     )
+    if export is not None:
+        payload = export_logistic(export, calibration, build_embedding_provider(settings))
+        target = output or settings.routing_intent_logistic_path
+        target.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+        typer.echo(json.dumps({"variant": export, "path": str(target), "threshold": payload["logistic"]["threshold"]}))
+        return
     result = study(dev_reports, test_reports, calibration, build_embedding_provider(settings))
     if output is not None:
         output.parent.mkdir(parents=True, exist_ok=True)

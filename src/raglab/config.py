@@ -300,6 +300,13 @@ class Settings(BaseSettings):
     # Labelled examples added to the kNN neighbours and the logistic training
     # when the calibration file says `"examples": "first_person"`
     # (first-person documentary questions, docs/intentions.md).
+    # Intent method: "centroids" (default), "knn" (same as
+    # routing_intent_knn=true) or "logistic": the logistic regression of
+    # routing_intent_logistic_path (trained with first-person documentary
+    # examples) decides alone; abstention keeps the plain thresholds (no
+    # joint rule). docs/intentions.md.
+    routing_intent_method: str = "centroids"
+    routing_intent_logistic_path: Path = Field(default_factory=lambda: Path("benchmarks/routing/intent_logistic.json"))
     routing_intent_training_path: Path = Field(default_factory=lambda: Path("benchmarks/routing/intent_training.jsonl"))
     routing_intent_calibration_path: Path = Field(
         default_factory=lambda: Path("benchmarks/routing/intent_calibration.json")

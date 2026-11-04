@@ -32,7 +32,7 @@ from raglab.routing.corpus_examples import example_score, get_example_centroids
 from raglab.routing.intent import get_intent_classifier, normalize
 from raglab.routing.intent_knn import DEFAULT_K, get_knn_intent_classifier, joint_score, load_joint_calibration
 from raglab.routing.language import detect_language
-from raglab.routing.schemas import CorpusCandidate, CorpusDecision, RoutingDecision
+from raglab.routing.schemas import CorpusCandidate, CorpusDecision, Intent, IntentDecision, RoutingDecision
 
 
 def _ms(start: float, end: float) -> float:
@@ -82,6 +82,8 @@ class QueryRouter:
                     calibration.logistic if calibration is not None and self.settings.routing_intent_logistic else None
                 ),
             )
+        elif self.settings.routing_intent_method == "logistic":
+            intent = self._logistic_intent(classifier, embedding)
         else:
             intent = classifier.classify(embedding, margin=self.settings.routing_intent_margin)
         classified = perf_counter()
@@ -190,6 +192,28 @@ class QueryRouter:
             margin=margin,
             source="routed" if suggested else "none",
             scoring=scoring,
+        )
+
+    def _logistic_intent(self, classifier: Any, embedding: Any) -> IntentDecision:
+        """The logistic regression decides alone: above its cut the question
+        is declined, as the closer of conversational / out of scope on the
+        centroid scores (shown with it). Without the model file the centroid
+        decision stands."""
+        decision = classifier.classify(embedding, margin=self.settings.routing_intent_margin)
+        calibration = load_joint_calibration(self.settings.routing_intent_logistic_path)
+        if calibration is None or calibration.logistic is None:
+            return decision
+        probability = calibration.logistic.probability(embedding)
+        scores = decision.scores
+        intent = Intent.DOCUMENTARY
+        if probability > calibration.logistic.threshold:
+            intent = (
+                Intent.CONVERSATIONAL
+                if scores.get(Intent.CONVERSATIONAL.value, -1.0) > scores.get(Intent.OUT_OF_SCOPE.value, -1.0)
+                else Intent.OUT_OF_SCOPE
+            )
+        return decision.model_copy(
+            update={"intent": intent, "method": "logistic", "not_documentary_probability": round(probability, 4)}
         )
 
     def _knn_classifier(self):

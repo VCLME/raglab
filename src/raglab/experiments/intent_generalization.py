@@ -186,6 +186,8 @@ class Model:
     joint: dict[tuple[str, str], Any] = field(default_factory=dict)
     margin: Callable[[np.ndarray], float] | None = None
     thresholds: dict[tuple[str, str], float] = field(default_factory=dict)
+    # Logistic regression as the router reads it (`intent_logistic.json`).
+    logistic: dict[str, Any] | None = None
 
 
 def _examples(kind: str) -> list[tuple[str, str, str]]:
@@ -239,6 +241,22 @@ def build_model(variant: Variant, calibration: list[CalibrationRow], embed: Embe
             cut = quantile(list(oof), variant.logistic_cut)
             refuse_logistic = lambda v: float(1 / (1 + np.exp(-(LOGISTIC_SCALE * float(v @ weights) + bias)))) > cut  # noqa: E731
         model = Model(variant, lambda v: refuse_knn(v) or refuse_logistic(v), margin=knn_margin)
+        if variant.logistic_cut is not None:
+            model.logistic = {
+                "k": k,
+                "quantile": variant.joint or 0.0,
+                "score": "dense",
+                "groups": {},
+                "examples": variant.examples,
+                "pairs": variant.pairs,
+                "logistic": {
+                    "weights": [round(float(w), 6) for w in weights],
+                    "bias": round(float(bias), 6),
+                    "scale": LOGISTIC_SCALE,
+                    "threshold": round(float(cut), 4),
+                    "quantile": variant.logistic_cut,
+                },
+            }
         if variant.joint is not None:
             offset = len(examples)
             rows = [
@@ -462,3 +480,14 @@ def render(result: dict[str, Any]) -> str:
                     f"({m['false_refusal_rate']:.1%}), répondues {m['answered']}"
                 )
     return "\n".join(lines)
+
+
+def export_logistic(name: str, calibration: list[CalibrationRow], embedder: Any) -> dict[str, Any]:
+    """Model file of a logistic variant of the grid, as the router reads it
+    (`routing_intent_logistic_path`)."""
+    variant = next((v for v in variant_grid() if v.name == name), None)
+    if variant is None or variant.logistic_cut is None:
+        raise ValueError(f"Variante logistique inconnue: {name}")
+    model = build_model(variant, calibration, Embeddings(embedder))
+    assert model.logistic is not None
+    return {"variant": name, **model.logistic}
