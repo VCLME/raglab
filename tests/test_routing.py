@@ -801,8 +801,10 @@ def test_abstention_reads_the_translated_score_on_the_calibrated_scale(routed_en
     assert abstention.best_score == pytest.approx(0.88)
 
 
-def test_cross_language_routing_is_off_by_default(routed_env):
-    service = _service([_chunk(0.82)], routing_abstention_threshold=0.85, query_translation=True)
+def test_cross_language_routing_can_be_turned_off(routed_env):
+    service = _service(
+        [_chunk(0.82)], routing_abstention_threshold=0.85, query_translation=True, routing_cross_language=False
+    )
     service._resolve_index_run.return_value.corpus = SimpleNamespace(language="pt")
     service.lexical_store = Mock()
     service.lexical_store.search.return_value = ([], [])

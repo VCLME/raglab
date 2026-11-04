@@ -255,8 +255,8 @@ class Settings(BaseSettings):
     # (router-crosslang-m02-v1): French questions on LexML answered from the
     # right passage 33 -> 75 of 100, PIAF unchanged, Portuguese -2 and
     # off-topic refusals -4 of 80 (n.s.); margin 0.05 also pulled 7 PIAF
-    # questions to LexML. Off by default pending the owner's call.
-    routing_cross_language: bool = False
+    # questions to LexML. On by default (owner decision, 4 November 2026).
+    routing_cross_language: bool = True
     routing_translation_margin: float = 0.02
 
     chunk_size: int = 900

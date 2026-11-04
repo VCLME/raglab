@@ -120,7 +120,7 @@ Les seuils n'ont pas été modifiés. La correction est la brique suivante.
 
 ## Routage multilingue
 
-Option `RAGLAB_ROUTING_CROSS_LANGUAGE` ([`router.py`](../src/raglab/routing/router.py), [`step.py`](../src/raglab/routing/step.py)), **désactivée par défaut** en attendant la décision du propriétaire. Elle s'appuie sur la traduction de la question (activée) et ne change que le routeur :
+Option `RAGLAB_ROUTING_CROSS_LANGUAGE` ([`router.py`](../src/raglab/routing/router.py), [`step.py`](../src/raglab/routing/step.py)), **activée par défaut** (décision du propriétaire, 4 novembre 2026, au vu de la mesure ci-dessous). Elle s'appuie sur la traduction de la question (activée) et ne change que le routeur :
 
 - **choix du corpus** : un corpus dans une autre langue que la question, dont le score de centroïde est à moins de `RAGLAB_ROUTING_TRANSLATION_MARGIN` (0,02) du meilleur, est re-noté sur la question traduite dans sa langue (un appel au rédacteur par langue, mis en cache et réutilisé ensuite par le BM25). Chaque corpus est ainsi comparé dans sa propre langue. Le score gardé est le meilleur des deux ; les deux restent dans la décision (`original_score`, `translated_score`) ;
 - **abstention** : quand la question a été traduite pour le corpus choisi, la question traduite est cherchée (dense) dans le même index ; son meilleur cosinus parmi les passages **effectivement retenus** est l'échelle sur laquelle le seuil du corpus a été calibré. Le score comparé au seuil est le meilleur des deux (`abstention.translated_score`). Les seuils ne changent pas.
@@ -146,7 +146,7 @@ Détail à la marge 0,02 : 84 questions françaises routées vers LexML (62 sans
 
 **Le coût : l'abstention.** 4 questions hors périmètre de plus ne sont plus refusées (n.s.). Une question hors sujet traduite peut changer de corpus, et les deux seuils n'ont pas la même hauteur (PIAF 0,79, LexML 0,85) : une question portugaise hors sujet (« Qual é a receita tradicional de feijoada? ») qui part vers PIAF passe sous un seuil plus bas. Les 4 refus perdus sont tous de ce type (deux hors périmètre, deux « presque dans le sujet », toutes en portugais). À la marge 0,05, trois questions françaises hors sujet faisaient aussi le chemin inverse et étaient désormais refusées.
 
-**Décision.** Le gain sur le mode d'échec visé est net (+42 questions sur 100, aucune perdue) et aucun autre jeu ne régresse de façon significative. La brique reste toutefois **désactivée par défaut** : activer `RAGLAB_ROUTING_CROSS_LANGUAGE=true` revient au propriétaire, au vu du coût sur l'abstention. Désactivée, la recommandation reste valable : une question française sur les lois brésiliennes doit nommer son corpus, routeur désactivé (le défaut du Chat).
+**Décision.** Le gain sur le mode d'échec visé est net (+42 questions sur 100, aucune perdue) et aucun autre jeu ne régresse de façon significative. Le propriétaire l'a **activée par défaut** en connaissant le coût sur l'abstention (4 refus perdus sur 80, n.s.), à surveiller. `RAGLAB_ROUTING_CROSS_LANGUAGE=false` la coupe sans toucher au code ; elle ne joue de toute façon que si la traduction de la question est active et que le score d'abstention est le score dense (le défaut).
 
 Le surcoût de latence vient de la traduction (2,4 s p50) ; la recherche des questions portugaises est aussi un peu plus lente pendant le run avec traduction (794 contre 653 ms p50), le rédacteur occupant le GPU à côté du re-ranker.
 
