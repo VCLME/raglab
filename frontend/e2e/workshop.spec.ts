@@ -134,3 +134,39 @@ test("Re-ranking without a GPU says why when the API tells: GPU turned off in th
     page.getByText(/Re-ranking désactivé \(GPU désactivé par la configuration, RAGLAB_RERANK_DEVICE=cpu\)/)
   ).toBeVisible();
 });
+
+test("Databases: connection details per store, the password masked until asked, admin deep links", async ({ page, api }) => {
+  await page.goto("/workshop");
+  await page.getByRole("navigation", { name: "Atelier" }).getByRole("link", { name: "Bases de données" }).click();
+  await expect(page).toHaveURL(/\/workshop\/databases$/);
+  await expect(page.getByRole("heading", { name: "Bases de données", level: 2 })).toBeVisible();
+
+  const tabs = page.getByRole("tablist", { name: "Bases de données" });
+  await expect(tabs.getByRole("tab", { name: "PostgreSQL" })).toHaveAttribute("aria-selected", "true");
+  const panel = page.getByRole("tabpanel");
+  await expect(panel).toContainText("postgresql+psycopg://raglab:***@postgres:5432/raglab");
+  // Masked by default, shown on request.
+  await expect(panel.getByText("raglab", { exact: true }).first()).toBeVisible();
+  await expect(panel.getByText("••••••••")).toBeVisible();
+  await panel.getByRole("button", { name: "Afficher" }).click();
+  await expect(panel.getByRole("button", { name: "Masquer" })).toHaveAttribute("aria-pressed", "true");
+  await expect(panel.getByText("••••••••")).toHaveCount(0);
+  await expect(panel.getByRole("link", { name: "Ouvrir Adminer" })).toHaveAttribute(
+    "href",
+    "http://localhost:8080/?pgsql=postgres&username=raglab&db=raglab"
+  );
+
+  await tabs.getByRole("tab", { name: "Neo4j" }).click();
+  await expect(panel).toContainText("injoignable");
+  await expect(panel.getByRole("link", { name: "Ouvrir Neo4j Browser" })).toHaveAttribute("href", /connectURL=/);
+  await expect(panel.getByRole("link", { name: "Graphe" })).toBeVisible();
+
+  // A password that is not the dev default never reaches the page.
+  api.set(
+    "GET /api/databases",
+    json({ databases: data.databases.databases.map((d) => ({ ...d, password: null, password_is_default: false })) })
+  );
+  await page.reload();
+  await expect(page.getByRole("tabpanel")).toContainText("Défini sur le serveur par RAGLAB_DATABASE_URL, non affiché");
+  await expect(page.getByRole("button", { name: "Afficher" })).toHaveCount(0);
+});

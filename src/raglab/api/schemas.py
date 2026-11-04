@@ -99,7 +99,7 @@ class ConfigResponse(BaseModel):
     graph_weight: float = 0.5
     citation_resolver: bool = True
     # Default of the versions option (phase 9.10).
-    versions_default: str = "all"
+    versions_default: str = "in_force"
     # Enabled generation providers (RAGLAB_LLM_PROVIDERS) and the default one.
     llm_providers: list[str] = Field(default_factory=lambda: ["ollama"])
     default_llm_provider: str = "ollama"
@@ -486,6 +486,31 @@ class SubgraphResponse(BaseModel):
     mentions: list[SubgraphEdge]
 
 
+class DatabaseConnection(BaseModel):
+    """One store of GET /api/databases (design of PR #25)."""
+
+    kind: str  # "postgres" | "neo4j"
+    label: str
+    status: str  # "ok" | "unreachable"
+    host: str
+    port: int
+    user: str
+    # Only the shipped dev default; any other password stays on the server.
+    password: str | None = None
+    password_is_default: bool = False
+    # Variable that holds the password, for when it is not shown.
+    password_env: str
+    database: str | None = None
+    # Connection string, password masked.
+    url: str | None = None
+    web_url: str | None = None
+    deep_link: str | None = None
+
+
+class DatabasesResponse(BaseModel):
+    databases: list[DatabaseConnection]
+
+
 class GraphBuildRequest(BaseModel):
     # One of corpus (latest pgvector index run) or index_run_id.
     corpus: str | None = None
@@ -590,3 +615,26 @@ class DriftRequest(BaseModel):
     alpha: float = Field(default=0.05, gt=0, lt=1)
     mean_threshold: float = Field(default=0.05, ge=0)
     min_samples: int = Field(default=10, ge=2)
+
+
+class SourceFetchRequest(BaseModel):
+    # False writes the files only; the Atelier ingests by default.
+    ingest: bool = True
+
+
+class SourceJobProgress(BaseModel):
+    done: int = 0
+    total: int | None = None
+
+
+class SourceJobStatus(BaseModel):
+    source: str
+    corpus: str
+    state: str
+    stage: str | None = None
+    progress: SourceJobProgress
+    started_at: datetime | None = None
+    finished_at: datetime | None = None
+    error: dict[str, Any] | None = None
+    result: dict[str, Any] | None = None
+    command: str

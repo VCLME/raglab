@@ -12,8 +12,8 @@ def test_shipped_default_is_the_measured_best_pipeline(monkeypatch):
     assert settings.default_retrieval_mode == "hybrid"
     assert settings.default_rerank is True
     assert settings.citation_resolver is True
-    # Not measured yet (9.10): every version, as before, until it is.
-    assert settings.versions_default == "all"
+    # Measured in versions-full-v1 (9.10): versions set Recall@5 0.75 -> 0.93.
+    assert settings.versions_default == "in_force"
 
 
 def test_shipped_writer_is_qwen36_on_llamacpp_with_an_ollama_fallback(monkeypatch):
@@ -22,7 +22,7 @@ def test_shipped_writer_is_qwen36_on_llamacpp_with_an_ollama_fallback(monkeypatc
     settings = Settings(_env_file=None)
     # gen-qwen36-v1: answer correctness PIAF 0.763 -> 0.935, LexML 0.550 -> 0.710.
     assert settings.default_llm_provider == "llamacpp"
-    assert settings.writer_model_profile == "qwen35b-moe"
+    assert settings.writer_model_profile == "qwen35b-moe-rag"
     assert settings.writer_model == "qwen3.6-35b-a3b"
     assert settings.llm_fallback_provider == "ollama"
     assert settings.generation_model == "qwen2.5:7b"

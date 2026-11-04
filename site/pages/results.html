@@ -10,6 +10,8 @@ nav: results
 <section class="wrap" aria-labelledby="summary">
   <h2 id="summary">Before and after</h2>
   {{results_table}}
+  <h3 class="sub-title">New corpora and failure modes</h3>
+  {{corpora_table}}
   <p class="note">Recall@5: share of questions whose answer passage is in the first five retrieved chunks. Search latency: embedding plus vector search for one question, generation excluded. Faithfulness: share of answer claims supported by the retrieved context, scored on 100 answers per corpus.</p>
 </section>
 

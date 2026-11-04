@@ -33,6 +33,7 @@ Par où commencer selon ce que vous voulez faire. Le [README du dépôt](../READ
 | [citations.md](citations.md) | le résolveur de citations juridiques (lois brésiliennes, codes français, actes de l'UE) |
 | [benchmarks/juges.md](benchmarks/juges.md) | les juges RAGAS (Gemma 4 via llama.cpp), la notation en deux passes, la calibration |
 | [benchmarks/baseline.md](benchmarks/baseline.md) | la configuration de référence et ses chiffres |
+| [benchmarks/resultats-2026-11.md](benchmarks/resultats-2026-11.md) | nouveaux corpus et modes d'échec : RAG naïf → pipeline complet → brique, verdicts appariés |
 | [../benchmarks/README.md](../benchmarks/README.md) | le contenu des jeux figés versionnés |
 | [experimentation-plan.md](experimentation-plan.md) | le plan d'expérimentation d'origine (comparaison des chunkings) |
 | [portes-qualite.md](portes-qualite.md) | `raglab gate`, les seuils versionnés, la porte hebdomadaire en CI |

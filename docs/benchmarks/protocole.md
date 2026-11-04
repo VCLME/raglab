@@ -1,6 +1,6 @@
 # Protocole de benchmark
 
-Ce document décrit comment raglab mesure la qualité du retrieval, et pourquoi les jeux de données ont été refaits avant la baseline de la phase 9.1. Les chiffres eux-mêmes vivent dans [baseline.md](baseline.md) (phase 9.1b).
+Ce document décrit comment raglab mesure la qualité du retrieval, et pourquoi les jeux de données ont été refaits avant la baseline de la phase 9.1. Les chiffres eux-mêmes vivent dans [baseline.md](baseline.md) (phase 9.1b) et, pour les nouveaux corpus et modes d'échec, dans [resultats-2026-11.md](resultats-2026-11.md).
 
 ## Pourquoi refaire les jeux
 
@@ -93,7 +93,7 @@ raglab legifrance review-questions --ground-truth benchmarks/legi_consommation/g
 - chaque cas porte une partie `split` tirée avec la graine, par type : un quart `dev` (qu'on peut regarder pendant la mise au point d'une méthode), trois quarts `heldout` (jamais regardés). Le rapport donne Recall@k et MRR par partie (`by_split`), pour vérifier qu'un gain tient sur les questions jamais vues, comme pour le résolveur de citations sur LexML ;
 - `context` note l'article, le nombre de versions de même numéro et si la réponse figure aussi dans une autre version (`answer_in_other_version`) : retrouver une version ancienne compte comme un échec (mauvais fichier), et ce champ permet de mesurer ce piège à part.
 
-La suite `legi_consommation` ne tourne que sur demande (`raglab bench all --suite legi_consommation`). Depuis 9.10, l'option `--versions` choisit les versions visibles : `all` (défaut livré, toutes les versions, la référence « RAG classique ») ou `in_force` (versions en vigueur, la brique mesurée) ; chaque run la nomme explicitement.
+La suite `legi_consommation` ne tourne que sur demande (`raglab bench all --suite legi_consommation`). Depuis 9.10, l'option `--versions` choisit les versions visibles : `in_force` (défaut depuis la mesure du 4 novembre 2026 : versions en vigueur) ou `all` (toutes les versions, la référence « RAG classique ») ; chaque run la nomme explicitement.
 
 ### Le jeu « versions » (9.10)
 

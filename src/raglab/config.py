@@ -132,9 +132,11 @@ class Settings(BaseSettings):
     # Article versions retrieval may use (phase 9.10, docs/versions.md):
     # in_force (today, or the date the question asks about), all, or
     # as_of=YYYY-MM-DD. Acts only on corpora with version metadata
-    # (Légifrance) or repeal markers (LexML). Shipped as `all` (every
-    # version, as before 9.10) until the GPU measurement shows in_force helps.
-    versions_default: str = "all"
+    # (Légifrance) or repeal markers (LexML). Measured (versions-full-v1):
+    # versions set Recall@5 0.75 -> 0.93, outdated version above the right
+    # one 30% -> 0%; Code de la consommation 0.660 -> 0.820; PIAF and LexML
+    # unchanged.
+    versions_default: str = "in_force"
     default_language: str = "fr"
     bm25_k1: float = 1.2
     bm25_b: float = 0.75
@@ -167,6 +169,13 @@ class Settings(BaseSettings):
     legifrance_dir: Path = Field(default_factory=lambda: Path("data/legifrance"))
     # EU acts from EUR-Lex / CELLAR (`raglab eurlex fetch`).
     eurlex_dir: Path = Field(default_factory=lambda: Path("data/eurlex"))
+    # Fetch jobs of the official sources (`POST /api/sources/{name}/fetch`,
+    # `raglab sources fetch`): budget of the whole job (0 = no limit), of one
+    # git call, and the pace and timeout of the CELLAR requests.
+    source_fetch_timeout_seconds: float = 3600.0
+    legifrance_git_timeout_seconds: float = 600.0
+    eurlex_request_delay_seconds: float = Field(default=1.0, ge=0.2)
+    eurlex_request_timeout_seconds: float = 60.0
 
     generation_model: str = "qwen2.5:7b"
     generation_temperature: float = 0.1

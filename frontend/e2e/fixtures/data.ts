@@ -4,6 +4,7 @@
  * with the frontend's own API types so a drift fails `tsc` on the e2e project.
  */
 import type {
+  DatabasesResponse,
   GraphStatus,
   OllamaStatus,
   ConfigResponse,
@@ -135,6 +136,42 @@ export const graphStatus: GraphStatus = {
   available: true,
   graph: { status: "completed", profile: "laws", built_at: "2026-10-30T09:20:00+00:00", duration_ms: 812, stats: {} },
   counts: { nodes: { Document: 3, Article: 89 }, relationships: { "CITES->Article": 41 } },
+};
+
+/** GET /api/databases with the docker-compose dev credentials. */
+export const databases: DatabasesResponse = {
+  databases: [
+    {
+      kind: "postgres",
+      label: "PostgreSQL + pgvector",
+      status: "ok",
+      host: "localhost",
+      port: 5432,
+      user: "raglab",
+      password: "raglab",
+      password_is_default: true,
+      password_env: "RAGLAB_DATABASE_URL",
+      database: "raglab",
+      url: "postgresql+psycopg://raglab:***@postgres:5432/raglab",
+      web_url: "http://localhost:8080",
+      deep_link: "http://localhost:8080/?pgsql=postgres&username=raglab&db=raglab",
+    },
+    {
+      kind: "neo4j",
+      label: "Neo4j",
+      status: "unreachable",
+      host: "localhost",
+      port: 7687,
+      user: "neo4j",
+      password: "raglab_neo4j",
+      password_is_default: true,
+      password_env: "RAGLAB_NEO4J_PASSWORD",
+      database: "neo4j",
+      url: "bolt://neo4j:7687",
+      web_url: "http://localhost:7474",
+      deep_link: "http://localhost:7474/browser/?connectURL=neo4j%3A%2F%2Fneo4j%3Araglab_neo4j%40localhost%3A7687",
+    },
+  ],
 };
 
 export const suggestions: string[] = ["Quelle est la durée du mandat présidentiel ?"];
@@ -305,3 +342,20 @@ export const experimentsHistory: ExperimentRunSummary[] = [
     backend: "neo4j",
   },
 ];
+
+/** `GET /api/sources`: the fetch jobs of the official sources, none started. */
+export const sourceStatus = (source: "legi" | "eurlex", extra: Record<string, unknown> = {}) => ({
+  source,
+  corpus: source === "legi" ? "bench_legi_consommation_fr" : "bench_eurlex_compliance",
+  state: "idle",
+  stage: null,
+  progress: { done: 0, total: null },
+  started_at: null,
+  finished_at: null,
+  error: null,
+  result: null,
+  command: source === "legi" ? "raglab legifrance fetch --code consommation" : "raglab eurlex fetch",
+  ...extra,
+});
+
+export const sources = [sourceStatus("legi"), sourceStatus("eurlex")];

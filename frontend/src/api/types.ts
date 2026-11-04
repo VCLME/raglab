@@ -92,6 +92,30 @@ export interface LlmModelsResponse {
   generator?: GeneratorStatus | null;
 }
 
+/** One store of GET /api/databases. */
+export interface DatabaseConnection {
+  kind: "postgres" | "neo4j" | string;
+  label: string;
+  status: "ok" | "unreachable" | string;
+  host: string;
+  port: number;
+  user: string;
+  /** Only the shipped dev default; null when the server keeps it. */
+  password: string | null;
+  password_is_default: boolean;
+  /** Variable that holds the password. */
+  password_env: string;
+  database: string | null;
+  /** Connection string, password masked. */
+  url: string | null;
+  web_url: string | null;
+  deep_link: string | null;
+}
+
+export interface DatabasesResponse {
+  databases: DatabaseConnection[];
+}
+
 export interface OllamaStatus {
   base_url: string;
   reachable: boolean;

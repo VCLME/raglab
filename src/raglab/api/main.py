@@ -8,6 +8,7 @@ from raglab.api.middleware import ApiKeyRateLimitMiddleware, MetricsMiddleware, 
 from raglab.api.routers import (
     bench,
     corpora,
+    databases,
     experiments,
     graph,
     health,
@@ -18,6 +19,7 @@ from raglab.api.routers import (
     metrics,
     ollama,
     query,
+    sources,
 )
 from raglab.config import Settings, get_settings
 from raglab.logging_utils import configure_logging
@@ -70,6 +72,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(experiments.router)
     app.include_router(bench.router)
     app.include_router(graph.router)
+    app.include_router(sources.router)
+    app.include_router(databases.router)
 
     return app
 

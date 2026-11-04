@@ -472,8 +472,18 @@
     "official_loaded_other": "{{value}} documents",
     "official_missing": "pas encore ingéré",
     "official_source": "Source",
-    "official_commands": "En ligne de commande (l'API n'a pas d'endpoint pour ces sources) :",
-    "official_ingest_cmd": "raglab bench all --suite <suite> --ragas-limit 0   # ingère et indexe {{corpus}}"
+    "official_commands": "Ou en ligne de commande (collecte, puis ingestion et indexation par le benchmark) :",
+    "official_ingest_cmd": "raglab bench all --suite <suite> --ragas-limit 0   # ingère et indexe {{corpus}}",
+    "official_fetch_button": "Collecter et ingérer",
+    "official_fetching": "Collecte en cours…",
+    "official_stage_fetch": "Collecte",
+    "official_stage_verify": "Vérification du manifeste",
+    "official_stage_ingest": "Ingestion",
+    "official_done_ingested": "{{documents}} documents collectés, {{ingested}} ingérés",
+    "official_done_files": "{{documents}} documents collectés (non ingérés)",
+    "official_manifest_drift_one": "{{count}} fichier diffère du manifeste figé : les réponses attendues du benchmark ne sont plus fiables",
+    "official_manifest_drift_other": "{{count}} fichiers diffèrent du manifeste figé : les réponses attendues du benchmark ne sont plus fiables",
+    "official_next_step": "Étape suivante : Découpage puis Vectorisation (la collecte n'indexe pas)."
   },
   "manage": {
     "title": "Gestion",
@@ -713,7 +723,7 @@
       "versions_opt_in_force": "en vigueur",
       "versions_opt_as_of": "à une date",
       "versions_opt_all": "toutes",
-      "versions_in_force_planned": "En vigueur aujourd'hui, ou à la date que la question demande.",
+      "versions_in_force_planned": "En vigueur, ou à la date de la question.",
       "versions_as_of_planned": "Les versions en vigueur à la date choisie.",
       "versions_all_planned": "Toutes les versions, abrogées comprises.",
       "versions_in_force": "Versions en vigueur le {{date}}.",
@@ -1038,7 +1048,9 @@
       "unreachable": "injoignable",
       "degraded": "dégradé",
       "error": "erreur"
-    }
+    },
+    "databases": "Bases de données",
+    "databases_link": "Identifiants et accès"
   },
   "chunking": {
     "title": "Découpage",
@@ -1122,5 +1134,41 @@
     "why_torch_missing": "PyTorch absent de l'API",
     "why_cuda_unavailable": "aucun GPU CUDA visible par l'API",
     "why_unknown": "GPU non disponible pour l'API"
+  },
+  "databases": {
+    "title": "Bases de données",
+    "subtitle": "Les deux bases derrière l'Atelier : PostgreSQL (documents, chunks, vecteurs, BM25) et Neo4j (graphe des renvois).",
+    "explain_body": "PostgreSQL + pgvector garde les corpus, leurs documents, les chunks, les vecteurs et l'index plein texte BM25, ainsi que l'historique des runs et des benchmarks. Neo4j garde le graphe des renvois entre articles.\n\nChaque onglet donne l'état de la base, ses paramètres de connexion et un lien qui ouvre l'outil d'administration avec le formulaire de connexion déjà rempli : Adminer pour PostgreSQL, Neo4j Browser pour Neo4j.\n\nLes mots de passe ne s'affichent que s'ils sont ceux de développement livrés avec docker-compose, masqués tant que tu ne demandes pas à les voir. Un autre mot de passe reste sur le serveur : la page dit quelle variable le définit.",
+    "tabs_label": "Bases de données",
+    "tab_postgres": "PostgreSQL",
+    "tab_neo4j": "Neo4j",
+    "connection_title": "Connexion",
+    "host": "Hôte",
+    "port": "Port",
+    "user": "Utilisateur",
+    "password": "Mot de passe",
+    "password_hidden": "mot de passe masqué",
+    "password_server": "Défini sur le serveur par {{env}}, non affiché",
+    "dev_default": "valeur de développement",
+    "show": "Afficher",
+    "hide": "Masquer",
+    "database": "Base",
+    "url": "Chaîne de connexion de l'API",
+    "copy": "Copier",
+    "copied": "Copié",
+    "copy_label": "Copier : {{field}}",
+    "tool_postgres": "Adminer",
+    "tool_neo4j": "Neo4j Browser",
+    "tool_title": "{{tool}}",
+    "state": "État",
+    "reachable": "joignable",
+    "unreachable": "injoignable",
+    "address": "Adresse",
+    "holds": "Contient les données de",
+    "open": "Ouvrir {{tool}}",
+    "tool_note_postgres": "Le lien remplit le serveur, l'utilisateur et la base ; Adminer ne lit jamais le mot de passe dans l'URL : copie-le depuis la carte Connexion.",
+    "tool_note_postgres_no_password": "Le lien remplit le serveur, l'utilisateur et la base ; le mot de passe est celui de RAGLAB_DATABASE_URL.",
+    "tool_note_neo4j": "Le lien remplit toute la carte de connexion, mot de passe compris (valeur de développement) : il ne reste qu'à cliquer sur Connect.",
+    "tool_note_neo4j_no_password": "Le lien remplit l'adresse et l'utilisateur ; le mot de passe est celui de RAGLAB_NEO4J_PASSWORD."
   }
 }

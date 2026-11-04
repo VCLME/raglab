@@ -13,6 +13,7 @@ import { GraphPage } from "./pages/GraphPage";
 import { GraphQuery } from "./pages/GraphQuery";
 import { Query } from "./pages/Query";
 import { ModelsPage } from "./pages/Models";
+import { DatabasesPage } from "./pages/Databases";
 import { Benchmarks } from "./pages/Benchmarks";
 import { WorkshopHome } from "./pages/Workshop";
 import { useConfig } from "./hooks/useConfig";
@@ -35,6 +36,7 @@ const LEGACY: Record<string, string> = {
   graph: "graph",
   "graph/index": "graph/entities",
   "graph/query": "graph/entities/query",
+  databases: "databases",
 };
 
 function LegacyRedirect() {
@@ -98,6 +100,7 @@ function WorkshopLayout() {
             <Route path="evaluation" element={<Benchmarks />} />
             <Route path="retrieval" element={<Query />} />
             <Route path="models" element={<ModelsPage />} />
+            <Route path="databases" element={<DatabasesPage />} />
             <Route path="*" element={<Navigate to="/workshop" replace />} />
           </Routes>
         </main>

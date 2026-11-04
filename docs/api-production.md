@@ -19,6 +19,9 @@ laboratoire : pas de clé, pas de limite, `POST /api/query` inchangé.
 | Limite de débit | `RAGLAB_API_RATE_LIMIT_REQUESTS` / `RAGLAB_API_RATE_LIMIT_WINDOW_SECONDS` | 0 = désactivée / 60 | 429 + `Retry-After` |
 | OOM Ollama | `RAGLAB_OLLAMA_RETRY_AFTER_SECONDS` | 30 | 503 + `Retry-After` |
 | Sonde `/ready` | `RAGLAB_READY_TIMEOUT_SECONDS` | 3 | délai max pour interroger Ollama |
+| Collecte d'une source officielle | `RAGLAB_SOURCE_FETCH_TIMEOUT_SECONDS` | 3600 | tâche `failed`, erreur 504 avec l'étape (`fetch`, `verify`, `ingest`) |
+| Appel git (Légifrance) | `RAGLAB_LEGIFRANCE_GIT_TIMEOUT_SECONDS` | 600 | tâche `failed`, erreur 504 `stage=fetch` |
+| Requêtes CELLAR (EUR-Lex) | `RAGLAB_EURLEX_REQUEST_DELAY_SECONDS` / `RAGLAB_EURLEX_REQUEST_TIMEOUT_SECONDS` | 1 (min. 0,2) / 60 | espacement et délai de chaque requête |
 
 Un budget à `0` désactive la limite correspondante.
 
@@ -251,6 +254,83 @@ modèles llama.cpp, cf. `CLAUDE.md`).
 Toutes les erreurs ont la forme `{"detail": "...", "error": "<Type>", "cause": "<message brut>"}`.
 Les exceptions typées héritent de `RuntimeError` : le code existant qui
 attrapait `RuntimeError` pour un modèle manquant continue de fonctionner.
+
+## Collecte des sources officielles : `/api/sources`
+
+Le Code de la consommation ([corpus-legi.md](corpus-legi.md)) et les actes
+européens de conformité ([corpus-eurlex.md](corpus-eurlex.md)) se collectent
+sans la ligne de commande. La collecte est longue (un `git clone --bare` puis
+la lecture de l'historique ; une soixantaine de requêtes CELLAR à une par
+seconde) : elle tourne en **tâche de fond** dans le processus de l'API, et
+l'interface interroge son état.
+
+| Endpoint | Rôle |
+|---|---|
+| `GET /api/sources` | état des deux sources (`legi`, `eurlex`) |
+| `POST /api/sources/{legi\|eurlex}/fetch` | lance la tâche, répond **202** tout de suite ; corps optionnel `{"ingest": false}` pour n'écrire que les fichiers |
+| `GET /api/sources/{legi\|eurlex}/status` | état, étape, progression, dernière erreur, résultat |
+
+Une tâche enchaîne trois étapes :
+
+1. `fetch` : la collecte, celle de `raglab legifrance fetch --code consommation`
+   ou `raglab eurlex fetch`, dans les dossiers du benchmark
+   (`data/legifrance/consommation/`, `data/eurlex/compliance/`). La
+   progression compte les versions d'articles (Légifrance) ou les documents
+   CELLAR (EUR-Lex), en cache compris.
+2. `verify` : comparaison au manifeste figé du benchmark
+   (`benchmarks/<suite>/corpus_manifest.json`). Un écart n'arrête pas la
+   tâche ; il est rapporté (`result.manifest.problems`), car le benchmark
+   refusera ce corpus.
+3. `ingest` : ingestion dans `bench_legi_consommation_fr` ou
+   `bench_eurlex_compliance`, avec la même description que le benchmark, qui
+   retrouve donc les documents sans les réingérer. **Pas d'indexation** :
+   les embeddings sont l'étape Vectorisation de l'Atelier, la collecte ne
+   touche jamais le GPU.
+
+```json
+{
+  "source": "legi",
+  "corpus": "bench_legi_consommation_fr",
+  "state": "running",
+  "stage": "fetch",
+  "progress": {"done": 3000, "total": 5998},
+  "started_at": "2026-11-03T10:12:00Z",
+  "finished_at": null,
+  "error": null,
+  "result": null,
+  "command": "raglab legifrance fetch --code consommation"
+}
+```
+
+`state` vaut `idle`, `running`, `succeeded` ou `failed`. Une seule tâche par
+source à la fois : un second `POST` pendant qu'elle tourne répond **409**
+(`SourceBusyError`). Une source inconnue répond 404.
+
+Les erreurs passent par `describe_error`, comme celles des routes ; le corps
+est rangé dans `error` avec son code HTTP (`status_code`) :
+
+| Situation | `error` | `status_code` |
+|---|---|---|
+| Dépôt git ou CELLAR injoignable, `git` en échec | `SourceFetchError` (`source`, `cause` = message brut ou stderr de git) | 502 |
+| Budget de la tâche dépassé (`RAGLAB_SOURCE_FETCH_TIMEOUT_SECONDS`) | `StageTimeoutError`, `stage` = étape en cours | 504 |
+| Appel git bloqué (`RAGLAB_LEGIFRANCE_GIT_TIMEOUT_SECONDS`) | `StageTimeoutError`, `stage=fetch` | 504 |
+
+Le budget de la tâche est vérifié à chaque pas de progression et entre les
+étapes : une requête CELLAR en cours finit avant l'arrêt (au plus
+`RAGLAB_EURLEX_REQUEST_TIMEOUT_SECONDS`). Les lignes de log
+(`sources.fetch.started`, `.completed`, `.failed`) portent le `request_id` du
+`POST` qui a lancé la tâche.
+
+L'état vit en mémoire : il est perdu au redémarrage de l'API (les fichiers et
+le corpus ingéré restent), et chaque worker uvicorn a le sien, ce qui suppose
+un seul worker, la configuration du lab. En ligne de commande, la même tâche
+s'exécute au premier plan :
+
+```bash
+raglab sources list
+raglab sources fetch legi             # collecte puis ingestion
+raglab sources fetch eurlex --no-ingest
+```
 
 ## Fournisseurs LLM (Ollama, llama.cpp, vLLM)
 

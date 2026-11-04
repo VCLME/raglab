@@ -1,0 +1,47 @@
+{
+  "loader": "legi_consommation_versions",
+  "language": "fr",
+  "licence": "Licence Ouverte 2.0 (données LEGI de la DILA, via tricoteuses)",
+  "source_commit": "77f038165bef484ad327af7b0f27258e0d8b1d15",
+  "generator_model": "qwen3.6-35b-a3b",
+  "generator_backend": "llamacpp",
+  "seed": 42,
+  "case_count": 100,
+  "by_type": {
+    "rewritten": 40,
+    "reused_number": 20,
+    "moved": 20,
+    "as_of": 20
+  },
+  "by_split": {
+    "dev": 25,
+    "heldout": 75
+  },
+  "quotas": {
+    "rewritten": 40,
+    "reused_number": 20,
+    "moved": 20,
+    "as_of": 20
+  },
+  "candidates": {
+    "rewritten": 419,
+    "reused_number": 297,
+    "moved": 588,
+    "as_of": 412
+  },
+  "rejected": {
+    "answer_in_trap": 70,
+    "vague": 7,
+    "leaks_reference": 3,
+    "copies_wording": 115,
+    "outdated_answer_in_expected": 12,
+    "answer_too_long": 19,
+    "boilerplate_answer": 11,
+    "quote_not_found": 53,
+    "invalid_json": 3,
+    "names_code": 2,
+    "outdated_answer_not_found": 2,
+    "reference_missing": 144
+  },
+  "corpus_dir": "C:\\Users\\lucme\\source\\rag\\.claude\\worktrees\\bench-protocol\\data\\legifrance\\consommation\\corpus"
+}
