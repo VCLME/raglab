@@ -15,7 +15,8 @@
 # Reglages (variables d'environnement de l'hote ou .env de Compose) :
 #   RAGLAB_WRITER_GGUF        fichier GGUF dans le volume (defaut Qwen3.6-35B-A3B-UD-Q3_K_XL.gguf)
 #   RAGLAB_WRITER_CTX_SIZE    contexte en tokens (defaut 16384)
-#   RAGLAB_WRITER_N_CPU_MOE   couches d'experts gardees en RAM (defaut 32 ; 33 si la VRAM deborde)
+#   RAGLAB_WRITER_N_CPU_MOE   couches d'experts gardees en RAM (defaut 34 : mesure 7,10 Go au pic avec
+#                             le re-ranking en natif ; 32 = plus rapide, 7,74 Go)
 #   RAGLAB_LLAMACPP_IMAGE_TAG image llama.cpp (defaut server-cuda13-b11429 ; server-cuda12-b11429
 #                             pour un pilote CUDA 12). Toujours un numero de build, jamais server-cuda.
 services:
@@ -37,7 +38,7 @@ services:
       - -c
       - "${RAGLAB_WRITER_CTX_SIZE:-16384}"
       - --n-cpu-moe
-      - "${RAGLAB_WRITER_N_CPU_MOE:-32}"
+      - "${RAGLAB_WRITER_N_CPU_MOE:-34}"
       - -ngl
       - all
       - -np

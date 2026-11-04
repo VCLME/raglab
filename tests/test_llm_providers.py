@@ -412,11 +412,11 @@ def test_describe_llamacpp_reads_the_server_generation_defaults():
         "source": "server",
     }
     info = entry["llamacpp"]
-    assert info["writer_profile"] == "qwen35b-moe"
+    assert info["writer_profile"] == "qwen35b-moe-rag"
     assert info["writer_model"] == "qwen3.6-35b-a3b"
     assert info["start_command_configured"] is True
     assert info["stop_command_configured"] is False
-    assert info["profile_options"]["qwen35b-moe"] == {"ctx_size": 16384, "n_cpu_moe": 32}
+    assert info["profile_options"]["qwen35b-moe-rag"] == {"ctx_size": 16384, "n_cpu_moe": 34}
     # Booleans only: neither the commands nor the key leak.
     assert "Start-LocalLLM" not in repr(entry) and "secret" not in repr(entry)
 

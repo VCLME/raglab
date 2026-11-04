@@ -148,14 +148,15 @@ def test_start_command_fills_the_profile_knobs():
     settings = _settings(
         llamacpp_start_command="llama-server -m {model}.gguf -c {ctx_size} --n-cpu-moe {n_cpu_moe} --alias {model}"
     )
-    assert start_command(settings, "qwen35b-moe") == [
+    # The writer's own profile: 16k context, 34 expert layers in RAM.
+    assert start_command(settings, "qwen35b-moe-rag") == [
         "llama-server",
         "-m",
         "qwen3.6-35b-a3b.gguf",
         "-c",
         "16384",
         "--n-cpu-moe",
-        "32",
+        "34",
         "--alias",
         "qwen3.6-35b-a3b",
     ]

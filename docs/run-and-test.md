@@ -125,15 +125,34 @@ Dans `.env` :
 RAGLAB_LLAMACPP_BASE_URL=http://127.0.0.1:8080/v1
 RAGLAB_LLAMACPP_START_COMMAND=powershell -NoProfile -ExecutionPolicy Bypass -File C:\chemin\lamacpp\Start-LocalLLM.ps1 {profile}
 RAGLAB_LLAMACPP_STOP_COMMAND=powershell -NoProfile -ExecutionPolicy Bypass -File C:\chemin\lamacpp\Stop-LocalLLM.ps1
-RAGLAB_WRITER_MODEL_PROFILE=qwen35b-moe
+RAGLAB_WRITER_MODEL_PROFILE=qwen35b-moe-rag
 RAGLAB_WRITER_MODEL=qwen3.6-35b-a3b
 ```
 
-La commande doit **rendre la main** une fois llama-server lancé en arrière-plan (c'est ce que fait `Start-LocalLLM.ps1`) : `llama-server` appelé directement bloquerait jusqu'à `RAGLAB_LLAMACPP_START_TIMEOUT_SECONDS`, puis serait tué. Avec ton propre script, les réglages qui comptent pour la VRAM peuvent venir de raglab : `{model}`, `{ctx_size}` et `{n_cpu_moe}` sont remplis depuis `RAGLAB_LLAMACPP_PROFILE_OPTIONS` (défaut pour `qwen35b-moe` : contexte 16 384, experts de 32 couches en RAM), à passer à `--alias`, `-c` et `--n-cpu-moe` :
+Le rédacteur a **son propre profil**, `qwen35b-moe-rag` : contexte 16k et experts de 34 couches en RAM, pour laisser de la place au cross-encoder (mesures plus bas). Le profil `qwen35b-moe` (contexte 64k) reste celui du générateur de questions et de ton usage quotidien ; raglab ne le modifie pas. Avec `Start-LocalLLM.ps1`, ajoute une fois ce profil dans son `profiles.json`, à côté de `qwen35b-moe` (mêmes réglages, sauf `ctx` et `-ncmoe`, et le même alias pour que raglab reconnaisse le modèle) :
+
+```json
+"qwen35b-moe-rag": {
+  "description": "Qwen3.6-35B-A3B pour raglab : contexte 16k, experts de 34 couches en RAM, laisse ~1 Go au cross-encoder.",
+  "model": "Qwen3.6-35B-A3B-UD-Q3_K_XL.gguf",
+  "alias": "qwen3.6-35b-a3b",
+  "label": "Qwen3.6 35B MoE · raglab",
+  "benchOnly": true,
+  "ctx": 16384,
+  "output": 8192,
+  "args": ["-np", "1", "-ngl", "all", "-ncmoe", "34", "-ub", "1024", "-b", "2048", "-fa", "on",
+           "-ctk", "q8_0", "-ctv", "q8_0", "-t", "12", "--poll", "0", "--reasoning", "off",
+           "--temp", "0.6", "--top-p", "0.95", "--top-k", "20", "--min-p", "0.0", "--presence-penalty", "0.0"]
+}
+```
+
+(`benchOnly` le garde hors de la liste d'OpenCode.) Sans ce profil, le démarrage échoue et les réponses passent sur Ollama avec `generator_notice: "llamacpp_unavailable"` ; `/api/health` donne l'erreur dans `generator.error`. Ne pointe pas `RAGLAB_WRITER_MODEL_PROFILE` sur `qwen35b-moe` : à 64k, le rédacteur et le cross-encoder ne tiennent pas ensemble (voir le budget VRAM).
+
+La commande doit **rendre la main** une fois llama-server lancé en arrière-plan (c'est ce que fait `Start-LocalLLM.ps1`) : `llama-server` appelé directement bloquerait jusqu'à `RAGLAB_LLAMACPP_START_TIMEOUT_SECONDS`, puis serait tué. Avec ton propre script, les réglages qui comptent pour la VRAM peuvent venir de raglab : `{model}`, `{ctx_size}` et `{n_cpu_moe}` sont remplis depuis `RAGLAB_LLAMACPP_PROFILE_OPTIONS` (défaut pour `qwen35b-moe-rag` : contexte 16 384, experts de 34 couches en RAM), à passer à `--alias`, `-c` et `--n-cpu-moe` :
 
 ```dotenv
 RAGLAB_LLAMACPP_START_COMMAND=C:\llama\start-detached.cmd {model} {ctx_size} {n_cpu_moe}
-RAGLAB_LLAMACPP_PROFILE_OPTIONS={"qwen35b-moe": {"ctx_size": 16384, "n_cpu_moe": 33}, "gemma4-moe": {"ctx_size": 32768, "n_cpu_moe": 24}}
+RAGLAB_LLAMACPP_PROFILE_OPTIONS={"qwen35b-moe-rag": {"ctx_size": 16384, "n_cpu_moe": 34}, "qwen35b-moe": {"ctx_size": 65536, "n_cpu_moe": 32}, "gemma4-moe": {"ctx_size": 32768, "n_cpu_moe": 24}}
 ```
 
 `Start-LocalLLM.ps1` ne prend que `{profile}` : ses réglages sont dans son `profiles.json`.
@@ -155,16 +174,16 @@ Invoke-RestMethod http://localhost:8000/ready | ConvertTo-Json -Depth 4
 
 `checks.llamacpp` vaut `ok`, `stopped` (démarrera à la prochaine question), `starting`, `busy`, `down` ou `failed` ; `generator.active_provider` dit qui écrit les réponses en ce moment. `/ready` reste à 200 tant que le rédacteur ou son repli peut répondre. `/api/health` passe en `degraded` quand c'est le repli qui répond.
 
-**Budget VRAM (8 Go).** En production, le rédacteur et le cross-encoder du re-ranking sont chargés ensemble. Repères (installation llama.cpp du propriétaire, RTX 3070 Ti Laptop) :
+**Budget VRAM (8 Go).** En production, le rédacteur et le cross-encoder du re-ranking (`bge-reranker-v2-m3`, fp16) sont chargés ensemble. Mesure du 4 novembre 2026 sur la RTX 3070 Ti Laptop du propriétaire : llama-server avec les réglages du profil `qwen35b-moe` sauf `-c` et `-ncmoe`, l'API avec le cross-encoder sur le GPU, 10 vraies questions par configuration.
 
-| Élément | VRAM |
-|---|---|
-| Qwen3.6, profil `qwen35b-moe` du script (contexte 64k, `-ncmoe 32`) | 6,2 Go au repos, 6,8 Go au pic (mesuré) |
-| même modèle, contexte 16k | environ 0,5 Go de moins (cache KV `q8_0` : 680 Mio à 64k) — estimation |
-| chaque couche d'experts renvoyée en RAM (`-ncmoe` + 1) | environ 0,4 Go de moins — estimation (12,5 Go pour 32 couches) |
-| cross-encoder `bge-reranker-v2-m3` fp16 | ~1,1 Go de poids, plus les activations d'un lot et le contexte CUDA de torch |
+| Contexte | `-ncmoe` | Rédacteur seul | Pic avec le re-ranking | Génération (tok/s, p50) | Génération p50 | Re-ranking p50 | Re-ranking sur GPU |
+|---|---|---|---|---|---|---|---|
+| 65 536 | 32 | 6,2 Go | dépasse 8 Go : 7,8 Go dédiés + 0,45 à 0,6 Go en mémoire partagée | **2,9** | — | — | — |
+| 16 384 | 32 | 6,28 Go | 7,74 Go | 36,6 | 6,1 s | 323 ms | 10/10 |
+| **16 384** | **34** | **5,41 Go** | **7,10 Go** | **33,6** | **7,2 s** | **335 ms** | **10/10** |
+| 8 192 | 32 | 5,98 Go | 7,67 Go | 36,6 | 6,5 s | 311 ms | 10/10 |
 
-À 64k, l'ensemble dépasse 8 Go : sous Windows, le pilote déborde alors en mémoire partagée et le prefill devient 6 à 10 fois plus lent, sans erreur visible. Pour la production, garde l'alias `qwen3.6-35b-a3b` mais un profil plus sobre, par exemple un profil `qwen35b-moe-rag` dans `profiles.json` avec `ctx 16384` et `-ncmoe 33` ou `34`, puis `RAGLAB_WRITER_MODEL_PROFILE=qwen35b-moe-rag`. Valide toute nouvelle configuration sur le compteur « Mémoire GPU partagée » du Gestionnaire des tâches pendant une requête avec re-ranking, pas seulement sur « offloaded 41/41 ». Le garde-fou du re-ranking ne change pas : sans GPU utilisable, le re-ranking par défaut est sauté et la réponse le dit (`rerank_notice`).
+Le profil 64k du quotidien déborde en mémoire partagée : sous Windows, rien n'échoue, mais la génération tombe à 2,9 tok/s. Les trois profils à 16k ou 8k tiennent. Le rédacteur de production est donc **16k, `-ncmoe 34`** (profil `qwen35b-moe-rag`) : environ 1 Go de marge, au prix de 8 % de débit et d'une seconde au p50 par rapport à `-ncmoe 32`, qui ne laisse que 0,26 Go. Passer à 8k ne fait presque rien gagner (le cache KV `q8_0` est petit) ; 16k laisse de la place aux longs passages juridiques. Valide toute autre configuration sur le compteur « Mémoire GPU partagée » du Gestionnaire des tâches pendant une requête avec re-ranking, pas seulement sur « offloaded 41/41 ». Le garde-fou du re-ranking ne change pas : sans GPU utilisable, le re-ranking par défaut est sauté et la réponse le dit (`rerank_notice`).
 
 **Benchmarks.** `LocalLLMServer` vérifie le modèle servi : avant la passe du juge, un rédacteur resté chargé est arrêté et Gemma est démarré, puis arrêté à la fin ; la question suivante du Chat relance le rédacteur. Pendant la notation, le Chat répond avec Ollama (`llamacpp_busy`) et partage le GPU avec le juge : évite de l'utiliser pendant un benchmark.
 
@@ -191,7 +210,7 @@ docker compose -f docker-compose.yml -f docker-compose.gpu.yml -f docker-compose
 docker logs -f raglab-llamacpp   # attendre « server is listening »
 ```
 
-Dans ce mode, l'API ne démarre ni n'arrête llama-server (`RAGLAB_LLAMACPP_AUTOSTART=false`) : c'est Compose qui le fait. Pendant le chargement (quelques minutes depuis le volume), les réponses viennent d'Ollama avec `generator_notice: "llamacpp_unavailable"`. Le serveur est publié sur `127.0.0.1:8090` seulement (8080 est pris par Adminer) ; l'API le joint par le réseau Compose. Réglages, à mettre dans l'environnement ou le `.env` de Compose : `RAGLAB_WRITER_CTX_SIZE` (16 384), `RAGLAB_WRITER_N_CPU_MOE` (32, passer à 33 si la mémoire GPU partagée grimpe), `RAGLAB_WRITER_GGUF`, `RAGLAB_LLAMACPP_IMAGE_TAG` (`server-cuda12-b11429` pour un pilote CUDA 12). L'image `api` embarque torch sans CUDA : le re-ranking par défaut y est sauté, le rédacteur n'a donc pas à partager le GPU avec le cross-encoder ; il le partage avec Ollama, que l'API décharge avant chaque réponse llama.cpp. Rien de ce mode n'a encore été mesuré (VRAM, débit, temps de chargement sous WSL2).
+Dans ce mode, l'API ne démarre ni n'arrête llama-server (`RAGLAB_LLAMACPP_AUTOSTART=false`) : c'est Compose qui le fait. Pendant le chargement (quelques minutes depuis le volume), les réponses viennent d'Ollama avec `generator_notice: "llamacpp_unavailable"`. Le serveur est publié sur `127.0.0.1:8090` seulement (8080 est pris par Adminer) ; l'API le joint par le réseau Compose. Réglages, à mettre dans l'environnement ou le `.env` de Compose : `RAGLAB_WRITER_CTX_SIZE` (16 384), `RAGLAB_WRITER_N_CPU_MOE` (34, comme en natif ; 32 est un peu plus rapide si rien d'autre n'utilise le GPU), `RAGLAB_WRITER_GGUF`, `RAGLAB_LLAMACPP_IMAGE_TAG` (`server-cuda12-b11429` pour un pilote CUDA 12). L'image `api` embarque torch sans CUDA : le re-ranking par défaut y est sauté, le rédacteur n'a donc pas à partager le GPU avec le cross-encoder ; il le partage avec Ollama, que l'API décharge avant chaque réponse llama.cpp. Rien de ce mode n'a encore été mesuré (VRAM, débit, temps de chargement sous WSL2).
 
 ## 5. Initialiser la base
 

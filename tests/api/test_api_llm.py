@@ -88,7 +88,7 @@ def test_llm_models_lists_enabled_providers_in_order(providers_client):
         "llamacpp": None,
     }
     assert llamacpp["label"] == "llama.cpp" and llamacpp["kind"] == "openai"
-    assert llamacpp["llamacpp"]["writer_profile"] == "qwen35b-moe"
+    assert llamacpp["llamacpp"]["writer_profile"] == "qwen35b-moe-rag"
     assert llamacpp["available"] is False and llamacpp["error"] == "unreachable" and llamacpp["models"] == []
     assert vllm["available"] is True and vllm["models"] == ["Qwen/Qwen2.5-7B-Instruct"]
     assert "vllm-secret" not in response.text

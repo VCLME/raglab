@@ -105,7 +105,7 @@ def test_down_server_is_started_with_the_writer_profile_and_kept():
     assert manager.choose(_settings()) == WriterChoice("llamacpp", "qwen3.6-35b-a3b")
     factory.assert_called_once()
     assert factory.call_args.kwargs == {
-        "profile": "qwen35b-moe",
+        "profile": "qwen35b-moe-rag",
         "model": "qwen3.6-35b-a3b",
         "replace_other_model": False,
     }

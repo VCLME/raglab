@@ -48,7 +48,13 @@ class Settings(BaseSettings):
     # (`generator_notice`). Empty fallback = the query fails instead.
     default_llm_provider: str = "llamacpp"
     llm_fallback_provider: str = "ollama"
-    writer_model_profile: str = "qwen35b-moe"
+    # The writer shares the 8 GB GPU with the cross-encoder, so it runs its
+    # own profile: 16k context, 34 MoE expert layers in RAM (measured with
+    # 10 queries: 5.41 GB alone, 7.10 GB peak with the reranker, 33.6 tok/s;
+    # the 64k `qwen35b-moe` profile spills to shared memory, 2.9 tok/s).
+    # Same alias as qwen35b-moe; add the profile to Start-LocalLLM.ps1's
+    # profiles.json (docs/run-and-test.md) or pass {ctx_size}/{n_cpu_moe}.
+    writer_model_profile: str = "qwen35b-moe-rag"
     writer_model: str = "qwen3.6-35b-a3b"
     # Name the Chat LLM picker shows for the writer.
     writer_model_label: str = "Qwen3.6"
@@ -67,7 +73,8 @@ class Settings(BaseSettings):
     # command. Budget with the reranker: docs/run-and-test.md.
     llamacpp_profile_options: dict[str, dict[str, int]] = Field(
         default_factory=lambda: {
-            "qwen35b-moe": {"ctx_size": 16384, "n_cpu_moe": 32},
+            "qwen35b-moe-rag": {"ctx_size": 16384, "n_cpu_moe": 34},
+            "qwen35b-moe": {"ctx_size": 65536, "n_cpu_moe": 32},
             "gemma4-moe": {"ctx_size": 32768, "n_cpu_moe": 24},
         }
     )

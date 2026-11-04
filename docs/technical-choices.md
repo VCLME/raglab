@@ -90,7 +90,7 @@ Ce que ça coûte :
 
 - **latence** : génération p50 de 7 à 9 s, contre 2,2 s (PIAF) et 4,3 s (LexML) pour `qwen2.5:7b` ([reranking.md](reranking.md)) ; le streaming affiche les premiers mots bien avant ;
 - **chargement** : le premier appel démarre llama-server (quelques dizaines de secondes) ; le serveur reste ensuite chargé ;
-- **mémoire** : environ 16 Go de RAM pour les experts, et un budget VRAM serré à côté du cross-encoder ([run-and-test.md](run-and-test.md#rédacteur-qwen36-sur-llamacpp)).
+- **mémoire** : environ 16 Go de RAM pour les experts, et un budget VRAM serré à côté du cross-encoder. Mesuré avec 10 questions : à 64k de contexte, l'ensemble déborde de la VRAM et la génération tombe à 2,9 tok/s ; le rédacteur tourne donc avec son propre profil, 16k de contexte et 34 couches d'experts en RAM (5,41 Go seul, 7,10 Go au pic avec le re-ranking, 33,6 tok/s, génération p50 7,2 s) ([run-and-test.md](run-and-test.md#rédacteur-qwen36-sur-llamacpp)).
 
 Le repli reste Ollama `qwen2.5:7b` : si llama.cpp ne répond pas et ne peut pas être démarré, s'il charge encore ou s'il sert un autre modèle (le juge d'un benchmark), la requête part sur Ollama et la réponse le dit (`generator_notice`). Une requête n'échoue jamais parce que llama.cpp est arrêté. Docker garde Ollama par défaut ; l'override `docker-compose.llamacpp.yml` ajoute le rédacteur dans son propre conteneur ([run-and-test.md](run-and-test.md#rédacteur-qwen36-sur-llamacpp)).
 
