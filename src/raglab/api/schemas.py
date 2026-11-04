@@ -100,6 +100,8 @@ class ConfigResponse(BaseModel):
     citation_resolver: bool = True
     # Default of the versions option (phase 9.10).
     versions_default: str = "in_force"
+    # Default of the query-translation option (cross-language questions).
+    query_translation: bool = False
     # Enabled generation providers (RAGLAB_LLM_PROVIDERS) and the default one.
     llm_providers: list[str] = Field(default_factory=lambda: ["ollama"])
     default_llm_provider: str = "ollama"
@@ -243,6 +245,9 @@ class QueryRequest(BaseModel):
     # Article versions retrieval may use: in_force (today, or the date the
     # question asks about), all, as_of=YYYY-MM-DD; None = RAGLAB_VERSIONS_DEFAULT.
     versions: str | None = None
+    # Translate a question in another language than the corpus into the
+    # corpus language (local writer), for BM25 only; None = RAGLAB_QUERY_TRANSLATION.
+    query_translation: bool | None = None
     lexical_weight: float | None = Field(None, ge=0.0, le=1.0)
     rrf_k: int | None = Field(None, ge=0)
     # Cross-encoder re-ranking of rerank_candidates first-stage chunks.
@@ -590,6 +595,7 @@ class RecallRequest(BaseModel):
     citations: bool | None = None
     graph: bool | None = None
     versions: str | None = None
+    query_translation: bool | None = None
     compute_ragas: bool = False
     # Grade only the first N cases (retrieval still runs on all of them).
     ragas_case_limit: int | None = Field(None, ge=1)

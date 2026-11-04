@@ -34,5 +34,15 @@
     "runs": [null, "refs-full-v1", "refs-graph-v1"],
     "brick": "+ citation graph (9.9)",
     "types": {}
+  },
+  {
+    "suite": "lexml_fr",
+    "name": "French questions, Brazilian laws",
+    "about": "natural LexML questions translated into French, answered from the Portuguese corpus",
+    "failure": "cross-language",
+    "runs": ["lexml-fr-naive-v1", "lexml-fr-v1", "lexml-fr-qt-v1"],
+    "brick": "+ query translation for BM25 (option, off by default)",
+    "types": {"entity": "acronym or entity"},
+    "references": [{"run": "lexml-fr-v1", "suite": "lexml_fr_pt", "label": "same questions in Portuguese, full pipeline"}]
   }
 ]

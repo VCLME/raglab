@@ -207,6 +207,11 @@ def bench_all(
         "--generator-profile",
         help="Profil llama.cpp a demarrer pour la generation (defaut : RAGLAB_WRITER_MODEL_PROFILE).",
     ),
+    query_translation: bool | None = typer.Option(
+        None,
+        "--query-translation/--no-query-translation",
+        help="Traduire la question dans la langue du corpus (redacteur llama.cpp) pour le BM25 seulement. Defaut: RAGLAB_QUERY_TRANSLATION.",
+    ),
 ) -> None:
     """Regenerer les chiffres de benchmark (PIAF + LexML, Code de la consommation sur demande) dans benchmarks/results/."""
     from raglab.benchmarks.suite import render_markdown, run_all
@@ -225,6 +230,7 @@ def bench_all(
         graph=graph,
         versions=versions,
         generator=GeneratorConfig(provider=generator_provider, model=generator_model, profile=generator_profile),
+        query_translation=query_translation,
     )
     output = Path("benchmarks/results") / f"{label}.json"
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -280,12 +286,22 @@ def bench_compare(
     before: str = typer.Argument(..., help="Run de reference (ex. baseline-v1)."),
     after: str = typer.Argument(..., help="Run compare (ex. hybrid-v1)."),
     k: int = typer.Option(5, "--k", help="Recall@k compare."),
+    suites: list[str] | None = typer.Option(
+        None,
+        "--suites",
+        help="Paire de suites a comparer, suite_avant:suite_apres (ex. lexml_fr_pt:lexml_fr, memes questions en deux langues). Defaut: les suites de meme nom.",
+    ),
 ) -> None:
     """Comparer deux runs question par question (McNemar sur le recall, bootstrap apparie sur le MRR)."""
     from raglab.benchmarks.compare import compare_runs, render
 
+    pairs = None
+    if suites:
+        if any(pair.count(":") != 1 for pair in suites):
+            raise typer.BadParameter("Format attendu: suite_avant:suite_apres.")
+        pairs = [tuple(pair.split(":")) for pair in suites]
     load = lambda name: json.loads((Path("benchmarks/results") / f"{name}.json").read_text(encoding="utf-8"))  # noqa: E731
-    typer.echo(render(compare_runs(load(before), load(after), k=k), k=k))
+    typer.echo(render(compare_runs(load(before), load(after), k=k, pairs=pairs), k=k))
 
 
 @bench_app.command("report")
@@ -1072,6 +1088,12 @@ def query(
         help="Router la question (langue, intention, corpus si --corpus est absent) et s'abstenir "
         "quand le meilleur passage est trop faible.",
     ),
+    query_translation: bool | None = typer.Option(
+        None,
+        "--query-translation/--no-query-translation",
+        help="Question dans une autre langue que le corpus : la traduire (redacteur llama.cpp) pour le BM25 seulement. "
+        "Defaut: RAGLAB_QUERY_TRANSLATION.",
+    ),
 ) -> None:
     filters = build_retrieval_filters(
         document_ids=document_ids,
@@ -1098,6 +1120,7 @@ def query(
                 routing=routing,
                 graph=graph,
                 versions=versions,
+                query_translation=query_translation,
             )
             final: dict = {}
             for event, data in service.stream_answer(outcome, llm_model=llm_model, llm_provider=provider):
@@ -1126,6 +1149,7 @@ def query(
             llm_model=llm_model,
             routing=routing,
             llm_provider=provider,
+            query_translation=query_translation,
         )
     typer.echo(response.model_dump_json(indent=2))
 

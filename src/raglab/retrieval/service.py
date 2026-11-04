@@ -46,6 +46,7 @@ from raglab.retrieval.graph_branch import (
 )
 from raglab.retrieval.rerank import Reranker, get_reranker, rerank_gpu_available
 from raglab.retrieval.stages import planned_stages, prompt_details, retrieval_stage_events, stage_end, stage_start
+from raglab.retrieval.translation import QueryTranslator, Translation
 from raglab.retrieval.versions import VersionLookup, annotate, demote_revoked, is_outdated, resolve_policy
 from raglab.routing.schemas import RoutingDecision
 from raglab.routing.step import route_and_retrieve
@@ -100,6 +101,8 @@ class RetrievalOutcome:
     graph_chunks: list[RetrievedChunk] = field(default_factory=list)
     # Version policy (versions option) and what it did; see QueryResponse.
     versions: dict[str, Any] | None = None
+    # Question translated for BM25 (query_translation option); see QueryResponse.
+    query_translation: dict[str, Any] | None = None
 
     @property
     def answers_from_documents(self) -> bool:
@@ -124,6 +127,7 @@ class RetrievalOutcome:
             graph_notice=self.graph_notice,
             graph_stats=dict(self.graph_stats),
             versions=dict(self.versions) if self.versions is not None else None,
+            query_translation=dict(self.query_translation) if self.query_translation is not None else None,
             **extra,
         )
 
@@ -144,6 +148,17 @@ class QueryService:
         self._reranker: Reranker | None = None
         self._graph_store: StructuredGraphStore | None = None
         self.version_lookup = VersionLookup(session)
+        self._translator: QueryTranslator | None = None
+
+    @property
+    def translator(self) -> QueryTranslator:
+        if self._translator is None:
+            self._translator = QueryTranslator(self.settings)
+        return self._translator
+
+    @translator.setter
+    def translator(self, value: QueryTranslator) -> None:
+        self._translator = value
 
     @property
     def graph_store(self) -> StructuredGraphStore:
@@ -274,6 +289,7 @@ class QueryService:
         query_embedding: list[float] | None = None,
         graph: bool | None = None,
         versions: str | None = None,
+        query_translation: bool | None = None,
     ) -> RetrievalOutcome:
         """Search the index for the question, each stage under its budget.
 
@@ -305,6 +321,10 @@ class QueryService:
         corpus with version metadata the others are filtered out before
         ranking; on compiled laws, chunks that only hold repealed provisions
         are moved last. Every chunk carries its version state.
+
+        query_translation: a question in another language than the corpus
+        is translated into the corpus language by the local writer, for BM25
+        only (see `raglab.retrieval.translation`).
         """
         if routing:
             return route_and_retrieve(
@@ -322,6 +342,7 @@ class QueryService:
                 citations=citations,
                 graph=graph,
                 versions=versions,
+                query_translation=query_translation,
             )
         mode = RetrievalMode(retrieval_mode or self.settings.default_retrieval_mode)
         index_run = self._resolve_index_run(
@@ -412,6 +433,10 @@ class QueryService:
             else []
         )
         citation_seconds = perf_counter() - citation_started if citation is not None else 0.0
+        translation: Translation | None = None
+        use_translation = self.settings.query_translation if query_translation is None else query_translation
+        if use_translation and mode != RetrievalMode.DENSE:
+            translation = self.translator.translate(question, index_run.corpus.language)
         started = perf_counter()
         if mode == RetrievalMode.LEXICAL:
             query_embedding = None
@@ -439,7 +464,7 @@ class QueryService:
                 lexical, query_lexemes = self.lexical_store.search(
                     self.session,
                     index_run=index_run,
-                    question=question,
+                    question=translation.text if translation else question,
                     top_k=candidate_k,
                     filters=filters,
                 )
@@ -513,6 +538,10 @@ class QueryService:
         timings_ms["retrieval"] = round((searched - search_started + citation_seconds) * 1000, 3)
         if citation is not None:
             timings_ms["citation"] = round(citation_seconds * 1000, 3)
+        if translation is not None and translation.elapsed_ms:
+            # Part of retrieval (the benchmark's query latency includes it), shown apart.
+            timings_ms["translation"] = round(translation.elapsed_ms, 3)
+            timings_ms["retrieval"] = round(timings_ms["retrieval"] + translation.elapsed_ms, 3)
         if mode != RetrievalMode.DENSE or use_graph:
             timings_ms.update({stage: round(seconds * 1000, 3) for stage, seconds in stage_ms.items()})
 
@@ -602,6 +631,7 @@ class QueryService:
             graph_links=graph_links(branch, graph_list),
             graph_chunks=list(branch.chunks),
             versions=versions_info,
+            query_translation=translation.as_dict() if translation else None,
         )
 
     def query(
@@ -625,6 +655,7 @@ class QueryService:
         graph: bool | None = None,
         versions: str | None = None,
         llm_provider: str | None = None,
+        query_translation: bool | None = None,
     ) -> QueryResponse:
         """`generation_top_k` sends only the first N retrieved chunks to the
         LLM; the benchmark retrieves 10 (for Recall@10) but must generate from
@@ -648,6 +679,7 @@ class QueryService:
             citations=citations,
             graph=graph,
             versions=versions,
+            query_translation=query_translation,
         )
         answer = None
         stats: dict[str, float] = {}

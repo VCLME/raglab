@@ -136,6 +136,12 @@ class Settings(BaseSettings):
     # raglab.retrieval.citations). Measured in citations-v1: LexML questions
     # citing an article 0.093 -> 0.753 Recall@5 (+64/-0), no other change.
     citation_resolver: bool = True
+    # Cross-language questions (French question, Portuguese corpus): the
+    # local writer translates the question into the corpus language for
+    # BM25 only; dense search, re-ranking and the answer keep the original
+    # (raglab.retrieval.translation). Off until measured (lexml_fr set).
+    query_translation: bool = False
+    query_translation_timeout_seconds: float = 20.0
     # Article versions retrieval may use (phase 9.10, docs/versions.md):
     # in_force (today, or the date the question asks about), all, or
     # as_of=YYYY-MM-DD. Acts only on corpora with version metadata

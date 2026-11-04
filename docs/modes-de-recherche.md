@@ -47,6 +47,7 @@ flowchart LR
 | Références d'articles | oui / non | oui | `--citations/--no-citations` | `citations` | `RAGLAB_CITATION_RESOLVER` |
 | Recherche par graphe | oui / non | **non** (en cours de mesure) | `--graph/--no-graph` | `graph` | `RAGLAB_GRAPH_RETRIEVAL`, `RAGLAB_GRAPH_WEIGHT` |
 | Versions des articles | `in_force`, `all`, `as_of=AAAA-MM-JJ` | `in_force` | `--versions` | `versions` | `RAGLAB_VERSIONS_DEFAULT` |
+| Traduction de la question (langues croisées) | oui / non | **non** (coûte environ 2,4 s par question traduite) | `--query-translation/--no-query-translation` | `query_translation` ; la réponse porte `query_translation` | `RAGLAB_QUERY_TRANSLATION`, `RAGLAB_QUERY_TRANSLATION_TIMEOUT_SECONDS` |
 | Passages donnés au LLM | entier | 5 | `--top-k` | `top_k` | `RAGLAB_DEFAULT_TOP_K` |
 | Fournisseur du LLM | `llamacpp`, `ollama`, `vllm` | `llamacpp` (Qwen3.6-35B-A3B, démarré à la demande), repli `ollama` (`qwen2.5:7b`) si llama.cpp ne peut pas servir | `--provider` | `llm_provider` (+ `llm_model`) ; la réponse porte `llm_provider` et `generator_notice` | `RAGLAB_LLM_PROVIDERS`, `RAGLAB_DEFAULT_LLM_PROVIDER`, `RAGLAB_LLM_FALLBACK_PROVIDER`, `RAGLAB_WRITER_MODEL_PROFILE`, `RAGLAB_LLAMACPP_AUTOSTART` |
 
@@ -73,5 +74,6 @@ Mesures appariées sur les jeux figés (PIAF : 500 questions en français ; LexM
 - **Le plus rapide** : `--retrieval-mode dense --no-rerank`, environ 25 ms de recherche au lieu d'environ 0,5 s, au prix d'environ 9 points de Recall@5 sur PIAF et de 12 sur LexML (`citations-v1` contre `full-v1`).
 - **Sans GPU** : le re-ranking est désactivé de lui-même ; tout le reste fonctionne.
 - **Rédacteur** : Qwen3.6 via llama.cpp écrit de meilleures réponses que `qwen2.5:7b` (`gen-qwen36-v1` : correctness PIAF 0,763 → 0,935, LexML 0,550 → 0,710) mais en 7 à 9 s au p50 ; `--provider ollama` (ou `llm_provider: "ollama"`) revient à qwen2.5, plus rapide. Sans llama.cpp, le repli est automatique et signalé ([technical-choices.md](technical-choices.md#3-bis-pourquoi-qwen36-via-llamacpp-pour-rédiger-les-réponses)).
+- **Questions dans une autre langue que le corpus** (français sur les lois brésiliennes) : `--query-translation` fait traduire la question en portugais par le rédacteur local pour le BM25 seulement. Sur 100 questions, Recall@5 0,790 → 0,890, autant que les mêmes questions posées en portugais (0,870), pour environ 2,4 s de plus par question ([langues-croisees.md](langues-croisees.md)).
 - **Corpus sans lois** (documentation, Wikipédia) : les options références d'articles, graphe et versions sont masquées dans l'interface et sans effet.
 - **Corpus versionné** (Code de la consommation) : le défaut `in_force` écarte les versions abrogées ou remplacées : Recall@5 0,660 → 0,820 sur 300 questions, 0,750 → 0,930 sur le jeu « versions », version périmée classée au-dessus de la bonne 57 % → 0 % (voir [versions.md](versions.md)) ; `--versions all` les garde toutes, comme un RAG classique.

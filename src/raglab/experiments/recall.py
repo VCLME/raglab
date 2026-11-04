@@ -5,7 +5,7 @@ import logging
 import math
 import random
 from collections import Counter
-from contextlib import AbstractContextManager, nullcontext
+from contextlib import AbstractContextManager, ExitStack, nullcontext
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
 from pathlib import Path
@@ -144,6 +144,7 @@ class RecallBenchmarkService:
         citations: bool | None = None,
         graph: bool | None = None,
         versions: str | None = None,
+        query_translation: bool | None = None,
     ) -> dict[str, Any]:
         """Resolved retrieval parameters, recorded with the run and passed to each query."""
         mode = RetrievalMode(retrieval_mode or self.settings.default_retrieval_mode)
@@ -164,6 +165,8 @@ class RecallBenchmarkService:
             config["graph"] = graph
         if versions is not None:
             config["versions"] = versions
+        if query_translation is not None:
+            config["query_translation"] = query_translation
         return config
 
     def _rerank_record(self, retrieval: dict[str, Any]) -> dict[str, Any]:
@@ -318,6 +321,7 @@ class RecallBenchmarkService:
         graph: bool | None = None,
         versions: str | None = None,
         generator: GeneratorConfig | None = None,
+        query_translation: bool | None = None,
     ) -> dict[str, Any]:
         """Run retrieval on every case, then (optionally) grade answers.
 
@@ -347,6 +351,7 @@ class RecallBenchmarkService:
             citations=citations,
             graph=graph,
             versions=versions,
+            query_translation=query_translation,
         )
         rerank_record = self._rerank_record(retrieval)
         benchmark_label = benchmark_name or _infer_benchmark_name(dataset_path)
@@ -408,7 +413,16 @@ class RecallBenchmarkService:
         # (position in details, question, retrieved chunks) for the deferred generation pass.
         pending: list[tuple[int, str, list[Any]]] = []
 
+        # Query translation asks the writer for each question: it must be
+        # served during retrieval (reasoning off, it leaves ~1 GB to the
+        # cross-encoder), and is stopped before generation and judging.
+        writer = ExitStack()
         try:
+            translate = retrieval.get(
+                "query_translation", self.settings.query_translation if self.backend == "pgvector" else False
+            )
+            if translate and retrieval.get("retrieval_mode") != RetrievalMode.DENSE.value:
+                writer.enter_context(LocalLLMServer(self.settings, profile=self.settings.writer_model_profile))
             for position, case in enumerate(cases):
                 generate = compute_ragas and position < grade_limit
                 query_kwargs: dict[str, Any] = {
@@ -479,11 +493,13 @@ class RecallBenchmarkService:
                         "rerank_stats": dict(getattr(response, "rerank_stats", {}) or {}),
                         "graph_notice": getattr(response, "graph_notice", None),
                         "graph_stats": dict(getattr(response, "graph_stats", {}) or {}),
+                        "query_translation": getattr(response, "query_translation", None),
                         "generation_stats": dict(getattr(response, "generation_stats", {}) or {}),
                         "metrics": metrics_for_case,
                     }
                 )
 
+            writer.close()
             if compute_ragas and retrieval.get("rerank"):
                 self._release_reranker()
             if pending:
@@ -549,6 +565,7 @@ class RecallBenchmarkService:
             complete_experiment_run(self.session, experiment_run, ExperimentStatus.COMPLETED)
             self.session.commit()
         except Exception:
+            writer.close()
             self.session.rollback()
             failed_run = self.session.get(type(experiment_run), experiment_run.id)
             if failed_run is not None:
@@ -577,6 +594,14 @@ class RecallBenchmarkService:
             # graph run measured without Neo4j must not pass for a graph run.
             notices = Counter(detail["graph_notice"] for detail in details if detail.get("graph_notice"))
             payload["graph_notices"] = dict(notices)
+        if retrieval.get("query_translation"):
+            # Translated questions, and why the others were not: a run whose
+            # writer never answered must not pass for a translated run.
+            outcomes = Counter(
+                "translated" if info.get("translated") else info.get("notice", "none")
+                for info in (detail.get("query_translation") or {} for detail in details)
+            )
+            payload["query_translation_outcomes"] = dict(outcomes)
         report_path = self._write_report(f"recall-{benchmark_label}", payload)
         payload["report_path"] = str(report_path)
         log_event(

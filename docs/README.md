@@ -13,6 +13,7 @@ Par où commencer selon ce que vous voulez faire. Le [README du dépôt](../READ
 | [modes-de-recherche.md](modes-de-recherche.md) | les modes de recherche (vectoriel, mots-clés, hybride, graphe), le re-ranking, les références d'articles : chaque option, son défaut et son effet mesuré |
 | [graphe.md](graphe.md) | le graphe des renvois dans Neo4j : lois, articles, `CITES`, `AMENDS`, `REVOKES`, précision mesurée |
 | [versions.md](versions.md) | les versions des textes : articles abrogés, réécrits, numéros réutilisés ; l'option `versions`, le jeu « versions » et sa métrique |
+| [langues-croisees.md](langues-croisees.md) | questions en français sur les lois brésiliennes : ce que coûte la langue, la traduction de la question pour le BM25 (option `query_translation`), sa mesure et son coût |
 | [roadmap.md](roadmap.md) | ce qui est livré, phase par phase, et ce qui vient |
 
 ## Le faire tourner

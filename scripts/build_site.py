@@ -236,6 +236,12 @@ def corpus_rows(runs: dict[str, dict[str, Any]]) -> list[dict[str, str]]:
             f"{label} {path([by_type(r, name, qtype, 'recall@5') for r in present], fmt_ratio)}"
             for qtype, label in spec.get("types", {}).items()
         ]
+        # The same questions in another set (the Portuguese originals of the
+        # cross-language set): the level the brick should reach.
+        for ref in spec.get("references", []):
+            ref_suite = suite(runs.get(ref["run"]), ref["suite"])
+            if ref_suite:
+                notes.append(f"{ref['label']} {fmt_ratio(metric(runs.get(ref['run']), ref['suite'], 'recall@5'))}")
         for key, label in (("answer_correctness_mean", "answer correctness"), ("faithfulness_mean", "faithfulness")):
             values = [metric(r, name, key) for r in present]
             if sum(v is not None for v in values) >= 2:
