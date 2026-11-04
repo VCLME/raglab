@@ -14,6 +14,7 @@ from raglab.config import Settings
 from raglab.domain.errors import SourceBusyError
 from raglab.eurlex.collector import EurlexCollector
 from raglab.legifrance.collector import CodeCollector
+from raglab.lexml.br_expat import BrExpatCollector
 from raglab.sources.jobs import SourceJobs
 
 
@@ -113,6 +114,23 @@ def test_no_ingest_writes_the_files_only(tmp_path, monkeypatch, ingested):
     assert status["result"]["ingestion"] is None
     assert status["result"]["manifest"]["frozen"] is None
     assert ingested == []
+
+
+def test_br_expat_job_fetches_verifies_and_ingests(tmp_path, monkeypatch, ingested):
+    _freeze(tmp_path, "br_expat", "Art. 20. O visto de visita")
+    monkeypatch.setattr(
+        BrExpatCollector,
+        "collect",
+        lambda self, *, output_dir, progress: _write_corpus(output_dir, "Art. 20. O visto de visita"),
+    )
+    status = SourceJobs(_settings(tmp_path, br_expat_dir=tmp_path / "data" / "br_expat"), repo_root=tmp_path).run(
+        "br_expat"
+    )
+
+    assert status["state"] == "succeeded"
+    assert status["corpus"] == "bench_br_expat_pt"
+    assert status["result"]["manifest"]["problems"] == 0
+    assert ingested == ["bench_br_expat_pt"]
 
 
 def test_cellar_unreachable_fails_with_a_502(tmp_path, monkeypatch, ingested):

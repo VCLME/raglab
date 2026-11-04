@@ -36,10 +36,11 @@ LOGGER = logging.getLogger(__name__)
 
 # Source name in the API -> benchmark suite that holds its corpus name,
 # folder, language and frozen manifest.
-SOURCE_SUITES = {"legi": "legi_consommation", "eurlex": "eurlex_compliance"}
+SOURCE_SUITES = {"legi": "legi_consommation", "eurlex": "eurlex_compliance", "br_expat": "br_expat"}
 SOURCE_COMMANDS = {
     "legi": "raglab legifrance fetch --code consommation",
     "eurlex": "raglab eurlex fetch",
+    "br_expat": "raglab lexml br-expat",
 }
 STAGES = ("fetch", "verify", "ingest")
 
@@ -234,6 +235,10 @@ class SourceJobs:
                 return CodeCollector(self.settings).collect(
                     code="consommation", output_dir=output_dir, progress=progress
                 )
+            if source == "br_expat":
+                from raglab.lexml.br_expat import BrExpatCollector
+
+                return BrExpatCollector(self.settings).collect(output_dir=output_dir, progress=progress)
             from raglab.eurlex.collector import EurlexCollector
 
             return EurlexCollector(self.settings).collect(

@@ -25,6 +25,7 @@ frontend/.vite/
 node_modules/
 .claude/
 data/lexml/fulltext/
+data/lexml/br_expat/
 
 _site/
 

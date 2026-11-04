@@ -1,0 +1,139 @@
+{
+  "created_at": "2026-11-04T12:45:27.539341+00:00",
+  "documents": [
+    {
+      "file_name": "decreto_6306_2007.txt",
+      "urn": "urn:lex:br:federal:decreto:2007-12-14;6306",
+      "chars": 107339,
+      "sha256": "8f6535b8a612357a7a87e18b9915e25c0d220fefe90af954d0e1f77ddf8f394b",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2007-2010/2007/decreto/d6306.htm"
+    },
+    {
+      "file_name": "decreto_8300_2014.txt",
+      "urn": "urn:lex:br:federal:decreto:2014-08-29;8300",
+      "chars": 43008,
+      "sha256": "0b5de69f9db27b7a7d42099753872ea4da83fba2d6aaf5552056a58abf47e57f",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2011-2014/2014/decreto/d8300.htm"
+    },
+    {
+      "file_name": "decreto_9199_2017.txt",
+      "urn": "urn:lex:br:federal:decreto:2017-11-20;9199",
+      "chars": 214958,
+      "sha256": "5b27f5d63f6c7675dce6602427ddf2449b563eb74c4983ff20e55bb9166a2989",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2017/decreto/d9199.htm"
+    },
+    {
+      "file_name": "ec_103_2019.txt",
+      "urn": "urn:lex:br:federal:emenda.constitucional:2019-11-12;103",
+      "chars": 79823,
+      "sha256": "a1b5d11e3ea82b5cc91efee2689a49add717b2a8e02c87339f951f2836201d3a",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/constituicao/emendas/emc/emc103.htm"
+    },
+    {
+      "file_name": "in_rfb_1700_2017.txt",
+      "urn": "urn:lex:br:secretaria.receita.federal:instrucao.normativa:2017-03-14;1700",
+      "chars": 433328,
+      "sha256": "6beefe3486b12c95d54d8ade9e3456e0d2c56766c2d02d07fa80226fbac26f18",
+      "source_url": "https://normas.receita.fazenda.gov.br/sijut2consulta/link.action?idAto=81268&visao=compilado"
+    },
+    {
+      "file_name": "in_srf_208_2002.txt",
+      "urn": "urn:lex:br:secretaria.receita.federal:instrucao.normativa:2002-09-27;208",
+      "chars": 52284,
+      "sha256": "a68b45ead4ebb4c9fbb232b5867c4c111f549352323c9f63207ff8e9d23f33ed",
+      "source_url": "https://normas.receita.fazenda.gov.br/sijut2consulta/link.action?idAto=15079&visao=compilado"
+    },
+    {
+      "file_name": "lc_116_2003.txt",
+      "urn": "urn:lex:br:federal:lei.complementar:2003-07-31;116",
+      "chars": 45665,
+      "sha256": "389ed0feaf9221f9b5fcbf32e68c82537f14a99922f5affe796de00403ec3fab",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp116.htm"
+    },
+    {
+      "file_name": "lc_123_2006.txt",
+      "urn": "urn:lex:br:federal:lei.complementar:2006-12-14;123",
+      "chars": 226517,
+      "sha256": "015bff5dc5647ea36daa3a91c88e8449c3c31973816b3961be0de8a5cf2921d7",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp123.htm"
+    },
+    {
+      "file_name": "lei_10406_2002.txt",
+      "urn": "urn:lex:br:federal:lei:2002-01-10;10406",
+      "chars": 631687,
+      "sha256": "836933383184b5f599643581242d6ea81e31e292a14e336786e1f3e5258f7604",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/2002/l10406compilada.htm"
+    },
+    {
+      "file_name": "lei_10637_2002.txt",
+      "urn": "urn:lex:br:federal:lei:2002-12-30;10637",
+      "chars": 69069,
+      "sha256": "4a77d6db1e9b77c661e7547b5207f67c519b1c0e14bb5f288e3b4d40ffd297ec",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/2002/l10637.htm"
+    },
+    {
+      "file_name": "lei_10666_2003.txt",
+      "urn": "urn:lex:br:federal:lei:2003-05-08;10666",
+      "chars": 10865,
+      "sha256": "ec8db23678cc9cc26f16fe955b1fa82330202fb18894249328b1b703129160ed",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/2003/l10.666.htm"
+    },
+    {
+      "file_name": "lei_10833_2003.txt",
+      "urn": "urn:lex:br:federal:lei:2003-12-29;10833",
+      "chars": 137532,
+      "sha256": "34ec56d17b4d0d8ffde94214de7716fffbb977bf6e1686260af7a1902d5d1ba5",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/2003/l10.833.htm"
+    },
+    {
+      "file_name": "lei_13445_2017.txt",
+      "urn": "urn:lex:br:federal:lei:2017-05-24;13445",
+      "chars": 89687,
+      "sha256": "351a56613cca83d2682e01710f1ca7f0eefe925f904cde8bcfd9dc81446deb4e",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2017/lei/l13445.htm"
+    },
+    {
+      "file_name": "lei_14754_2023.txt",
+      "urn": "urn:lex:br:federal:lei:2023-12-12;14754",
+      "chars": 66499,
+      "sha256": "827368fa8c126be4debbc47cdec06c1446e08b1e5a011dde1435cd65f5e48ac2",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2023/lei/l14754.htm"
+    },
+    {
+      "file_name": "lei_15270_2025.txt",
+      "urn": "urn:lex:br:federal:lei:2025-11-26;15270",
+      "chars": 23437,
+      "sha256": "f50dfd849e718a0dc762e3be774d3fa045af0486f61d36c6d110fd7ec1e88394",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2025/lei/l15270.htm"
+    },
+    {
+      "file_name": "lei_7115_1983.txt",
+      "urn": "urn:lex:br:federal:lei:1983-08-29;7115",
+      "chars": 1105,
+      "sha256": "8d4a0ef8f17f18b53c5ea6267ab31e76f4789b3419287c39f8a659ccbc0195d3",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l7115.htm"
+    },
+    {
+      "file_name": "lei_8212_1991.txt",
+      "urn": "urn:lex:br:federal:lei:1991-07-24;8212",
+      "chars": 148430,
+      "sha256": "dfd07d22e71884e64c9633373c780109e8d221f66192ea9245ca5811faa753e4",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l8212cons.htm"
+    },
+    {
+      "file_name": "lei_9249_1995.txt",
+      "urn": "urn:lex:br:federal:lei:1995-12-26;9249",
+      "chars": 39764,
+      "sha256": "2a4f8f67839a6b3be1841945444ec22bd6a31740e9bb3e4b6d0efbe672848fe6",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l9249.htm"
+    },
+    {
+      "file_name": "lei_9430_1996.txt",
+      "urn": "urn:lex:br:federal:lei:1996-12-27;9430",
+      "chars": 103609,
+      "sha256": "2503ba837dddacf6f8b8131e810bef46557e97c1f3d80f4e952dc93bcaf32069",
+      "source_url": "https://www.planalto.gov.br/ccivil_03/leis/l9430.htm"
+    }
+  ],
+  "missing": []
+}

@@ -153,7 +153,7 @@ def bench_all(
         None,
         "--suite",
         help=(
-            "piaf, lexml_fulltext, legi_consommation, eurlex_compliance, lexml_references (renvois, 9.9b) ou legi_versions (versions, 9.10) "
+            "piaf, lexml_fulltext, legi_consommation, eurlex_compliance, lexml_references (renvois, 9.9b), legi_versions (versions, 9.10) ou br_expat (30 questions reelles, Bresil) "
             "(defaut: piaf + lexml_fulltext)."
         ),
     ),
@@ -508,6 +508,25 @@ def lexml_fulltext(
         min_chars=min_chars,
         max_chars=max_chars,
     )
+    typer.echo(json.dumps(result, indent=2, ensure_ascii=False))
+
+
+@lexml_app.command("br-expat")
+def lexml_br_expat(
+    output_dir: Path = typer.Option(
+        get_settings().br_expat_dir,
+        "--output-dir",
+        help="Dossier de sortie (corpus/ + raw/ + manifest.json).",
+    ),
+    only: str | None = typer.Option(
+        None, "--only", help="Cles des textes a collecter, separees par des virgules (defaut: les 19)."
+    ),
+) -> None:
+    """Collecter les 19 textes federaux du corpus "Bresil expat" (Planalto compile + Receita Federal)."""
+    from raglab.lexml.br_expat import BrExpatCollector
+
+    keys = {key.strip() for key in only.split(",") if key.strip()} if only else None
+    result = BrExpatCollector().collect(output_dir=output_dir, keys=keys)
     typer.echo(json.dumps(result, indent=2, ensure_ascii=False))
 
 
