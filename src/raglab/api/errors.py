@@ -14,7 +14,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from raglab.config import Settings
-from raglab.domain.errors import GraphUnavailableError, StageTimeoutError
+from raglab.domain.errors import GraphUnavailableError, SourceBusyError, SourceFetchError, StageTimeoutError
 from raglab.llm.errors import LLMProviderError
 from raglab.ollama.errors import OllamaError, OllamaOutOfMemoryError
 
@@ -61,6 +61,13 @@ def describe_error(exc: Exception, settings: Settings) -> ErrorInfo | None:
         )
     if isinstance(exc, GraphUnavailableError):
         return ErrorInfo(503, {"detail": str(exc), "error": "GraphUnavailableError"})
+    if isinstance(exc, SourceFetchError):
+        source_body: dict = {"detail": str(exc), "error": "SourceFetchError", "source": exc.source}
+        if exc.cause:
+            source_body["cause"] = exc.cause
+        return ErrorInfo(502, source_body)
+    if isinstance(exc, SourceBusyError):
+        return ErrorInfo(409, {"detail": str(exc), "error": "SourceBusyError"})
     # Raw transport errors from code paths that do not type them yet
     # (embeddings via Ollama, llama.cpp client).
     if isinstance(exc, requests.exceptions.Timeout):
@@ -92,6 +99,8 @@ def register_error_handlers(app: FastAPI, settings: Settings) -> None:
         LLMProviderError,
         StageTimeoutError,
         GraphUnavailableError,
+        SourceFetchError,
+        SourceBusyError,
         requests.exceptions.Timeout,
         requests.exceptions.ConnectionError,
         ValueError,

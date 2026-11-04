@@ -342,3 +342,20 @@ export const experimentsHistory: ExperimentRunSummary[] = [
     backend: "neo4j",
   },
 ];
+
+/** `GET /api/sources`: the fetch jobs of the official sources, none started. */
+export const sourceStatus = (source: "legi" | "eurlex", extra: Record<string, unknown> = {}) => ({
+  source,
+  corpus: source === "legi" ? "bench_legi_consommation_fr" : "bench_eurlex_compliance",
+  state: "idle",
+  stage: null,
+  progress: { done: 0, total: null },
+  started_at: null,
+  finished_at: null,
+  error: null,
+  result: null,
+  command: source === "legi" ? "raglab legifrance fetch --code consommation" : "raglab eurlex fetch",
+  ...extra,
+});
+
+export const sources = [sourceStatus("legi"), sourceStatus("eurlex")];

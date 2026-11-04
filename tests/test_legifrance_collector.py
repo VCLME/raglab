@@ -202,6 +202,17 @@ def test_an_earlier_commit_freezes_an_earlier_state(code_repository: Path):
     assert sidecars["LEGIARTI20A"]["ended_by"] is None
 
 
+def test_progress_counts_every_article_version(code_repository: Path):
+    calls: list[tuple[int, int]] = []
+    CodeCollector().collect(
+        code="consommation",
+        output_dir=code_repository,
+        commit="HEAD",
+        progress=lambda done, total: calls.append((done, total)),
+    )
+    assert calls[-1][0] == calls[-1][1] == len(calls)
+
+
 def test_current_versions_only(code_repository: Path):
     result = CodeCollector().collect(code="consommation", output_dir=code_repository, commit="HEAD", versions="current")
     assert set(_sidecars(code_repository)) == {"LEGIARTI18", "LEGIARTI20B"}

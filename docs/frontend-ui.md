@@ -201,7 +201,7 @@ Onglets :
 - **Dossier local** : chemin de dossier **cote serveur** (memes semantiques que la CLI), nom de corpus, description, tags ; resume `ingeres / maj / ignores`.
 - **Jeux de référence** : télécharge un jeu Q/R (PIAF, FQuAD…) qui produit un corpus et son ground truth.
 - **LexML Brasil** : `get-data` (collecte) et `load` (collecte + ingest + indexation, long).
-- **Légifrance et EUR-Lex** : le Code de la consommation ([corpus-legi.md](corpus-legi.md)) et les textes européens de conformité ([corpus-eurlex.md](corpus-eurlex.md)). L'API n'a pas d'endpoint pour les récupérer : l'onglet donne les commandes (`raglab legifrance fetch --code consommation`, `raglab eurlex fetch`), la source et la licence, et dit si le corpus (`bench_legi_consommation_fr`, `bench_eurlex_compliance`) est déjà dans le lab.
+- **Légifrance et EUR-Lex** : le Code de la consommation ([corpus-legi.md](corpus-legi.md)) et les textes européens de conformité ([corpus-eurlex.md](corpus-eurlex.md)). Le bouton « Collecter et ingérer » lance une tâche de fond de l'API (`POST /api/sources/{legi|eurlex}/fetch`) : l'onglet affiche son étape (collecte, vérification du manifeste, ingestion) et sa progression, l'erreur éventuelle, puis rafraîchit le parcours de l'Atelier quand elle se termine. Une tâche lancée plus tôt (autre onglet, avant un rechargement) est reprise. La collecte n'indexe pas : l'étape suivante reste Découpage puis Vectorisation. L'onglet garde les commandes (`raglab legifrance fetch --code consommation`, `raglab eurlex fetch`) comme alternative, avec la source et la licence, et dit si le corpus (`bench_legi_consommation_fr`, `bench_eurlex_compliance`) est déjà dans le lab.
 
 #### Découpage (`/workshop/chunking`)
 

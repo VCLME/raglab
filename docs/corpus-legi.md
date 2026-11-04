@@ -31,6 +31,8 @@ La commande clone le dépôt **sans le déployer** (`git clone --bare`) : une fo
 
 Deux collectes indépendantes donnent un manifeste identique. Durée : environ une minute.
 
+Sans la ligne de commande : l'onglet Corpus › « Légifrance et EUR-Lex » de l'Atelier (bouton « Collecter et ingérer ») lance la même collecte en tâche de fond, puis ingère le corpus dans `bench_legi_consommation_fr` sans l'indexer (`POST /api/sources/legi/fetch`, ou `raglab sources fetch legi` ; voir [api-production.md](api-production.md#collecte-des-sources-officielles--apisources)).
+
 ### Un document par version d'article
 
 - **L'article est l'unité que cite un juriste.** « Article L. 221-18 du code de la consommation » désigne un document, retrouvé par ses métadonnées, sans chercher où l'article commence dans un texte plus long (ce que le résolveur doit faire sur les lois brésiliennes).
