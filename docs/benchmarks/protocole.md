@@ -126,13 +126,13 @@ La pertinence reste au niveau du passage du fichier tiré : retrouver le même a
 
 ## Changer de générateur
 
-Par défaut, les réponses notées sont écrites par le générateur de production (Ollama, `qwen2.5:7b`) pendant la boucle de recherche. Pour mesurer un autre modèle sans changer la production :
+Par défaut, les réponses notées sont écrites par Ollama `qwen2.5:7b` pendant la boucle de recherche, comme dans tous les runs jusqu'à `prompt-v4` : le fournisseur est nommé explicitement, la suite ne suit pas le rédacteur de l'API. Depuis `gen-qwen36-v1`, le rédacteur de production est Qwen3.6 via llama.cpp ; pour le mesurer, ou un autre modèle :
 
 ```bash
 raglab bench all --label gen-qwen36-v1 --generator-provider llamacpp --generator-profile qwen35b-moe
 ```
 
-Avec un autre fournisseur qu'Ollama, la génération devient une passe à part : la recherche tourne d'abord sur toutes les questions, le cross-encoder est libéré, llama-server démarre avec le profil demandé, écrit les réponses (même prompt, mêmes 5 passages qu'en production), puis s'arrête avant que le juge démarre le sien. Les deux modèles ne sont jamais chargés ensemble. Le fichier de résultat note le générateur (`generator`) ; le juge reste Gemma 4, d'une autre famille.
+Avec un autre fournisseur qu'Ollama, la génération devient une passe à part : la recherche tourne d'abord sur toutes les questions, le cross-encoder est libéré, llama-server démarre avec le profil demandé, écrit les réponses (même prompt, mêmes 5 passages qu'en production), puis s'arrête avant que le juge démarre le sien. Les deux modèles ne sont jamais chargés ensemble. `LocalLLMServer` vérifie le modèle servi (`/v1/models`) : un rédacteur laissé chargé par l'API est arrêté avant la passe du juge, qui ne note donc jamais avec lui. Le fichier de résultat note le générateur (`generator`) ; le juge reste Gemma 4, d'une autre famille.
 
 ## Limites connues
 

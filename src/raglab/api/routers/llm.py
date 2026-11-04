@@ -6,6 +6,7 @@ from contextvars import copy_context
 from fastapi import APIRouter, Depends
 
 from raglab.api.deps import get_current_settings
+from raglab.api.routers.health import generator_status
 from raglab.api.schemas import LLMModelsResponse, LLMProviderInfo
 from raglab.config import Settings
 from raglab.llm.providers import describe_provider
@@ -19,7 +20,8 @@ def list_llm_models(settings: Settings = Depends(get_current_settings)) -> LLMMo
 
     Servers are probed in parallel with RAGLAB_READY_TIMEOUT_SECONDS each; an
     unreachable one is reported `available: false` instead of failing the call.
-    llama-server is never started from here.
+    `generator` says whether the default writer (Qwen3.6 on llama.cpp)
+    answers or its fallback. llama-server is never started from here.
     """
     names = settings.llm_provider_names
     timeout = settings.ready_timeout_seconds
@@ -29,10 +31,12 @@ def list_llm_models(settings: Settings = Depends(get_current_settings)) -> LLMMo
             pool.submit(copy_context().run, describe_provider, settings, name, timeout=timeout) for name in names
         ]
         entries = [future.result() for future in futures]
+        generator = generator_status(settings)
     providers = [LLMProviderInfo(**entry) for entry in entries]
     default = next(provider for provider in providers if provider.name == settings.default_llm_provider)
     return LLMModelsResponse(
         default_provider=settings.default_llm_provider,
         default_model=default.default_model,
         providers=providers,
+        generator=generator,
     )

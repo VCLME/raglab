@@ -52,11 +52,12 @@ LOGGER = logging.getLogger(__name__)
 class GeneratorConfig:
     """Which model writes the benchmark answers.
 
-    `provider=None` (or "ollama") keeps the production path: answers are
-    generated during the retrieval loop. Another provider (llama.cpp, vLLM)
+    `provider=None` (or "ollama") generates with Ollama during the retrieval
+    loop (qwen2.5:7b, the generator of every run before gen-qwen36-v1),
+    whatever the API's default writer is. Another provider (llama.cpp, vLLM)
     generates in a pass of its own once retrieval is done and the
     cross-encoder released; with "llamacpp", llama-server is started for that
-    pass with `profile` (default `RAGLAB_QUESTION_MODEL_PROFILE`) and stopped
+    pass with `profile` (default `RAGLAB_WRITER_MODEL_PROFILE`) and stopped
     before the judge's own server starts.
     """
 
@@ -74,7 +75,7 @@ class GeneratorConfig:
         if self.model:
             return f"{self.provider}:{self.model}"
         if self.provider == "llamacpp":
-            return f"llamacpp:{self.profile or settings.question_model_profile}"
+            return f"llamacpp:{self.profile or settings.writer_model_profile}"
         return f"{self.provider}:default"
 
 
@@ -425,6 +426,10 @@ class RecallBenchmarkService:
                     # Retrieval keeps max_k chunks for Recall@k, but the
                     # answer is generated from the production top-k only.
                     query_kwargs["generation_top_k"] = generation_top_k
+                    # Named, not left to the default writer: this path is
+                    # the Ollama generator its label says, never llama.cpp
+                    # next to the cross-encoder.
+                    query_kwargs["llm_provider"] = "ollama"
                 response = self.query_service.query(**query_kwargs)
                 retrieved = [chunk.model_dump() for chunk in response.retrieved_chunks]
                 flags = relevance_flags(retrieved, is_relevant=lambda chunk: self._is_relevant(case, chunk))  # noqa: B023 (called immediately)
@@ -600,7 +605,7 @@ class RecallBenchmarkService:
         # Deferred generation is pgvector-only (see `run`), so this is a QueryService.
         answerer = cast(QueryService, self.query_service).generator_for(generator.provider)
         server: AbstractContextManager[Any] = (
-            LocalLLMServer(self.settings, profile=generator.profile or self.settings.question_model_profile)
+            LocalLLMServer(self.settings, profile=generator.profile or self.settings.writer_model_profile)
             if generator.provider == "llamacpp"
             else nullcontext()
         )

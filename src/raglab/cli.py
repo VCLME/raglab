@@ -197,7 +197,7 @@ def bench_all(
     generator_provider: str | None = typer.Option(
         None,
         "--generator-provider",
-        help="Fournisseur qui ecrit les reponses notees : ollama (defaut, production) ou llamacpp / vllm (passe de generation separee apres la recherche).",
+        help="Fournisseur qui ecrit les reponses notees : ollama (defaut, qwen2.5:7b comme les runs precedents) ou llamacpp / vllm (passe de generation separee apres la recherche ; llamacpp = redacteur de production depuis gen-qwen36-v1).",
     ),
     generator_model: str | None = typer.Option(
         None, "--generator-model", help="Modele du generateur (defaut : celui du fournisseur)."
@@ -205,7 +205,7 @@ def bench_all(
     generator_profile: str | None = typer.Option(
         None,
         "--generator-profile",
-        help="Profil llama.cpp a demarrer pour la generation (defaut : RAGLAB_QUESTION_MODEL_PROFILE).",
+        help="Profil llama.cpp a demarrer pour la generation (defaut : RAGLAB_WRITER_MODEL_PROFILE).",
     ),
 ) -> None:
     """Regenerer les chiffres de benchmark (PIAF + LexML, Code de la consommation sur demande) dans benchmarks/results/."""
@@ -1063,7 +1063,8 @@ def query(
         None,
         "--provider",
         help="Fournisseur de generation : ollama, llamacpp ou vllm, parmi RAGLAB_LLM_PROVIDERS "
-        "(defaut : RAGLAB_DEFAULT_LLM_PROVIDER). llama-server doit deja tourner.",
+        "(defaut : RAGLAB_DEFAULT_LLM_PROVIDER, Qwen3.6 sur llama.cpp demarre si besoin, "
+        "sinon RAGLAB_LLM_FALLBACK_PROVIDER ; generator_notice dit pourquoi).",
     ),
 ) -> None:
     filters = build_retrieval_filters(

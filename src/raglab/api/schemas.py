@@ -15,6 +15,28 @@ def _check_versions(value: str | None) -> str | None:
     return value.strip() if isinstance(value, str) else value
 
 
+class GeneratorStatus(BaseModel):
+    """Default answer writer (llama.cpp) and who answers right now."""
+
+    provider: str
+    model: str
+    # Name shown in the Chat LLM picker ("Qwen3.6").
+    label: str
+    profile: str
+    # ready, stopped (started by the next query), starting, busy (serves
+    # another model), down (cannot be started) or failed (last start failed).
+    status: str
+    # Set when the fallback answers: llamacpp_unavailable, llamacpp_starting
+    # or llamacpp_busy (same values as QueryResponse.generator_notice).
+    notice: str | None = None
+    active_provider: str
+    active_model: str | None = None
+    active_provider_label: str
+    fallback_provider: str | None = None
+    autostart: bool = False
+    error: str | None = None
+
+
 class HealthResponse(BaseModel):
     status: str
     api: str
@@ -24,6 +46,8 @@ class HealthResponse(BaseModel):
     default_generation_model: str
     default_generation_model_installed: bool | None = None
     adminer_url: str
+    # None when the default provider is not llama.cpp.
+    generator: GeneratorStatus | None = None
 
 
 class LivenessResponse(BaseModel):
@@ -34,6 +58,7 @@ class ReadinessResponse(BaseModel):
     status: str
     checks: dict[str, str]
     default_generation_model: str
+    generator: GeneratorStatus | None = None
 
 
 class ConfigResponse(BaseModel):
@@ -80,6 +105,34 @@ class ConfigResponse(BaseModel):
     default_llm_provider: str = "ollama"
 
 
+class GenerationSettings(BaseModel):
+    """Settings an answer is generated with; None = the server's own default,
+    unknown to raglab."""
+
+    temperature: float | None = None
+    top_p: float | None = None
+    max_tokens: int | None = None
+    # Context window in tokens.
+    context: int | None = None
+    # Fields raglab sets in each request (the rest are server defaults).
+    sent_by_raglab: list[str] = Field(default_factory=list)
+    # "raglab" (only what raglab sends is known) or "server" (llama-server /props).
+    source: str = "raglab"
+
+
+class LlamaCppServerInfo(BaseModel):
+    """Writer profile and lifecycle switches (the commands are never exposed)."""
+
+    writer_profile: str
+    # Model id the writer server must list in /v1/models (its --alias).
+    writer_model: str
+    start_command_configured: bool
+    stop_command_configured: bool
+    autostart: bool
+    # RAGLAB_LLAMACPP_PROFILE_OPTIONS: {profile: {ctx_size, n_cpu_moe}}.
+    profile_options: dict[str, dict[str, int]] = Field(default_factory=dict)
+
+
 class LLMProviderInfo(BaseModel):
     name: str
     label: str
@@ -92,12 +145,17 @@ class LLMProviderInfo(BaseModel):
     models: list[str] = Field(default_factory=list)
     # Model used when a request names none (None = the server's choice).
     default_model: str | None = None
+    generation: GenerationSettings | None = None
+    # llama.cpp only.
+    llamacpp: LlamaCppServerInfo | None = None
 
 
 class LLMModelsResponse(BaseModel):
     default_provider: str
     default_model: str | None = None
     providers: list[LLMProviderInfo]
+    # Default writer and its fallback state (None when the default is not llama.cpp).
+    generator: GeneratorStatus | None = None
 
 
 class OllamaPullRequest(BaseModel):
