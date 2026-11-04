@@ -194,10 +194,16 @@ class QueryRouter:
 
     def _knn_classifier(self):
         calibration = load_joint_calibration(self.settings.routing_intent_calibration_path)
+        if calibration is None:
+            return get_knn_intent_classifier(self.embedder, self.settings.routing_corpus_examples_path, DEFAULT_K)
         return get_knn_intent_classifier(
             self.embedder,
             self.settings.routing_corpus_examples_path,
-            calibration.k if calibration is not None else DEFAULT_K,
+            calibration.k,
+            questions=calibration.documentary_questions,
+            training_path=(
+                self.settings.routing_intent_training_path if calibration.examples == "first_person" else None
+            ),
         )
 
     def _joint(self, decision: RoutingDecision, retrieved: Sequence[Any]) -> tuple[float, float] | None:

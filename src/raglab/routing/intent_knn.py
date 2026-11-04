@@ -181,6 +181,12 @@ class JointCalibration:
     quantile: float
     groups: dict[str, dict[str, JointGroup]]
     logistic: LogisticIntent | None = None
+    # Documentary neighbours the calibration was computed with (empty: the
+    # questions of `routing_corpus_examples_path`, as in #80).
+    documentary_questions: tuple[str, ...] = ()
+    # Labelled examples: "more" (`MORE_EXAMPLES`, #80) or "first_person"
+    # (plus `routing_intent_training_path`).
+    examples: str = "more"
 
     def group(self, corpus_name: str | None, language: str | None) -> JointGroup | None:
         return (self.groups.get(corpus_name or "") or {}).get(language or "")
@@ -222,6 +228,8 @@ def build_joint_calibration(
 def parse_joint_calibration(payload: dict[str, Any]) -> JointCalibration:
     logistic = payload.get("logistic")
     return JointCalibration(
+        documentary_questions=tuple(payload.get("documentary_questions") or ()),
+        examples=str(payload.get("examples") or "more"),
         k=int(payload["k"]),
         quantile=float(payload["quantile"]),
         groups={
@@ -246,7 +254,7 @@ def parse_joint_calibration(payload: dict[str, Any]) -> JointCalibration:
 
 # ---------------------------------------------------------------- caches
 
-_CLASSIFIERS: dict[tuple[str, float, int, int], tuple[Any, KnnIntentClassifier]] = {}
+_CLASSIFIERS: dict[tuple[Any, ...], tuple[Any, KnnIntentClassifier]] = {}
 _CALIBRATIONS: dict[tuple[str, float], JointCalibration | None] = {}
 _LOCK = Lock()
 
@@ -277,15 +285,43 @@ def documentary_questions(path: Path) -> list[str]:
     ]
 
 
-def get_knn_intent_classifier(embedder: Any, questions_path: Path, k: int = DEFAULT_K) -> KnnIntentClassifier:
-    """Embed the neighbours once per (questions file, embedder, k)."""
-    key = (str(questions_path.resolve()), _mtime(questions_path), id(embedder), k)
+def load_training_examples(path: Path) -> list[tuple[str, str, str]]:
+    """(intent, language, text) rows of a training JSONL file (`intent_training.jsonl`)."""
+    if not path.is_file():
+        return []
+    rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    return [(row["intent"], row["language"], row["text"]) for row in rows]
+
+
+def get_knn_intent_classifier(
+    embedder: Any,
+    questions_path: Path,
+    k: int = DEFAULT_K,
+    *,
+    questions: tuple[str, ...] = (),
+    training_path: Path | None = None,
+) -> KnnIntentClassifier:
+    """Embed the neighbours once per (neighbour set, embedder, k).
+
+    `questions`: documentary neighbours named by the calibration file (else
+    those of `questions_path`); `training_path`: extra labelled examples."""
+    sources = (str(questions_path.resolve()), _mtime(questions_path)) if not questions else (hash(questions), 0.0)
+    training = (str(training_path.resolve()), _mtime(training_path)) if training_path is not None else ("", 0.0)
+    key = (*sources, *training, id(embedder), k)
     with _LOCK:
         cached = _CLASSIFIERS.get(key)
     # Keep a reference to the embedder: a recycled id() must not match.
     if cached is not None and cached[0] is embedder:
         return cached[1]
-    classifier = KnnIntentClassifier(embedder, k=k, documentary_questions=documentary_questions(questions_path))
+    examples = list(iter_examples(extended=True))
+    if training_path is not None:
+        examples += load_training_examples(training_path)
+    classifier = KnnIntentClassifier(
+        embedder,
+        k=k,
+        examples=examples,
+        documentary_questions=list(questions) or documentary_questions(questions_path),
+    )
     with _LOCK:
         _CLASSIFIERS[key] = (embedder, classifier)
     return classifier

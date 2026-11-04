@@ -297,6 +297,10 @@ class Settings(BaseSettings):
     # declines first-person questions of real users (BR Expat false refusals
     # 3 -> 15 of 38): off keeps the kNN gate and the joint rule only.
     routing_intent_logistic: bool = True
+    # Labelled examples added to the kNN neighbours and the logistic training
+    # when the calibration file says `"examples": "first_person"`
+    # (first-person documentary questions, docs/intentions.md).
+    routing_intent_training_path: Path = Field(default_factory=lambda: Path("benchmarks/routing/intent_training.jsonl"))
     routing_intent_calibration_path: Path = Field(
         default_factory=lambda: Path("benchmarks/routing/intent_calibration.json")
     )

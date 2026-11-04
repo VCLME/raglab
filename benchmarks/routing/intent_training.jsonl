@@ -1,0 +1,242 @@
+{"intent": "documentary", "language": "fr", "text": "J'ai acheté un aspirateur en ligne il y a huit jours, est-ce que je peux encore le renvoyer sans donner de raison ?"}
+{"intent": "documentary", "language": "fr", "text": "Mon lave-linge est tombé en panne au bout de 14 mois, le vendeur me renvoie vers le fabricant, il a le droit ?"}
+{"intent": "documentary", "language": "fr", "text": "je veux résilier mon abonnement à la salle de sport mais ils me disent que c'est engagement 12 mois, c'est légal"}
+{"intent": "documentary", "language": "fr", "text": "Je me suis abonné à un magazine par téléphone et je n'ai jamais signé, je suis obligé de payer ?"}
+{"intent": "documentary", "language": "fr", "text": "Mon opérateur internet augmente son prix en cours de contrat : est-ce que je peux résilier sans frais ?"}
+{"intent": "documentary", "language": "fr", "text": "J'ai commandé un canapé sur mesure, le délai de rétractation de quatorze jours s'applique aussi ?"}
+{"intent": "documentary", "language": "fr", "text": "Le colis que j'ai commandé est arrivé abîmé, qui est responsable, moi ou le site marchand ?"}
+{"intent": "documentary", "language": "fr", "text": "On m'a vendu un téléphone reconditionné qui ne charge plus après 3 mois, quelle garantie je peux invoquer ?"}
+{"intent": "documentary", "language": "fr", "text": "Ma mutuelle refuse que je la résilie avant la date anniversaire, alors que ça fait plus d'un an que je suis adhérent. Quelles sont mes options ?"}
+{"intent": "documentary", "language": "fr", "text": "Un démarcheur est venu chez moi et m'a fait signer pour des panneaux solaires, je peux annuler ?"}
+{"intent": "documentary", "language": "fr", "text": "Je n'ai pas reçu ma commande et le vendeur ne répond plus, au bout de combien de temps je peux annuler et être remboursé ?"}
+{"intent": "documentary", "language": "fr", "text": "est-ce qu'un commerçant peut refuser que je paye en espèces pour 20 euros"}
+{"intent": "documentary", "language": "fr", "text": "Je suis en CDI depuis trois ans et je veux démissionner, quel préavis je dois respecter ?"}
+{"intent": "documentary", "language": "fr", "text": "Mon employeur me demande de travailler le dimanche sans majoration, est-ce que c'est permis ?"}
+{"intent": "documentary", "language": "fr", "text": "Je suis enceinte, à partir de quand commence mon congé maternité et combien de semaines il dure ?"}
+{"intent": "documentary", "language": "fr", "text": "On me propose une rupture conventionnelle, est-ce que j'aurai droit au chômage ensuite ?"}
+{"intent": "documentary", "language": "fr", "text": "Je suis en période d'essai, mon patron peut-il me renvoyer du jour au lendemain ?"}
+{"intent": "documentary", "language": "fr", "text": "J'ai des jours de congés payés non pris au moment où je quitte l'entreprise, ils sont perdus ?"}
+{"intent": "documentary", "language": "fr", "text": "Mon contrat de travail prévoit une clause de non-concurrence sans contrepartie financière, est-elle valable ?"}
+{"intent": "documentary", "language": "fr", "text": "Je fais régulièrement des heures sup non payées, sur combien d'années je peux réclamer les rappels de salaire ?"}
+{"intent": "documentary", "language": "fr", "text": "Mon fils de 16 ans veut travailler cet été, combien d'heures par jour il a le droit de faire ?"}
+{"intent": "documentary", "language": "fr", "text": "J'ai été licencié pour faute grave, est-ce que j'ai droit à une indemnité ?"}
+{"intent": "documentary", "language": "fr", "text": "nous sommes 15 salariés dans la boîte, est ce qu'on doit élire un CSE"}
+{"intent": "documentary", "language": "fr", "text": "Je déménage au Brésil l'an prochain, est-ce que j'ai besoin d'un CPF pour ouvrir un compte bancaire ?"}
+{"intent": "documentary", "language": "fr", "text": "Ma femme est brésilienne, comment je peux obtenir un titre de séjour pour vivre avec elle là-bas ?"}
+{"intent": "documentary", "language": "fr", "text": "Je suis retraité français et je veux m'installer à Fortaleza, il existe un visa spécifique pour les retraités ?"}
+{"intent": "documentary", "language": "fr", "text": "Si je loue un appartement à São Paulo, le propriétaire peut-il me demander plusieurs garanties à la fois ?"}
+{"intent": "documentary", "language": "fr", "text": "Je veux ouvrir une petite entreprise au Brésil en tant qu'étranger, est-ce que je peux être MEI ?"}
+{"intent": "documentary", "language": "fr", "text": "Est-ce que je dois déclarer mes revenus français à la Receita Federal une fois résident au Brésil ?"}
+{"intent": "documentary", "language": "fr", "text": "J'ai cotisé dix ans en France, ces années comptent-elles pour ma retraite brésilienne grâce à l'accord bilatéral ?"}
+{"intent": "documentary", "language": "fr", "text": "Nous sommes une PME qui traite des données de santé, est-ce qu'on doit obligatoirement désigner un DPO ?"}
+{"intent": "documentary", "language": "fr", "text": "Notre société a subi une fuite de données clients vendredi, dans quel délai doit-on notifier la CNIL ?"}
+{"intent": "documentary", "language": "fr", "text": "On développe un outil de tri de CV avec de l'IA, est-ce qu'il est classé à haut risque par l'AI Act ?"}
+{"intent": "documentary", "language": "fr", "text": "Je suis DPO d'une mairie : combien de temps peut-on conserver les images de vidéosurveillance ?"}
+{"intent": "documentary", "language": "fr", "text": "Notre fintech externalise son hébergement chez un cloud américain, quelles obligations DORA s'appliquent à ce contrat ?"}
+{"intent": "documentary", "language": "fr", "text": "Mon entreprise fabrique des équipements médicaux, sommes-nous une entité essentielle ou importante au sens de NIS2 ?"}
+{"intent": "documentary", "language": "fr", "text": "Un client nous demande la copie de toutes ses données personnelles, on a combien de temps pour lui répondre ?"}
+{"intent": "documentary", "language": "fr", "text": "Notre chatbot doit-il indiquer aux utilisateurs qu'ils parlent à une IA ?"}
+{"intent": "documentary", "language": "fr", "text": "je code une appli mobile, est-ce que j'ai besoin du consentement pour mettre des cookies de mesure d'audience"}
+{"intent": "documentary", "language": "fr", "text": "Nous voulons transférer des données RH vers notre filiale en Inde, quelles garanties le RGPD exige-t-il ?"}
+{"intent": "documentary", "language": "fr", "text": "En tant que banque, on doit tester notre résilience opérationnelle numérique à quelle fréquence selon DORA ?"}
+{"intent": "documentary", "language": "fr", "text": "Notre start-up entraîne un modèle d'IA à usage général, quelles informations doit-on publier sur les données d'entraînement ?"}
+{"intent": "documentary", "language": "fr", "text": "Je prépare un exposé sur la Révolution française, en quelle année a eu lieu la prise de la Bastille ?"}
+{"intent": "documentary", "language": "fr", "text": "Mon fils me demande pourquoi le ciel est bleu, comment je peux lui expliquer simplement ?"}
+{"intent": "documentary", "language": "fr", "text": "J'ai un contrôle demain sur la photosynthèse, quels sont les produits de la réaction ?"}
+{"intent": "documentary", "language": "fr", "text": "Ma fille veut savoir qui a peint La Joconde et à quelle époque"}
+{"intent": "documentary", "language": "fr", "text": "Je lis un roman qui se passe pendant la guerre de Cent Ans, elle a duré combien de temps en réalité ?"}
+{"intent": "documentary", "language": "fr", "text": "Pour mon mémoire j'ai besoin de savoir quand le traité de Maastricht a été signé"}
+{"intent": "documentary", "language": "fr", "text": "On visite Pompéi cet été avec les enfants, en quelle année le Vésuve a-t-il détruit la ville ?"}
+{"intent": "documentary", "language": "fr", "text": "Je me demande depuis toujours comment fonctionne un arc-en-ciel"}
+{"intent": "documentary", "language": "fr", "text": "Mon neveu m'a demandé quelle est la plus haute montagne d'Afrique et j'ai séché"}
+{"intent": "documentary", "language": "fr", "text": "Je révise le bac de philo, que dit Descartes avec le cogito ?"}
+{"intent": "documentary", "language": "fr", "text": "Nous préparons un quiz entre amis : quel est le plus long fleuve d'Europe ?"}
+{"intent": "documentary", "language": "fr", "text": "j'ai toujours confondu chlorophylle et chloroplaste, c'est quoi la diff"}
+{"intent": "documentary", "language": "fr", "text": "Mon grand-père a fait la guerre d'Algérie, quand a-t-elle officiellement pris fin ?"}
+{"intent": "documentary", "language": "fr", "text": "Je voyage au Japon le mois prochain et j'aimerais comprendre ce qu'était l'ère Meiji"}
+{"intent": "documentary", "language": "fr", "text": "Je suis curieuse : pourquoi Pluton n'est plus considérée comme une planète ?"}
+{"intent": "documentary", "language": "fr", "text": "On a vu un documentaire sur les volcans hier, quelle est la différence entre lave et magma ?"}
+{"intent": "documentary", "language": "fr", "text": "Pour un devoir sur l'Union européenne, j'ai besoin de savoir combien de pays en font partie"}
+{"intent": "documentary", "language": "fr", "text": "Ma classe étudie la Déclaration des droits de l'homme, en quelle année a-t-elle été adoptée ?"}
+{"intent": "documentary", "language": "pt", "text": "Sou francês e vou morar no Brasil, preciso tirar o RNM em quanto tempo depois de chegar?"}
+{"intent": "documentary", "language": "pt", "text": "Meu marido é brasileiro, eu consigo autorização de residência por reunião familiar?"}
+{"intent": "documentary", "language": "pt", "text": "Tenho visto de estudante, posso trabalhar meio período enquanto faço a faculdade?"}
+{"intent": "documentary", "language": "pt", "text": "Moro no Brasil há quatro anos, já posso pedir naturalização?"}
+{"intent": "documentary", "language": "pt", "text": "Quero trazer minha mãe idosa pra morar comigo aqui, qual visto ela precisa"}
+{"intent": "documentary", "language": "pt", "text": "Perdi meu passaporte e meu visto estava nele, o que eu faço pra regularizar minha situação migratória?"}
+{"intent": "documentary", "language": "pt", "text": "Sou aposentado na França, existe visto temporário para aposentado no Brasil? quanto preciso comprovar de renda?"}
+{"intent": "documentary", "language": "pt", "text": "Fiquei mais tempo do que o permitido como turista, qual a multa que vou pagar?"}
+{"intent": "documentary", "language": "pt", "text": "Sou nômade digital e trabalho para uma empresa estrangeira, posso pedir residência no Brasil?"}
+{"intent": "documentary", "language": "pt", "text": "Sou estrangeiro e não tenho CPF ainda, como faço pra tirar?"}
+{"intent": "documentary", "language": "pt", "text": "Eu passei a morar no Brasil em março, a partir de quando sou considerado residente fiscal?"}
+{"intent": "documentary", "language": "pt", "text": "Recebo aluguel de um apartamento que tenho na França, preciso declarar no imposto de renda aqui?"}
+{"intent": "documentary", "language": "pt", "text": "Vendi meu carro com lucro, tenho que pagar imposto sobre ganho de capital?"}
+{"intent": "documentary", "language": "pt", "text": "A gente vai mandar dinheiro pra fora do Brasil todo mês, incide IOF nessa operação?"}
+{"intent": "documentary", "language": "pt", "text": "Ganho 4.500 reais por mês de salário, ainda vou pagar imposto de renda em 2026?"}
+{"intent": "documentary", "language": "pt", "text": "Minha empresa vai me pagar dividendos este ano, eles são tributados?"}
+{"intent": "documentary", "language": "pt", "text": "Fiz um PIX de valor alto pro meu irmão, ele vai ter que declarar como doação?"}
+{"intent": "documentary", "language": "pt", "text": "eu sou MEI, qual o limite de faturamento por ano"}
+{"intent": "documentary", "language": "pt", "text": "Esqueci de entregar a declaração do imposto de renda no prazo, qual a multa?"}
+{"intent": "documentary", "language": "pt", "text": "Sou autônomo e presto serviço pra outras cidades, o ISS é pago onde?"}
+{"intent": "documentary", "language": "pt", "text": "Trabalhei 10 anos na França e 15 no Brasil, posso somar o tempo pra me aposentar?"}
+{"intent": "documentary", "language": "pt", "text": "Sou dona de casa e não tenho renda, posso contribuir para o INSS como facultativa?"}
+{"intent": "documentary", "language": "pt", "text": "Quanto eu pago de INSS como contribuinte individual?"}
+{"intent": "documentary", "language": "pt", "text": "Fui demitido sem justa causa, tenho direito ao seguro-desemprego?"}
+{"intent": "documentary", "language": "pt", "text": "Minha licença-maternidade é de quantos dias se eu trabalho com carteira assinada?"}
+{"intent": "documentary", "language": "pt", "text": "Contratei uma empregada doméstica, quais contribuições eu tenho que recolher?"}
+{"intent": "documentary", "language": "pt", "text": "Fiquei doente e não consigo trabalhar, a partir de quando o INSS paga o auxílio por incapacidade?"}
+{"intent": "documentary", "language": "pt", "text": "Quero abrir uma empresa no Brasil com um sócio francês, que tipo de sociedade é mais simples?"}
+{"intent": "documentary", "language": "pt", "text": "A gente vai abrir uma LTDA, a responsabilidade dos sócios fica limitada ao capital?"}
+{"intent": "documentary", "language": "pt", "text": "Estrangeiro sem residência pode ser sócio de empresa brasileira?"}
+{"intent": "documentary", "language": "pt", "text": "Minha empresa fatura 3 milhões por ano, posso optar pelo Simples Nacional?"}
+{"intent": "documentary", "language": "pt", "text": "Meu restaurante está no lucro presumido, qual percentual da receita vira base do IRPJ?"}
+{"intent": "documentary", "language": "pt", "text": "Aluguei um apartamento e o proprietário quer me tirar antes do fim do contrato, ele pode?"}
+{"intent": "documentary", "language": "pt", "text": "Quero sair do imóvel alugado antes de 30 meses, vou ter que pagar multa?"}
+{"intent": "documentary", "language": "pt", "text": "O dono do apartamento pode pedir caução e fiador ao mesmo tempo?"}
+{"intent": "documentary", "language": "pt", "text": "Vou casar com uma brasileira sem pacto antenupcial, qual o regime de bens?"}
+{"intent": "documentary", "language": "pt", "text": "Meu pai faleceu e deixou um imóvel, como fica a divisão entre os filhos e a viúva?"}
+{"intent": "documentary", "language": "pt", "text": "Comprei um carro usado e apareceu defeito oculto, quanto tempo tenho pra reclamar?"}
+{"intent": "documentary", "language": "pt", "text": "Moro com minha namorada há três anos, isso já é união estável?"}
+{"intent": "documentary", "language": "pt", "text": "Meu vizinho fez uma obra que invadiu meu terreno, o que diz o código civil?"}
+{"intent": "documentary", "language": "pt", "text": "Comprei uma geladeira com defeito, a loja tem que trocar em quantos dias?"}
+{"intent": "documentary", "language": "pt", "text": "Estou fazendo um trabalho da escola sobre a Independência do Brasil, em que ano foi?"}
+{"intent": "documentary", "language": "pt", "text": "Meu filho perguntou por que a Lua muda de forma, como explico?"}
+{"intent": "documentary", "language": "pt", "text": "Vou visitar Ouro Preto e queria entender o que foi a Inconfidência Mineira"}
+{"intent": "documentary", "language": "pt", "text": "Minha professora pediu pra pesquisar quem foi Santos Dumont, o que ele inventou?"}
+{"intent": "documentary", "language": "pt", "text": "A gente vai pra Amazônia em julho, qual é o maior afluente do rio Amazonas?"}
+{"intent": "documentary", "language": "pt", "text": "Tô estudando pro ENEM, o que foi a Revolução de 1930?"}
+{"intent": "documentary", "language": "pt", "text": "Fiquei curioso: por que o Brasil fala português e o resto da América do Sul espanhol?"}
+{"intent": "documentary", "language": "pt", "text": "Preciso explicar pra minha turma como funciona a fotossíntese"}
+{"intent": "documentary", "language": "pt", "text": "Minha avó falava da Era Vargas, quando ela começou e terminou?"}
+{"intent": "documentary", "language": "en", "text": "I'm moving to Brazil next year, do I pay tax there on my French savings account interest?"}
+{"intent": "documentary", "language": "en", "text": "My wife is Brazilian, can I get a residence permit based on our marriage?"}
+{"intent": "documentary", "language": "en", "text": "I'm a retired British citizen planning to live in Brazil, is there a visa for retirees?"}
+{"intent": "documentary", "language": "en", "text": "I overstayed my tourist visa in Brazil by a week, what penalty should I expect?"}
+{"intent": "documentary", "language": "en", "text": "We want to open a limited company in Brazil with a local partner, are we personally liable for its debts?"}
+{"intent": "documentary", "language": "en", "text": "I rent a flat in Rio and my landlord wants both a deposit and a guarantor, is that allowed?"}
+{"intent": "documentary", "language": "en", "text": "do i need a CPF to buy a phone plan in brazil"}
+{"intent": "documentary", "language": "en", "text": "I've lived in Brazil for four years, can I apply for citizenship now?"}
+{"intent": "documentary", "language": "en", "text": "We run an e-commerce site in Germany, how long do we have to report a personal data breach?"}
+{"intent": "documentary", "language": "en", "text": "Our company is building an AI system that scores loan applicants, is that high-risk under the AI Act?"}
+{"intent": "documentary", "language": "en", "text": "As a DPO, I need to know when a data protection impact assessment is mandatory."}
+{"intent": "documentary", "language": "en", "text": "We're a payment institution: does DORA require us to keep a register of our ICT third-party providers?"}
+{"intent": "documentary", "language": "en", "text": "Our hospital group operates in three EU countries, are we in scope of NIS2?"}
+{"intent": "documentary", "language": "en", "text": "I'm a developer adding analytics to our app, do we need user consent under GDPR?"}
+{"intent": "documentary", "language": "en", "text": "A customer asked us to delete all their data, are there cases where we can refuse?"}
+{"intent": "documentary", "language": "en", "text": "We use a chatbot on our website, what transparency duties does the AI Act impose on us?"}
+{"intent": "documentary", "language": "en", "text": "Our startup wants to send user data to a US cloud provider, what transfer mechanism do we need?"}
+{"intent": "documentary", "language": "en", "text": "what fines can our company face for breaching GDPR"}
+{"intent": "documentary", "language": "en", "text": "We supply a general-purpose AI model in the EU, what documentation must we keep for regulators?"}
+{"intent": "documentary", "language": "en", "text": "I bought a laptop online in France last week, can I still return it?"}
+{"intent": "documentary", "language": "en", "text": "My employer wants me to sign a non-compete clause, is it enforceable without compensation?"}
+{"intent": "documentary", "language": "en", "text": "I was dismissed during my probation period without notice, is that legal in France?"}
+{"intent": "documentary", "language": "en", "text": "We signed up for a gym membership with a 12-month lock-in, can we cancel early if we move abroad?"}
+{"intent": "documentary", "language": "en", "text": "My new fridge broke after 18 months, does the legal guarantee of conformity still cover it?"}
+{"intent": "documentary", "language": "en", "text": "How many weeks of paternity leave am I entitled to in France?"}
+{"intent": "documentary", "language": "en", "text": "My son asks me why the sky is blue, what's the simple explanation?"}
+{"intent": "documentary", "language": "en", "text": "I'm writing an essay on the French Revolution, when was the Bastille stormed?"}
+{"intent": "documentary", "language": "en", "text": "We're visiting Rome next month and I'd like to know when the Colosseum was built"}
+{"intent": "documentary", "language": "en", "text": "My daughter wants to know how volcanoes form"}
+{"intent": "documentary", "language": "en", "text": "I always forget: what's the difference between weather and climate?"}
+{"intent": "documentary", "language": "en", "text": "I'm reading about the Cold War, when did the Berlin Wall come down?"}
+{"intent": "documentary", "language": "en", "text": "For my history homework I need the year the Magna Carta was signed"}
+{"intent": "documentary", "language": "en", "text": "I'm curious why Pluto was reclassified as a dwarf planet"}
+{"intent": "documentary", "language": "en", "text": "my kid asked how many bones are in the human body"}
+{"intent": "documentary", "language": "en", "text": "We watched a documentary on Darwin last night, what is natural selection exactly?"}
+{"intent": "documentary", "language": "en", "text": "I'm preparing a quiz for my students, which is the longest river in South America?"}
+{"intent": "documentary", "language": "en", "text": "I've never understood how vaccines train the immune system"}
+{"intent": "documentary", "language": "en", "text": "I'm travelling to Japan and want to understand what the Meiji Restoration was"}
+{"intent": "documentary", "language": "en", "text": "My grandfather fought at Normandy, what was the date of D-Day?"}
+{"intent": "documentary", "language": "en", "text": "I teach chemistry and need a clear definition of a covalent bond"}
+{"intent": "out_of_scope", "language": "fr", "text": "Résultat du match PSG-Marseille d'hier soir"}
+{"intent": "out_of_scope", "language": "fr", "text": "Y a-t-il des bouchons sur le périphérique en ce moment ?"}
+{"intent": "out_of_scope", "language": "fr", "text": "Quelles sont les dernières actualités en Ukraine aujourd'hui ?"}
+{"intent": "out_of_scope", "language": "fr", "text": "Prix de l'essence SP95 à la pompe cette semaine"}
+{"intent": "out_of_scope", "language": "fr", "text": "Traduire ce paragraphe en anglais : « La réunion est reportée à jeudi. »"}
+{"intent": "out_of_scope", "language": "fr", "text": "Résumer cet article en trois points"}
+{"intent": "out_of_scope", "language": "fr", "text": "Écrire une fonction Python qui inverse une liste chaînée"}
+{"intent": "out_of_scope", "language": "fr", "text": "Quel est le meilleur aspirateur robot à moins de 300 euros ?"}
+{"intent": "out_of_scope", "language": "fr", "text": "Vaut-il mieux investir dans l'immobilier ou en bourse en ce moment ?"}
+{"intent": "out_of_scope", "language": "fr", "text": "Quel restaurant italien recommandez-vous à Bordeaux ?"}
+{"intent": "out_of_scope", "language": "fr", "text": "Quel est l'ordre du jour de la réunion de demain ?"}
+{"intent": "out_of_scope", "language": "fr", "text": "Qui remplace la responsable comptable pendant son congé ?"}
+{"intent": "out_of_scope", "language": "fr", "text": "Quand tombe la prochaine prime d'intéressement chez nous ?"}
+{"intent": "out_of_scope", "language": "fr", "text": "Le serveur de production est-il tombé cette nuit ?"}
+{"intent": "out_of_scope", "language": "fr", "text": "Générer un slogan pour une boulangerie artisanale"}
+{"intent": "out_of_scope", "language": "fr", "text": "Horaires du prochain TGV Paris-Nantes"}
+{"intent": "out_of_scope", "language": "fr", "text": "Aide-moi à choisir un prénom pour mon bébé"}
+{"intent": "out_of_scope", "language": "fr", "text": "Rappelle-moi d'appeler le plombier demain à 9 h"}
+{"intent": "out_of_scope", "language": "fr", "text": "Peux-tu m'écrire un poème pour l'anniversaire de ma mère ?"}
+{"intent": "out_of_scope", "language": "fr", "text": "J'hésite entre deux appartements, lequel je devrais prendre ?"}
+{"intent": "out_of_scope", "language": "fr", "text": "Organise-moi un itinéraire de trois jours à Lisbonne"}
+{"intent": "out_of_scope", "language": "fr", "text": "Je n'arrive pas à dormir, qu'est-ce que je devrais faire ce soir ?"}
+{"intent": "out_of_scope", "language": "fr", "text": "Corrige les fautes de ma lettre de motivation"}
+{"intent": "out_of_scope", "language": "fr", "text": "Trouve-moi une idée de cadeau pour mon copain qui aime la rando"}
+{"intent": "out_of_scope", "language": "fr", "text": "Mon chat ne mange plus depuis hier, il a quoi à ton avis ?"}
+{"intent": "out_of_scope", "language": "fr", "text": "Fais-moi un programme de musculation pour la semaine"}
+{"intent": "out_of_scope", "language": "pt", "text": "Qual a previsão do tempo para São Paulo amanhã?"}
+{"intent": "out_of_scope", "language": "pt", "text": "Como está o trânsito na Marginal Pinheiros agora?"}
+{"intent": "out_of_scope", "language": "pt", "text": "Quais as principais notícias de hoje no Brasil?"}
+{"intent": "out_of_scope", "language": "pt", "text": "Preço da gasolina em Belo Horizonte esta semana"}
+{"intent": "out_of_scope", "language": "pt", "text": "Traduza este texto para o inglês: \"O contrato vence em dezembro.\""}
+{"intent": "out_of_scope", "language": "pt", "text": "Escreva um e-mail cobrando um fornecedor atrasado"}
+{"intent": "out_of_scope", "language": "pt", "text": "Resuma este relatório em cinco tópicos"}
+{"intent": "out_of_scope", "language": "pt", "text": "Quanto é 15% de 3.780?"}
+{"intent": "out_of_scope", "language": "pt", "text": "Escreva um script em JavaScript que valide um e-mail"}
+{"intent": "out_of_scope", "language": "pt", "text": "Qual o melhor celular custo-benefício de 2026?"}
+{"intent": "out_of_scope", "language": "pt", "text": "Vale a pena comprar dólar agora ou esperar?"}
+{"intent": "out_of_scope", "language": "pt", "text": "Indique uma boa pizzaria em Curitiba"}
+{"intent": "out_of_scope", "language": "pt", "text": "Qual é a pauta da reunião de diretoria de sexta?"}
+{"intent": "out_of_scope", "language": "pt", "text": "Quem é o responsável pelo projeto do novo cliente?"}
+{"intent": "out_of_scope", "language": "pt", "text": "Quando sai a PLR deste ano na empresa?"}
+{"intent": "out_of_scope", "language": "pt", "text": "O sistema de ponto está fora do ar?"}
+{"intent": "out_of_scope", "language": "pt", "text": "Crie um nome criativo para uma loja de açaí"}
+{"intent": "out_of_scope", "language": "pt", "text": "Que horas sai o próximo voo de Recife para Lisboa?"}
+{"intent": "out_of_scope", "language": "pt", "text": "Me ajuda a escolher um nome para o meu cachorro"}
+{"intent": "out_of_scope", "language": "pt", "text": "Me lembra de pagar a conta de luz na sexta"}
+{"intent": "out_of_scope", "language": "pt", "text": "Escreve uma mensagem de aniversário pra minha sogra"}
+{"intent": "out_of_scope", "language": "pt", "text": "Tô em dúvida entre dois empregos, qual eu aceito?"}
+{"intent": "out_of_scope", "language": "pt", "text": "Monta um roteiro de cinco dias no Nordeste pra mim"}
+{"intent": "out_of_scope", "language": "pt", "text": "Meu filho está com febre de 38, o que eu dou pra ele?"}
+{"intent": "out_of_scope", "language": "pt", "text": "Revisa meu currículo e melhora o texto"}
+{"intent": "out_of_scope", "language": "pt", "text": "Sugere um presente pra minha esposa que gosta de cozinhar"}
+{"intent": "out_of_scope", "language": "pt", "text": "Faz uma lista de compras pra minha semana com dieta low carb"}
+{"intent": "out_of_scope", "language": "pt", "text": "Me dá uma ideia de tatuagem pequena"}
+{"intent": "out_of_scope", "language": "en", "text": "What's the weather forecast for London tomorrow?"}
+{"intent": "out_of_scope", "language": "en", "text": "Current price of Tesla shares"}
+{"intent": "out_of_scope", "language": "en", "text": "Is there heavy traffic on the M25 right now?"}
+{"intent": "out_of_scope", "language": "en", "text": "Latest headlines on the US elections"}
+{"intent": "out_of_scope", "language": "en", "text": "How much is a barrel of Brent crude today?"}
+{"intent": "out_of_scope", "language": "en", "text": "Translate this sentence into Spanish: \"The invoice is attached.\""}
+{"intent": "out_of_scope", "language": "en", "text": "Write a cover letter for a junior data analyst position"}
+{"intent": "out_of_scope", "language": "en", "text": "Summarise this email thread in two sentences"}
+{"intent": "out_of_scope", "language": "en", "text": "What is 23% of 1,450?"}
+{"intent": "out_of_scope", "language": "en", "text": "Write a SQL query that returns the top five customers by revenue"}
+{"intent": "out_of_scope", "language": "en", "text": "Which noise-cancelling headphones are best under $200?"}
+{"intent": "out_of_scope", "language": "en", "text": "Is it a good time to refinance a mortgage?"}
+{"intent": "out_of_scope", "language": "en", "text": "Recommend a good sushi place in Manchester"}
+{"intent": "out_of_scope", "language": "en", "text": "What's on the agenda for tomorrow's board meeting?"}
+{"intent": "out_of_scope", "language": "en", "text": "Who is covering the support rota this weekend?"}
+{"intent": "out_of_scope", "language": "en", "text": "When is the next team offsite?"}
+{"intent": "out_of_scope", "language": "en", "text": "Is the VPN down again?"}
+{"intent": "out_of_scope", "language": "en", "text": "Come up with a catchy name for a dog-walking business"}
+{"intent": "out_of_scope", "language": "en", "text": "When does the next train to Edinburgh leave?"}
+{"intent": "out_of_scope", "language": "en", "text": "Help me pick a name for my new startup"}
+{"intent": "out_of_scope", "language": "en", "text": "Remind me to renew my car insurance next Monday"}
+{"intent": "out_of_scope", "language": "en", "text": "Can you write a toast for my brother's wedding?"}
+{"intent": "out_of_scope", "language": "en", "text": "I can't decide between two job offers, which one should I take?"}
+{"intent": "out_of_scope", "language": "en", "text": "Plan me a weekend trip to Edinburgh"}
+{"intent": "out_of_scope", "language": "en", "text": "My back hurts after running, what should I do tonight?"}
+{"intent": "out_of_scope", "language": "en", "text": "Proofread my blog post and make it punchier"}
+{"intent": "out_of_scope", "language": "en", "text": "Suggest a birthday gift for my dad who loves fishing"}
+{"intent": "out_of_scope", "language": "en", "text": "Make me a meal plan for this week"}
+{"intent": "out_of_scope", "language": "en", "text": "Should I break up with my boyfriend?"}
+{"intent": "conversational", "language": "fr", "text": "Tu peux répéter plus simplement ?"}
+{"intent": "conversational", "language": "fr", "text": "Super, à demain"}
+{"intent": "conversational", "language": "pt", "text": "Pode explicar de novo de outro jeito?"}
+{"intent": "conversational", "language": "pt", "text": "Beleza, até mais"}
+{"intent": "conversational", "language": "en", "text": "Hi there, how are you?"}
+{"intent": "conversational", "language": "en", "text": "Thanks, that was really helpful!"}
+{"intent": "conversational", "language": "en", "text": "Could you say that again more simply?"}
+{"intent": "conversational", "language": "en", "text": "Okay, bye for now"}
+{"intent": "conversational", "language": "en", "text": "What can you do?"}
