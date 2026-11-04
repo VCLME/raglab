@@ -47,6 +47,9 @@ eurlex_app = typer.Typer(no_args_is_help=True, help="Actes de l'UE (EUR-Lex / CE
 ollama_app = typer.Typer(no_args_is_help=True, help="Pilotage du service Ollama.")
 bench_app = typer.Typer(no_args_is_help=True, help="Datasets de benchmark.")
 graph_app = typer.Typer(no_args_is_help=True, help="Graphe structure dans Neo4j (lois, articles, renvois).")
+sources_app = typer.Typer(
+    no_args_is_help=True, help="Sources officielles (Legifrance, EUR-Lex) : collecte puis ingestion, comme l'Atelier."
+)
 
 app.add_typer(db_app, name="db")
 app.add_typer(experiment_app, name="experiment")
@@ -56,6 +59,7 @@ app.add_typer(eurlex_app, name="eurlex")
 app.add_typer(ollama_app, name="ollama")
 app.add_typer(bench_app, name="bench")
 app.add_typer(graph_app, name="graph")
+app.add_typer(sources_app, name="sources")
 
 
 @app.callback()
@@ -745,6 +749,42 @@ def eurlex_fetch(
 
     result = EurlexCollector().collect(acts=_csv(acts), languages=_csv(languages), output_dir=output_dir, delay=delay)
     typer.echo(json.dumps(result, indent=2, ensure_ascii=False))
+
+
+@sources_app.command("list")
+def sources_list() -> None:
+    """Sources officielles connues, avec leur corpus et leur commande de collecte."""
+    from raglab.sources.jobs import SOURCE_COMMANDS, official_sources
+
+    rows = [
+        {
+            "source": name,
+            "corpus": suite.corpus_name,
+            "corpus_dir": str(suite.corpus_dir),
+            "command": SOURCE_COMMANDS[name],
+        }
+        for name, suite in official_sources(get_settings()).items()
+    ]
+    typer.echo(json.dumps(rows, indent=2, ensure_ascii=False))
+
+
+@sources_app.command("fetch")
+def sources_fetch(
+    name: str = typer.Argument(..., help="legi (Code de la consommation) ou eurlex (actes de conformite de l'UE)."),
+    ingest: bool = typer.Option(
+        True, "--ingest/--no-ingest", help="Ingerer le corpus apres la collecte (sans indexer)."
+    ),
+) -> None:
+    """Collecter une source officielle puis l'ingerer, comme `POST /api/sources/{name}/fetch` (sans embeddings)."""
+    from raglab.sources.jobs import SourceJobs
+
+    jobs = SourceJobs()
+    if name not in jobs.sources:
+        raise typer.BadParameter(f"source inconnue: {name} (connues: {', '.join(jobs.sources)})")
+    status = jobs.run(name, ingest=ingest)
+    typer.echo(json.dumps(status, indent=2, ensure_ascii=False, default=str))
+    if status["state"] != "succeeded":
+        raise typer.Exit(code=1)
 
 
 @eurlex_app.command("acts")

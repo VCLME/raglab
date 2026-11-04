@@ -33,6 +33,19 @@ class GraphUnavailableError(RuntimeError):
     """Neo4j does not answer: the structured graph is optional (HTTP 503)."""
 
 
+class SourceFetchError(RuntimeError):
+    """An official source (git mirror, CELLAR) failed or refused (HTTP 502)."""
+
+    def __init__(self, source: str, message: str, cause: str | None = None):
+        self.source = source
+        self.cause = cause
+        super().__init__(message)
+
+
+class SourceBusyError(RuntimeError):
+    """A fetch job of this source is already running (HTTP 409)."""
+
+
 def run_with_timeout[T](stage: str, timeout_seconds: float, fn: Callable[[], T]) -> T:
     """Run `fn` in a worker thread and raise `StageTimeoutError` past the budget.
 

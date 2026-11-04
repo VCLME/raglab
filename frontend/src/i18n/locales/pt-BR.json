@@ -474,8 +474,18 @@
     "official_loaded_other": "{{value}} documentos",
     "official_missing": "ainda não ingerido",
     "official_source": "Fonte",
-    "official_commands": "Pela linha de comando (a API não tem endpoint para estas fontes):",
-    "official_ingest_cmd": "raglab bench all --suite <suite> --ragas-limit 0   # ingere e indexa {{corpus}}"
+    "official_commands": "Ou pela linha de comando (coleta, depois ingestão e indexação pelo benchmark):",
+    "official_ingest_cmd": "raglab bench all --suite <suite> --ragas-limit 0   # ingere e indexa {{corpus}}",
+    "official_fetch_button": "Coletar e ingerir",
+    "official_fetching": "Coletando…",
+    "official_stage_fetch": "Coleta",
+    "official_stage_verify": "Verificação do manifesto",
+    "official_stage_ingest": "Ingestão",
+    "official_done_ingested": "{{documents}} documentos coletados, {{ingested}} ingeridos",
+    "official_done_files": "{{documents}} documentos coletados (não ingeridos)",
+    "official_manifest_drift_one": "{{count}} arquivo difere do manifesto congelado: as respostas esperadas do benchmark não são mais confiáveis",
+    "official_manifest_drift_other": "{{count}} arquivos diferem do manifesto congelado: as respostas esperadas do benchmark não são mais confiáveis",
+    "official_next_step": "Próxima etapa: Divisão e depois Vetorização (a coleta não indexa)."
   },
   "manage": {
     "title": "Gerenciar",

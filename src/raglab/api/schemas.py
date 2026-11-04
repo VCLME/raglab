@@ -553,3 +553,26 @@ class RoutingExperimentRequest(BaseModel):
     retrieval_mode: RetrievalMode | None = None
     rerank: bool | None = None
     citations: bool | None = None
+
+
+class SourceFetchRequest(BaseModel):
+    # False writes the files only; the Atelier ingests by default.
+    ingest: bool = True
+
+
+class SourceJobProgress(BaseModel):
+    done: int = 0
+    total: int | None = None
+
+
+class SourceJobStatus(BaseModel):
+    source: str
+    corpus: str
+    state: str
+    stage: str | None = None
+    progress: SourceJobProgress
+    started_at: datetime | None = None
+    finished_at: datetime | None = None
+    error: dict[str, Any] | None = None
+    result: dict[str, Any] | None = None
+    command: str

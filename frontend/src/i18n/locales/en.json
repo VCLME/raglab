@@ -474,8 +474,18 @@
     "official_loaded_other": "{{value}} documents",
     "official_missing": "not ingested yet",
     "official_source": "Source",
-    "official_commands": "From the command line (the API has no endpoint for these sources):",
-    "official_ingest_cmd": "raglab bench all --suite <suite> --ragas-limit 0   # ingests and indexes {{corpus}}"
+    "official_commands": "Or from the command line (fetch, then ingest and index through the benchmark):",
+    "official_ingest_cmd": "raglab bench all --suite <suite> --ragas-limit 0   # ingests and indexes {{corpus}}",
+    "official_fetch_button": "Fetch and ingest",
+    "official_fetching": "Fetching…",
+    "official_stage_fetch": "Fetching",
+    "official_stage_verify": "Checking the manifest",
+    "official_stage_ingest": "Ingesting",
+    "official_done_ingested": "{{documents}} documents fetched, {{ingested}} ingested",
+    "official_done_files": "{{documents}} documents fetched (not ingested)",
+    "official_manifest_drift_one": "{{count}} file differs from the frozen manifest: the benchmark's expected answers are no longer reliable",
+    "official_manifest_drift_other": "{{count}} files differ from the frozen manifest: the benchmark's expected answers are no longer reliable",
+    "official_next_step": "Next step: Chunking, then Vectors (fetching does not index)."
   },
   "manage": {
     "title": "Manage",

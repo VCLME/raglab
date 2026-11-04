@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Tabs, tabPanelProps } from "../components/Tabs";
 import { useWorkshop } from "../workshop/state";
@@ -207,18 +207,131 @@ const OFFICIAL_SOURCES: OfficialSource[] = [
   { key: "eurlex", corpus: "bench_eurlex_compliance", fetch: "raglab eurlex fetch" },
 ];
 
+/** `GET /api/sources/{name}/status`: the fetch job of an official source. */
+interface SourceJobStatus {
+  source: string;
+  corpus: string;
+  state: "idle" | "running" | "succeeded" | "failed";
+  stage: "fetch" | "verify" | "ingest" | null;
+  progress: { done: number; total: number | null };
+  error: { status_code: number; detail?: string; cause?: string } | null;
+  result: {
+    documents: number;
+    manifest: { frozen: string | null; problems: number };
+    ingestion: { ingested: number; updated: number; skipped: number } | null;
+  } | null;
+}
+
+const SOURCE_POLL_MS = 1500;
+
 /**
- * Code de la consommation (Légifrance) and EU compliance acts (EUR-Lex): the
- * API has no endpoint to fetch them, so the tab gives the commands and says
- * whether the corpus is already in the lab.
+ * Fetch button and job progress of one source. Polls the job while it runs
+ * and refreshes the Atelier flow once it ends, so the Corpus step updates.
+ */
+function SourceFetch({ source, initial }: { source: OfficialSource; initial: SourceJobStatus | null }) {
+  const { t, i18n } = useTranslation();
+  const { refresh } = useWorkshop();
+  // The poll reads the latest refresh without restarting on each render.
+  const refreshRef = useRef(refresh);
+  refreshRef.current = refresh;
+  const [job, setJob] = useState<SourceJobStatus | null>(initial);
+  const [startError, setStartError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (initial && !job) setJob(initial);
+  }, [initial, job]);
+
+  const running = job?.state === "running";
+  useEffect(() => {
+    if (!running) return;
+    let stopped = false;
+    const timer = window.setInterval(async () => {
+      try {
+        const next = await get<SourceJobStatus>(`/api/sources/${source.key}/status`);
+        if (stopped) return;
+        setJob(next);
+        if (next.state !== "running") refreshRef.current();
+      } catch {
+        // Transient: the next tick retries.
+      }
+    }, SOURCE_POLL_MS);
+    return () => {
+      stopped = true;
+      window.clearInterval(timer);
+    };
+  }, [running, source.key]);
+
+  const start = async () => {
+    setStartError(null);
+    try {
+      setJob(await post<SourceJobStatus>(`/api/sources/${source.key}/fetch`, { ingest: true }));
+    } catch (e) {
+      setStartError(e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  const fmt = (value: number) => value.toLocaleString(i18n.language);
+  const progress = job?.progress;
+  const failure = job?.state === "failed" && job.error
+    ? [job.error.detail, job.error.cause].filter(Boolean).join(" — ")
+    : null;
+
+  return (
+    <div className="source-fetch">
+      <button onClick={start} disabled={running}>
+        {running ? t("corpus_page.official_fetching") : t("corpus_page.official_fetch_button")}
+      </button>
+      {running && job?.stage ? (
+        <div className="source-progress" role="status">
+          <span>
+            {t(`corpus_page.official_stage_${job.stage}`)}
+            {progress && progress.total ? ` · ${fmt(progress.done)} / ${fmt(progress.total)}` : ""}
+          </span>
+          <progress
+            aria-label={t(`corpus_page.official_stage_${job.stage}`)}
+            value={progress && progress.total ? progress.done : undefined}
+            max={progress && progress.total ? progress.total : undefined}
+          />
+        </div>
+      ) : null}
+      <ErrorBanner error={startError || failure} />
+      {job?.state === "succeeded" && job.result ? (
+        <div className="source-done">
+          <span className="badge ok">
+            {job.result.ingestion
+              ? t("corpus_page.official_done_ingested", {
+                  documents: fmt(job.result.documents),
+                  ingested: fmt(job.result.ingestion.ingested + job.result.ingestion.updated),
+                })
+              : t("corpus_page.official_done_files", { documents: fmt(job.result.documents) })}
+          </span>
+          {job.result.manifest.problems > 0 ? (
+            <span className="badge warn">
+              {t("corpus_page.official_manifest_drift", { count: job.result.manifest.problems })}
+            </span>
+          ) : null}
+          <p className="muted">{t("corpus_page.official_next_step")}</p>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * Code de la consommation (Légifrance) and EU compliance acts (EUR-Lex):
+ * fetched and ingested by an API job (`/api/sources/{name}/fetch`), with the
+ * CLI commands kept as the alternative.
  */
 function OfficialSourcesTab() {
   const { t, i18n } = useTranslation();
   const { corpora, setCorpus } = useWorkshop();
+  // Picks up a job started earlier (another tab, before a reload).
+  const statuses = useApiLoad<SourceJobStatus[]>(() => get("/api/sources"));
   return (
     <div className="source-list">
       {OFFICIAL_SOURCES.map((source) => {
         const loaded = corpora.find((c) => c.name === source.corpus);
+        const initial = (statuses.data ?? []).find((s) => s.source === source.key) ?? null;
         return (
           <section key={source.key} className="card">
             <h3>{t(`corpus_page.official_${source.key}_title`)}</h3>
@@ -250,6 +363,7 @@ function OfficialSourcesTab() {
                 <dd>{t(`corpus_page.official_${source.key}_source`)}</dd>
               </div>
             </dl>
+            <SourceFetch source={source} initial={initial} />
             <div className="command-block">
               <span className="muted">{t("corpus_page.official_commands")}</span>
               <pre>{`${source.fetch}\n${t("corpus_page.official_ingest_cmd", { corpus: source.corpus })}`}</pre>
