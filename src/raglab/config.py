@@ -269,8 +269,8 @@ class Settings(BaseSettings):
     # calibrated on benchmarks/lexml_fr/calibration*.jsonl and PIAF questions
     # disjoint from the evaluated ones. Read before the per-corpus value
     # when the option is on.
-    # Measured (routing-languages-v1): 46 -> 58 of 80 refusals kept
-    # (p = 0.001), French and Portuguese unchanged, PIAF -3 (n.s.), false
+    # Measured (router-language-thresholds-v1): 46 -> 58 of 80 refusals kept
+    # (p < 0.001), French and Portuguese unchanged, PIAF -3 (n.s.), false
     # refusals 2.3% -> 4.0%. With it on, abstention reads the original
     # question's score: #76's translated dense score is not needed.
     routing_language_thresholds: bool = False

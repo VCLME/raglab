@@ -156,3 +156,7 @@ Le surcoût de latence vient de la traduction (2,4 s p50) ; la recherche des que
 - Les questions françaises sont des traductions de questions écrites par un modèle en lisant le passage, pas des questions spontanées d'utilisateurs ; elles gardent les indices de la question d'origine.
 - Seul le retrieval est mesuré ici. La passe de réponses jugées (Qwen3.6 rédacteur, Gemma 4 juge) n'a pas été lancée dans cette mesure ; la réponse attendue du jeu est en portugais, une réponse française serait donc jugée face à une référence portugaise.
 - Le jeu UE (`eurlex_compliance`, questions `cross_language`) n'a pas été re-mesuré avec la brique.
+
+## Suite
+
+Seuils d'abstention par langue et autres corrections du routeur, comparés sur les mêmes jeux : [routage-multilingue.md](routage-multilingue.md).

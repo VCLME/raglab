@@ -127,6 +127,8 @@ Ce qui reste difficile : par langue, le rappel est de 0,90 en portugais mais de 
 
 ## Suite
 
+- Questions dans une autre langue que le corpus : seuils par langue et choix du corpus sur questions exemples, mesurés dans [routage-multilingue.md](routage-multilingue.md).
+
 - Recalibrer le point A avec le score du reranker : même commande, mêmes graines, puis nouveau choix du point de fonctionnement.
 - Remplacer le score dense par le score du cross-encoder (phase 9.3, `RAGLAB_ROUTING_SCORE_SOURCE=rerank`) : un cross-encoder juge la paire question-passage et devrait mieux séparer les quasi-pièges, qui sont la principale faiblesse. À mesurer avec la même commande.
 - Un classifieur LLM ne serait envisagé que si la mesure avec le reranker reste sous les cibles, et seulement après accord.
