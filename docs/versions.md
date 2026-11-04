@@ -25,9 +25,9 @@ L'option `versions` dit quelles versions la recherche peut utiliser :
 
 | Valeur | Effet |
 |---|---|
-| `in_force` (la brique, en cours de mesure) | les versions en vigueur **aujourd'hui** ; si la question porte sur le passé (« avant 2016 »), celles en vigueur à cette date |
+| `in_force` (**défaut**, mesuré) | les versions en vigueur **aujourd'hui** ; si la question porte sur le passé (« avant 2016 »), celles en vigueur à cette date |
 | `as_of=AAAA-MM-JJ` | les versions en vigueur à la date donnée |
-| `all` (**défaut livré**) | toutes les versions, comme un RAG classique et comme avant 9.10 (la référence de comparaison) |
+| `all` | toutes les versions, comme un RAG classique et comme avant 9.10 (la référence de comparaison) |
 
 ### 1. La date de référence
 
@@ -77,7 +77,7 @@ Extrait: …
 Statut : ancienne version de l'article L121-21 (du 8 août 2015 au 1er juillet 2016), remplacée par Ordonnance n° 2016-301 du 14 mars 2016 — plus en vigueur.
 ```
 
-Sous `all` (le défaut livré, la référence naïve), l'état est affiché dans l'interface mais pas donné au modèle : le prompt est identique, octet pour octet, à celui d'un corpus sans versions.
+Sous `all` (la référence naïve), l'état est affiché dans l'interface mais pas donné au modèle : le prompt est identique, octet pour octet, à celui d'un corpus sans versions.
 
 ### 5. Ce que montre la réponse
 
@@ -92,7 +92,7 @@ Chaque chunk porte `version` (source `metadata` ou `markers`, état, en vigueur 
 | UI | Chat : « Options » → « Versions des articles » (corpus de lois seulement) ; page Interrogation (Atelier) : le même choix, un badge par passage (« en vigueur depuis le … », « ancienne version (… → …) », « abrogé le … », « dispositions abrogées ») et, en expert, ses dates, textes et successeur ; lancement des benchmarks |
 | Mode pédagogique | une étape « Versions » après le re-ranking : la date utilisée, d'où elle vient, ce qui a été écarté, l'état des premiers passages, le code |
 | Benchmark | `raglab bench all --suite legi_versions --versions all` (référence) contre `--versions in_force` |
-| Par défaut | `RAGLAB_VERSIONS_DEFAULT=all` : la brique n'est pas encore mesurée, elle reste derrière l'option (règle du projet) ; `in_force` deviendra le défaut si la mesure montre un gain. Même sous `all`, chaque passage porte son état, affiché dans l'interface (pas donné au modèle) |
+| Par défaut | `RAGLAB_VERSIONS_DEFAULT=in_force` depuis la mesure du 4 novembre 2026 (voir Résultats) ; `all` pour comparer avec un RAG classique. Même sous `all`, chaque passage porte son état, affiché dans l'interface (pas donné au modèle) |
 
 ## La mesure
 
@@ -139,9 +139,29 @@ raglab bench all --label versions-v1 --versions in_force
 raglab bench compare full-v1 versions-v1
 ```
 
-### Résultats
+### Résultats (4 novembre 2026, pipeline complet : hybride, re-ranking, références d'articles)
 
-À mesurer. Le défaut livré est `all` ; `in_force` ne devient le défaut (`RAGLAB_VERSIONS_DEFAULT=in_force`) que si elle fait mieux que `all` sur le jeu figé sans coûter sur PIAF, LexML ni `legi_consommation`. Sinon elle reste une option, signalée comme telle.
+Mesures appariées sur les mêmes questions ; fichiers dans `benchmarks/results/` (`versions-naive-v1`, `versions-full-all-v1`, `versions-full-v1`, `legi-full-v1`, `legi-full-versions-v1`, `prompt-v4`, `versions-v1`). ✱ = écart significatif (McNemar exact, p < 0,05).
+
+**Jeu « versions »** (100 questions pièges, 75 jamais regardées) :
+
+| Run | `versions` | Recall@5 | MRR | Version périmée au-dessus de la bonne (top 5) | Réponse reprenant la version périmée | Justesse | Fidélité | Pertinence |
+|---|---|---|---|---|---|---|---|---|
+| `versions-naive-v1` (vectorielle seule, sans re-ranking ni références) | `all` | 0,480 | 0,293 | 27 % | 14 % | 0,577 | 0,875 | 0,840 |
+| `versions-full-all-v1` (pipeline complet) | `all` | 0,750 | 0,532 | 30 % | 21 % | 0,738 | **0,935** | **0,955** |
+| **`versions-full-v1`** (pipeline complet) | **`in_force`** | **0,930** ✱ | **0,810** ✱ | **0 %** ✱ | **1 %** | **0,815** | 0,895 | 0,920 |
+
+- La brique gagne 18 questions et n'en perd aucune (p < 0,001) ; sur les 75 jamais regardées, 0,747 → 0,920 (+13 / −0). Par type : `rewritten` 0,675 → 0,925 (+10 / −0), `moved` 0,800 → 1,000, `as_of` 0,600 → 0,800 (MRR 0,275 → 0,636), `reused_number` déjà à 1,000 (le résolveur de citations choisissait déjà la version en vigueur du numéro cité).
+- Le pipeline complet sans la brique ne règle pas le piège : il retrouve mieux la bonne version (0,480 → 0,750), mais une version périmée reste classée au-dessus dans 30 % des questions, et 21 % des réponses la reprennent. Avec `in_force` : 0 % et 1 %.
+- **La fidélité baisse** (0,935 → 0,895 ; 15 réponses notées moins fidèles, 6 mieux). En relisant les 15 : 9 sont des questions où la bonne version n'entre dans le top 5 qu'avec la brique, et le modèle sur-interprète le passage enfin trouvé (« à défaut » lu comme une obligation, une conclusion tirée d'un délai) ; sans la brique, il répondait sur une autre version ou refusait de répondre, ce que le juge note fidèle. 2 reprennent la date de la ligne « Statut » (« en vigueur depuis le 26 juillet 2020 ») : le juge ne lit que le texte des passages, pas cette ligne, et ne trouve pas la date. La justesse progresse (0,738 → 0,815) : la réponse est plus souvent la bonne règle, au prix de quelques affirmations de trop.
+
+**Code de la consommation** (300 questions du jeu `legi_consommation`, réponse dans la version en vigueur) : Recall@5 **0,660 → 0,820** ✱ (+49 / −1), MRR 0,497 → 0,707 ; version périmée classée au-dessus de la bonne **57 % → 0 %** ; gain aussi sur les questions `scenario` (0,716 → 0,807) et les 225 jamais regardées (0,658 → 0,818).
+
+**PIAF et LexML** : `versions-v1` (`in_force`) est identique à `prompt-v4` question par question (PIAF 0,966, LexML 0,816 en Recall@5) : sur LexML, aucun chunk entièrement abrogé n'était au-dessus d'une bonne réponse.
+
+**Latence** (p50) : sur le Code de la consommation, le filtre de dates dans la requête SQL coûte cher : recherche vectorielle 35 → 220 ms, BM25 40 → 100 ms, recherche 80 → 320 ms ; la question entière (avec re-ranking) passe de 544 à 616 ms, le re-ranking ayant moins de candidats périmés à relire. Sur LexML, l'étape versions prend 32 ms (lecture des métadonnées des passages) et la recherche passe de 77 à 97 ms ; sur PIAF, de 32 à 53 ms (le contrôle « ce corpus a-t-il des versions ? » tourne à chaque question). Une optimisation (filtrer d'abord les documents valides, mettre en cache le contrôle « corpus versionné ») reste à faire.
+
+**Décision** : `in_force` devient le défaut (`RAGLAB_VERSIONS_DEFAULT=in_force`) ; `all` reste disponible pour comparer avec un RAG classique.
 
 ## Limites
 
@@ -151,4 +171,6 @@ raglab bench compare full-v1 versions-v1
 - **LexML n'a pas d'historique.** Seule la rédaction actuelle est dans le texte compilé ; une date passée n'y est pas respectée, et une disposition réécrite ne garde pas son ancienne formulation. Un chunk qui mêle dispositions en vigueur et abrogées reste à sa place ; seules les dispositions abrogées sont masquées au modèle.
 - **BM25 compte toutes les versions.** Le filtre agit sur les candidats, pas sur les statistiques du corpus : la rareté d'un mot (idf) est calculée sur toutes les versions, abrogées comprises.
 - **Filtrer, c'est exclure.** Sous `in_force`, une question qui ne dit pas qu'elle porte sur le passé ne voit pas les anciennes versions. C'est voulu (le défaut doit être le droit applicable) ; `all` ou `as_of` les rendent visibles.
+- **Fidélité.** La ligne « Statut » donne au modèle des dates que le juge ne voit pas (il ne lit que le texte des passages) : une réponse qui les reprend est notée moins fidèle. Donner au juge le même contexte que le modèle mesurerait mieux.
+- **Latence.** Le filtre de dates sur les métadonnées JSON ralentit la recherche sur un corpus versionné (voir Résultats).
 - **Jeu généré par un modèle.** Les paires sont trouvées par des règles et les citations vérifiées mot pour mot, mais la question elle-même peut être ambiguë ; la relecture (`review-questions`) et la partie `heldout` sont là pour ça.

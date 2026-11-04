@@ -371,7 +371,7 @@ def test_all_keeps_every_version_and_counts_the_outdated_ones():
     )
 
 
-def test_shipped_default_keeps_every_version():
+def test_all_keeps_every_version_when_asked_for():
     service = _service(FakeLookup(True, {"doc-old": _l121_21(3)}), [_chunk("old", 1)])
     service.settings = Settings(versions_default="all")
     response = service.query(question="Quel délai avant 2016 ?", corpus_name="legi", generate_answer=False)
