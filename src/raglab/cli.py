@@ -1432,6 +1432,18 @@ def experiment_routing(
     typer.echo(render_markdown(report["summary"]), err=True)
 
 
+@experiment_app.command("routing-compare")
+def experiment_routing_compare(
+    before: Path = typer.Argument(..., help="Rapport `experiment routing` de reference."),
+    after: Path = typer.Argument(..., help="Rapport compare (memes questions)."),
+) -> None:
+    """McNemar apparie entre deux rapports du routeur : repondues par jeu, refus gardes."""
+    from raglab.experiments.routing import paired_live
+
+    reports = [json.loads(path.read_text(encoding="utf-8")) for path in (before, after)]
+    typer.echo(json.dumps(paired_live(*reports), indent=2, ensure_ascii=False))
+
+
 @experiment_app.command("routing-languages")
 def experiment_routing_languages(
     corpus: list[str] = typer.Option(

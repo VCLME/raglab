@@ -283,11 +283,19 @@ def abstention_metrics(
     margin: float | None,
     threshold: Threshold,
     calibration_quantile: float | None = None,
+    router_decision: bool = False,
 ) -> dict[str, Any]:
+    """`router_decision`: read the abstention the router itself took
+    (`router_abstain`) instead of replaying margin and thresholds; needed
+    for rules the sweep cannot replay (kNN intent, joint rule)."""
     tp = fp = fn = tn = 0
     by_category: dict[str, list[bool]] = {}
     for record in records:
-        predicted = predict_abstain(record, margin=margin, threshold=threshold)
+        predicted = (
+            bool(record["router_abstain"])
+            if router_decision
+            else predict_abstain(record, margin=margin, threshold=threshold)
+        )
         expected = record["category"] != "in_scope"
         tp += predicted and expected
         fp += predicted and not expected
@@ -410,7 +418,12 @@ def summarize(
         )
         for corpus in sorted({r["corpus_routed"] for r in records if r["corpus_routed"]})
     }
-    configured = abstention_metrics(records, margin=settings.routing_intent_margin, threshold=configured_thresholds)
+    configured = abstention_metrics(
+        records,
+        margin=settings.routing_intent_margin,
+        threshold=configured_thresholds,
+        router_decision=bool(records) and all("router_abstain" in r for r in records),
+    )
     return {
         "cases": dict(Counter(r["category"] for r in records)),
         "language_accuracy": round(sum(language_ok) / len(language_ok), 4) if records else 0.0,
@@ -545,18 +558,32 @@ class RoutingExperimentService:
                     )
                     else None
                 )
+                legal_citation = decision.citation is not None and cited_text_in_run(
+                    self.session, outcome.index_run, decision.citation
+                )
+                # The router's own decision, as `route_and_retrieve` takes it.
+                finished = router.finish(
+                    decision.model_copy(update={"legal_citation_found": legal_citation}),
+                    outcome.retrieved,
+                    translated_score=translated,
+                )
                 records.append(
                     {
                         **{k: v for k, v in asdict(case).items() if k != "expected_spans"},
                         "language_detected": decision.language.language,
                         "language_method": decision.language.method,
                         "intent_scores": decision.intent.scores,
+                        "intent": decision.intent.intent.value,
+                        "intent_method": decision.intent.method,
+                        "documentary_margin": decision.intent.documentary_margin,
+                        "not_documentary_probability": decision.intent.not_documentary_probability,
+                        "router_abstain": bool(finished.abstention and finished.abstention.abstain),
+                        "router_abstention": finished.abstention.model_dump() if finished.abstention else None,
                         "corpus_routed": decision.corpus.corpus_name,
                         "corpus_margin": decision.corpus.margin,
                         "corpus_scores": {c.corpus_name: c.score for c in decision.corpus.candidates},
                         # Same rule as the router: a cited text the index holds.
-                        "legal_citation": decision.citation is not None
-                        and cited_text_in_run(self.session, outcome.index_run, decision.citation),
+                        "legal_citation": legal_citation,
                         # The score the router compares to the threshold: with
                         # cross-language routing, the better of the original and
                         # the translated question (as in `QueryRouter.finish`).
@@ -626,6 +653,8 @@ class RoutingExperimentService:
                 "routing_cross_language": cross_language,
                 "routing_corpus_examples": self.settings.routing_corpus_examples,
                 "routing_language_thresholds": self.settings.routing_language_thresholds,
+                "routing_intent_knn": self.settings.routing_intent_knn,
+                "routing_intent_calibration_path": str(self.settings.routing_intent_calibration_path),
                 "language_abstention_thresholds": self.settings.routing_language_abstention_thresholds,
                 "rerank_language_abstention_thresholds": self.settings.routing_rerank_language_abstention_thresholds,
                 "routing_translation_margin": self.settings.routing_translation_margin,
@@ -747,3 +776,57 @@ def render_curve_svg(curve: list[dict[str, Any]], *, width: int = 520, height: i
             line += 1
     parts.append("</svg>")
     return "\n".join(parts)
+
+
+def live_abstentions(report: dict[str, Any]) -> list[bool]:
+    """Abstention of each record of a live report: the router's own decision
+    when recorded, else margin and configured thresholds replayed (reports
+    written before `router_abstain` existed)."""
+    records = report["records"]
+    if records and all("router_abstain" in r for r in records):
+        return [bool(r["router_abstain"]) for r in records]
+    config = report["config"]
+    corpus_thresholds = config.get("abstention_thresholds") or {}
+    language_thresholds = config.get("language_abstention_thresholds") or {}
+    by_language = bool(config.get("routing_language_thresholds"))
+
+    def threshold(record: dict[str, Any]) -> float | None:
+        corpus = record["corpus_routed"] or ""
+        value = (language_thresholds.get(corpus) or {}).get(record.get("language_detected") or "")
+        if by_language and value is not None:
+            return float(value)
+        return corpus_thresholds.get(corpus, config.get("abstention_threshold"))
+
+    return [
+        predict_abstain(record, margin=config.get("intent_margin"), threshold=threshold(record)) for record in records
+    ]
+
+
+def paired_live(before: dict[str, Any], after: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    """Exact McNemar between two live reports on the same questions: per
+    in-scope set, answered from the right passage (right corpus, not
+    declined, expected passage retrieved); on the abstention set, declined."""
+    from raglab.benchmarks.compare import mcnemar_exact
+
+    def outcomes(report: dict[str, Any]) -> dict[tuple[str, str], tuple[str, bool]]:
+        result = {}
+        for record, declined in zip(report["records"], live_abstentions(report), strict=True):
+            if record["category"] == "in_scope":
+                ok = record["corpus_routed"] == record["expected_corpus"] and not declined and bool(record["hit"])
+                result[(record["id"], record["source"])] = (record["source"], ok)
+            else:
+                result[(record["id"], record["source"])] = ("abstention", declined)
+        return result
+
+    first, second = outcomes(before), outcomes(after)
+    groups: dict[str, dict[str, Any]] = {}
+    for key, (group, value) in second.items():
+        previous = first[key][1]
+        entry = groups.setdefault(group, {"before": 0, "after": 0, "gained": 0, "lost": 0})
+        entry["before"] += previous
+        entry["after"] += value
+        entry["gained"] += value and not previous
+        entry["lost"] += previous and not value
+    for entry in groups.values():
+        entry["p_value"] = round(mcnemar_exact(entry["gained"], entry["lost"]), 4)
+    return dict(sorted(groups.items()))

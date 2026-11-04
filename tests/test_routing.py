@@ -1048,3 +1048,36 @@ def test_translated_abstention_depends_on_the_pair():
     assert translated_abstention(service, False, "lexml", "fr") is False
     off = SimpleNamespace(settings=Settings(routing_language_thresholds=False))
     assert translated_abstention(off, True, "lexml", "pt") is True
+
+
+def test_paired_live_reads_the_router_decision_or_replays_the_thresholds():
+    from raglab.experiments.routing import live_abstentions, paired_live
+
+    def record(case_id, category, score, **extra):
+        return {
+            "id": case_id,
+            "source": "piaf" if category == "in_scope" else "abstention",
+            "category": category,
+            "expected_corpus": "piaf" if category == "in_scope" else None,
+            "corpus_routed": "piaf",
+            "language_detected": "fr",
+            "intent_scores": {"documentary": 0.9, "out_of_scope": 0.8},
+            "legal_citation": False,
+            "best_score": score,
+            "hit": True,
+            **extra,
+        }
+
+    config = {"intent_margin": 0.02, "abstention_thresholds": {"piaf": 0.8}, "abstention_threshold": 0.0}
+    before = {"config": config, "records": [record("a", "in_scope", 0.9), record("x", "out_of_scope", 0.85)]}
+    assert live_abstentions(before) == [False, False]
+    after = {
+        "config": config,
+        "records": [
+            record("a", "in_scope", 0.9, router_abstain=False),
+            record("x", "out_of_scope", 0.85, router_abstain=True),
+        ],
+    }
+    result = paired_live(before, after)
+    assert result["abstention"] == {"before": 0, "after": 1, "gained": 1, "lost": 0, "p_value": 1.0}
+    assert result["piaf"]["before"] == result["piaf"]["after"] == 1
