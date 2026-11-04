@@ -25,6 +25,7 @@ import { useLocalHistory } from "../hooks/useLocalHistory";
 import { Select } from "../components/Select";
 import { VersionsField, VersionsSummary } from "../components/Versions";
 import { useWorkshop } from "../workshop/state";
+import { useGpuWhy } from "../hooks/useGpuWhy";
 
 const STRATEGIES: ("" | ChunkingStrategy)[] = ["", "traditional", "slide", "late"];
 const RETRIEVAL_MODES: RetrievalMode[] = ["dense", "lexical", "hybrid"];
@@ -54,6 +55,7 @@ export function Query() {
   };
   const config = useConfig();
   const llm = useApiLoad<LlmModelsResponse>(() => get("/api/llm/models"));
+  const gpuWhy = useGpuWhy();
   const corpora = useApiLoad<CorpusSummary[]>(() => get("/api/corpora"));
   const [corpus, setCorpus] = useState("");
   const [strategy, setStrategy] = useState<"" | ChunkingStrategy>("");
@@ -435,7 +437,7 @@ export function Query() {
                 ) : null}
                 {action.data.rerank_notice ? (
                   <div className="badge warn" style={{ marginBottom: 8 }}>
-                    {t(`retrieval.rerank_notice_${action.data.rerank_notice}`)}
+                    {t(`retrieval.rerank_notice_${action.data.rerank_notice}`, { why: gpuWhy })}
                   </div>
                 ) : null}
                 {action.data.graph_notice ? (
