@@ -157,7 +157,7 @@ Details (French): [protocol](docs/benchmarks/protocole.md) · [judges and calibr
 
 - A bigger cross-reference set, so the citation graph's effect (9.9) can be told from noise.
 - The weak spots on EU texts: questions whose answer sits in a referenced article, and questions asked in another language than the text.
-- Make the version filter (9.10) the default, and decide on query routing and abstention (9.4) now that it is re-measured on the current pipeline.
+- Make the version filter (9.10) the default, and choose the operating point of query routing and abstention (9.4), re-measured on the current pipeline.
 - Qwen3.6 as the default answer writer, once it is checked to fit the 8 GB GPU.
 - Run the same benchmark on a client's own documents before any deployment.
 

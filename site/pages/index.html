@@ -55,7 +55,7 @@ nav: index
       <h3>Out of scope</h3>
       <p>The model answers anyway, for instance a French-law question asked of a Brazilian corpus.</p>
       <p class="failure-brick">Router and abstention (9.4)</p>
-      <p class="state">Re-measured on the current pipeline: precision {{router_precision}}, recall {{router_recall}} on questions to refuse, with {{router_false_abstention}} of answerable questions refused; decision pending</p>
+      <p class="state">Re-measured on the current pipeline; operating point to be chosen. Candidate: precision {{router_precision}}, recall {{router_recall}} on questions to refuse, with {{router_false_abstention}} of answerable questions refused</p>
     </li>
   </ol>
 </section>
@@ -155,7 +155,7 @@ docker compose exec ollama ollama pull qwen2.5:7b</code></pre>
     <ul>
       <li>A bigger cross-reference set, so the citation graph's effect can be told from noise.</li>
       <li>The weak spots on EU texts: questions whose answer sits in a referenced article, and questions asked in another language than the text.</li>
-      <li>Make the version filter the default, and decide on the router and abstention (9.4) now that it is re-measured.</li>
+      <li>Make the version filter the default, and choose the operating point of the router and abstention (9.4), now re-measured.</li>
       <li>Qwen3.6 as the default answer writer, once it is checked to fit the 8 GB GPU next to the rest.</li>
       <li>Run the benchmark on a client's own documents before any deployment.</li>
     </ul>
