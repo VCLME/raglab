@@ -53,6 +53,9 @@ interface Props {
   config: ConfigResponse | null;
   /** The selected corpus holds law / code articles: show the article-reference and graph options. */
   legalCorpus: boolean;
+  /** Query router (phase 9.4): off unless turned on here; not a server default. */
+  routing?: boolean;
+  onRoutingChange?: (on: boolean) => void;
 }
 
 /**
@@ -60,7 +63,7 @@ interface Props {
  * article references and citation graph on legal corpora). Only the options
  * changed here are sent: the rest keeps the server defaults from /api/config.
  */
-export function ChatOptions({ value, onChange, config, legalCorpus }: Props) {
+export function ChatOptions({ value, onChange, config, legalCorpus, routing = false, onRoutingChange }: Props) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -102,6 +105,7 @@ export function ChatOptions({ value, onChange, config, legalCorpus }: Props) {
   };
 
   const summary = [
+    routing ? t("chat.options_routing_short") : null,
     t(`retrieval.mode_short_${current.mode}`),
     current.rerank ? t("chat.options_rerank_short") : null,
     current.citations ? t("chat.options_citations_short") : null,
@@ -165,6 +169,15 @@ export function ChatOptions({ value, onChange, config, legalCorpus }: Props) {
             badge={noGpu && !current.rerank ? t("chat.options_no_gpu_badge") : undefined}
             help={{ text: t("chat.help_rerank"), label: t("chat.help_label", { option: t("retrieval.rerank_label") }) }}
           />
+
+          {onRoutingChange ? (
+            <Switch
+              label={t("chat.routing_label")}
+              description={t("chat.routing_title")}
+              checked={routing}
+              onChange={onRoutingChange}
+            />
+          ) : null}
 
           {legalCorpus ? (
             <>

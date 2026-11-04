@@ -1039,6 +1039,36 @@ button.sm {
   margin-top: 14px;
 }
 
+/* Query router (phase 9.4) */
+.routing-panel {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.bubble .routing-panel {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.routing-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+}
+
+.routing-scores {
+  margin-top: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.routing-scores th {
+  width: 110px;
+  text-align: left;
+  vertical-align: top;
+}
+
 .inline-status {
   align-self: flex-start;
   margin: -4px 0 0 4px;
@@ -4029,6 +4059,9 @@ button.icon-only {
     width: 100%;
     justify-content: center;
   }
+}
+.profile-table {
+  margin-top: 16px;
 }
 
 /* Fetch job of an official source (Corpus › Légifrance et EUR-Lex). */

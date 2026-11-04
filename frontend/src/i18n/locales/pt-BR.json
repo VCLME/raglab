@@ -140,7 +140,11 @@
     "help_mode": "Vetorial compara o sentido da pergunta com o dos trechos, palavras-chave (BM25) busca as palavras exatas, híbrida roda as duas e funde os rankings (RRF): a melhor qualidade medida.",
     "help_rerank": "Um cross-encoder relê os 40 primeiros candidatos com a pergunta e os reordena: mais preciso que a fusão, cerca de 0,5 s por pergunta na GPU, vários segundos na CPU.",
     "help_citations": "Se a pergunta cita um artigo (“art. 49 da Lei 8.078”, “article L. 221-18 du Code de la consommation”), a busca se limita a esse texto e o artigo citado vai para o topo.",
-    "help_graph": "Segue no Neo4j as remissões dos melhores trechos (“nos termos do art. 12”) e acrescenta à fusão os artigos citados que as outras buscas perderam."
+    "help_graph": "Segue no Neo4j as remissões dos melhores trechos (“nos termos do art. 12”) e acrescenta à fusão os artigos citados que as outras buscas perderam.",
+    "routing_label": "Roteamento",
+    "routing_title": "Detectar idioma e intenção, escolher o corpus e abster-se quando os documentos não respondem",
+    "corpus_auto": "Automático (roteador)",
+    "options_routing_short": "roteador"
   },
   "dashboard": {
     "pull_in_progress": "Baixando…",
@@ -188,7 +192,12 @@
     "chunks_header": "Chunks recuperados ({{count}})",
     "raw_payload": "Resposta bruta (JSON)",
     "loading": "consultando o RAG…",
-    "writer_hint": "Redigida por {{provider}} · {{model}}."
+    "writer_hint": "Redigida por {{provider}} · {{model}}.",
+    "routing_label": "Roteamento",
+    "routing_checkbox": "Rotear a pergunta (idioma, intenção, corpus, abstenção)",
+    "routing_hint": "Sem corpus nem índice escolhido, o roteador escolhe o corpus.",
+    "corpus_auto": "Automático (roteador)",
+    "routing_header": "Roteamento"
   },
   "playground": {
     "model_label": "Modelo",
@@ -504,6 +513,44 @@
     "download": "Baixar",
     "downloading": "Baixando…",
     "pull_status": "status: {{status}}"
+  },
+  "routing": {
+    "title": "Roteamento",
+    "language": "Idioma",
+    "intent": "Intenção",
+    "corpus": "Corpus",
+    "abstention": "Abstenção",
+    "timings": "Tempos",
+    "margin": "margem",
+    "answered": "Resposta a partir dos documentos",
+    "declined": "Sem resposta documental ({{reason}})",
+    "suggested": "(o roteador escolheria {{corpus}})",
+    "no_candidate": "nenhum índice compatível",
+    "intent_rule": "documental, salvo se outra intenção a superar por mais de {{margin}}",
+    "nearest_example": "exemplo mais próximo: “{{text}}”",
+    "citation_override": "Citação jurídica ({{label}}): nunca há abstenção",
+    "abstention_rule": "melhor score {{source}} {{score}} (limiar {{threshold}})",
+    "intents": {
+      "documentary": "documental",
+      "conversational": "conversa",
+      "out_of_scope": "fora do escopo"
+    },
+    "reasons": {
+      "intent": "intenção",
+      "low_score": "score baixo demais",
+      "no_passage": "nenhum trecho",
+      "none": "—"
+    },
+    "methods": {
+      "lexical": "palavras funcionais",
+      "embedding": "exemplo mais próximo"
+    },
+    "corpus_sources": {
+      "citation": "escolhido pela citação (texto citado indexado)",
+      "routed": "escolhido pelo roteador",
+      "requested": "escolhido pelo usuário",
+      "none": "nenhum corpus"
+    }
   },
   "edu": {
     "title": "O pipeline ao vivo",
@@ -1127,7 +1174,30 @@
     "no_served": "O servidor responde mas não lista nenhum modelo.",
     "not_running": "Servidor parado: ele inicia na primeira pergunta que precisar dele.",
     "bench_title": "Bancada de testes",
-    "bench_lead": "O modelo sozinho, sem buscar nos seus documentos: para testar um modelo ou calibrar seus parâmetros."
+    "bench_lead": "O modelo sozinho, sem buscar nos seus documentos: para testar um modelo ou calibrar seus parâmetros.",
+    "until_end": "até o fim da resposta",
+    "server_default": "padrão do servidor, desconhecido do raglab",
+    "sent_tag": "enviado pelo raglab",
+    "params_note_server": "Lidos no servidor llama.cpp (/props); o raglab só envia a temperatura.",
+    "params_note_raglab": "O raglab só envia a temperatura; o resto é o padrão do servidor.",
+    "llamacpp_title": "Redator llama.cpp",
+    "writer_profile": "Perfil do redator",
+    "expected_model": "Modelo esperado",
+    "served_yes": "servido",
+    "served_no": "ainda não servido",
+    "start_configured": "Comando de início",
+    "stop_configured": "Comando de parada",
+    "autostart": "Início automático",
+    "profile": "Perfil",
+    "ctx_size": "Contexto (tokens)",
+    "n_cpu_moe": "Camadas MoE na CPU",
+    "gen_status_ready": "pronto",
+    "gen_status_stopped": "parado",
+    "gen_status_starting": "iniciando",
+    "gen_status_busy": "ocupado",
+    "gen_status_down": "inacessível",
+    "gen_status_failed": "falhou",
+    "fallback": "respostas servidas por {{label}} · {{model}} enquanto isso"
   },
   "gpu": {
     "why_device_cpu": "GPU desativada na configuração, RAGLAB_RERANK_DEVICE=cpu",

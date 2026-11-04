@@ -44,7 +44,7 @@ Two frozen question sets: **PIAF** (500 French questions, 761 Wikipedia paragrap
 | 30 candidates (comparison) | 30 re-ranking candidates (latency sweep point, retrieval only) | 0.966 | 0.801 | 72% | 556 ms | not judged | not judged |
 | Multilingual fallback prompt (rejected) | answer prompt with a fallback sentence in three languages and "answer partially" (rejected: refusals doubled) | 0.966 | 0.816 | 72% | 530 ms | 0.828 / 0.818 | 0.553 / 0.478 |
 | Grounded prompt (default) | + answer prompt in the question's language, quote the answering sentence before answering (fewer unjustified refusals, no wrong-language answers) | 0.966 | 0.816 | 72% | 986 ms | 0.970 / 0.895 | 0.763 / 0.550 |
-| Qwen3.6 answer writer (next default, VRAM check pending) | same pipeline and prompt, answers written by Qwen3.6-35B-A3B (MoE) on llama.cpp instead of qwen2.5:7b | 0.966 | 0.816 | 72% | 595 ms | 0.995 / 0.980 | 0.935 / 0.710 |
+| Qwen3.6 answer writer (default writer) | same pipeline and prompt, answers written by Qwen3.6-35B-A3B (MoE) on llama.cpp instead of qwen2.5:7b | 0.966 | 0.816 | 72% | 595 ms | 0.995 / 0.980 | 0.935 / 0.710 |
 | Citation graph (9.9 · comparison) | full pipeline + citation graph in Neo4j as a third search branch (no-regression check on these sets; measured on its own sets below) | 0.966 | 0.812 | 70% | 314 ms | not judged | not judged |
 | Version filter (9.10 · default) | full pipeline + only versions in force are searched (on by default; no regression on these sets, measured on its own sets below) | 0.966 | 0.816 | 72% | 348 ms | not judged | not judged |
 
@@ -85,9 +85,9 @@ docker compose --profile app up -d api frontend
 docker compose exec ollama ollama pull qwen2.5:7b
 ```
 
-Then open the UI at <http://localhost:8081>: Expert → Corpus to add a folder of `.txt` / `.pdf` / `.docx`, Indexation to build an index, then Chat. The API is documented at <http://localhost:8000/docs>.
+Then open the UI at <http://localhost:8081>: the Workshop walks you through the knowledge base (Corpus to add a folder of `.txt` / `.pdf` / `.docx` or fetch a legal corpus, then chunking, vectors and graph), then Chat. The API is documented at <http://localhost:8000/docs>.
 
-With an Nvidia GPU (`nvidia-container-toolkit`), start Ollama with the override: `docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d ollama`.
+With an Nvidia GPU (`nvidia-container-toolkit`), start Ollama with the override: `docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d ollama`. Answers come from qwen2.5:7b on Ollama in Docker; for the measured default writer, Qwen3.6-35B-A3B on llama.cpp (fits next to the re-ranker in 8 GB: 7.1 GB peak, ~34 tokens/s), add `docker-compose.llamacpp.yml` as described in [docs/run-and-test.md](docs/run-and-test.md).
 
 Command line, after `pip install -e .[dev]` and copying `.env.example` to `.env`:
 
@@ -137,7 +137,7 @@ Stack: Python 3.12, FastAPI, SQLAlchemy, PostgreSQL 16 + pgvector 0.8, transform
 1. **Frozen questions**: 500 PIAF and 277 LexML questions are committed in [`benchmarks/`](benchmarks/), sampled with a fixed seed, never regenerated between runs.
 2. **Full haystack**: the whole corpus is indexed, so the answer has to be found among thousands of chunks, not among the sampled questions' own paragraphs.
 3. **Passage-level relevance**: each question carries the character span of its answer; the right law but the wrong article is a miss.
-4. **Independent, calibrated judge**: answers from qwen2.5:7b are scored by Gemma 4 26B-A4B; on 150 answers with known verdicts it recognised 90% of faithful answers and caught 97% of invented details.
+4. **Independent, calibrated judge**: answers (written by qwen2.5:7b, and by Qwen3.6 since `gen-qwen36-v1`) are scored by Gemma 4 26B-A4B, a different model family; on 150 answers with known verdicts it recognised 90% of faithful answers and caught 97% of invented details.
 5. **One change per run**: each run file records its exact command, commit, models and hardware ([`benchmarks/results/`](benchmarks/results/)).
 
 Details (French): [protocol](docs/benchmarks/protocole.md) · [judges and calibration](docs/benchmarks/juges.md) · [baseline](docs/benchmarks/baseline.md).
@@ -157,8 +157,7 @@ Details (French): [protocol](docs/benchmarks/protocole.md) · [judges and calibr
 
 - A bigger cross-reference set, so the citation graph's effect (9.9) can be told from noise.
 - The weak spots on EU texts: questions whose answer sits in a referenced article, and questions asked in another language than the text.
-- Choose the operating point of query routing and abstention (9.4), re-measured on the current pipeline.
-- Qwen3.6 as the default answer writer, once it is checked to fit the 8 GB GPU.
+- Raise the router's recall on questions to refuse to 0.85 while keeping false refusals under 5% (9.4 ships the prudent point).
 - Run the same benchmark on a client's own documents before any deployment.
 
 ---

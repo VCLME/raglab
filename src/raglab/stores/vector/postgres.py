@@ -104,9 +104,9 @@ def ranked_in_force(
     return rows
 
 
-def without_valid_at(filters: RetrievalFilters) -> RetrievalFilters:
+def without_valid_at(filters: RetrievalFilters | None) -> RetrievalFilters | None:
     """The same filters, the versions one left to `ranked_in_force`."""
-    return filters.model_copy(update={"valid_at": None})
+    return filters.model_copy(update={"valid_at": None}) if filters is not None else None
 
 
 class PostgresVectorStore:
@@ -168,7 +168,7 @@ class PostgresVectorStore:
             # No cast: the expression no longer matches the partial HNSW
             # index, so Postgres computes the exact distance for the run's rows.
             typed_embedding: Any = ChunkEmbedding.embedding
-            query_param = bindparam("query_vec", query_embedding, type_=QueryVector())
+            query_param: Any = bindparam("query_vec", query_embedding, type_=QueryVector())
         else:
             typed_embedding = cast(ChunkEmbedding.embedding, VECTOR(dim))
             query_param = bindparam("query_vec", query_embedding, type_=QueryVector(dim))

@@ -53,6 +53,32 @@ export interface ConfigResponse {
   default_llm_provider?: string;
 }
 
+/**
+ * Generation settings of a provider. `temperature` is the only value raglab
+ * sends; the others come from llama-server /props when it answers
+ * (`source: "server"`), else null: the server's default, unknown to raglab.
+ */
+export interface GenerationSettings {
+  temperature: number | null;
+  top_p: number | null;
+  /** null with source "server": until the end of the answer. */
+  max_tokens: number | null;
+  context: number | null;
+  sent_by_raglab: string[];
+  source: "raglab" | "server";
+}
+
+/** llama.cpp writer setup (booleans only, never the commands). */
+export interface LlamaCppServerInfo {
+  writer_profile: string;
+  /** Expected /v1/models id (llama-server --alias). */
+  writer_model: string;
+  start_command_configured: boolean;
+  stop_command_configured: boolean;
+  autostart: boolean;
+  profile_options: Record<string, { ctx_size?: number; n_cpu_moe?: number }>;
+}
+
 /** One generation backend of GET /api/llm/models. */
 export interface LlmProvider {
   name: string;
@@ -63,6 +89,9 @@ export interface LlmProvider {
   available: boolean;
   error: string | null;
   models: string[];
+  /** Newer APIs (writer-qwen36): absent on older ones. */
+  generation?: GenerationSettings | null;
+  llamacpp?: LlamaCppServerInfo | null;
 }
 
 /** Default answer writer (Qwen3.6 on llama.cpp) and who answers right now. */
@@ -320,6 +349,42 @@ export interface QueryResponse {
   // fusion / rerank when those stages ran) and Ollama token counters.
   timings_ms?: Record<string, number>;
   generation_stats?: Record<string, number>;
+  // Present when the request enabled the query router (phase 9.4).
+  routing?: RoutingDecision | null;
+}
+
+export type RoutingIntent = "documentary" | "conversational" | "out_of_scope";
+
+export interface RoutingDecision {
+  language: { language: string; scores: Record<string, number>; method: string };
+  intent: {
+    intent: RoutingIntent;
+    scores: Record<string, number>;
+    margin: number;
+    nearest_example: string | null;
+  };
+  corpus: {
+    corpus_name: string | null;
+    index_run_id: string | null;
+    suggested_corpus: string | null;
+    candidates: { corpus_name: string; index_run_id: string; score: number }[];
+    margin: number;
+    source: "routed" | "citation" | "requested" | "none";
+  };
+  legal_citation?: string | null;
+  legal_citation_found?: boolean;
+  abstention: {
+    abstain: boolean;
+    reason: string | null;
+    score_source: string;
+    best_score: number | null;
+    threshold: number | null;
+    // "legal_citation" when the question cites a law: never declined.
+    override?: string | null;
+  } | null;
+  answer_from_documents: boolean;
+  fallback_answer: string | null;
+  timings_ms: Record<string, number>;
 }
 
 /** SSE `stage` event of /api/query/stream (educational mode). */

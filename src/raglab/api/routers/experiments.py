@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from raglab.api.deps import get_db
+from raglab.api.deps import get_current_settings, get_db
 from raglab.api.schemas import (
     DriftRequest,
     DriftSelection,
@@ -15,11 +15,13 @@ from raglab.api.schemas import (
     ExperimentRunDetail,
     ExperimentRunSummary,
     RecallRequest,
+    RoutingExperimentRequest,
 )
-from raglab.config import get_settings
+from raglab.config import Settings, get_settings
 from raglab.db.models import EmbeddingSpace, ExperimentResult, ExperimentRun, IndexRun
 from raglab.experiments.ragas import JudgeConfig
 from raglab.experiments.recall import RecallBenchmarkService
+from raglab.experiments.routing import RoutingExperimentService
 from raglab.observability.drift import ResultSelection, build_drift_report, render_markdown
 
 router = APIRouter(prefix="/api/experiments", tags=["experiments"])
@@ -51,6 +53,26 @@ def recall(body: RecallRequest, session: Session = Depends(get_db)) -> dict[str,
         )
     finally:
         service.close()
+
+
+@router.post("/routing")
+def routing(
+    body: RoutingExperimentRequest,
+    session: Session = Depends(get_db),
+    settings: Settings = Depends(get_current_settings),
+) -> dict[str, Any]:
+    """Evaluate the query router on the abstention set + seeded in-scope questions."""
+    return RoutingExperimentService(session, settings).run(
+        corpora=body.corpora or None,
+        strategy=body.strategy,
+        sample_size=body.sample_size,
+        seed=body.seed,
+        top_k=body.top_k,
+        calibration_size=body.calibration_size,
+        retrieval_mode=body.retrieval_mode,
+        rerank=body.rerank,
+        citations=body.citations,
+    )
 
 
 def _selection(body: DriftSelection, name: str) -> ResultSelection:

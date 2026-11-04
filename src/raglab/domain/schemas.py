@@ -6,6 +6,7 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 from raglab.domain.enums import ChunkingStrategy, RetrievalMode
+from raglab.routing.schemas import RoutingDecision
 
 
 class DocumentPayload(BaseModel):
@@ -172,6 +173,9 @@ class QueryResponse(BaseModel):
     timings_ms: dict[str, float] = Field(default_factory=dict)
     # Generator counters when available (tokens, tokens per second).
     generation_stats: dict[str, float] = Field(default_factory=dict)
+    # Router decisions (language, intent, corpus, abstention) when the
+    # request enabled routing; None otherwise.
+    routing: RoutingDecision | None = None
     # Provider that wrote the answer, and why it is not the default writer
     # when it is its fallback: "llamacpp_unavailable" (down and not
     # startable), "llamacpp_starting" (still loading) or "llamacpp_busy"

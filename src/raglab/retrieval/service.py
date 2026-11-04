@@ -47,6 +47,8 @@ from raglab.retrieval.graph_branch import (
 from raglab.retrieval.rerank import Reranker, get_reranker, rerank_gpu_available
 from raglab.retrieval.stages import planned_stages, prompt_details, retrieval_stage_events, stage_end, stage_start
 from raglab.retrieval.versions import VersionLookup, annotate, demote_revoked, is_outdated, resolve_policy
+from raglab.routing.schemas import RoutingDecision
+from raglab.routing.step import route_and_retrieve
 from raglab.stores.lexical.postgres import PostgresLexicalStore
 from raglab.stores.vector.postgres import PostgresVectorStore
 
@@ -71,6 +73,8 @@ class RetrievalOutcome:
     retrieved: list[RetrievedChunk]
     started: float
     timings_ms: dict[str, float] = field(default_factory=dict)
+    # Set by the routing step (phase 9.4) when the request enabled it.
+    routing: RoutingDecision | None = None
     # Question vector, kept for the educational mode's `stage` events.
     query_embedding: list[float] | None = None
     retrieval_mode: RetrievalMode = RetrievalMode.DENSE
@@ -97,6 +101,10 @@ class RetrievalOutcome:
     # Version policy (versions option) and what it did; see QueryResponse.
     versions: dict[str, Any] | None = None
 
+    @property
+    def answers_from_documents(self) -> bool:
+        return self.routing is None or self.routing.answer_from_documents
+
     def response(self, **extra: Any) -> QueryResponse:
         return QueryResponse(
             question=self.question,
@@ -110,6 +118,7 @@ class RetrievalOutcome:
             rerank_notice=self.rerank_notice,
             filters=self.filters,
             timings_ms=dict(self.timings_ms),
+            routing=self.routing,
             citation=self.citation,
             graph=self.graph,
             graph_notice=self.graph_notice,
@@ -261,10 +270,17 @@ class QueryService:
         rrf_k: int | None = None,
         rerank: bool | None = None,
         citations: bool | None = None,
+        routing: bool = False,
+        query_embedding: list[float] | None = None,
         graph: bool | None = None,
         versions: str | None = None,
     ) -> RetrievalOutcome:
         """Search the index for the question, each stage under its budget.
+
+        `routing` runs the query router around this method (phase 9.4): it
+        picks the corpus, then may abstain from the passages retrieved here.
+        `query_embedding` skips the embed stage: the router passes the vector
+        it already computed, with the same embedder as the routed index run.
 
         With `citations` on, a question citing a law ("art. 49 da Lei nº
         8.078") is restricted to that law and the cited article is pinned
@@ -290,6 +306,23 @@ class QueryService:
         ranking; on compiled laws, chunks that only hold repealed provisions
         are moved last. Every chunk carries its version state.
         """
+        if routing:
+            return route_and_retrieve(
+                self,
+                question=question,
+                corpus_name=corpus_name,
+                strategy=strategy,
+                index_run_id=index_run_id,
+                top_k=top_k,
+                filters=filters,
+                retrieval_mode=retrieval_mode,
+                lexical_weight=lexical_weight,
+                rrf_k=rrf_k,
+                rerank=rerank,
+                citations=citations,
+                graph=graph,
+                versions=versions,
+            )
         mode = RetrievalMode(retrieval_mode or self.settings.default_retrieval_mode)
         index_run = self._resolve_index_run(
             corpus_name=corpus_name,
@@ -380,8 +413,9 @@ class QueryService:
         )
         citation_seconds = perf_counter() - citation_started if citation is not None else 0.0
         started = perf_counter()
-        query_embedding: list[float] | None = None
-        if mode != RetrievalMode.LEXICAL:
+        if mode == RetrievalMode.LEXICAL:
+            query_embedding = None
+        elif query_embedding is None:
             query_embedding = self._embed_question(index_run, question)
         embedded = perf_counter()
 
@@ -581,6 +615,7 @@ class QueryService:
         generate_answer: bool = True,
         filters: RetrievalFilters | None = None,
         llm_model: str | None = None,
+        routing: bool = False,
         generation_top_k: int | None = None,
         retrieval_mode: RetrievalMode | str | None = None,
         lexical_weight: float | None = None,
@@ -605,6 +640,7 @@ class QueryService:
             index_run_id=index_run_id,
             top_k=top_k,
             filters=filters,
+            routing=routing,
             retrieval_mode=retrieval_mode,
             lexical_weight=lexical_weight,
             rrf_k=rrf_k,
@@ -617,7 +653,11 @@ class QueryService:
         stats: dict[str, float] = {}
         provider: str | None = None
         notice: str | None = None
-        if generate_answer:
+        if generate_answer and not outcome.answers_from_documents:
+            # The router declined: its canned answer replaces generation.
+            assert outcome.routing is not None
+            answer = outcome.routing.fallback_answer
+        elif generate_answer:
             provider, model, notice = self.pick_generator(llm_provider, llm_model)
             generator = self.generator_for(provider)
             generation_started = perf_counter()
@@ -686,14 +726,20 @@ class QueryService:
         yield "stage", stage_start("generation", self._since_start(outcome, generation_started))
         first_token_ms: float | None = None
         parts: list[str] = []
-        for piece in generator.stream_answer(outcome.question, outcome.retrieved, model=llm_model):
+        if outcome.answers_from_documents:
+            pieces = generator.stream_answer(outcome.question, outcome.retrieved, model=llm_model)
+        else:
+            # The router declined: its canned answer is the only fragment.
+            assert outcome.routing is not None
+            pieces = iter([outcome.routing.fallback_answer or ""])
+        for piece in pieces:
             if first_token_ms is None:
                 first_token_ms = round((perf_counter() - generation_started) * 1000, 3)
             parts.append(piece)
             yield "token", {"text": piece}
         generation_done = perf_counter()
         outcome.timings_ms["generation"] = round((generation_done - generation_started) * 1000, 3)
-        stats = dict(generator.last_stats)
+        stats = dict(generator.last_stats) if outcome.answers_from_documents else {}
         generation_data: dict[str, Any] = {
             "provider": provider,
             "model": _model_label(provider, llm_model, self.settings),
@@ -776,6 +822,8 @@ class QueryService:
             question_length=len(outcome.question),
             elapsed_ms=round(elapsed_ms, 3),
             timings_ms=outcome.timings_ms,
+            routed_intent=outcome.routing.intent.intent.value if outcome.routing else None,
+            abstained=not outcome.answers_from_documents if outcome.routing else None,
         )
         observe_query(
             timings_ms=outcome.timings_ms,

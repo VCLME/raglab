@@ -1066,6 +1066,12 @@ def query(
         "(defaut : RAGLAB_DEFAULT_LLM_PROVIDER, Qwen3.6 sur llama.cpp demarre si besoin, "
         "sinon RAGLAB_LLM_FALLBACK_PROVIDER ; generator_notice dit pourquoi).",
     ),
+    routing: bool = typer.Option(
+        False,
+        "--routing/--no-routing",
+        help="Router la question (langue, intention, corpus si --corpus est absent) et s'abstenir "
+        "quand le meilleur passage est trop faible.",
+    ),
 ) -> None:
     filters = build_retrieval_filters(
         document_ids=document_ids,
@@ -1089,6 +1095,7 @@ def query(
                 rrf_k=rrf_k,
                 rerank=rerank,
                 citations=citations,
+                routing=routing,
                 graph=graph,
                 versions=versions,
             )
@@ -1117,6 +1124,7 @@ def query(
             graph=graph,
             versions=versions,
             llm_model=llm_model,
+            routing=routing,
             llm_provider=provider,
         )
     typer.echo(response.model_dump_json(indent=2))
@@ -1302,6 +1310,65 @@ def experiment_recall(
             judge=JudgeConfig(backend=judge_backend, model=judge_model),
         )
     typer.echo(json.dumps(result, indent=2, ensure_ascii=False))
+
+
+@experiment_app.command("routing")
+def experiment_routing(
+    corpus: list[str] | None = typer.Option(
+        None,
+        "--corpus",
+        help="Corpus parmi lesquels le routeur choisit (repetable). Defaut : tous les index compatibles.",
+    ),
+    strategy: ChunkingStrategy | None = typer.Option(None, "--strategy", help="Strategie de chunking a cibler."),
+    sample_size: int | None = typer.Option(
+        None,
+        "--sample-size",
+        min=1,
+        help="Questions in-scope tirees (reparties entre PIAF et LexML). Defaut : la taille du jeu d'abstention.",
+    ),
+    seed: int = typer.Option(42, "--seed", help="Graine du tirage des questions in-scope."),
+    top_k: int = typer.Option(5, "--top-k", min=1, help="Passages recuperes par question."),
+    calibration_size: int = typer.Option(
+        100,
+        "--calibration-size",
+        min=1,
+        help="Questions in-scope de calibration par corpus (disjointes des questions evaluees) "
+        "pour les seuils par corpus.",
+    ),
+    retrieval_mode: RetrievalMode | None = typer.Option(
+        None,
+        "--retrieval-mode",
+        help="Retrieval derriere le routeur : dense, lexical ou hybrid. Defaut: RAGLAB_DEFAULT_RETRIEVAL_MODE.",
+    ),
+    rerank: bool | None = typer.Option(
+        None,
+        "--rerank/--no-rerank",
+        help="Re-ranking cross-encoder (defaut: RAGLAB_DEFAULT_RERANK, ignore sans GPU).",
+    ),
+    citations: bool | None = typer.Option(
+        None,
+        "--citations/--no-citations",
+        help="Resolution des citations juridiques (defaut: RAGLAB_CITATION_RESOLVER).",
+    ),
+) -> None:
+    """Mesurer le routeur : abstention (precision / rappel / F1, courbe), intention, langue, corpus, latence."""
+    from raglab.experiments.routing import RoutingExperimentService, render_markdown
+
+    with session_scope() as session:
+        report = RoutingExperimentService(session).run(
+            corpora=corpus or None,
+            strategy=strategy,
+            sample_size=sample_size,
+            seed=seed,
+            top_k=top_k,
+            calibration_size=calibration_size,
+            retrieval_mode=retrieval_mode,
+            rerank=rerank,
+            citations=citations,
+        )
+    summary = {k: v for k, v in report["summary"].items() if k != "curve"}
+    typer.echo(json.dumps({"report_path": report["report_path"], "summary": summary}, indent=2, ensure_ascii=False))
+    typer.echo(render_markdown(report["summary"]), err=True)
 
 
 if __name__ == "__main__":

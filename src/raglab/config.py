@@ -217,6 +217,28 @@ class Settings(BaseSettings):
     # PostgresVectorStore for why it is not the default.
     vector_search_mode: str = "exact"
 
+    # Query router (phase 9.4), enabled per request (`routing`). A
+    # non-documentary intent must beat `documentary` by this margin; the
+    # router abstains when the best passage scores below the threshold of
+    # the queried corpus (JSON object, corpus name -> threshold), or below
+    # the global one for a corpus without its own.
+    # 0.02: with 0, a fifth of in-scope questions went out_of_scope (docs/routing.md).
+    routing_intent_margin: float = 0.02
+    routing_abstention_threshold: float = 0.0
+    # Operating point A chosen by the owner: thresholds at the 2% quantile of
+    # in-scope calibration questions, calibrated on the default pipeline
+    # (hybrid + re-ranking + citations, top-5; benchmarks/routing/*-v1.json).
+    # Each score source has its own calibration: a dense cosine threshold
+    # means nothing on a cross-encoder score.
+    routing_abstention_thresholds: dict[str, float] = Field(
+        default_factory=lambda: {"bench_piaf_fr": 0.7929, "bench_lexml_pt": 0.8485}
+    )
+    routing_rerank_abstention_thresholds: dict[str, float] = Field(
+        default_factory=lambda: {"bench_piaf_fr": -5.4414, "bench_lexml_pt": -3.9102}
+    )
+    # dense (cosine similarity) or rerank (cross-encoder score, phase 9.3).
+    routing_score_source: str = "dense"
+
     chunk_size: int = 900
     chunk_overlap: int = 150
     slide_window_size: int = 900
