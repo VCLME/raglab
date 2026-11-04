@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from sqlalchemy import exists, select
+from sqlalchemy import bindparam, exists, select
 from sqlalchemy.orm import Session
 
 from raglab.db.models import Document, IndexRun
@@ -31,8 +31,19 @@ __all__ = [
 
 
 def corpus_has_versions(session: Session, corpus_id: str) -> bool:
-    """One document of the corpus carries version metadata (`etat`)."""
-    stmt = select(exists().where(Document.corpus_id == corpus_id, Document.metadata_json.has_key("etat")))
+    """One document of the corpus carries version metadata (`etat`).
+
+    Both values are written into the SQL: with bound parameters, once
+    psycopg prepares the statement PostgreSQL switches to a generic plan
+    that scans every document of every corpus (~40 ms when none matches:
+    PIAF, LexML) instead of the corpus's index (< 1 ms).
+    """
+    stmt = select(
+        exists().where(
+            Document.corpus_id == bindparam("corpus_id", corpus_id, literal_execute=True),
+            Document.metadata_json.has_key(bindparam("key", "etat", literal_execute=True)),
+        )
+    )
     return bool(session.execute(stmt).scalar_one())
 
 

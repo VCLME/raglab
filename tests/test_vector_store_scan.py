@@ -4,10 +4,13 @@ import re
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
+import numpy as np
 import pytest
+from pgvector import Vector
+from sqlalchemy.dialects import postgresql
 
 from raglab.domain.schemas import RetrievalFilters
-from raglab.stores.vector.postgres import PostgresVectorStore
+from raglab.stores.vector.postgres import PostgresVectorStore, QueryVector
 
 
 def _index_run():
@@ -90,3 +93,32 @@ def test_search_maps_selected_columns_to_ranked_results():
         "/corpus/loi.txt",
     )
     assert (results[0].chunk_text, results[0].char_start, results[0].char_end) == ("Art. 1", 0, 6)
+
+
+def test_query_vector_sends_the_same_float32_values_in_fewer_bytes():
+    values = np.random.default_rng(0).uniform(-0.5, 0.5, 384).tolist()
+    compact = QueryVector(384).bind_processor(postgresql.dialect())(values)
+    reference = Vector._to_db(values)  # what pgvector's VECTOR sends
+    # PostgreSQL stores float4: both texts parse to the same float32 values.
+    assert np.array_equal(np.array(compact[1:-1].split(","), dtype=np.float32), Vector.from_text(reference).to_numpy())
+    assert len(compact) < 0.65 * len(reference)
+    with pytest.raises(ValueError):
+        QueryVector(384).bind_processor(postgresql.dialect())([0.0] * 3)
+
+
+def test_versions_filter_is_checked_after_the_exact_ranking():
+    session = MagicMock()
+    session.execute.return_value.all.return_value = []
+    PostgresVectorStore().search(
+        session,
+        index_run=_index_run(),
+        query_embedding=[0.0] * 384,
+        top_k=5,
+        filters=RetrievalFilters(valid_at="2026-11-03"),
+    )
+    ranked, full = _statements(session)
+    # Ranked first, documents checked on the ranked rows only; the filtered
+    # query runs when too few rows pass (none here).
+    assert "FROM (SELECT" in ranked
+    assert ranked.index("metadata_json ->>") > ranked.index(") AS ranked")
+    assert "FROM (SELECT" not in full and "metadata_json ->>" in full

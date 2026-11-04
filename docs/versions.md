@@ -159,7 +159,23 @@ Mesures appariées sur les mêmes questions ; fichiers dans `benchmarks/results/
 
 **PIAF et LexML** : `versions-v1` (`in_force`) est identique à `prompt-v4` question par question (PIAF 0,966, LexML 0,816 en Recall@5) : sur LexML, aucun chunk entièrement abrogé n'était au-dessus d'une bonne réponse.
 
-**Latence** (p50) : sur le Code de la consommation, le filtre de dates dans la requête SQL coûte cher : recherche vectorielle 35 → 220 ms, BM25 40 → 100 ms, recherche 80 → 320 ms ; la question entière (avec re-ranking) passe de 544 à 616 ms, le re-ranking ayant moins de candidats périmés à relire. Sur LexML, l'étape versions prend 32 ms (lecture des métadonnées des passages) et la recherche passe de 77 à 97 ms ; sur PIAF, de 32 à 53 ms (le contrôle « ce corpus a-t-il des versions ? » tourne à chaque question). Une optimisation (filtrer d'abord les documents valides, mettre en cache le contrôle « corpus versionné ») reste à faire.
+**Latence** (p50) : sur le Code de la consommation, le filtre de dates dans la requête SQL coûte cher : recherche vectorielle 35 → 220 ms, BM25 40 → 100 ms, recherche 80 → 320 ms ; la question entière (avec re-ranking) passe de 544 à 616 ms, le re-ranking ayant moins de candidats périmés à relire. Sur LexML, l'étape versions prend 32 ms (lecture des métadonnées des passages) et la recherche passe de 77 à 97 ms ; sur PIAF, de 32 à 53 ms (le contrôle « ce corpus a-t-il des versions ? » tourne à chaque question).
+
+**Latence après optimisation** (p50 de la recherche, CPU, sans re-ranking, 300 questions du Code de la consommation ; résultats identiques question par question) :
+
+| Mode | sans versions (`all`) | `in_force` avant | `in_force` après |
+|---|---|---|---|
+| BM25 | 36 ms | 108 ms | 38 ms |
+| vectorielle | 47 ms | 247 ms | 52 ms |
+| hybride (50 candidats par moteur) | 80 ms | 336 ms | 106 ms |
+
+Trois causes, trois corrections :
+
+- **Le filtre lisait les métadonnées de chaque candidat.** Les conditions de dates relisent cinq fois le JSONB de métadonnées (~1,2 ko, compressé) de chaque document candidat, souvent par un parcours de toute la table. Le filtre ne change pas l'ordre des résultats : la recherche classe désormais sans lui, puis ne contrôle que les premiers rangs (au plus 32 × top_k), et PostgreSQL s'arrête dès que top_k passages en vigueur sont trouvés. S'il en manque, la requête filtrée d'origine prend le relais (0 cas sur 300 questions à 32 ×, contre 6 à 19 à 8 ×).
+- **Le contrôle « corpus versionné » changeait de plan.** Une fois la requête préparée par psycopg, PostgreSQL passait à un plan générique qui parcourt les documents de tous les corpus : ~44 ms à chaque question sur PIAF et LexML (aucun document ne correspond), < 1 ms avec le plan du corpus. Les valeurs sont maintenant écrites dans la requête. PIAF (BM25, `in_force`) : recherche 55 → 9,5 ms.
+- **Le vecteur de la question dépassait 8 ko.** pgvector envoie chaque float32 sous sa forme float64 (`0.03319903463125229` pour `0.033199035`) : ~7,7 ko pour 384 dimensions. Sur Docker Desktop pour Windows, toute requête de plus de 8 ko attend ~55 ms ; la recherche vectorielle filtrée passait la limite. Le vecteur part maintenant sous la forme la plus courte de chaque float32 (4,4 ko), lue à l'identique par PostgreSQL.
+
+Il reste ~10 ms par moteur en hybride (plus de rangs à contrôler à 50 candidats).
 
 **Décision** : `in_force` devient le défaut (`RAGLAB_VERSIONS_DEFAULT=in_force`) ; `all` reste disponible pour comparer avec un RAG classique.
 
@@ -172,5 +188,5 @@ Mesures appariées sur les mêmes questions ; fichiers dans `benchmarks/results/
 - **BM25 compte toutes les versions.** Le filtre agit sur les candidats, pas sur les statistiques du corpus : la rareté d'un mot (idf) est calculée sur toutes les versions, abrogées comprises.
 - **Filtrer, c'est exclure.** Sous `in_force`, une question qui ne dit pas qu'elle porte sur le passé ne voit pas les anciennes versions. C'est voulu (le défaut doit être le droit applicable) ; `all` ou `as_of` les rendent visibles.
 - **Fidélité.** La ligne « Statut » donne au modèle des dates que le juge ne voit pas (il ne lit que le texte des passages) : une réponse qui les reprend est notée moins fidèle. Donner au juge le même contexte que le modèle mesurerait mieux.
-- **Latence.** Le filtre de dates sur les métadonnées JSON ralentit la recherche sur un corpus versionné (voir Résultats).
+- **Latence.** Le contrôle des dates relit les métadonnées JSON des passages classés : quelques ms en BM25 ou en vectoriel, ~10 ms par moteur en hybride (voir Résultats). Un index sur les dates demanderait une migration.
 - **Jeu généré par un modèle.** Les paires sont trouvées par des règles et les citations vérifiées mot pour mot, mais la question elle-même peut être ambiguë ; la relecture (`review-questions`) et la partie `heldout` sont là pour ça.

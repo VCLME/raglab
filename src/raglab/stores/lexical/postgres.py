@@ -23,6 +23,7 @@ query runs. Results are identical either way; only the work differs.
 from __future__ import annotations
 
 import math
+from functools import partial
 
 from sqlalchemy import Float, SmallInteger, Text, bindparam, cast, column, func, literal_column, select, text, true
 from sqlalchemy.dialects.postgresql import ARRAY, TSQUERY
@@ -30,7 +31,7 @@ from sqlalchemy.orm import Session
 
 from raglab.db.models import Chunk, Document, IndexRun, LexicalIndexStats, LexicalTermStats
 from raglab.domain.schemas import RetrievalFilters, RetrievedChunk
-from raglab.stores.vector.postgres import PostgresVectorStore
+from raglab.stores.vector.postgres import VALID_AT_DEPTH, PostgresVectorStore, ranked_in_force, without_valid_at
 
 
 def tsquery_literal(lexeme: str) -> str:
@@ -153,6 +154,64 @@ class PostgresLexicalStore:
         avgdl: float,
     ) -> list[RetrievedChunk]:
         """BM25 top-k of the chunks holding one of `candidate_lexemes`, scored on every `idf` term."""
+        ranked = partial(
+            PostgresLexicalStore._ranked,
+            index_run_id=index_run_id,
+            candidate_lexemes=candidate_lexemes,
+            idf=idf,
+            k1=k1,
+            b=b,
+            avgdl=avgdl,
+        )
+        # The versions filter goes after the ranking (`ranked_in_force`):
+        # BM25 scores do not depend on it.
+        day = filters.valid_at if filters is not None else None
+        if day:
+            rows = ranked_in_force(
+                session,
+                ranked(limit=VALID_AT_DEPTH * top_k, filters=without_valid_at(filters)),
+                lambda inner: [inner.c.score.desc(), inner.c.id],
+                day=day,
+                top_k=top_k,
+                full=lambda: ranked(limit=top_k, filters=filters),
+            )
+        else:
+            rows = session.execute(ranked(limit=top_k, filters=filters)).all()
+
+        results: list[RetrievedChunk] = []
+        for rank, row in enumerate(rows, start=1):
+            bm25 = float(row.score or 0.0)
+            results.append(
+                RetrievedChunk(
+                    chunk_id=row.id,
+                    document_id=row.document_id,
+                    file_name=row.file_name,
+                    source_path=row.source_path,
+                    chunk_text=row.text,
+                    score=bm25,
+                    rank=rank,
+                    char_start=row.char_start,
+                    char_end=row.char_end,
+                    lexical_score=bm25,
+                    lexical_rank=rank,
+                )
+            )
+        return results
+
+    @staticmethod
+    def _ranked(
+        *,
+        index_run_id: str,
+        candidate_lexemes: list[str],
+        idf: dict[str, float],
+        limit: int,
+        filters: RetrievalFilters | None,
+        k1: float,
+        b: float,
+        avgdl: float,
+    ):
+        """The BM25 ranking query: the `limit` best chunks holding one of
+        `candidate_lexemes`, scored on every `idf` term."""
         query_lexemes = list(idf)
         candidate_query = select(
             Chunk.id.label("chunk_id"),
@@ -206,12 +265,12 @@ class PostgresLexicalStore:
             .join(query_terms, query_terms.c.lexeme == terms.c.lexeme)
             .group_by(candidates.c.chunk_id)
             .order_by(score.desc(), candidates.c.chunk_id)
-            .limit(top_k)
+            .limit(limit)
             .subquery("scored")
         )
         # Plain columns rather than ORM entities: Document.content is the full
         # document text (a whole law for LexML) and is not needed here.
-        rows = session.execute(
+        return (
             select(
                 Chunk.id,
                 Chunk.text,
@@ -225,24 +284,4 @@ class PostgresLexicalStore:
             .join(scored, scored.c.chunk_id == Chunk.id)
             .join(Document, Document.id == Chunk.document_id)
             .order_by(scored.c.score.desc(), Chunk.id)
-        ).all()
-
-        results: list[RetrievedChunk] = []
-        for rank, row in enumerate(rows, start=1):
-            bm25 = float(row.score or 0.0)
-            results.append(
-                RetrievedChunk(
-                    chunk_id=row.id,
-                    document_id=row.document_id,
-                    file_name=row.file_name,
-                    source_path=row.source_path,
-                    chunk_text=row.text,
-                    score=bm25,
-                    rank=rank,
-                    char_start=row.char_start,
-                    char_end=row.char_end,
-                    lexical_score=bm25,
-                    lexical_rank=rank,
-                )
-            )
-        return results
+        )
