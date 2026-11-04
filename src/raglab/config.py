@@ -259,6 +259,29 @@ class Settings(BaseSettings):
     # questions to LexML. On by default (owner decision, 4 November 2026).
     routing_cross_language: bool = True
     routing_translation_margin: float = 0.02
+    # Corpus choice on example questions (docs/routage-multilingue.md): each
+    # corpus is scored on the centroids of example questions written in
+    # each language (JSONL: corpus, language, question) instead of the
+    # centroid of its passages, which mixes topic and language. Used only
+    # when every candidate corpus has examples.
+    # Per-language abstention thresholds (docs/routage-multilingue.md):
+    # corpus -> question language -> threshold, one table per score source,
+    # calibrated on benchmarks/lexml_fr/calibration*.jsonl and PIAF questions
+    # disjoint from the evaluated ones. Read before the per-corpus value
+    # when the option is on.
+    # Measured (router-language-thresholds-v1): 46 -> 58 of 80 refusals kept
+    # (p < 0.001), French and Portuguese unchanged, PIAF -3 (n.s.), false
+    # refusals 2.3% -> 4.0%. With it on, abstention reads the original
+    # question's score: #76's translated dense score is not needed.
+    routing_language_thresholds: bool = False
+    routing_language_abstention_thresholds: dict[str, dict[str, float]] = Field(
+        default_factory=lambda: {"bench_lexml_pt": {"fr": 0.8095, "pt": 0.8611}, "bench_piaf_fr": {"fr": 0.797}}
+    )
+    routing_rerank_language_abstention_thresholds: dict[str, dict[str, float]] = Field(
+        default_factory=lambda: {"bench_lexml_pt": {"fr": -4.0312, "pt": -3.9102}, "bench_piaf_fr": {"fr": -6.3789}}
+    )
+    routing_corpus_examples: bool = False
+    routing_corpus_examples_path: Path = Field(default_factory=lambda: Path("benchmarks/routing/corpus_examples.jsonl"))
 
     chunk_size: int = 900
     chunk_overlap: int = 150

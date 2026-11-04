@@ -15,7 +15,14 @@ from raglab.retrieval.citations import Citation, parse_citation
 from raglab.retrieval.translation import LANGUAGE_NAMES
 from raglab.routing.abstention import best_score, decide_abstention, fallback_answer, threshold_for
 from raglab.routing.citation import cited_text_in_run
-from raglab.routing.corpus import embedding_identity, index_run_centroid, list_candidate_runs, score_corpora
+from raglab.routing.corpus import (
+    embedding_identity,
+    index_run_centroid,
+    list_candidate_runs,
+    score_corpora,
+    score_corpora_on_examples,
+)
+from raglab.routing.corpus_examples import example_score, get_example_centroids
 from raglab.routing.intent import get_intent_classifier, normalize
 from raglab.routing.language import detect_language
 from raglab.routing.schemas import CorpusCandidate, CorpusDecision, RoutingDecision
@@ -110,9 +117,16 @@ class QueryRouter:
             strategy=strategy,
             corpus_names=candidate_corpora,
         )
-        candidates, margin = score_corpora(self.session, runs, embedding)
+        examples = self._example_centroids(runs)
+        if examples is not None:
+            candidates, margin = score_corpora_on_examples(runs, examples, embedding)
+        else:
+            candidates, margin = score_corpora(self.session, runs, embedding)
         if translator is not None and not index_run_id and not corpus_name and candidates:
-            candidates, margin = self._rescore_other_languages(candidates, runs, question, language, translator)
+            candidates, margin = self._rescore_other_languages(
+                candidates, runs, question, language, translator, examples
+            )
+        scoring = "examples" if examples is not None else "chunks"
         suggested = candidates[0] if candidates else None
         if index_run_id:
             run = get_index_run(self.session, index_run_id)
@@ -123,6 +137,7 @@ class QueryRouter:
                 candidates=candidates,
                 margin=margin,
                 source="requested",
+                scoring=scoring,
             )
         if corpus_name:
             return CorpusDecision(
@@ -132,6 +147,7 @@ class QueryRouter:
                 candidates=candidates,
                 margin=margin,
                 source="requested",
+                scoring=scoring,
             )
         if citation is not None:
             # A cited text decides: the best-scored corpus that holds it (the
@@ -147,6 +163,7 @@ class QueryRouter:
                         candidates=candidates,
                         margin=margin,
                         source="citation",
+                        scoring=scoring,
                     )
         return CorpusDecision(
             corpus_name=suggested.corpus_name if suggested else None,
@@ -155,7 +172,19 @@ class QueryRouter:
             candidates=candidates,
             margin=margin,
             source="routed" if suggested else "none",
+            scoring=scoring,
         )
+
+    def _example_centroids(self, runs: Sequence[Any]) -> dict[str, dict[str, Any]] | None:
+        """Example-question centroids of the candidate corpora, when the
+        option is on and every candidate has examples (scores from the two
+        bases are not comparable, so no mixing); None otherwise."""
+        if not self.settings.routing_corpus_examples or not runs:
+            return None
+        centroids = get_example_centroids(self.settings.routing_corpus_examples_path, self.embedder)
+        if not all(centroids.get(run.corpus.name) for run in runs):
+            return None
+        return centroids
 
     def _rescore_other_languages(
         self,
@@ -164,6 +193,7 @@ class QueryRouter:
         question: str,
         language: str | None,
         translator: Any,
+        examples: dict[str, dict[str, Any]] | None = None,
     ) -> tuple[list[CorpusCandidate], float]:
         """Cross-language corpus choice.
 
@@ -174,7 +204,9 @@ class QueryRouter:
         the best score, is rescored on the question translated into its
         language (one writer call per language, cached and reused by BM25),
         so every corpus is compared in its own language. A failed
-        translation leaves the score as it was.
+        translation leaves the score as it was. With example questions
+        (`examples`), the translated question is scored on the corpus's
+        example centroids, like the original one.
         """
         languages = {run.id: getattr(run.corpus, "language", None) for run in runs}
         best = candidates[0].score
@@ -194,9 +226,14 @@ class QueryRouter:
                         normalize(self.embedder.embed_query(translation.text)) if translation.translated else None
                     )
                 vector = embeddings[target]
-                centroid = index_run_centroid(self.session, next(r for r in runs if r.id == candidate.index_run_id))
-                if vector is not None and centroid is not None:
-                    translated = round(float(centroid @ vector), 4)
+                run = next(r for r in runs if r.id == candidate.index_run_id)
+                translated: float | None = None
+                if vector is not None and examples is not None:
+                    translated = example_score(examples[run.corpus.name], vector)
+                elif vector is not None:
+                    centroid = index_run_centroid(self.session, run)
+                    translated = round(float(centroid @ vector), 4) if centroid is not None else None
+                if translated is not None:
                     candidate = candidate.model_copy(
                         update={
                             "score": max(candidate.score, translated),
@@ -225,7 +262,7 @@ class QueryRouter:
         abstention = decide_abstention(
             intent=decision.intent.intent,
             score=score,
-            threshold=threshold_for(self.settings, decision.corpus.corpus_name, source),
+            threshold=threshold_for(self.settings, decision.corpus.corpus_name, source, decision.language.language),
             score_source=source,
             legal_citation=decision.legal_citation_found,
         )

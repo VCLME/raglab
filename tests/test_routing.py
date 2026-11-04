@@ -816,3 +816,134 @@ def test_cross_language_routing_can_be_turned_off(routed_env):
     assert response.routing.abstention.abstain is True
     assert response.routing.abstention.translated_score is None
     assert service.vector_store.search.call_count == 1
+
+
+# --- corpus choice on example questions ----------------------------------------
+
+
+def _write_examples(path, rows):
+    path.write_text(
+        "\n".join(json.dumps({"corpus": c, "language": lang, "question": q}) for c, lang, q in rows),
+        encoding="utf-8",
+    )
+    return path
+
+
+def _examples_router(tmp_path, rows, **settings) -> QueryRouter:
+    from raglab.routing.corpus_examples import clear_example_cache
+
+    clear_example_cache()
+    path = _write_examples(tmp_path / "examples.jsonl", rows)
+    # Passage centroids that point the wrong way: lexml on the museum axis.
+    corpus_module._CENTROIDS.update(
+        {
+            "run-lexml": np.asarray([0, 0, 0, 1.0, 0], dtype=np.float32),
+            "run-piaf": np.asarray([1.0, 0, 0, 0, 0], dtype=np.float32),
+        }
+    )
+    return QueryRouter(
+        Mock(),
+        Settings(routing_corpus_examples_path=path, **settings),
+        embedder=FakeEmbedder(),
+    )
+
+
+EXAMPLE_ROWS = [
+    ("lexml", "fr", "que dit la loi"),
+    ("lexml", "pt", "o que diz a lei"),
+    ("piaf", "fr", "quel musée"),
+]
+
+
+def test_corpus_examples_route_on_question_centroids(tmp_path):
+    router = _examples_router(tmp_path, EXAMPLE_ROWS, routing_corpus_examples=True)
+    with (
+        patch("raglab.routing.router.list_candidate_runs", return_value=_language_runs()),
+        patch("raglab.routing.intent.iter_examples", return_value=EXAMPLES),
+    ):
+        decision = router.route("Que dit la loi ?")
+    assert decision.corpus.scoring == "examples"
+    assert decision.corpus.corpus_name == "lexml"
+    lexml = next(c for c in decision.corpus.candidates if c.corpus_name == "lexml")
+    # Closest language centroid of the corpus (here the French one).
+    assert lexml.score == pytest.approx(1.0, abs=1e-3)
+
+
+def test_corpus_examples_are_off_by_default(tmp_path):
+    router = _examples_router(tmp_path, EXAMPLE_ROWS)
+    with (
+        patch("raglab.routing.router.list_candidate_runs", return_value=_language_runs()),
+        patch("raglab.routing.intent.iter_examples", return_value=EXAMPLES),
+    ):
+        decision = router.route("Que dit la loi ?")
+    assert decision.corpus.scoring == "chunks"
+    assert decision.corpus.corpus_name == "piaf"
+
+
+def test_a_corpus_without_examples_falls_back_to_passage_centroids(tmp_path):
+    router = _examples_router(tmp_path, EXAMPLE_ROWS[:2], routing_corpus_examples=True)
+    with (
+        patch("raglab.routing.router.list_candidate_runs", return_value=_language_runs()),
+        patch("raglab.routing.intent.iter_examples", return_value=EXAMPLES),
+    ):
+        decision = router.route("Que dit la loi ?")
+    # Scores from two bases are not comparable: no mixing.
+    assert decision.corpus.scoring == "chunks"
+
+
+def test_corpus_examples_rescore_the_translated_question_on_examples(tmp_path):
+    rows = [("lexml", "pt", "o que diz a lei"), ("piaf", "fr", "quel musée")]
+    router = _examples_router(tmp_path, rows, routing_corpus_examples=True, routing_translation_margin=1.0)
+    translator = _Translator("o que diz a lei")
+    with (
+        patch("raglab.routing.router.list_candidate_runs", return_value=_language_runs()),
+        patch("raglab.routing.intent.iter_examples", return_value=EXAMPLES),
+    ):
+        decision = router.route("Quel musée musée et la loi ?", translator=translator)
+    lexml = next(c for c in decision.corpus.candidates if c.corpus_name == "lexml")
+    assert lexml.translated_score == pytest.approx(1.0, abs=1e-3)
+    assert decision.corpus.corpus_name == "lexml"
+
+
+def test_missing_examples_file_means_no_examples(tmp_path):
+    from raglab.routing.corpus_examples import load_corpus_examples
+
+    assert load_corpus_examples(tmp_path / "absent.jsonl") == {}
+
+
+def test_language_thresholds_come_first_when_on():
+    tables = {
+        "routing_abstention_thresholds": {"lexml": 0.85},
+        "routing_language_abstention_thresholds": {"lexml": {"fr": 0.82}},
+        "routing_rerank_abstention_thresholds": {"lexml": -3.0},
+        "routing_rerank_language_abstention_thresholds": {"lexml": {"fr": -4.0}},
+    }
+    off = Settings(**tables)
+    on = Settings(routing_language_thresholds=True, **tables)
+    assert threshold_for(off, "lexml", "dense", "fr") == pytest.approx(0.85)
+    assert threshold_for(on, "lexml", "dense", "fr") == pytest.approx(0.82)
+    assert threshold_for(on, "lexml", "rerank", "fr") == pytest.approx(-4.0)
+    # A language without its own value keeps the corpus threshold.
+    assert threshold_for(on, "lexml", "dense", "pt") == pytest.approx(0.85)
+
+
+def test_language_thresholds_read_the_original_score_without_a_second_search(routed_env):
+    from raglab.retrieval.translation import Translation
+
+    service = _service(
+        [_chunk(0.82)],
+        routing_abstention_threshold=0.85,
+        query_translation=True,
+        routing_language_thresholds=True,
+        routing_language_abstention_thresholds={},
+    )
+    service._resolve_index_run.return_value.corpus = SimpleNamespace(language="pt")
+    service.lexical_store = Mock()
+    service.lexical_store.search.return_value = ([], [])
+    service.translator = Mock()
+    service.translator.translate.return_value = Translation("O que diz a lei?", "fr", "pt", True, 10.0)
+    response = service.query(question="Que dit la loi ?", routing=True, retrieval_mode="hybrid", rerank=False)
+    abstention = response.routing.abstention
+    assert abstention.translated_score is None
+    assert abstention.best_score == pytest.approx(0.82)
+    assert service.vector_store.search.call_count == 1

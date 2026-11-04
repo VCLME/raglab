@@ -37,7 +37,7 @@ from raglab.routing.citation import cited_text_in_run
 from raglab.routing.intent import decide_intent
 from raglab.routing.router import QueryRouter
 from raglab.routing.schemas import Intent
-from raglab.routing.step import cross_language_routing, translated_dense_score
+from raglab.routing.step import cross_language_routing, translated_abstention, translated_dense_score
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 ABSTENTION_PATH = REPO_ROOT / "benchmarks" / "abstention" / "questions.jsonl"
@@ -252,7 +252,11 @@ def calibrated_thresholds(calibration: dict[str, list[float]], fraction: float) 
 
 def _threshold_for(threshold: Threshold, record: dict[str, Any]) -> float | None:
     if isinstance(threshold, dict):
-        return threshold.get(record["corpus_routed"])
+        value = threshold.get(record["corpus_routed"])
+        # Per-language thresholds (routing_language_thresholds): language -> value.
+        if isinstance(value, dict):
+            return value.get(record.get("language_detected") or "")
+        return value
     return threshold
 
 
@@ -390,8 +394,16 @@ def summarize(
     for record, ok in zip(routed, corpus_ok, strict=True):
         by_corpus.setdefault(record["expected_corpus"], []).append(ok)
     curve = sweep(records, calibration)
-    configured_thresholds = {
-        corpus: threshold_for(settings, corpus, settings.routing_score_source)
+    languages = sorted({r["language_detected"] for r in records if r.get("language_detected")})
+    configured_thresholds: dict[str, Any] = {
+        corpus: (
+            {
+                language: threshold_for(settings, corpus, settings.routing_score_source, language)
+                for language in languages
+            }
+            if settings.routing_language_thresholds
+            else threshold_for(settings, corpus, settings.routing_score_source)
+        )
         for corpus in sorted({r["corpus_routed"] for r in records if r["corpus_routed"]})
     }
     configured = abstention_metrics(records, margin=settings.routing_intent_margin, threshold=configured_thresholds)
@@ -522,7 +534,11 @@ class RoutingExperimentService:
                 chunks = [chunk.model_dump() for chunk in outcome.retrieved]
                 timings = outcome.timings_ms
                 original = best_score(outcome.retrieved, self.settings.routing_score_source)
-                translated = translated_dense_score(retriever, outcome) if cross_language else None
+                translated = (
+                    translated_dense_score(retriever, outcome)
+                    if translated_abstention(retriever, cross_language)
+                    else None
+                )
                 records.append(
                     {
                         **{k: v for k, v in asdict(case).items() if k != "expected_spans"},
@@ -576,7 +592,11 @@ class RoutingExperimentService:
                     **retrieval_options,
                 )
                 score = best_score(outcome.retrieved, self.settings.routing_score_source)
-                translated = translated_dense_score(retriever, outcome) if cross_language else None
+                translated = (
+                    translated_dense_score(retriever, outcome)
+                    if translated_abstention(retriever, cross_language)
+                    else None
+                )
                 if translated is not None:
                     score = translated if score is None else max(score, translated)
                 if score is not None:
@@ -598,6 +618,10 @@ class RoutingExperimentService:
                 "citations": self.settings.citation_resolver if citations is None else citations,
                 "query_translation": translate,
                 "routing_cross_language": cross_language,
+                "routing_corpus_examples": self.settings.routing_corpus_examples,
+                "routing_language_thresholds": self.settings.routing_language_thresholds,
+                "language_abstention_thresholds": self.settings.routing_language_abstention_thresholds,
+                "rerank_language_abstention_thresholds": self.settings.routing_rerank_language_abstention_thresholds,
                 "routing_translation_margin": self.settings.routing_translation_margin,
                 "score_source": self.settings.routing_score_source,
                 "intent_margin": self.settings.routing_intent_margin,

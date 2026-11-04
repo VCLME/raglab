@@ -555,6 +555,12 @@
       "routed": "choisi par le routeur",
       "requested": "choisi par l'utilisateur",
       "none": "aucun corpus"
+    },
+    "rescored": "(question {{original}}, traduite {{translated}})",
+    "translated_score": "question traduite : {{score}} (le meilleur des deux est comparé au seuil)",
+    "scorings": {
+      "chunks": "centroïdes des passages",
+      "examples": "questions exemples par langue"
     }
   },
   "edu": {

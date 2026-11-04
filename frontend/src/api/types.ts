@@ -371,9 +371,18 @@ export interface RoutingDecision {
     corpus_name: string | null;
     index_run_id: string | null;
     suggested_corpus: string | null;
-    candidates: { corpus_name: string; index_run_id: string; score: number }[];
+    candidates: {
+      corpus_name: string;
+      index_run_id: string;
+      score: number;
+      // Cross-language routing: both scores when the candidate was rescored.
+      original_score?: number | null;
+      translated_score?: number | null;
+    }[];
     margin: number;
     source: "routed" | "citation" | "requested" | "none";
+    // "chunks" (passage centroids) or "examples" (example-question centroids).
+    scoring?: "chunks" | "examples";
   };
   legal_citation?: string | null;
   legal_citation_found?: boolean;
@@ -382,6 +391,8 @@ export interface RoutingDecision {
     reason: string | null;
     score_source: string;
     best_score: number | null;
+    // Cross-language routing: dense score of the translated question.
+    translated_score?: number | null;
     threshold: number | null;
     // "legal_citation" when the question cites a law: never declined.
     override?: string | null;
