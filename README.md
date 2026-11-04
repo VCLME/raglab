@@ -159,7 +159,7 @@ Details (French): [protocol](docs/benchmarks/protocole.md) · [judges and calibr
 
 - A bigger cross-reference set, so the citation graph's effect (9.9) can be told from noise.
 - The weak spots on EU texts: questions whose answer sits in a referenced article, and questions asked in another language than the text.
-- Raise the router's recall on questions to refuse to 0.85 while keeping false refusals under 5% (9.4 ships the prudent point).
+- Raise the router's recall on questions to refuse to 0.85 while keeping false refusals under 5% (fresh questions: 0.68 today), and calibrate refusal thresholds for the Brazil expat and EU corpora.
 - Run the same benchmark on a client's own documents before any deployment.
 
 ---
