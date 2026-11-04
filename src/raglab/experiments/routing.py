@@ -16,17 +16,22 @@ from __future__ import annotations
 import json
 import random
 from collections import Counter
+from contextlib import ExitStack
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from raglab.config import Settings, get_settings
+from raglab.db.models import Corpus
 from raglab.domain.enums import ChunkingStrategy, RetrievalMode
 from raglab.experiments.recall import _chunk_covers_span, _percentile
+from raglab.llm.local_server import LocalLLMServer
 from raglab.retrieval.service import QueryService
+from raglab.retrieval.translation import needs_translation
 from raglab.routing.abstention import best_score, threshold_for
 from raglab.routing.citation import cited_text_in_run
 from raglab.routing.intent import decide_intent
@@ -68,6 +73,25 @@ IN_SCOPE_SETS = (
         "multi",
     ),
 )
+
+
+# Sets measured only when named (`--in-scope`), so the default sample stays
+# the one the published thresholds were calibrated on.
+EXTRA_SETS = {
+    # French questions on the Portuguese LexML corpus (cross-language).
+    "lexml_fr": InScopeSet(
+        "lexml_fr", REPO_ROOT / "benchmarks" / "lexml_fr" / "ground_truth.jsonl", "bench_lexml_pt", "fr"
+    ),
+}
+
+
+def named_sets(names: list[str]) -> tuple[InScopeSet, ...]:
+    """In-scope sets by name, among the default ones and `EXTRA_SETS`."""
+    known = {s.name: s for s in IN_SCOPE_SETS} | EXTRA_SETS
+    unknown = sorted(set(names) - set(known))
+    if unknown:
+        raise ValueError(f"Jeu inconnu: {', '.join(unknown)}. Jeux: {', '.join(sorted(known))}")
+    return tuple(known[name] for name in names)
 
 
 def available_sets(in_scope_sets: tuple[InScopeSet, ...], corpora: list[str] | None = None) -> tuple[InScopeSet, ...]:
@@ -398,7 +422,23 @@ def summarize(
             for corpus, scores in sorted((calibration or {}).items())
             if scores
         },
+        "query_translation_outcomes": dict(
+            Counter(
+                ("translated" if r["query_translation"].get("translated") else r["query_translation"].get("notice"))
+                for r in records
+                if r.get("query_translation")
+            )
+        ),
         "latency": {
+            # Router + retrieval (translation, search, re-ranking), generation excluded.
+            "request_total": _latency([r["timings_ms"]["total"] + r.get("retrieval_ms", 0.0) for r in records]),
+            "translation": _latency(
+                [
+                    r["retrieval_timings_ms"]["translation"]
+                    for r in records
+                    if "translation" in r.get("retrieval_timings_ms", {})
+                ]
+            ),
             "router_total": _latency([r["timings_ms"]["total"] for r in records]),
             "router_without_embed": _latency([r["timings_ms"]["total"] - r["timings_ms"]["embed"] for r in records]),
             "router_embed": _latency([r["timings_ms"]["embed"] for r in records]),
@@ -424,6 +464,7 @@ class RoutingExperimentService:
         retrieval_mode: RetrievalMode | None = None,
         rerank: bool | None = None,
         citations: bool | None = None,
+        query_translation: bool | None = None,
         abstention_path: Path = ABSTENTION_PATH,
         in_scope_sets: tuple[InScopeSet, ...] = IN_SCOPE_SETS,
     ) -> dict[str, Any]:
@@ -438,62 +479,81 @@ class RoutingExperimentService:
             "retrieval_mode": retrieval_mode,
             "rerank": rerank,
             "citations": citations,
+            "query_translation": query_translation,
         }
+        translate = self.settings.query_translation if query_translation is None else query_translation
         # Warm-up: model weights, example embeddings and corpus centroids are
         # loaded once per process and kept out of the latency figures.
         warm_up = router.route("warm-up", strategy=strategy, candidate_corpora=corpora or None)
         runs = {candidate.corpus_name: candidate.index_run_id for candidate in warm_up.corpus.candidates}
 
         records: list[dict[str, Any]] = []
-        for case in cases:
-            decision = router.route(case.question, strategy=strategy, candidate_corpora=corpora or None)
-            if decision.corpus.index_run_id is None:
-                raise ValueError("Aucun index compatible avec l'embedder du routeur : indexez au moins un corpus.")
-            outcome = retriever.retrieve(
-                question=case.question,
-                index_run_id=decision.corpus.index_run_id,
-                top_k=top_k,
-                **retrieval_options,
-            )
-            chunks = [chunk.model_dump() for chunk in outcome.retrieved]
-            records.append(
-                {
-                    **{k: v for k, v in asdict(case).items() if k != "expected_spans"},
-                    "language_detected": decision.language.language,
-                    "language_method": decision.language.method,
-                    "intent_scores": decision.intent.scores,
-                    "corpus_routed": decision.corpus.corpus_name,
-                    "corpus_margin": decision.corpus.margin,
-                    "corpus_scores": {c.corpus_name: c.score for c in decision.corpus.candidates},
-                    # Same rule as the router: a cited text the index holds.
-                    "legal_citation": decision.citation is not None
-                    and cited_text_in_run(self.session, outcome.index_run, decision.citation),
-                    "best_score": best_score(outcome.retrieved, self.settings.routing_score_source),
-                    "scores": [round(chunk.score, 4) for chunk in outcome.retrieved],
-                    "hit": any(_chunk_covers_span(chunk, span) for chunk in chunks for span in case.expected_spans),
-                    "timings_ms": decision.timings_ms,
-                }
-            )
-
-        calibration: dict[str, list[float]] = {}
-        calibration_cases = load_calibration(
-            in_scope_sets=in_scope_sets,
-            exclude_ids={case.id for case in cases},
-            size=calibration_size,
-            seed=seed + 1,
+        writer = ExitStack()
+        corpus_languages = set(
+            self.session.execute(select(Corpus.language).where(Corpus.name.in_(list(runs)))).scalars()
         )
-        for case in calibration_cases:
-            if case.expected_corpus not in runs:
-                continue
-            outcome = retriever.retrieve(
-                question=case.question,
-                index_run_id=runs[case.expected_corpus],
-                top_k=top_k,
-                **retrieval_options,
+        if translate and any(needs_translation(case.question, lang) for case in cases for lang in corpus_languages):
+            # The writer translates during retrieval: started only when a
+            # question's language differs from a routable corpus's.
+            writer.enter_context(LocalLLMServer(self.settings, profile=self.settings.writer_model_profile))
+        with writer:
+            for case in cases:
+                decision = router.route(case.question, strategy=strategy, candidate_corpora=corpora or None)
+                if decision.corpus.index_run_id is None:
+                    raise ValueError("Aucun index compatible avec l'embedder du routeur : indexez au moins un corpus.")
+                outcome = retriever.retrieve(
+                    question=case.question,
+                    index_run_id=decision.corpus.index_run_id,
+                    top_k=top_k,
+                    **retrieval_options,
+                )
+                chunks = [chunk.model_dump() for chunk in outcome.retrieved]
+                timings = outcome.timings_ms
+                records.append(
+                    {
+                        **{k: v for k, v in asdict(case).items() if k != "expected_spans"},
+                        "language_detected": decision.language.language,
+                        "language_method": decision.language.method,
+                        "intent_scores": decision.intent.scores,
+                        "corpus_routed": decision.corpus.corpus_name,
+                        "corpus_margin": decision.corpus.margin,
+                        "corpus_scores": {c.corpus_name: c.score for c in decision.corpus.candidates},
+                        # Same rule as the router: a cited text the index holds.
+                        "legal_citation": decision.citation is not None
+                        and cited_text_in_run(self.session, outcome.index_run, decision.citation),
+                        "best_score": best_score(outcome.retrieved, self.settings.routing_score_source),
+                        "scores": [round(chunk.score, 4) for chunk in outcome.retrieved],
+                        "hit": any(_chunk_covers_span(chunk, span) for chunk in chunks for span in case.expected_spans),
+                        "timings_ms": decision.timings_ms,
+                        # Embed + search (translation included) + re-ranking.
+                        "retrieval_ms": round(
+                            timings.get("embed", 0.0) + timings.get("retrieval", 0.0) + timings.get("rerank", 0.0), 3
+                        ),
+                        "retrieval_timings_ms": dict(timings),
+                        "query_translation": outcome.query_translation,
+                    }
+                )
+
+            # Calibration questions go through the same retrieval (translation included).
+            calibration: dict[str, list[float]] = {}
+            calibration_cases = load_calibration(
+                in_scope_sets=in_scope_sets,
+                exclude_ids={case.id for case in cases},
+                size=calibration_size,
+                seed=seed + 1,
             )
-            score = best_score(outcome.retrieved, self.settings.routing_score_source)
-            if score is not None:
-                calibration.setdefault(case.expected_corpus, []).append(score)
+            for case in calibration_cases:
+                if case.expected_corpus not in runs:
+                    continue
+                outcome = retriever.retrieve(
+                    question=case.question,
+                    index_run_id=runs[case.expected_corpus],
+                    top_k=top_k,
+                    **retrieval_options,
+                )
+                score = best_score(outcome.retrieved, self.settings.routing_score_source)
+                if score is not None:
+                    calibration.setdefault(case.expected_corpus, []).append(score)
 
         report = {
             "kind": "routing",
@@ -509,6 +569,7 @@ class RoutingExperimentService:
                 "retrieval_mode": (retrieval_mode or RetrievalMode(self.settings.default_retrieval_mode)).value,
                 "rerank": self.settings.default_rerank if rerank is None else rerank,
                 "citations": self.settings.citation_resolver if citations is None else citations,
+                "query_translation": translate,
                 "score_source": self.settings.routing_score_source,
                 "intent_margin": self.settings.routing_intent_margin,
                 "abstention_threshold": self.settings.routing_abstention_threshold,

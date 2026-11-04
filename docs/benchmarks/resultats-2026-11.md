@@ -18,8 +18,9 @@ Le site et le README publient le même tableau, généré depuis les fichiers pa
 | **Jeu piège « versions »** (versions), 100 questions | 0,480 | 0,750 (29 gagnées, 2 perdues, p < 0,001) | + versions : 0,930 (18 gagnées, 0 perdue, p < 0,001) | 27 % → 30 % → 0 % | exactitude 0,577 → 0,738 → 0,815 ; fidélité 0,875 → 0,935 → 0,895 |
 | **Conformité UE** (renvois), 300 questions dont 116 scénarios, en / fr / pt | 0,490 | 0,717 (80 gagnées, 12 perdues, p < 0,001) | + graphe : 0,693 (2 gagnées, 9 perdues, p = 0,07, n.s.) | — | renvois 0,409 → 0,273 → 0,227 ; autre langue 0,100 → 0,175 → 0,150 |
 | **Renvois LexML** (renvois), 46 questions dont 14 scénarios | pas de run | 0,870 | + graphe : 0,935 (3 gagnées, 0 perdue, p = 0,25, n.s.) | — | — |
+| **Questions françaises, lois brésiliennes** (langues croisées), 100 questions | 0,600 | 0,790 (20 gagnées, 1 perdue, p < 0,001) | + traduction de la question : 0,890 (11 gagnées, 1 perdue, p = 0,01) | — | sigles et entités 0,667 → 0,792 → 0,938 ; mêmes questions en portugais, pipeline complet 0,870 |
 
-Runs : `legi-baseline-v1` → `legi-full-v1` → `legi-full-versions-v1` ; `versions-naive-v1` → `versions-full-all-v1` → `versions-full-v1` ; `eurlex-baseline-v1` → `eurlex-full-v1` → `eurlex-graph-v1` ; `refs-full-v1` → `refs-graph-v1`. Exactitude et fidélité : 100 réponses jugées par Gemma 4 26B-A4B (voir [juges.md](juges.md)).
+Runs : `legi-baseline-v1` → `legi-full-v1` → `legi-full-versions-v1` ; `versions-naive-v1` → `versions-full-all-v1` → `versions-full-v1` ; `eurlex-baseline-v1` → `eurlex-full-v1` → `eurlex-graph-v1` ; `refs-full-v1` → `refs-graph-v1` ; `lexml-fr-naive-v1` → `lexml-fr-v1` → `lexml-fr-qt-v1` (mesure du 4 novembre). Exactitude et fidélité : 100 réponses jugées par Gemma 4 26B-A4B (voir [juges.md](juges.md)).
 
 Sur PIAF et LexML, `graph-v1` et `versions-v1` servent de contrôle de non-régression : Recall@5 inchangé sur PIAF (0,966), 0,812 et 0,816 sur LexML contre 0,816 pour le pipeline complet. Ils figurent dans le tableau principal du README comme lignes de comparaison.
 
@@ -34,6 +35,8 @@ Sur PIAF et LexML, `graph-v1` et `versions-v1` servent de contrôle de non-régr
 **Hors périmètre (9.4).** Le routeur, re-mesuré sur le pipeline actuel avec le score dense ([`router-dense-v1.json`](../../benchmarks/routing/router-dense-v1.json), 80 questions dans le périmètre, 80 hors périmètre ou conversationnelles), trouve au mieux un rappel de 0,850 pour une précision de 0,958 en refusant 3,8 % des questions auxquelles il faudrait répondre (seuil par corpus, plafond de 5 % de fausses abstentions). Le score du re-ranker fait moins bien à ce plafond (rappel 0,838, 5,0 % de fausses abstentions). Le point de fonctionnement reste à choisir ; le point dense ci-dessus est le candidat.
 
 **Points faibles sur les textes de l'UE.** Le pipeline complet gagne sur presque tous les types de questions, sauf deux : les renvois (la réponse est dans l'article cité), qui baissent de 0,409 à 0,273, et les questions posées dans une autre langue que le texte, qui restent très bas (0,100 → 0,175). Ce sont les deux chantiers suivants.
+
+**Langues croisées.** Sur 100 questions LexML posées en français, le pipeline complet perd 8 points de Recall@5 face aux mêmes questions en portugais (0,870 → 0,790, p = 0,057 ; MRR −0,076, significatif), presque tout sur les questions qui nomment une institution ou un sigle (−0,146, p = 0,016) : « ministère des Finances » ne partage aucun mot avec « Ministério da Fazenda ». Traduire la question en portugais pour le BM25 seulement, avec le rédacteur local, comble l'écart (0,890) pour environ 2,4 s de plus par question traduite : activé par défaut, seulement pour les questions dont la langue diffère de celle du corpus. Détail, liste des questions perdues et coût : [langues-croisees.md](../langues-croisees.md).
 
 ## Précautions
 

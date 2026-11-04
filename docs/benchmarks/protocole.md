@@ -124,6 +124,16 @@ raglab eurlex review-questions --ground-truth benchmarks/eurlex_compliance/groun
 
 La pertinence reste au niveau du passage du fichier tiré : retrouver le même article dans une autre langue ne compte pas (les autres fichiers sont dans `context.same_unit_files`, pour une analyse à part). La suite `eurlex_compliance` ne tourne que sur demande (`raglab bench all --suite eurlex_compliance`).
 
+## Questions en français sur LexML (langues croisées)
+
+```bash
+python scripts/build_lexml_fr.py --select
+raglab bench all --label lexml-fr-v1 --suite lexml_fr_pt --suite lexml_fr --ragas-limit 0
+raglab bench compare lexml-fr-v1 lexml-fr-v1 --suites lexml_fr_pt:lexml_fr
+```
+
+100 questions `paraphrase` et `entity` du jeu LexML, non rejetées et sans numéro d'article ni de loi, tirées avec la graine 42 puis traduites en français naturel ; 20 relues à la main. La pertinence est celle de la question d'origine. La suite `lexml_fr` pose les questions françaises, `lexml_fr_pt` les mêmes en portugais, sur le même corpus `bench_lexml_pt` ; `--suites` apparie les deux. Méthode de traduction et limites : [`benchmarks/lexml_fr/README.md`](../../benchmarks/lexml_fr/README.md) ; résultats : [langues-croisees.md](../langues-croisees.md).
+
 ## Changer de générateur
 
 Par défaut, les réponses notées sont écrites par Ollama `qwen2.5:7b` pendant la boucle de recherche, comme dans tous les runs jusqu'à `prompt-v4` : le fournisseur est nommé explicitement, la suite ne suit pas le rédacteur de l'API. Depuis `gen-qwen36-v1`, le rédacteur de production est Qwen3.6 via llama.cpp ; pour le mesurer, ou un autre modèle :

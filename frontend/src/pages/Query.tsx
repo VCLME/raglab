@@ -73,6 +73,8 @@ export function Query() {
   const [citations, setCitations] = useState(true);
   // Graph branch: off by default until measured (RAGLAB_GRAPH_RETRIEVAL).
   const [graph, setGraph] = useState(false);
+  // Query translation: "" = server default (RAGLAB_QUERY_TRANSLATION, off).
+  const [queryTranslation, setQueryTranslation] = useState<"" | "on" | "off">("");
   // Versions option: "" = server default (RAGLAB_VERSIONS_DEFAULT).
   const [versions, setVersions] = useState("");
   const [question, setQuestion] = useState("");
@@ -128,6 +130,7 @@ export function Query() {
       citations,
       graph,
       versions: versions || null,
+      query_translation: queryTranslation === "" ? null : queryTranslation === "on",
       filters: {
         document_ids: documentIdsRaw.split(",").map((s) => s.trim()).filter(Boolean),
         file_names: fileNamesRaw.split(",").map((s) => s.trim()).filter(Boolean),
@@ -262,6 +265,21 @@ export function Query() {
                 <input type="checkbox" checked={graph} onChange={(e) => setGraph(e.target.checked)} />
                 {t("retrieval.graph_checkbox")}
               </label>
+            </FieldRow>
+            <FieldRow label={t("retrieval.translation_label")} hint={t("retrieval.translation_hint")}>
+              <Select
+                value={queryTranslation}
+                onChange={(e) => setQueryTranslation(e.target.value as "" | "on" | "off")}
+              >
+                <option value="">
+                  {t("retrieval.mode_default")}
+                  {config?.query_translation != null
+                    ? ` (${config.query_translation ? t("retrieval.rerank_on") : t("retrieval.rerank_off")})`
+                    : ""}
+                </option>
+                <option value="on">{t("retrieval.rerank_on")}</option>
+                <option value="off">{t("retrieval.rerank_off")}</option>
+              </Select>
             </FieldRow>
             <FieldRow label={t("versions.label")} hint={t("versions.field_hint")}>
               <VersionsField value={versions || config?.versions_default || "in_force"} onChange={setVersions} />
@@ -492,6 +510,20 @@ export function Query() {
                     {action.data.citation.law_found
                       ? t("retrieval.citation_resolved", { label: action.data.citation.label })
                       : t("retrieval.citation_unresolved", { label: action.data.citation.label })}
+                  </div>
+                ) : null}
+                {action.data.query_translation?.translated ? (
+                  <div className="muted" style={{ marginBottom: 8, fontSize: 12 }}>
+                    {t("retrieval.translation_done", {
+                      source: action.data.query_translation.source_language,
+                      target: action.data.query_translation.target_language,
+                      ms: Math.round(action.data.query_translation.elapsed_ms),
+                    })}{" "}
+                    <code>{action.data.query_translation.text}</code>
+                  </div>
+                ) : action.data.query_translation?.notice === "writer_unavailable" ? (
+                  <div className="badge warn" style={{ marginBottom: 8 }}>
+                    {t("retrieval.translation_unavailable")}
                   </div>
                 ) : null}
                 {action.data.query_lexemes && action.data.query_lexemes.length ? (

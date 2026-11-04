@@ -145,13 +145,26 @@ def _outdated_entry(pairs: list[tuple[dict[str, Any], dict[str, Any]]], k: int) 
     }
 
 
-def compare_runs(run_a: dict[str, Any], run_b: dict[str, Any], *, k: int = 5) -> dict[str, Any]:
+def compare_runs(
+    run_a: dict[str, Any],
+    run_b: dict[str, Any],
+    *,
+    k: int = 5,
+    pairs: list[tuple[str, str]] | None = None,
+) -> dict[str, Any]:
+    """Compare the suites of the same name, or the `pairs` (suite of run a,
+    suite of run b) given: two question sets with the same ids, such as the
+    Portuguese and French versions of the cross-language set."""
+    suites_a = {suite["suite"]: suite for suite in run_a["suites"]}
     suites_b = {suite["suite"]: suite for suite in run_b["suites"]}
+    if pairs is None:
+        pairs = [(name, name) for name in suites_a if name in suites_b]
+    missing = [name for name, _ in pairs if name not in suites_a] + [name for _, name in pairs if name not in suites_b]
+    if missing:
+        raise ValueError(f"Suite absente des runs: {', '.join(missing)}")
     result: dict[str, Any] = {"a": run_a["label"], "b": run_b["label"], "suites": {}}
-    for suite_a in run_a["suites"]:
-        suite_b = suites_b.get(suite_a["suite"])
-        if suite_b is None:
-            continue
+    for name_a, name_b in pairs:
+        suite_a, suite_b = suites_a[name_a], suites_b[name_b]
         cases_a, cases_b = suite_cases(suite_a), suite_cases(suite_b)
         entry = compare_suite(cases_a, cases_b, k=k)
         types = sorted({row["type"] for row in cases_a if row.get("type")})
@@ -186,7 +199,7 @@ def compare_runs(run_a: dict[str, Any], run_b: dict[str, Any], *, k: int = 5) ->
                 )
                 for question_type in heldout_types
             }
-        result["suites"][suite_a["suite"]] = entry
+        result["suites"][name_a if name_a == name_b else f"{name_a} → {name_b}"] = entry
     return result
 
 

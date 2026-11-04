@@ -64,6 +64,7 @@ def run_query(
         routing=body.routing,
         graph=body.graph,
         versions=body.versions,
+        query_translation=body.query_translation,
     )
 
 
@@ -120,6 +121,7 @@ def stream_query(
         routing=body.routing,
         graph=body.graph,
         versions=body.versions,
+        query_translation=body.query_translation,
     )
     retrieval = outcome.response().model_dump(mode="json")
 
