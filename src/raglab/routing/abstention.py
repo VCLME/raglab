@@ -52,7 +52,9 @@ def best_score(chunks: Sequence[Any], source: str) -> float | None:
     return max(values) if values else None
 
 
-def threshold_for(settings: Any, corpus_name: str | None, source: str = "dense") -> float | None:
+def threshold_for(
+    settings: Any, corpus_name: str | None, source: str = "dense", language: str | None = None
+) -> float | None:
     """Threshold of the queried corpus for this score source.
 
     Dense scores do not share a scale across corpora (short legal passages
@@ -61,7 +63,21 @@ def threshold_for(settings: Any, corpus_name: str | None, source: str = "dense")
     value falls back to the global one. Re-ranker scores are calibrated
     separately and never borrow a dense value: a corpus without a re-ranker
     threshold gets None (no abstention on score, only on intent).
+
+    With `routing_language_thresholds`, a threshold calibrated on questions
+    in the question's language comes first (a French question scores lower
+    on Portuguese passages than the same question in Portuguese); a language
+    without its own value falls back to the corpus threshold.
     """
+    if getattr(settings, "routing_language_thresholds", False) and language:
+        table = (
+            settings.routing_rerank_language_abstention_thresholds
+            if source == "rerank"
+            else settings.routing_language_abstention_thresholds
+        )
+        value = (table.get(corpus_name or "") or {}).get(language)
+        if value is not None:
+            return float(value)
     if source == "rerank":
         value = settings.routing_rerank_abstention_thresholds.get(corpus_name or "")
         return float(value) if value is not None else None

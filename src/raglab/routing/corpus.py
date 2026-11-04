@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from raglab.db.models import Chunk, ChunkEmbedding, Corpus, EmbeddingSpace, IndexRun
 from raglab.domain.enums import ChunkingStrategy, IndexStatus
+from raglab.routing.corpus_examples import example_score
 from raglab.routing.intent import normalize
 from raglab.routing.schemas import CorpusCandidate
 
@@ -103,6 +104,24 @@ def score_corpora(session: Session, runs: list[IndexRun], embedding: np.ndarray)
                 score=round(float(centroid @ embedding), 4),
             )
         )
+    candidates.sort(key=lambda candidate: candidate.score, reverse=True)
+    margin = candidates[0].score - candidates[1].score if len(candidates) > 1 else 0.0
+    return candidates, round(margin, 4)
+
+
+def score_corpora_on_examples(
+    runs: list[IndexRun], examples: dict[str, dict[str, np.ndarray]], embedding: np.ndarray
+) -> tuple[list[CorpusCandidate], float]:
+    """Same as `score_corpora`, on each corpus's example-question centroids
+    (closest language centroid, see `corpus_examples`)."""
+    candidates = [
+        CorpusCandidate(
+            corpus_name=run.corpus.name,
+            index_run_id=run.id,
+            score=example_score(examples[run.corpus.name], embedding),
+        )
+        for run in runs
+    ]
     candidates.sort(key=lambda candidate: candidate.score, reverse=True)
     margin = candidates[0].score - candidates[1].score if len(candidates) > 1 else 0.0
     return candidates, round(margin, 4)

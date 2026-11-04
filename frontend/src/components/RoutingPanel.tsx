@@ -82,11 +82,20 @@ export function RoutingPanel({ routing, detailed = false }: Props) {
               <th>{t("routing.corpus")}</th>
               <td>
                 {corpus.candidates.length > 0
-                  ? corpus.candidates.map((c) => `${c.corpus_name} ${fmt(c.score)}`).join(" · ")
+                  ? corpus.candidates
+                      .map((c) =>
+                        c.translated_score != null
+                          ? `${c.corpus_name} ${fmt(c.score)} ${t("routing.rescored", {
+                              original: fmt(c.original_score),
+                              translated: fmt(c.translated_score),
+                            })}`
+                          : `${c.corpus_name} ${fmt(c.score)}`,
+                      )
+                      .join(" · ")
                   : t("routing.no_candidate")}
                 <div className="muted">
                   {t(`routing.corpus_sources.${corpus.source}`)} — {t("routing.margin")}{" "}
-                  {fmt(corpus.margin)}
+                  {fmt(corpus.margin)} — {t(`routing.scorings.${corpus.scoring ?? "chunks"}`)}
                 </div>
               </td>
             </tr>
@@ -100,6 +109,11 @@ export function RoutingPanel({ routing, detailed = false }: Props) {
                       threshold: fmt(abstention.threshold),
                     })
                   : "—"}
+                {abstention?.translated_score != null ? (
+                  <div className="muted">
+                    {t("routing.translated_score", { score: fmt(abstention.translated_score) })}
+                  </div>
+                ) : null}
               </td>
             </tr>
             <tr>

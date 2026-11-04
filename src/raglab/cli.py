@@ -1432,5 +1432,38 @@ def experiment_routing(
     typer.echo(render_markdown(report["summary"]), err=True)
 
 
+@experiment_app.command("routing-languages")
+def experiment_routing_languages(
+    corpus: list[str] = typer.Option(
+        ["bench_piaf_fr", "bench_lexml_pt"], "--corpus", help="Corpus candidats (repetable)."
+    ),
+    strategy: ChunkingStrategy | None = typer.Option(None, "--strategy", help="Strategie de chunking a cibler."),
+    sample_size: int = typer.Option(
+        300, "--sample-size", min=1, help="Questions in-scope (lexml_fr, lexml_fr_pt, piaf)."
+    ),
+    seed: int = typer.Option(42, "--seed", help="Graine du tirage (celle des runs router-crosslang-*-v1)."),
+    top_k: int = typer.Option(5, "--top-k", min=1, help="Passages recuperes par question."),
+    replay_path: Path | None = typer.Option(
+        None, "--replay", help="Rejouer un rapport deja collecte au lieu de relancer la collecte (sans GPU)."
+    ),
+) -> None:
+    """Routage multilingue : chaque question cherchee sur chaque corpus, puis les politiques rejouees hors ligne."""
+    from raglab.experiments.routing_languages import MultilingualRoutingStudy, compare, render_comparison
+
+    if replay_path is not None:
+        report = json.loads(replay_path.read_text(encoding="utf-8"))
+        report["report_path"] = str(replay_path)
+    else:
+        with session_scope() as session:
+            report = MultilingualRoutingStudy(session).collect(
+                corpora=corpus, strategy=strategy, sample_size=sample_size, seed=seed, top_k=top_k
+            )
+    comparison = compare(report)
+    typer.echo(
+        json.dumps({"report_path": report["report_path"], **comparison["summary"]}, indent=2, ensure_ascii=False)
+    )
+    typer.echo(render_comparison(comparison), err=True)
+
+
 if __name__ == "__main__":
     app()

@@ -58,6 +58,9 @@ class CorpusDecision(BaseModel):
     # the text the question cites), "requested" (caller's choice kept) or
     # "none" (no compatible index).
     source: str = "routed"
+    # What the candidates were scored on: "chunks" (centroid of the corpus's
+    # passages) or "examples" (centroids of example questions per language).
+    scoring: str = "chunks"
 
 
 class AbstentionDecision(BaseModel):
