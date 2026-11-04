@@ -34,38 +34,127 @@ function ProviderState({ provider }: { provider: LlmProvider | undefined }) {
   );
 }
 
-/** Generation settings the API exposes; the others are server settings it does not report. */
-function GenerationSettings() {
-  const { t } = useTranslation();
+/**
+ * What the writer sends and what the server decides. Newer APIs give it per
+ * provider (`generation`); older ones only the temperature in /api/config.
+ */
+function GenerationCard({ provider }: { provider: LlmProvider | undefined }) {
+  const { t, i18n } = useTranslation();
   const config = useConfig();
-  const missing = <span className="muted">{t("models.not_exposed")}</span>;
+  const gen = provider?.generation ?? null;
+  const sent = new Set(gen?.sent_by_raglab ?? []);
+  const empty = (key: string) => (
+    <span className="muted">
+      {!gen
+        ? t("models.not_exposed")
+        : key === "max_tokens" && gen.source === "server"
+        ? t("models.until_end")
+        : t("models.server_default")}
+    </span>
+  );
+  const row = (key: string, label: string, value: number | null | undefined) => (
+    <div key={key}>
+      <dt>{label}</dt>
+      <dd>
+        {value != null ? <span className="num-text">{value.toLocaleString(i18n.language)}</span> : empty(key)}
+        {sent.has(key) ? <span className="tag tag-gap">{t("models.sent_tag")}</span> : null}
+      </dd>
+    </div>
+  );
   return (
     <section className="card">
       <h3>{t("models.params_title")}</h3>
       <dl className="kv">
-        <div>
-          <dt>{t("models.temperature")}</dt>
-          <dd className="num-text">{config ? config.generation_temperature : "—"}</dd>
-        </div>
-        <div>
-          <dt>top-p</dt>
-          <dd>{missing}</dd>
-        </div>
-        <div>
-          <dt>{t("models.max_tokens")}</dt>
-          <dd>{missing}</dd>
-        </div>
-        <div>
-          <dt>{t("models.context")}</dt>
-          <dd>{missing}</dd>
-        </div>
+        {row("temperature", t("models.temperature"), gen ? gen.temperature : config?.generation_temperature)}
+        {row("top_p", "top-p", gen?.top_p)}
+        {row("max_tokens", t("models.max_tokens"), gen?.max_tokens)}
+        {row("context", t("models.context"), gen?.context)}
       </dl>
-      <p className="muted card-foot">{t("models.params_note")}</p>
+      <p className="muted card-foot">
+        {!gen ? t("models.params_note") : gen.source === "server" ? t("models.params_note_server") : t("models.params_note_raglab")}
+      </p>
     </section>
   );
 }
 
-function OllamaPanel({ isWriter }: { isWriter: boolean }) {
+/** llama.cpp writer setup: profile, expected model id, start / stop, profiles. */
+function LlamaCppSetup({ provider }: { provider: LlmProvider }) {
+  const { t, i18n } = useTranslation();
+  const info = provider.llamacpp;
+  if (!info) return null;
+  const yesNo = (on: boolean) => (on ? t("common.yes") : t("common.no"));
+  const served = provider.models.includes(info.writer_model);
+  const profiles = Object.entries(info.profile_options ?? {});
+  return (
+    <section className="card">
+      <h3>{t("models.llamacpp_title")}</h3>
+      <dl className="kv">
+        <div>
+          <dt>{t("models.writer_profile")}</dt>
+          <dd>
+            <code>{info.writer_profile}</code>
+          </dd>
+        </div>
+        <div>
+          <dt>{t("models.expected_model")}</dt>
+          <dd>
+            <code>{info.writer_model}</code>{" "}
+            <StatusBadge
+              state={served ? "ok" : "neutral"}
+              label={served ? t("models.served_yes") : t("models.served_no")}
+            />
+          </dd>
+        </div>
+        <div>
+          <dt>{t("models.start_configured")}</dt>
+          <dd>{yesNo(info.start_command_configured)}</dd>
+        </div>
+        <div>
+          <dt>{t("models.stop_configured")}</dt>
+          <dd>{yesNo(info.stop_command_configured)}</dd>
+        </div>
+        <div>
+          <dt>{t("models.autostart")}</dt>
+          <dd>{yesNo(info.autostart)}</dd>
+        </div>
+      </dl>
+      {profiles.length ? (
+        <table className="table profile-table">
+          <thead>
+            <tr>
+              <th>{t("models.profile")}</th>
+              <th className="num">{t("models.ctx_size")}</th>
+              <th className="num">{t("models.n_cpu_moe")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {profiles.map(([name, options]) => (
+              <tr key={name} className={name === info.writer_profile ? "highlight" : undefined}>
+                <td>
+                  <code>{name}</code>
+                  {name === info.writer_profile ? <span className="tag tag-gap">{t("models.role_writer")}</span> : null}
+                </td>
+                <td className="num">{options.ctx_size != null ? options.ctx_size.toLocaleString(i18n.language) : "—"}</td>
+                <td className="num">{options.n_cpu_moe ?? "—"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : null}
+    </section>
+  );
+}
+
+const GENERATOR_STATE: Record<string, string> = {
+  ready: "ok",
+  starting: "info",
+  busy: "info",
+  stopped: "neutral",
+  down: "err",
+  failed: "err",
+};
+
+function OllamaPanel({ isWriter, provider }: { isWriter: boolean; provider: LlmProvider | undefined }) {
   const { t } = useTranslation();
   const status = useApiLoad<OllamaStatus>(() => get("/api/ollama/status"));
   const models = useApiLoad<OllamaModelsResponse>(() => get("/api/ollama/models"));
@@ -120,7 +209,7 @@ function OllamaPanel({ isWriter }: { isWriter: boolean }) {
             </dl>
           ) : null}
         </section>
-        <GenerationSettings />
+        <GenerationCard provider={provider} />
       </div>
 
       <section className="card">
@@ -236,8 +325,9 @@ function OpenAiPanel({ name, provider, isWriter }: { name: ProviderKey; provider
           </dl>
           <p className="muted card-foot">{t(`models.about_${name}`)}</p>
         </section>
-        <GenerationSettings />
+        <GenerationCard provider={provider} />
       </div>
+      <LlamaCppSetup provider={provider} />
       <section className="card">
         <h3>{t("models.served_title", { count: provider.models.length })}</h3>
         {provider.models.length ? (
@@ -289,7 +379,22 @@ export function ModelsPage() {
             <span className="writer-label">{t("models.writer_title")}</span>
             <strong>{writer?.label ?? llm.data.default_provider}</strong>
             <code>{llm.data.default_model ?? "—"}</code>
-            <ProviderState provider={writer} />
+            {llm.data.generator ? (
+              <StatusBadge
+                state={GENERATOR_STATE[llm.data.generator.status] ?? "neutral"}
+                label={t(`models.gen_status_${llm.data.generator.status}`, { defaultValue: llm.data.generator.status })}
+              />
+            ) : (
+              <ProviderState provider={writer} />
+            )}
+            {llm.data.generator?.active_provider && llm.data.generator.active_provider !== llm.data.generator.provider ? (
+              <span className="muted">
+                {t("models.fallback", {
+                  label: llm.data.generator.active_provider_label ?? llm.data.generator.active_provider,
+                  model: llm.data.generator.active_model ?? "",
+                })}
+              </span>
+            ) : null}
           </>
         ) : null}
       </section>
@@ -307,7 +412,7 @@ export function ModelsPage() {
       />
       <div {...tabPanelProps("models", tab)}>
         {tab === "ollama" ? (
-          <OllamaPanel isWriter={llm.data?.default_provider === "ollama"} />
+          <OllamaPanel isWriter={llm.data?.default_provider === "ollama"} provider={byName.get("ollama")} />
         ) : (
           <OpenAiPanel
             key={tab}

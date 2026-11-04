@@ -53,6 +53,32 @@ export interface ConfigResponse {
   default_llm_provider?: string;
 }
 
+/**
+ * Generation settings of a provider. `temperature` is the only value raglab
+ * sends; the others come from llama-server /props when it answers
+ * (`source: "server"`), else null: the server's default, unknown to raglab.
+ */
+export interface GenerationSettings {
+  temperature: number | null;
+  top_p: number | null;
+  /** null with source "server": until the end of the answer. */
+  max_tokens: number | null;
+  context: number | null;
+  sent_by_raglab: string[];
+  source: "raglab" | "server";
+}
+
+/** llama.cpp writer setup (booleans only, never the commands). */
+export interface LlamaCppServerInfo {
+  writer_profile: string;
+  /** Expected /v1/models id (llama-server --alias). */
+  writer_model: string;
+  start_command_configured: boolean;
+  stop_command_configured: boolean;
+  autostart: boolean;
+  profile_options: Record<string, { ctx_size?: number; n_cpu_moe?: number }>;
+}
+
 /** One generation backend of GET /api/llm/models. */
 export interface LlmProvider {
   name: string;
@@ -63,6 +89,9 @@ export interface LlmProvider {
   available: boolean;
   error: string | null;
   models: string[];
+  /** Newer APIs (writer-qwen36): absent on older ones. */
+  generation?: GenerationSettings | null;
+  llamacpp?: LlamaCppServerInfo | null;
 }
 
 /** Default answer writer (Qwen3.6 on llama.cpp) and who answers right now. */
