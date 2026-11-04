@@ -366,6 +366,10 @@ export interface RoutingDecision {
     scores: Record<string, number>;
     margin: number;
     nearest_example: string | null;
+    // "knn" (RAGLAB_ROUTING_INTENT_KNN): scores are k-nearest-neighbour means.
+    method?: "centroids" | "knn";
+    documentary_margin?: number | null;
+    not_documentary_probability?: number | null;
   };
   corpus: {
     corpus_name: string | null;
@@ -396,6 +400,9 @@ export interface RoutingDecision {
     threshold: number | null;
     // "legal_citation" when the question cites a law: never declined.
     override?: string | null;
+    // kNN intent: joint score (intent margin + dense score) and its threshold.
+    joint_score?: number | null;
+    joint_threshold?: number | null;
   } | null;
   answer_from_documents: boolean;
   fallback_answer: string | null;

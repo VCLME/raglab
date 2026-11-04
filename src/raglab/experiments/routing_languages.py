@@ -56,7 +56,15 @@ from raglab.routing.abstention import best_score
 from raglab.routing.citation import cited_text_in_run
 from raglab.routing.corpus import index_run_centroid, list_candidate_runs
 from raglab.routing.corpus_examples import example_centroids, load_corpus_examples
-from raglab.routing.intent import decide_intent, normalize
+from raglab.routing.examples import iter_examples
+from raglab.routing.intent import IntentClassifier, decide_intent, normalize
+from raglab.routing.intent_knn import (
+    KnnIntentClassifier,
+    build_joint_calibration,
+    fit_logistic,
+    joint_score,
+    parse_joint_calibration,
+)
 from raglab.routing.router import QueryRouter
 from raglab.routing.schemas import Intent
 from raglab.routing.step import translated_dense_score
@@ -240,6 +248,7 @@ class MultilingualRoutingStudy:
                 calibration.append(
                     {
                         "id": case.id,
+                        "question": case.question,
                         "source": case.source,
                         "language": case.language,
                         "corpus": case.expected_corpus,
@@ -428,7 +437,9 @@ def replay(
     abstention: AbstentionPolicy,
     *,
     production: dict[str, dict[str, float]] | None = None,
+    intent: IntentRule | None = None,
 ) -> dict[str, Any]:
+    """`intent` replaces the centroid intent (docs/intentions.md)."""
     languages = report["config"]["corpus_languages"]
     production = production or {
         "dense": report["config"]["abstention_thresholds"],
@@ -448,20 +459,31 @@ def replay(
         else None
     )
     outcomes: list[dict[str, Any]] = []
-    for record in report["records"]:
+    for index, record in enumerate(report["records"]):
         scores = corpus_scores(record, routing, languages)
         corpus = max(scores, key=lambda name: scores[name])
         entry = record["corpora"][corpus]
-        intent = decide_intent(record["intent_scores"], margin=SELECTED_INTENT_MARGIN)
+        declined_on_intent = (
+            intent.refuse[index]
+            if intent is not None
+            else decide_intent(record["intent_scores"], margin=SELECTED_INTENT_MARGIN) != Intent.DOCUMENTARY
+        )
         source = abstention.score
         if own is not None and (corpus, record["language_detected"]) not in own:
             source = "dense_xl"
         score = _record_score(entry, source)
         threshold = lookup(corpus, record["language_detected"])
+        joint = (
+            intent.joint(index, corpus, record["language_detected"], entry["dense"])
+            if intent is not None and intent.joint is not None and entry.get("dense") is not None
+            else None
+        )
         if entry.get("legal_citation_found"):
             refused = False
-        elif intent != Intent.DOCUMENTARY or score is None:
+        elif declined_on_intent or score is None:
             refused = True
+        elif joint is not None:
+            refused = joint
         else:
             refused = threshold is not None and score < threshold
         rescored = rescored_corpora(record, routing, languages)
@@ -655,3 +677,324 @@ def render_comparison(comparison: dict[str, Any]) -> str:
             f"| {s['lexml_fr']['latency_p50_ms']:.0f} / {s['lexml_fr']['latency_p95_ms']:.0f} |"
         )
     return "\n".join(lines)
+
+
+# ---------------------------------------------------------------- intent (docs/intentions.md)
+
+# Reference of the intent study: cross-language routing (#76) and
+# per-language thresholds (#78, quantile 3 %), the router with both
+# defaults on. Each intent option replaces the centroid intent (and, for the
+# joint rule, the score threshold of calibrated pairs) on top of it.
+INTENT_BASE = (RoutingPolicy("chunks", 0.02), AbstentionPolicy("dense", "language", 0.03))
+INTENT_OFF = (RoutingPolicy("chunks"), AbstentionPolicy("dense", "production"))
+KNN_K = (10, 20)
+JOINT_QUANTILES = (0.01, 0.02, 0.03)
+LOGREG_QUANTILES = (0.95, 0.97, 0.98, 0.99)
+LOGREG_FOLDS = 5
+DENSITY_K = 5
+
+
+@dataclass(frozen=True)
+class IntentRule:
+    """Replaces the centroid intent of `replay`. `refuse[i]`: record i is
+    declined on intent. `joint(i, corpus, language, dense)`: declined by a
+    rule that replaces the score threshold, or None when that (corpus,
+    language) has no calibration (the threshold then applies)."""
+
+    label: str
+    refuse: tuple[bool, ...]
+    joint: Callable[[int, str, str, float], bool | None] | None = None
+    # Joint rule: the calibration file the router would read.
+    calibration: dict[str, Any] | None = None
+
+
+@dataclass
+class IntentSignals:
+    """What the intent options read, per evaluated record and per
+    calibration question (out of fold: a calibration question is never its
+    own neighbour nor in its own training fold)."""
+
+    centroids_more: list[bool]
+    knn: dict[int, list[float]]
+    knn_calibration: dict[int, list[float]]
+    logreg: list[float]
+    logreg_calibration: list[float]
+    density: list[float]
+    density_calibration: list[float]
+    # (weights, bias) of the logistic regression trained on every labelled question.
+    logreg_model: tuple[np.ndarray, float] = (np.zeros(0), 0.0)
+
+
+def calibration_texts(report: dict[str, Any], examples_path: Path) -> list[str]:
+    """Question of each calibration row: recorded by `collect` since the
+    intent study, read from the examples file (same ids) before."""
+    known = (
+        {(row["id"], row["language"]): row["question"] for row in _read_jsonl(examples_path) if "id" in row}
+        if examples_path.is_file()
+        else {}
+    )
+    return [row.get("question") or known[(row["id"], row["language"])] for row in report["calibration"]]
+
+
+def _top_mean(values: np.ndarray, k: int) -> float:
+    return float(np.sort(values)[-k:].mean()) if values.size else -1.0
+
+
+LOGISTIC_SCALE = 20.0
+
+
+def _logistic(x: np.ndarray, y: np.ndarray):
+    """Fitted model as a function of the embeddings, and its weights."""
+    weights, bias = fit_logistic(x, y, scale=LOGISTIC_SCALE)
+    return (lambda v: 1 / (1 + np.exp(-((v * LOGISTIC_SCALE) @ weights + bias)))), (weights, bias)
+
+
+def intent_signals(report: dict[str, Any], embedder: Any, examples_path: Path) -> IntentSignals:
+    """Embeds every question once (CPU is enough: e5-small, ~900 sentences)."""
+    records = report["records"]
+    calibration = report["calibration"]
+    texts = calibration_texts(report, examples_path)
+
+    def embed(text: str) -> np.ndarray:
+        return normalize(embedder.embed_query(text))
+
+    vectors = np.stack([embed(record["question"]) for record in records])
+    cal_vectors = np.stack([embed(text) for text in texts])
+    examples = list(iter_examples(extended=True))
+
+    more = IntentClassifier(embedder, examples)
+    centroids_more = [
+        decide_intent(more.intent_scores(v), margin=SELECTED_INTENT_MARGIN) != Intent.DOCUMENTARY for v in vectors
+    ]
+
+    knn: dict[int, list[float]] = {}
+    knn_calibration: dict[int, list[float]] = {}
+    for k in KNN_K:
+        classifier = KnnIntentClassifier(embedder, k=k, examples=examples, documentary_questions=texts)
+        knn[k] = [classifier.documentary_margin(v) for v in vectors]
+        knn_calibration[k] = [
+            classifier.documentary_margin(v, exclude=text) for v, text in zip(cal_vectors, texts, strict=True)
+        ]
+
+    # Logistic regression: documentary examples and calibration questions
+    # against the conversational and out-of-scope examples.
+    ex_vectors = np.stack([embed(text) for _, _, text in examples])
+    x = np.vstack([ex_vectors, cal_vectors])
+    y = np.concatenate(
+        [
+            np.array([intent != Intent.DOCUMENTARY.value for intent, _, _ in examples], dtype=float),
+            np.zeros(len(cal_vectors)),
+        ]
+    )
+    model, logreg_model = _logistic(x, y)
+    logreg = [float(p) for p in model(vectors)]
+    folds = np.arange(len(cal_vectors)) % LOGREG_FOLDS
+    logreg_calibration = np.zeros(len(cal_vectors))
+    for fold in range(LOGREG_FOLDS):
+        keep = np.concatenate([np.ones(len(ex_vectors), dtype=bool), folds != fold])
+        logreg_calibration[folds == fold] = _logistic(x[keep], y[keep])[0](cal_vectors[folds == fold])
+
+    # Density: mean similarity to the nearest calibration questions of the
+    # corpus the question is routed to.
+    corpora = np.array([row["corpus"] for row in calibration])
+    languages = report["config"]["corpus_languages"]
+
+    def density(v: np.ndarray, corpus: str, exclude: int | None = None) -> float:
+        mask = corpora == corpus
+        if exclude is not None:
+            mask[exclude] = False
+        return _top_mean(cal_vectors[mask] @ v, DENSITY_K)
+
+    routed = []
+    for record in records:
+        scores = corpus_scores(record, INTENT_BASE[0], languages)
+        routed.append(max(scores, key=lambda name: scores[name]))
+    return IntentSignals(
+        centroids_more=centroids_more,
+        knn=knn,
+        knn_calibration=knn_calibration,
+        logreg=logreg,
+        logreg_calibration=[float(p) for p in logreg_calibration],
+        logreg_model=logreg_model,
+        density=[density(v, corpus) for v, corpus in zip(vectors, routed, strict=True)],
+        density_calibration=[
+            density(v, row["corpus"], j) for j, (v, row) in enumerate(zip(cal_vectors, calibration, strict=True))
+        ],
+    )
+
+
+def logistic_payload(signals: IntentSignals, level: float) -> dict[str, Any]:
+    """The logistic model as the router reads it, cut at the `level` quantile
+    of the (out-of-fold) calibration probabilities."""
+    weights, bias = signals.logreg_model
+    return {
+        "weights": [round(float(w), 6) for w in weights],
+        "bias": round(float(bias), 6),
+        "scale": LOGISTIC_SCALE,
+        "threshold": round(quantile(signals.logreg_calibration, level), 4),
+        "quantile": level,
+    }
+
+
+def joint_calibration(
+    report: dict[str, Any],
+    margins_calibration: list[float],
+    k: int,
+    level: float,
+    logistic: dict[str, Any] | None = None,
+) -> dict:
+    """Joint (kNN margin, dense) calibration from the calibration questions only."""
+    rows = [
+        (row["corpus"], row["language"], margin, row["dense"])
+        for row, margin in zip(report["calibration"], margins_calibration, strict=True)
+        if row.get("dense") is not None
+    ]
+    return build_joint_calibration(rows, k=k, quantile=level, rank_quantile=quantile, logistic=logistic)
+
+
+def joint_rule(payload: dict[str, Any], margins: list[float]) -> Callable[[int, str, str, float], bool | None]:
+    calibration = parse_joint_calibration(payload)
+
+    def decide(index: int, corpus: str, language: str, dense: float) -> bool | None:
+        group = calibration.group(corpus, language)
+        return None if group is None else joint_score(group, margins[index], dense) < group.threshold
+
+    return decide
+
+
+def density_rule(
+    report: dict[str, Any], values: list[float], values_calibration: list[float], level: float
+) -> Callable[[int, str, str, float], bool | None]:
+    """Declined under the `level` quantile of the calibration questions of
+    the same (corpus, language); otherwise the score threshold applies."""
+    groups: dict[tuple[str, str], list[float]] = {}
+    for row, value in zip(report["calibration"], values_calibration, strict=True):
+        groups.setdefault((row["corpus"], row["language"]), []).append(value)
+    table = {key: quantile(scores, level) for key, scores in groups.items()}
+
+    def decide(index: int, corpus: str, language: str, dense: float) -> bool | None:
+        value = table.get((corpus, language))
+        return True if value is not None and values[index] < value else None
+
+    return decide
+
+
+def intent_families(report: dict[str, Any], signals: IntentSignals) -> list[tuple[str, list[IntentRule]]]:
+    """Intent options, each family with its levels (the owner's rule picks one)."""
+    margin = SELECTED_INTENT_MARGIN
+    centroids = tuple(
+        decide_intent(record["intent_scores"], margin=margin) != Intent.DOCUMENTARY for record in report["records"]
+    )
+    families: list[tuple[str, list[IntentRule]]] = [
+        ("centroids_more", [IntentRule("centroïdes, exemples étendus", tuple(signals.centroids_more))]),
+        (
+            "knn_gate",
+            [IntentRule(f"kNN k = {k}, seuil seul", tuple(m < -margin for m in signals.knn[k])) for k in KNN_K],
+        ),
+        (
+            "logreg",
+            [
+                IntentRule(
+                    f"régression logistique, q{level:g} de la calibration",
+                    tuple(p > quantile(signals.logreg_calibration, level) for p in signals.logreg),
+                )
+                for level in LOGREG_QUANTILES
+            ],
+        ),
+        (
+            "density",
+            [
+                IntentRule(
+                    f"centroïdes + densité ({DENSITY_K} voisins de calibration), q{level:g}",
+                    centroids,
+                    density_rule(report, signals.density, signals.density_calibration, level),
+                )
+                for level in QUANTILES
+            ],
+        ),
+    ]
+    for k in KNN_K:
+        rules = []
+        for level in JOINT_QUANTILES:
+            payload = joint_calibration(report, signals.knn_calibration[k], k, level)
+            rules.append(
+                IntentRule(
+                    f"kNN k = {k} + règle jointe (kNN, dense), q{level:g}",
+                    tuple(m < -margin for m in signals.knn[k]),
+                    joint_rule(payload, signals.knn[k]),
+                    payload,
+                )
+            )
+        families.append((f"joint_knn{k}", rules))
+    # Both intent signals: kNN gate or logistic cut, then the joint rule.
+    for k in KNN_K:
+        rules = []
+        for level in JOINT_QUANTILES:
+            for cut in LOGREG_QUANTILES:
+                logistic = logistic_payload(signals, cut)
+                payload = joint_calibration(report, signals.knn_calibration[k], k, level, logistic)
+                rules.append(
+                    IntentRule(
+                        f"kNN k = {k} ou régression logistique q{cut:g} + règle jointe, q{level:g}",
+                        tuple(
+                            m < -margin or p > logistic["threshold"]
+                            for m, p in zip(signals.knn[k], signals.logreg, strict=True)
+                        ),
+                        joint_rule(payload, signals.knn[k]),
+                        payload,
+                    )
+                )
+        families.append((f"joint_knn{k}_logreg", rules))
+    return families
+
+
+def compare_intent(report: dict[str, Any], signals: IntentSignals) -> dict[str, Any]:
+    """Every intent family against the reference (#76 + #78) and "off"."""
+    baseline = replay(report, *INTENT_BASE)
+    off = replay(report, *INTENT_OFF)
+    rows: list[dict[str, Any]] = [
+        {"name": "default", **strip(baseline), "vs_default": {}, "vs_off": paired(off, baseline)},
+        {"name": "off", **strip(off), "vs_default": paired(baseline, off), "vs_off": None},
+    ]
+    for name, rules in intent_families(report, signals):
+        runs = [
+            replay(report, *INTENT_BASE, intent=rule) | {"abstention": rule.label, "calibration": rule.calibration}
+            for rule in rules
+        ]
+        levels = [
+            {"level": r["abstention"], **{k: r["metrics"][k] for k in ("abstention_recall", "false_refusal_rate")}}
+            for r in runs
+        ]
+        eligible = [r for r in runs if r["metrics"]["false_refusal_rate"] < MAX_FALSE_ABSTENTION]
+        best = max(
+            eligible,
+            key=lambda r: (r["metrics"]["abstention_recall"], -r["metrics"]["false_refusal_rate"]),
+            default=None,
+        )
+        if best is None:
+            rows.append({"name": name, "routing": runs[0]["routing"], "selected": None, "levels": levels})
+            continue
+        rows.append(
+            {
+                "name": name,
+                **strip(best),
+                "vs_default": paired(baseline, best),
+                "vs_off": paired(off, best),
+                "levels": levels,
+            }
+        )
+    return {
+        "summary": {"settings": [{k: v for k, v in row.items() if k not in ("levels", "calibration")} for row in rows]},
+        "rows": rows,
+    }
+
+
+def selected_calibration(comparison: dict[str, Any]) -> dict[str, Any] | None:
+    """Calibration of the best joint rule (owner's rule across the kNN families)."""
+    joint = [row for row in comparison["rows"] if row.get("calibration") and row.get("metrics")]
+    best = max(
+        joint,
+        key=lambda row: (row["metrics"]["abstention_recall"], -row["metrics"]["false_refusal_rate"]),
+        default=None,
+    )
+    return best["calibration"] if best else None

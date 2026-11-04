@@ -544,7 +544,8 @@
       "intent": "intention",
       "low_score": "score trop faible",
       "no_passage": "aucun passage",
-      "none": "—"
+      "none": "—",
+      "low_joint_score": "intention + score trop faibles"
     },
     "methods": {
       "lexical": "mots-outils",
@@ -561,7 +562,9 @@
     "scorings": {
       "chunks": "centroïdes des passages",
       "examples": "questions exemples par langue"
-    }
+    },
+    "intent_rule_knn": "documentaire sauf si ses voisins (k plus proches) l'emportent de plus de {{margin}} ou si la régression logistique dépasse son seuil — écart documentaire {{documentary}}, probabilité non documentaire {{probability}}",
+    "joint_score": "règle jointe : {{score}} (seuil {{threshold}}, intention et score dense lus ensemble ; remplace le seuil seul)"
   },
   "edu": {
     "title": "Le pipeline en direct",

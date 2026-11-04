@@ -166,9 +166,152 @@ EXAMPLES: dict[str, dict[str, list[str]]] = {
 }
 
 
-def iter_examples():
-    """Yield (intent, language, text) for every labelled example."""
-    for intent, by_language in EXAMPLES.items():
-        for language, texts in by_language.items():
-            for text in texts:
-                yield intent, language, text
+# Written for the kNN intent (docs/intentions.md), with the same rule: not
+# taken from any evaluated set (and phrases that turned out identical or
+# near-identical to a frozen abstention question were dropped). More varied
+# tasks, personal and live data, advice and private organisation matters per
+# language. The centroid classifier keeps `EXAMPLES` alone: its 0.02 margin
+# was calibrated on them.
+MORE_EXAMPLES: dict[str, dict[str, list[str]]] = {
+    "out_of_scope": {
+        "fr": [
+            "Combien j'ai dépensé en courses le mois dernier ?",
+            "Rappelle-moi d'appeler le plombier jeudi.",
+            "Quel est le solde de mon compte courant ?",
+            "Mon vol pour Nice est-il à l'heure ?",
+            "Quels films passent au cinéma ce week-end près de chez moi ?",
+            "Quel temps fera-t-il samedi à Bordeaux ?",
+            "Donne-moi le score du match du PSG hier soir.",
+            "Quelles sont les dernières nouvelles de ce matin ?",
+            "Combien vaut le bitcoin aujourd'hui ?",
+            "Résume-moi ce courriel en trois lignes.",
+            "Corrige les fautes de ce texte.",
+            "Écris un poème sur l'automne.",
+            "Invente une histoire pour endormir mon fils.",
+            "Génère un mot de passe sécurisé.",
+            "Fais-moi un plan d'entraînement pour courir un marathon.",
+            "Propose-moi une recette avec des courgettes et du riz.",
+            "Convertis 60 miles en kilomètres.",
+            "Combien font 345 fois 27 ?",
+            "Quel cadeau offrir à ma sœur pour ses trente ans ?",
+            "Est-ce que je devrais changer de travail ?",
+            "J'ai mal à la gorge depuis trois jours, que dois-je prendre ?",
+            "Quel smartphone me conseilles-tu d'acheter ?",
+            "Dans quoi investir mes économies cette année ?",
+            "Quel est le chiffre d'affaires de notre agence ce trimestre ?",
+            "Qui remplace Julie pendant son congé maternité ?",
+            "Quel est le code wifi du bureau ?",
+            "Envoie un message à toute l'équipe pour annuler la réunion.",
+            "Ajoute un rendez-vous chez le dentiste mardi à 10 h.",
+            "Quelle est l'adresse de livraison enregistrée sur mon compte ?",
+            "Combien de points me reste-t-il sur mon permis ?",
+            "Quels sont les horaires d'ouverture de la boulangerie en bas de chez moi ?",
+            "Qui va gagner la prochaine élection présidentielle ?",
+            "Que penses-tu de mon idée de start-up ?",
+            "Fais une blague sur les informaticiens.",
+            "Joue une partie d'échecs avec moi.",
+            "Quelle est la note de mon dernier examen ?",
+            "Trouve-moi un appartement à louer à Nantes.",
+            "Quel est le meilleur restaurant italien du quartier ?",
+        ],
+        "pt": [
+            "Quanto eu gastei no cartão de crédito este mês?",
+            "Me lembre de pagar a conta de luz na sexta.",
+            "Qual é o saldo da minha conta poupança?",
+            "O meu voo para Fortaleza está atrasado?",
+            "Que filmes estão passando no cinema perto de mim?",
+            "Vai fazer frio amanhã em Curitiba?",
+            "Quais são as notícias de hoje de manhã?",
+            "Resuma este e-mail em três frases.",
+            "Corrija os erros de português deste parágrafo.",
+            "Escreva um poema sobre o mar.",
+            "Invente uma história para o meu filho dormir.",
+            "Gere uma senha forte para mim.",
+            "Monte um plano de treino para eu correr 10 km.",
+            "Me dê uma receita de bolo de cenoura.",
+            "Converta 100 dólares em reais.",
+            "Quanto é 128 vezes 45?",
+            "Que presente devo dar para a minha mãe no aniversário?",
+            "Devo pedir demissão do meu emprego?",
+            "Estou com dor de cabeça há dois dias, que remédio tomo?",
+            "Qual celular vale a pena comprar este ano?",
+            "Onde devo investir o meu dinheiro?",
+            "Qual foi o faturamento da nossa filial no mês passado?",
+            "Quem vai cobrir as férias do Carlos?",
+            "Qual é a senha do wi-fi do escritório?",
+            "Mande uma mensagem para o grupo da família.",
+            "Agende uma reunião com o cliente na quinta às 15h.",
+            "Qual é o endereço cadastrado na minha conta?",
+            "Quantos pontos tenho na minha carteira de motorista?",
+            "A padaria da esquina abre no domingo?",
+            "Quem vai ganhar a próxima eleição?",
+            "O que você acha do meu plano de negócio?",
+            "Qual foi a minha nota na prova de ontem?",
+            "Encontre um apartamento para alugar em Belo Horizonte.",
+            "Qual é o melhor restaurante japonês do bairro?",
+        ],
+        "en": [
+            "How much did I spend on groceries last month?",
+            "Remind me to call the plumber on Thursday.",
+            "What is my current account balance?",
+            "Is my flight to Lisbon on time?",
+            "What will the weather be like on Saturday in Berlin?",
+            "What was the score of last night's game?",
+            "What are today's top news stories?",
+            "How much is bitcoin worth right now?",
+            "Summarize this email in three lines.",
+            "Fix the typos in this text.",
+            "Write a poem about autumn.",
+            "Generate a strong password.",
+            "Give me a recipe with chicken and rice.",
+            "Convert 60 miles to kilometres.",
+            "What is 345 times 27?",
+            "What gift should I buy for my sister?",
+            "Should I quit my job?",
+            "I have had a sore throat for three days, what should I take?",
+            "Which laptop should I buy?",
+            "What was our team's revenue last quarter?",
+            "Who is covering for Anna while she is on leave?",
+            "Schedule a dentist appointment on Tuesday at 10.",
+            "Tell me a joke.",
+            "Find me a flat to rent in Manchester.",
+        ],
+    },
+    "conversational": {
+        "fr": [
+            "Tu peux m'aider ?",
+            "Qui t'a créé ?",
+            "Je reviens dans cinq minutes.",
+            "Tu es vraiment utile, bravo.",
+            "Pourquoi tu ne me réponds pas ?",
+        ],
+        "pt": [
+            "Valeu pela ajuda.",
+            "Você pode me ajudar?",
+            "Quem criou você?",
+            "Volto daqui a pouco.",
+            "Você é muito útil, parabéns.",
+            "Por que você não responde?",
+        ],
+        "en": [
+            "Hey, what's up?",
+            "Thank you for your help.",
+            "Can you help me?",
+            "Who made you?",
+            "Sure.",
+            "Be right back.",
+        ],
+    },
+}
+
+
+def iter_examples(*, extended: bool = False):
+    """Yield (intent, language, text) for every labelled example.
+
+    `extended` adds `MORE_EXAMPLES` (kNN intent only)."""
+    sets = (EXAMPLES, MORE_EXAMPLES) if extended else (EXAMPLES,)
+    for examples in sets:
+        for intent, by_language in examples.items():
+            for language, texts in by_language.items():
+                for text in texts:
+                    yield intent, language, text

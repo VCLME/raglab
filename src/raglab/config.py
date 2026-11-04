@@ -284,6 +284,17 @@ class Settings(BaseSettings):
     )
     routing_corpus_examples: bool = False
     routing_corpus_examples_path: Path = Field(default_factory=lambda: Path("benchmarks/routing/corpus_examples.jsonl"))
+    # kNN intent and joint abstention (docs/intentions.md): intent read on
+    # the k nearest labelled questions (extended examples + the calibration
+    # questions of routing_corpus_examples_path as documentary neighbours),
+    # and, for a (corpus, language) in the calibration file, one rule on the
+    # intent margin and the dense score together instead of two gates.
+    # Calibration written by `raglab experiment routing-languages --replay
+    # ... --intent` (calibration questions only). Off until the owner decides.
+    routing_intent_knn: bool = False
+    routing_intent_calibration_path: Path = Field(
+        default_factory=lambda: Path("benchmarks/routing/intent_calibration.json")
+    )
 
     chunk_size: int = 900
     chunk_overlap: int = 150

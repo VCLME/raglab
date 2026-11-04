@@ -543,7 +543,8 @@
       "intent": "intenção",
       "low_score": "score baixo demais",
       "no_passage": "nenhum trecho",
-      "none": "—"
+      "none": "—",
+      "low_joint_score": "intenção + score baixos demais"
     },
     "methods": {
       "lexical": "palavras funcionais",
@@ -560,7 +561,9 @@
     "scorings": {
       "chunks": "centroides dos trechos",
       "examples": "perguntas de exemplo por idioma"
-    }
+    },
+    "intent_rule_knn": "documental, salvo se os vizinhos mais próximos vencerem por mais de {{margin}} ou se a regressão logística passar do corte — margem documental {{documentary}}, probabilidade não documental {{probability}}",
+    "joint_score": "regra conjunta: {{score}} (limiar {{threshold}}, intenção e score denso lidos juntos; substitui o limiar simples)"
   },
   "edu": {
     "title": "O pipeline ao vivo",

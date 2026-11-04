@@ -33,6 +33,15 @@ class IntentDecision(BaseModel):
     # How much the best non-documentary intent must beat `documentary`.
     margin: float
     nearest_example: str | None = None
+    # "centroids" (default) or "knn" (`routing_intent_knn`, docs/intentions.md):
+    # with knn, `scores` are the mean similarities of the k nearest
+    # neighbours of each intent, and `documentary_margin` the documentary
+    # neighbours' minus the others' (declined below -margin).
+    method: str = "centroids"
+    documentary_margin: float | None = None
+    # kNN method with a logistic model in the calibration file: probability
+    # that the question is not documentary (declined above its threshold).
+    not_documentary_probability: float | None = None
 
 
 class CorpusCandidate(BaseModel):
@@ -76,6 +85,12 @@ class AbstentionDecision(BaseModel):
     threshold: float | None = None
     # "legal_citation" when the question cites a law: never declined.
     override: str | None = None
+    # Joint rule (`routing_intent_knn`): sum of the log ranks of the kNN
+    # documentary margin and of the dense score among the calibration
+    # questions of this (corpus, language), and the value it must reach.
+    # Set only when that pair is calibrated; it then replaces `threshold`.
+    joint_score: float | None = None
+    joint_threshold: float | None = None
 
 
 class RoutingDecision(BaseModel):

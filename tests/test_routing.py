@@ -679,6 +679,44 @@ def test_router_abstains_against_the_routed_corpus_threshold():
     assert decision.answer_from_documents is True
 
 
+def test_router_knn_intent_and_joint_rule(tmp_path):
+    from raglab.routing.intent_knn import clear_knn_cache
+
+    clear_knn_cache()
+    questions = tmp_path / "corpus_examples.jsonl"
+    questions.write_text(
+        json.dumps({"corpus": "lexml", "language": "fr", "question": "que dit la loi"}) + "\n", encoding="utf-8"
+    )
+    calibration = tmp_path / "intent_calibration.json"
+    group = {"questions": 3, "threshold": -1.5, "margins": [0.1, 0.2, 0.3], "dense": [0.80, 0.85, 0.90]}
+    calibration.write_text(
+        json.dumps({"k": 1, "quantile": 0.03, "score": "dense", "groups": {"lexml": {"fr": group}}}),
+        encoding="utf-8",
+    )
+    router = _router(
+        routing_intent_knn=True,
+        routing_corpus_examples_path=questions,
+        routing_intent_calibration_path=calibration,
+        routing_abstention_thresholds={"lexml": 0.7},
+    )
+    with (
+        patch("raglab.routing.router.list_candidate_runs", return_value=_runs()),
+        patch("raglab.routing.intent.iter_examples", return_value=EXAMPLES),
+        patch("raglab.routing.intent_knn.iter_examples", return_value=EXAMPLES),
+    ):
+        decision = router.route("Que dit la loi ?")
+        assert decision.intent.method == "knn"
+        assert decision.intent.intent == Intent.DOCUMENTARY
+        # Above the plain threshold (0.7), but low on the joint rule.
+        declined = router.finish(decision, [_chunk(0.75)])
+        kept = router.finish(decision, [_chunk(0.95)])
+        assert router.route("bonjour").intent.intent == Intent.CONVERSATIONAL
+    assert declined.abstention.reason == "low_joint_score"
+    assert declined.abstention.joint_threshold == pytest.approx(-1.5)
+    assert kept.answer_from_documents is True
+    clear_knn_cache()
+
+
 def test_per_corpus_thresholds_come_from_calibration_quantiles():
     calibration = {"piaf": [0.70, 0.75, 0.80, 0.85, 0.90] * 4, "lexml": [0.86, 0.88, 0.90, 0.92] * 5}
     assert calibrated_thresholds(calibration, 0.1) == {"lexml": 0.86, "piaf": 0.7}

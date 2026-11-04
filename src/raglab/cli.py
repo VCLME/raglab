@@ -1446,6 +1446,12 @@ def experiment_routing_languages(
     replay_path: Path | None = typer.Option(
         None, "--replay", help="Rejouer un rapport deja collecte au lieu de relancer la collecte (sans GPU)."
     ),
+    intent: bool = typer.Option(
+        False, "--intent", help="Comparer les options d'intention (kNN, regle jointe...) : docs/intentions.md."
+    ),
+    intent_calibration: Path | None = typer.Option(
+        None, "--intent-calibration", help="Avec --intent : ecrire la calibration de la regle jointe retenue."
+    ),
 ) -> None:
     """Routage multilingue : chaque question cherchee sur chaque corpus, puis les politiques rejouees hors ligne."""
     from raglab.experiments.routing_languages import MultilingualRoutingStudy, compare, render_comparison
@@ -1458,7 +1464,19 @@ def experiment_routing_languages(
             report = MultilingualRoutingStudy(session).collect(
                 corpora=corpus, strategy=strategy, sample_size=sample_size, seed=seed, top_k=top_k
             )
-    comparison = compare(report)
+    if intent:
+        from raglab.embeddings.factory import build_embedding_provider
+        from raglab.experiments.routing_languages import compare_intent, intent_signals, selected_calibration
+
+        settings = get_settings()
+        signals = intent_signals(report, build_embedding_provider(settings), settings.routing_corpus_examples_path)
+        comparison = compare_intent(report, signals)
+        payload = selected_calibration(comparison)
+        if intent_calibration is not None and payload is not None:
+            intent_calibration.parent.mkdir(parents=True, exist_ok=True)
+            intent_calibration.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    else:
+        comparison = compare(report)
     typer.echo(
         json.dumps({"report_path": report["report_path"], **comparison["summary"]}, indent=2, ensure_ascii=False)
     )

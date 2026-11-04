@@ -30,6 +30,7 @@ from raglab.routing.corpus import (
 )
 from raglab.routing.corpus_examples import example_score, get_example_centroids
 from raglab.routing.intent import get_intent_classifier, normalize
+from raglab.routing.intent_knn import DEFAULT_K, get_knn_intent_classifier, joint_score, load_joint_calibration
 from raglab.routing.language import detect_language
 from raglab.routing.schemas import CorpusCandidate, CorpusDecision, RoutingDecision
 
@@ -72,7 +73,15 @@ class QueryRouter:
         classifier = get_intent_classifier(self.embedder)
         language = detect_language(question, fallback=classifier.language_similarities(embedding))
         detected = perf_counter()
-        intent = classifier.classify(embedding, margin=self.settings.routing_intent_margin)
+        if self.settings.routing_intent_knn:
+            calibration = load_joint_calibration(self.settings.routing_intent_calibration_path)
+            intent = self._knn_classifier().classify(
+                embedding,
+                margin=self.settings.routing_intent_margin,
+                logistic=calibration.logistic if calibration is not None else None,
+            )
+        else:
+            intent = classifier.classify(embedding, margin=self.settings.routing_intent_margin)
         classified = perf_counter()
         citation = parse_citation(question)
         corpus = self._choose_corpus(
@@ -181,6 +190,29 @@ class QueryRouter:
             scoring=scoring,
         )
 
+    def _knn_classifier(self):
+        calibration = load_joint_calibration(self.settings.routing_intent_calibration_path)
+        return get_knn_intent_classifier(
+            self.embedder,
+            self.settings.routing_corpus_examples_path,
+            calibration.k if calibration is not None else DEFAULT_K,
+        )
+
+    def _joint(self, decision: RoutingDecision, retrieved: Sequence[Any]) -> tuple[float, float] | None:
+        """(joint score, threshold) when the joint rule applies: kNN intent,
+        dense score source, and calibration questions for this (corpus,
+        language). It reads the original question's dense score, as the
+        calibration did."""
+        margin = decision.intent.documentary_margin
+        dense = best_score(retrieved, "dense")
+        if margin is None or dense is None or self.settings.routing_score_source != "dense":
+            return None
+        calibration = load_joint_calibration(self.settings.routing_intent_calibration_path)
+        group = calibration.group(decision.corpus.corpus_name, decision.language.language) if calibration else None
+        if group is None:
+            return None
+        return joint_score(group, margin, dense), group.threshold
+
     def _example_centroids(self, runs: Sequence[Any]) -> dict[str, dict[str, Any]] | None:
         """Example-question centroids of the candidate corpora, when the
         option is on and every candidate has examples (scores from the two
@@ -277,6 +309,7 @@ class QueryRouter:
             threshold=threshold_for(self.settings, decision.corpus.corpus_name, source, language),
             score_source=source,
             legal_citation=decision.legal_citation_found,
+            joint=self._joint(decision, retrieved) if self.settings.routing_intent_knn else None,
         )
         if translated_score is not None and source == "dense":
             abstention = abstention.model_copy(update={"translated_score": round(translated_score, 4)})

@@ -103,19 +103,26 @@ def decide_abstention(
     threshold: float | None,
     score_source: str,
     legal_citation: bool = False,
+    joint: tuple[float, float] | None = None,
 ) -> AbstentionDecision:
     """`legal_citation`: the question cites a text the queried index holds
     ("art. 49 da Lei nº 8.078", "article L. 221-18 du code de la
     consommation", "Article 32 GDPR"). It is never declined: it names a
     document, so it is documentary by construction, and its passages come
     from the citation resolver rather than from similarity (identifiers
-    embed poorly, so the dense score is low on exactly these questions)."""
+    embed poorly, so the dense score is low on exactly these questions).
+
+    `joint` (kNN intent, docs/intentions.md): (joint score, threshold) of
+    the intent margin and dense score read together; when given, it replaces
+    the plain score threshold."""
     if legal_citation:
         reason: str | None = None
     elif intent != Intent.DOCUMENTARY:
         reason = f"intent:{intent.value}"
     elif score is None:
         reason = "no_passage"
+    elif joint is not None:
+        reason = "low_joint_score" if joint[0] < joint[1] else None
     elif threshold is not None and score < threshold:
         reason = "low_score"
     else:
@@ -127,6 +134,8 @@ def decide_abstention(
         best_score=round(score, 4) if score is not None else None,
         threshold=threshold,
         override="legal_citation" if legal_citation else None,
+        joint_score=joint[0] if joint is not None else None,
+        joint_threshold=joint[1] if joint is not None else None,
     )
 
 

@@ -71,7 +71,13 @@ export function RoutingPanel({ routing, detailed = false }: Props) {
                   .map(([k, v]) => `${t(`routing.intents.${k}`)} ${fmt(v)}`)
                   .join(" · ")}
                 <div className="muted">
-                  {t("routing.intent_rule", { margin: fmt(intent.margin, 2) })}
+                  {intent.method === "knn"
+                    ? t("routing.intent_rule_knn", {
+                        margin: fmt(intent.margin, 2),
+                        documentary: fmt(intent.documentary_margin),
+                        probability: fmt(intent.not_documentary_probability, 2),
+                      })
+                    : t("routing.intent_rule", { margin: fmt(intent.margin, 2) })}
                   {intent.nearest_example
                     ? ` — ${t("routing.nearest_example", { text: intent.nearest_example })}`
                     : ""}
@@ -109,6 +115,14 @@ export function RoutingPanel({ routing, detailed = false }: Props) {
                       threshold: fmt(abstention.threshold),
                     })
                   : "—"}
+                {abstention?.joint_score != null ? (
+                  <div className="muted">
+                    {t("routing.joint_score", {
+                      score: fmt(abstention.joint_score, 2),
+                      threshold: fmt(abstention.joint_threshold, 2),
+                    })}
+                  </div>
+                ) : null}
                 {abstention?.translated_score != null ? (
                   <div className="muted">
                     {t("routing.translated_score", { score: fmt(abstention.translated_score) })}
