@@ -92,14 +92,33 @@ Dans `raglab bench all`, le rédacteur n'est démarré que si une question du je
 
 Avec `routing=true`, l'ordre est : le routeur détecte la langue et l'intention et choisit le corpus (sans LLM) ; la question est traduite dans la langue **du corpus choisi** si elle diffère ; puis recherche hybride, fusion, re-ranking (question d'origine), abstention, génération. L'abstention lit le score **dense** (cosinus de la question d'origine) des passages retenus : la traduction ne change pas l'échelle sur laquelle les seuils par corpus ont été calibrés, elle peut seulement changer quels passages arrivent dans le top 5. Les seuils ne sont pas modifiés.
 
-Ce point n'a **pas encore été mesuré** : le GPU était pris par un autre benchmark au moment de ce changement. La mesure est prête :
+### Mesure avec le routeur
 
 ```bash
-raglab experiment routing --in-scope lexml_fr --corpus bench_piaf_fr --corpus bench_lexml_pt --query-translation
-raglab experiment routing --in-scope lexml_fr --corpus bench_piaf_fr --corpus bench_lexml_pt --no-query-translation
+raglab experiment routing --in-scope lexml_fr --in-scope lexml_fr_pt --sample-size 200 --corpus bench_piaf_fr --corpus bench_lexml_pt --query-translation
+raglab experiment routing --in-scope lexml_fr --in-scope lexml_fr_pt --sample-size 200 --corpus bench_piaf_fr --corpus bench_lexml_pt --no-query-translation
 ```
 
-`--in-scope lexml_fr` prend les questions françaises sur LexML comme questions à traiter (jamais dans le tirage par défaut, qui reste celui des seuils publiés) face aux 80 questions d'abstention. Le rapport donne le choix du corpus, la précision et le rappel de l'abstention, le taux de faux refus, le taux de passage-réponse trouvé, la latence routeur + recherche (p50 / p95) et le décompte des traductions (`query_translation_outcomes`). Ce qu'il faudra regarder : que les questions françaises vers LexML ne soient pas plus souvent refusées que les portugaises avec le seuil calibré sur ces dernières.
+Les 100 questions françaises **et** les mêmes 100 en portugais (`--in-scope lexml_fr_pt`), face aux 80 questions d'abstention ; le routeur choisit entre PIAF et LexML ; seuils de production inchangés (score dense, LexML 0,8485, PIAF 0,7929). Rapports : [`router-lexml-fr-v1.json`](../benchmarks/routing/router-lexml-fr-v1.json) (sans traduction), [`router-lexml-fr-qt-v1.json`](../benchmarks/routing/router-lexml-fr-qt-v1.json) (avec), 4 novembre 2026.
+
+| Sur 100 questions | Portugais | Français, sans traduction | Français, avec traduction |
+|---|---|---|---|
+| Routées vers LexML (bon corpus) | 100 | 62 | 62 |
+| Passage-réponse dans le top 5 (corpus routé) | 87 | 49 | 57 |
+| Refusées à tort (abstention) | 0 | 31 (26 parmi les 62 bien routées) | 33 (28) |
+| **Répondues depuis le bon passage** (bien routées, non refusées, passage trouvé) | **87** | **32** | **33** |
+| Latence routeur + recherche p50 / p95 | 653 / 794 ms | 457 / 624 ms | 2 910 / 4 064 ms |
+
+Questions d'abstention (80) : décisions identiques avec et sans traduction (50 refusées : 30/30 conversationnelles, 14/27 hors périmètre, 6/23 « presque dans le sujet ») ; 11 d'entre elles, routées vers LexML, ont été traduites pour rien. Traductions : 62 questions françaises (celles routées vers LexML ; les 38 routées vers PIAF, corpus français, ne le sont pas), aucun repli sur la question d'origine. Détection de langue : 99,3 %.
+
+**Ce que ça montre.** Avec le routeur, la langue coûte bien plus que les 8 points de Recall@5 mesurés sans lui : 32 questions françaises sur 100 aboutissent, contre 87 en portugais. La traduction pour le BM25 n'y change presque rien (+1), parce que le goulot n'est pas le BM25 mais deux décisions prises sur l'embedding de la question d'origine :
+
+- **choix du corpus** : 38 questions françaises sont envoyées vers PIAF, le corpus français. Avec e5-small, une question française est plus proche du centroïde d'un corpus français que du corpus portugais qui contient la réponse (par exemple 0,857 contre 0,850 ; la même question en portugais : LexML 0,896, PIAF 0,866) ;
+- **abstention** : sur les questions bien routées, le meilleur cosinus d'une question française est inférieur d'environ 0,03 à celui de la même question en portugais (médianes 0,852 et 0,886). Le seuil de LexML, calibré sur des questions portugaises, refuse donc 27 questions françaises sur 61, aucune portugaise.
+
+Les seuils n'ont pas été modifiés : la correction est une brique à part, à mesurer sur ce jeu (choix du corpus et score d'abstention calculés aussi sur la question traduite, ou seuils par langue). D'ici là, une question française sur les lois brésiliennes doit nommer son corpus et laisser le routeur désactivé (le défaut du Chat : le corpus y est choisi, le routeur est une option). Avec le routeur, même un corpus nommé garde l'abstention, qui refuse à tort environ 4 questions françaises sur 10 bien routées ; en choix automatique, la question est perdue deux fois sur trois.
+
+Le surcoût de latence vient de la traduction (2,4 s p50) ; la recherche des questions portugaises est aussi un peu plus lente pendant le run avec traduction (794 contre 653 ms p50), le rédacteur occupant le GPU à côté du re-ranker.
 
 ## Limites
 

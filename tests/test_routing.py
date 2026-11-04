@@ -708,7 +708,7 @@ def test_load_calibration_excludes_the_evaluated_questions(tmp_path):
 def test_french_lexml_set_is_opt_in_for_the_routing_experiment():
     from raglab.experiments.routing import IN_SCOPE_SETS, named_sets
 
-    assert "lexml_fr" not in {s.name for s in IN_SCOPE_SETS}
+    assert {"lexml_fr", "lexml_fr_pt"}.isdisjoint({s.name for s in IN_SCOPE_SETS})
     (french,) = named_sets(["lexml_fr"])
     assert (french.corpus_name, french.language) == ("bench_lexml_pt", "fr")
     with pytest.raises(ValueError):

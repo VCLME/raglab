@@ -82,6 +82,11 @@ EXTRA_SETS = {
     "lexml_fr": InScopeSet(
         "lexml_fr", REPO_ROOT / "benchmarks" / "lexml_fr" / "ground_truth.jsonl", "bench_lexml_pt", "fr"
     ),
+    # The same cases with their Portuguese question: false refusals of the
+    # two languages compared under the same per-corpus threshold.
+    "lexml_fr_pt": InScopeSet(
+        "lexml_fr_pt", REPO_ROOT / "benchmarks" / "lexml_fr" / "ground_truth_pt.jsonl", "bench_lexml_pt", "pt"
+    ),
 }
 
 
