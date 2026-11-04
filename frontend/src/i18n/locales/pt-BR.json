@@ -1031,7 +1031,9 @@
       "unreachable": "inacessível",
       "degraded": "degradado",
       "error": "erro"
-    }
+    },
+    "databases": "Bancos de dados",
+    "databases_link": "Credenciais e acesso"
   },
   "chunking": {
     "title": "Divisão",
@@ -1115,5 +1117,41 @@
     "why_torch_missing": "PyTorch ausente da API",
     "why_cuda_unavailable": "nenhuma GPU CUDA visível para a API",
     "why_unknown": "GPU indisponível para a API"
+  },
+  "databases": {
+    "title": "Bancos de dados",
+    "subtitle": "Os dois bancos por trás da Oficina: PostgreSQL (documentos, chunks, vetores, BM25) e Neo4j (grafo de remissões).",
+    "explain_body": "O PostgreSQL + pgvector guarda os corpora, seus documentos, os chunks, os vetores e o índice de texto BM25, além do histórico de execuções e benchmarks. O Neo4j guarda o grafo de remissões entre artigos.\n\nCada aba mostra o estado do banco, os dados de conexão e um link que abre a ferramenta de administração com o formulário de login já preenchido: Adminer para o PostgreSQL, Neo4j Browser para o Neo4j.\n\nAs senhas só aparecem quando são as de desenvolvimento do docker-compose, mascaradas até você pedir para vê-las. Qualquer outra senha fica no servidor: a página diz qual variável a define.",
+    "tabs_label": "Bancos de dados",
+    "tab_postgres": "PostgreSQL",
+    "tab_neo4j": "Neo4j",
+    "connection_title": "Conexão",
+    "host": "Host",
+    "port": "Porta",
+    "user": "Usuário",
+    "password": "Senha",
+    "password_hidden": "senha mascarada",
+    "password_server": "Definida no servidor por {{env}}, não exibida",
+    "dev_default": "valor de desenvolvimento",
+    "show": "Mostrar",
+    "hide": "Ocultar",
+    "database": "Banco",
+    "url": "String de conexão da API",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "copy_label": "Copiar: {{field}}",
+    "tool_postgres": "Adminer",
+    "tool_neo4j": "Neo4j Browser",
+    "tool_title": "{{tool}}",
+    "state": "Estado",
+    "reachable": "acessível",
+    "unreachable": "inacessível",
+    "address": "Endereço",
+    "holds": "Guarda os dados de",
+    "open": "Abrir {{tool}}",
+    "tool_note_postgres": "O link preenche servidor, usuário e banco; o Adminer nunca lê a senha da URL: copie-a do cartão Conexão.",
+    "tool_note_postgres_no_password": "O link preenche servidor, usuário e banco; a senha é a de RAGLAB_DATABASE_URL.",
+    "tool_note_neo4j": "O link preenche todo o cartão de conexão, senha incluída (valor de desenvolvimento): basta clicar em Connect.",
+    "tool_note_neo4j_no_password": "O link preenche endereço e usuário; a senha é a de RAGLAB_NEO4J_PASSWORD."
   }
 }
