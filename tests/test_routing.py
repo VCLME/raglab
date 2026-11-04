@@ -679,6 +679,44 @@ def test_router_abstains_against_the_routed_corpus_threshold():
     assert decision.answer_from_documents is True
 
 
+def test_router_knn_intent_and_joint_rule(tmp_path):
+    from raglab.routing.intent_knn import clear_knn_cache
+
+    clear_knn_cache()
+    questions = tmp_path / "corpus_examples.jsonl"
+    questions.write_text(
+        json.dumps({"corpus": "lexml", "language": "fr", "question": "que dit la loi"}) + "\n", encoding="utf-8"
+    )
+    calibration = tmp_path / "intent_calibration.json"
+    group = {"questions": 3, "threshold": -1.5, "margins": [0.1, 0.2, 0.3], "dense": [0.80, 0.85, 0.90]}
+    calibration.write_text(
+        json.dumps({"k": 1, "quantile": 0.03, "score": "dense", "groups": {"lexml": {"fr": group}}}),
+        encoding="utf-8",
+    )
+    router = _router(
+        routing_intent_knn=True,
+        routing_corpus_examples_path=questions,
+        routing_intent_calibration_path=calibration,
+        routing_abstention_thresholds={"lexml": 0.7},
+    )
+    with (
+        patch("raglab.routing.router.list_candidate_runs", return_value=_runs()),
+        patch("raglab.routing.intent.iter_examples", return_value=EXAMPLES),
+        patch("raglab.routing.intent_knn.iter_examples", return_value=EXAMPLES),
+    ):
+        decision = router.route("Que dit la loi ?")
+        assert decision.intent.method == "knn"
+        assert decision.intent.intent == Intent.DOCUMENTARY
+        # Above the plain threshold (0.7), but low on the joint rule.
+        declined = router.finish(decision, [_chunk(0.75)])
+        kept = router.finish(decision, [_chunk(0.95)])
+        assert router.route("bonjour").intent.intent == Intent.CONVERSATIONAL
+    assert declined.abstention.reason == "low_joint_score"
+    assert declined.abstention.joint_threshold == pytest.approx(-1.5)
+    assert kept.answer_from_documents is True
+    clear_knn_cache()
+
+
 def test_per_corpus_thresholds_come_from_calibration_quantiles():
     calibration = {"piaf": [0.70, 0.75, 0.80, 0.85, 0.90] * 4, "lexml": [0.86, 0.88, 0.90, 0.92] * 5}
     assert calibrated_thresholds(calibration, 0.1) == {"lexml": 0.86, "piaf": 0.7}
@@ -1010,3 +1048,64 @@ def test_translated_abstention_depends_on_the_pair():
     assert translated_abstention(service, False, "lexml", "fr") is False
     off = SimpleNamespace(settings=Settings(routing_language_thresholds=False))
     assert translated_abstention(off, True, "lexml", "pt") is True
+
+
+def test_paired_live_reads_the_router_decision_or_replays_the_thresholds():
+    from raglab.experiments.routing import live_abstentions, paired_live
+
+    def record(case_id, category, score, **extra):
+        return {
+            "id": case_id,
+            "source": "piaf" if category == "in_scope" else "abstention",
+            "category": category,
+            "expected_corpus": "piaf" if category == "in_scope" else None,
+            "corpus_routed": "piaf",
+            "language_detected": "fr",
+            "intent_scores": {"documentary": 0.9, "out_of_scope": 0.8},
+            "legal_citation": False,
+            "best_score": score,
+            "hit": True,
+            **extra,
+        }
+
+    config = {"intent_margin": 0.02, "abstention_thresholds": {"piaf": 0.8}, "abstention_threshold": 0.0}
+    before = {"config": config, "records": [record("a", "in_scope", 0.9), record("x", "out_of_scope", 0.85)]}
+    assert live_abstentions(before) == [False, False]
+    after = {
+        "config": config,
+        "records": [
+            record("a", "in_scope", 0.9, router_abstain=False),
+            record("x", "out_of_scope", 0.85, router_abstain=True),
+        ],
+    }
+    result = paired_live(before, after)
+    assert result["abstention"] == {"before": 0, "after": 1, "gained": 1, "lost": 0, "p_value": 1.0}
+    assert result["piaf"]["before"] == result["piaf"]["after"] == 1
+
+
+@pytest.mark.parametrize(("logistic", "expected"), [(True, Intent.OUT_OF_SCOPE), (False, Intent.DOCUMENTARY)])
+def test_router_reads_the_logistic_signal_only_when_enabled(tmp_path, logistic, expected):
+    from raglab.routing.intent_knn import clear_knn_cache
+
+    clear_knn_cache()
+    questions = tmp_path / "corpus_examples.jsonl"
+    questions.write_text(json.dumps({"corpus": "lexml", "language": "fr", "question": "que dit la loi"}) + "\n")
+    calibration = tmp_path / "intent_calibration.json"
+    # A cut no question can stay under: the logistic signal alone declines.
+    model = {"weights": [0.0] * 5, "bias": 0.0, "scale": 20.0, "threshold": 0.1, "quantile": 0.97}
+    calibration.write_text(json.dumps({"k": 1, "quantile": 0.03, "score": "dense", "groups": {}, "logistic": model}))
+    router = _router(
+        routing_intent_knn=True,
+        routing_intent_logistic=logistic,
+        routing_corpus_examples_path=questions,
+        routing_intent_calibration_path=calibration,
+    )
+    with (
+        patch("raglab.routing.router.list_candidate_runs", return_value=_runs()),
+        patch("raglab.routing.intent.iter_examples", return_value=EXAMPLES),
+        patch("raglab.routing.intent_knn.iter_examples", return_value=EXAMPLES),
+    ):
+        decision = router.route("Que dit la loi ?")
+    assert decision.intent.intent == expected
+    assert (decision.intent.not_documentary_probability is not None) is logistic
+    clear_knn_cache()

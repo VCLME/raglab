@@ -173,3 +173,19 @@ def test_a_language_without_calibration_reads_the_translated_score():
     # With its own calibration (0.84 on the original score 0.83) it is refused.
     run = replay(_report(), RoutingPolicy("chunks", 0.02), AbstentionPolicy("dense", "language", 0.5))
     assert run["metrics"]["by_source"]["lexml_fr"]["refused"] == 1
+
+
+def test_replay_with_an_intent_rule_replaces_the_intent_and_the_threshold():
+    from raglab.experiments.routing_languages import IntentRule
+
+    report = _report()
+    base = (RoutingPolicy("chunks", 0.02), AbstentionPolicy("dense_xl", "production"))
+    # Declined on intent: the off-topic question (record 2).
+    run = replay(report, *base, intent=IntentRule("x", (False, False, True)))
+    assert run["metrics"]["refusals_kept"] == 1
+    assert run["metrics"]["false_refusals"] == 0
+    # A joint rule decides for calibrated pairs only (None keeps the threshold).
+    joint = IntentRule("y", (False, False, False), lambda i, corpus, language, dense: i == 1 or None)
+    run = replay(report, *base, intent=joint)
+    assert run["metrics"]["by_source"]["piaf"]["refused"] == 1
+    assert run["metrics"]["by_source"]["lexml_fr"]["refused"] == 0
