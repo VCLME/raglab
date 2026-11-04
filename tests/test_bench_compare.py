@@ -68,3 +68,14 @@ def test_split_is_kept_per_question_and_summarised():
     assert by_split["dev"]["recall@5"] == 1.0
     assert by_split["heldout"]["recall@5"] == 0.0
     assert set(by_split) == {"dev", "heldout"}
+
+
+def test_compare_runs_pairs_suites_with_different_names():
+    from raglab.benchmarks.compare import compare_runs
+
+    pt = {"label": "v1", "suites": [{"suite": "lexml_fr_pt", "cases": _cases([1] * 10, [1.0] * 10)}]}
+    fr = {"label": "v1", "suites": [{"suite": "lexml_fr", "cases": _cases([1] * 6 + [0] * 4, [1.0] * 6 + [0.0] * 4)}]}
+    assert compare_runs(pt, fr)["suites"] == {}
+    result = compare_runs(pt, fr, pairs=[("lexml_fr_pt", "lexml_fr")])
+    entry = result["suites"]["lexml_fr_pt → lexml_fr"]
+    assert entry["recall@5"]["lost"] == 4
