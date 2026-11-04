@@ -716,7 +716,7 @@
       "versions_opt_in_force": "in force",
       "versions_opt_as_of": "on a date",
       "versions_opt_all": "all",
-      "versions_in_force_planned": "In force today, or on the date the question asks about.",
+      "versions_in_force_planned": "In force, or on the question's date.",
       "versions_as_of_planned": "The versions in force on the chosen date.",
       "versions_all_planned": "Every version, repealed ones included.",
       "versions_in_force": "Versions in force on {{date}}.",

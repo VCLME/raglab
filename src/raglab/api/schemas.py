@@ -74,7 +74,7 @@ class ConfigResponse(BaseModel):
     graph_weight: float = 0.5
     citation_resolver: bool = True
     # Default of the versions option (phase 9.10).
-    versions_default: str = "all"
+    versions_default: str = "in_force"
     # Enabled generation providers (RAGLAB_LLM_PROVIDERS) and the default one.
     llm_providers: list[str] = Field(default_factory=lambda: ["ollama"])
     default_llm_provider: str = "ollama"

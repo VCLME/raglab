@@ -115,9 +115,9 @@ function LaunchTab({ onLaunched }: { onLaunched: () => void }) {
   const [rerank, setRerank] = useState(false);
   const [citations, setCitations] = useState(false);
   const [graph, setGraph] = useState(false);
-  // Versions option (9.10): "all" (the shipped default) is the naive
-  // baseline, "in_force" the brick under measurement.
-  const [versions, setVersions] = useState("all");
+  // Versions option (9.10): "in_force" (the shipped default, measured);
+  // "all" measures the naive baseline.
+  const [versions, setVersions] = useState("in_force");
 
   const action = useApiAction((body: unknown) =>
     post<{

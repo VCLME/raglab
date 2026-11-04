@@ -716,7 +716,7 @@
       "versions_opt_in_force": "en vigueur",
       "versions_opt_as_of": "à une date",
       "versions_opt_all": "toutes",
-      "versions_in_force_planned": "En vigueur aujourd'hui, ou à la date que la question demande.",
+      "versions_in_force_planned": "En vigueur, ou à la date de la question.",
       "versions_as_of_planned": "Les versions en vigueur à la date choisie.",
       "versions_all_planned": "Toutes les versions, abrogées comprises.",
       "versions_in_force": "Versions en vigueur le {{date}}.",
