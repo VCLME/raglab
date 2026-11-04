@@ -19,18 +19,42 @@ from raglab.domain.errors import StageTimeoutError, run_with_timeout
 from raglab.domain.schemas import QueryResponse, RetrievalFilters, RetrievedChunk
 from raglab.embeddings.factory import build_embedding_provider
 from raglab.generation.prompts import build_prompt_bundle
-from raglab.generation.service import OllamaGenerator
+from raglab.generation.service import AnswerGenerator, OllamaGenerator, OpenAICompatGenerator
+from raglab.graph.structured import StructuredGraphStore, get_graph_store
+from raglab.llm.providers import resolve_llm_provider
 from raglab.logging_utils import log_event
-from raglab.retrieval.citations import article_chunks, find_law_document, merge_with_citation, parse_citation
+from raglab.observability.metrics import observe_query
+from raglab.retrieval.citations import (
+    article_chunks,
+    document_chunks,
+    find_code_article,
+    find_eu_unit,
+    find_law_document,
+    has_eu_act,
+    merge_with_citation,
+    parse_citation,
+)
 from raglab.retrieval.fusion import reciprocal_rank_fusion
+from raglab.retrieval.graph_branch import (
+    GraphBranchResult,
+    graph_links,
+    group_references,
+    new_candidates,
+    run_graph_branch,
+    seed_chunks,
+)
 from raglab.retrieval.rerank import Reranker, get_reranker, rerank_gpu_available
 from raglab.retrieval.stages import planned_stages, prompt_details, retrieval_stage_events, stage_end, stage_start
+from raglab.retrieval.versions import VersionLookup, annotate, demote_revoked, is_outdated, resolve_policy
 from raglab.routing.schemas import RoutingDecision
 from raglab.routing.step import route_and_retrieve
 from raglab.stores.lexical.postgres import PostgresLexicalStore
 from raglab.stores.vector.postgres import PostgresVectorStore
 
 LOGGER = logging.getLogger(__name__)
+
+# Scorer behind `RetrievedChunk.score` when re-ranking is off.
+_SCORE_TYPES = {RetrievalMode.DENSE: "cosine", RetrievalMode.LEXICAL: "bm25", RetrievalMode.HYBRID: "rrf"}
 
 # SQLSTATE raised by Postgres when statement_timeout cancels a query.
 _QUERY_CANCELED = "57014"
@@ -64,6 +88,17 @@ class RetrievalOutcome:
     rerank_candidates: int = 0
     # Parsed legal citation and whether it resolved (citations option).
     citation: dict[str, Any] | None = None
+    # Graph branch (graph option): whether it ran, why not, its counters.
+    graph: bool = False
+    graph_notice: str | None = None
+    graph_stats: dict[str, int] = field(default_factory=dict)
+    # For the learning mode's `graph` stage: the references followed
+    # (citing -> cited article, the sentence, passages added) and the
+    # branch's own ranked list.
+    graph_links: list[dict[str, Any]] = field(default_factory=list)
+    graph_chunks: list[RetrievedChunk] = field(default_factory=list)
+    # Version policy (versions option) and what it did; see QueryResponse.
+    versions: dict[str, Any] | None = None
 
     @property
     def answers_from_documents(self) -> bool:
@@ -84,6 +119,10 @@ class RetrievalOutcome:
             timings_ms=dict(self.timings_ms),
             routing=self.routing,
             citation=self.citation,
+            graph=self.graph,
+            graph_notice=self.graph_notice,
+            graph_stats=dict(self.graph_stats),
+            versions=dict(self.versions) if self.versions is not None else None,
             **extra,
         )
 
@@ -97,8 +136,43 @@ class QueryService:
             iterative_scan=self.settings.hnsw_iterative_scan,
         )
         self.lexical_store = PostgresLexicalStore(k1=self.settings.bm25_k1, b=self.settings.bm25_b)
-        self.generator = OllamaGenerator(self.settings)
+        # One generator per provider, built on first use.
+        self._generators: dict[str, AnswerGenerator] = {}
         self._reranker: Reranker | None = None
+        self._graph_store: StructuredGraphStore | None = None
+        self.version_lookup = VersionLookup(session)
+
+    @property
+    def graph_store(self) -> StructuredGraphStore:
+        # Shared driver per Neo4j target, opened on the first graph query.
+        if self._graph_store is None:
+            self._graph_store = get_graph_store(self.settings)
+        return self._graph_store
+
+    @graph_store.setter
+    def graph_store(self, value: StructuredGraphStore) -> None:
+        self._graph_store = value
+
+    @property
+    def generator(self) -> AnswerGenerator:
+        """Generator of the default provider (RAGLAB_DEFAULT_LLM_PROVIDER)."""
+        return self.generator_for(None)
+
+    @generator.setter
+    def generator(self, value: AnswerGenerator) -> None:
+        self._generators[self.settings.default_llm_provider] = value
+
+    def generator_for(self, llm_provider: str | None) -> AnswerGenerator:
+        """Generator for `llm_provider` (None = default); raises
+        UnknownLLMProviderError (HTTP 400) for a disabled or unknown name."""
+        name = resolve_llm_provider(self.settings, llm_provider)
+        if name not in self._generators:
+            self._generators[name] = (
+                OllamaGenerator(self.settings)
+                if name == "ollama"
+                else OpenAICompatGenerator(self.settings, provider=name)
+            )
+        return self._generators[name]
 
     @property
     def reranker(self) -> Reranker:
@@ -179,6 +253,8 @@ class QueryService:
         citations: bool | None = None,
         routing: bool = False,
         query_embedding: list[float] | None = None,
+        graph: bool | None = None,
+        versions: str | None = None,
     ) -> RetrievalOutcome:
         """Search the index for the question, each stage under its budget.
 
@@ -189,12 +265,27 @@ class QueryService:
 
         With `citations` on, a question citing a law ("art. 49 da Lei nº
         8.078") is restricted to that law and the cited article is pinned
-        first (see `raglab.retrieval.citations`).
+        first; one citing an article of a French code ("article L. 221-18 du
+        code de la consommation") pins that article's document and is
+        restricted to the code (see `raglab.retrieval.citations`).
+
+        With `graph` on, a third list joins the fusion: chunks of the
+        articles that the cited article and the best first-stage hits cite
+        (see `raglab.retrieval.graph_branch`); after re-ranking, a cited
+        passage is kept right after the passage citing it.
 
         dense: embed + cosine KNN (as before). lexical: BM25, no embedder.
         hybrid: both, fused by Reciprocal Rank Fusion over deeper lists.
         rerank: the chosen mode returns `rerank_candidates` chunks, a
         cross-encoder re-scores them and the top_k best are kept.
+
+        versions: which article versions may be used (see
+        `raglab.retrieval.versions`): `in_force` (default) keeps the versions
+        in force today, or on the date the question asks about ("avant
+        2016"); `as_of=YYYY-MM-DD` on that date; `all` every version. On a
+        corpus with version metadata the others are filtered out before
+        ranking; on compiled laws, chunks that only hold repealed provisions
+        are moved last. Every chunk carries its version state.
         """
         if routing:
             return route_and_retrieve(
@@ -210,6 +301,8 @@ class QueryService:
                 rrf_k=rrf_k,
                 rerank=rerank,
                 citations=citations,
+                graph=graph,
+                versions=versions,
             )
         mode = RetrievalMode(retrieval_mode or self.settings.default_retrieval_mode)
         index_run = self._resolve_index_run(
@@ -238,17 +331,67 @@ class QueryService:
         weight = self.settings.hybrid_lexical_weight if lexical_weight is None else lexical_weight
         fusion_k = self.settings.rrf_k if rrf_k is None else rrf_k
 
+        use_graph = self.settings.graph_retrieval if graph is None else graph
+        # The citation restricts the search to the cited law; the graph
+        # branch follows references out of it, under the caller's filters only.
+        user_filters = filters
+        versions_started = perf_counter()
+        policy = resolve_policy(versions, question, default_mode=self.settings.versions_default)
+        has_history = self.version_lookup.has_history(index_run)
+        if policy.filters and has_history and policy.on is not None:
+            filters = (filters or RetrievalFilters()).model_copy(update={"valid_at": policy.on.isoformat()})
+        versions_seconds = perf_counter() - versions_started
         citation_started = perf_counter()
         use_citations = self.settings.citation_resolver if citations is None else citations
-        citation = parse_citation(question) if use_citations else None
+        parsed = parse_citation(question) if use_citations or use_graph else None
+        # Graph only (citations off): the cited article seeds the branch, the
+        # search itself is not restricted to its law.
+        citation = parsed if use_citations else None
         law_document_id: str | None = None
         pinned: list[RetrievedChunk] = []
-        if citation is not None:
-            law_document_id = find_law_document(self.session, index_run, citation)
-            if law_document_id is not None:
+        cited_code: str | None = None
+        eu_act_found = False
+        if parsed is not None and parsed.law_number is not None:
+            law_document_id = find_law_document(self.session, index_run, parsed)
+            if citation is not None and law_document_id is not None:
                 if citation.article:
                     pinned = article_chunks(self.session, index_run, law_document_id, citation.article)
                 filters = (filters or RetrievalFilters()).model_copy(update={"document_ids": [law_document_id]})
+        elif parsed is not None and parsed.celex is not None:
+            # A unit of an EU act is a document of its own (one per language):
+            # pin it and search the rest of the cited act.
+            eu_unit = find_eu_unit(self.session, index_run, parsed)
+            law_document_id = eu_unit.document_id if eu_unit is not None else None
+            eu_act_found = eu_unit is not None or has_eu_act(self.session, index_run, parsed.celex)
+            if citation is not None and eu_act_found:
+                if eu_unit is not None:
+                    pinned = document_chunks(self.session, index_run, eu_unit.document_id)
+                base = filters or RetrievalFilters()
+                filters = base.model_copy(update={"metadata_equals": {**base.metadata_equals, "celex": parsed.celex}})
+        elif citation is not None:
+            # An article of a French code is a document of its own: pin it
+            # and search the rest of the cited code.
+            code_article = find_code_article(
+                self.session, index_run, citation, on=policy.on if policy.mode == "as_of" else None
+            )
+            if code_article is not None:
+                law_document_id = code_article.document_id
+                cited_code = code_article.code
+                pinned = document_chunks(self.session, index_run, code_article.document_id)
+                if cited_code:
+                    base = filters or RetrievalFilters()
+                    filters = base.model_copy(update={"metadata_equals": {**base.metadata_equals, "code": cited_code}})
+        # The graph holds laws (profile "laws") and EU acts (profile
+        # "eu_acts"): a cited law's or EU act's article seeds it.
+        seed_articles = (
+            [{"document_id": law_document_id, "number": parsed.article, "rank": 0}]
+            if use_graph
+            and parsed is not None
+            and (parsed.law_number is not None or parsed.unit == "article")
+            and parsed.article
+            and law_document_id is not None
+            else []
+        )
         citation_seconds = perf_counter() - citation_started if citation is not None else 0.0
         started = perf_counter()
         if mode == RetrievalMode.LEXICAL:
@@ -282,8 +425,40 @@ class QueryService:
                     filters=filters,
                 )
                 stage_ms["lexical"] = perf_counter() - lexical_started
+            branch = GraphBranchResult()
+            if use_graph:
+                graph_started = perf_counter()
+                branch = run_graph_branch(
+                    self.session,
+                    self.graph_store,
+                    index_run,
+                    settings=self.settings,
+                    seeds=seed_chunks(dense, lexical, limit=self.settings.graph_seed_chunks, pinned=pinned),
+                    seed_articles=seed_articles,
+                    filters=user_filters,
+                )
+                stage_ms["graph"] = perf_counter() - graph_started
             fusion_started = perf_counter()
-            if mode == RetrievalMode.DENSE:
+            # The graph adds the cited passages the retrievers missed; it does
+            # not re-score what they found (that cost Recall@1 on LexML).
+            graph_list = new_candidates(branch.chunks, dense, lexical, pinned)
+            if branch.stats:
+                branch.stats["added"] = len(graph_list)
+            if graph_list:
+                # Three sources: the single-retriever modes keep their own
+                # list at full weight (w = 0 or 1).
+                three_way_weight = {RetrievalMode.DENSE: 0.0, RetrievalMode.LEXICAL: 1.0}.get(mode, weight)
+                retrieved = reciprocal_rank_fusion(
+                    dense,
+                    lexical,
+                    graph=graph_list,
+                    k=fusion_k,
+                    lexical_weight=three_way_weight,
+                    graph_weight=self.settings.graph_weight,
+                    top_k=stage_top_k,
+                )
+                stage_ms["fusion"] = perf_counter() - fusion_started
+            elif mode == RetrievalMode.DENSE:
                 retrieved = [
                     chunk.model_copy(update={"dense_score": chunk.score, "dense_rank": chunk.rank}) for chunk in dense
                 ]
@@ -319,10 +494,11 @@ class QueryService:
         timings_ms["retrieval"] = round((searched - search_started + citation_seconds) * 1000, 3)
         if citation is not None:
             timings_ms["citation"] = round(citation_seconds * 1000, 3)
-        if mode != RetrievalMode.DENSE:
+        if mode != RetrievalMode.DENSE or use_graph:
             timings_ms.update({stage: round(seconds * 1000, 3) for stage, seconds in stage_ms.items()})
 
         rerank_stats: dict[str, float] = {}
+        first_stage_pool = list(retrieved)
         if do_rerank:
             first_stage = retrieved
             rerank_started = perf_counter()
@@ -336,6 +512,39 @@ class QueryService:
                 # A cited article is the answer by construction: the
                 # cross-encoder orders the rest, it does not demote the pin.
                 retrieved = merge_with_citation(pinned, retrieved, effective_top_k)
+        if branch.hits:
+            # A passage found through a reference stays next to the one
+            # citing it, whatever the cross-encoder made of it.
+            pool = {chunk.chunk_id: chunk for chunk in [*branch.chunks, *first_stage_pool]}
+            retrieved = group_references(
+                retrieved, branch.hits, pool, top_k=effective_top_k, max_groups=self.settings.graph_group_max
+            )
+        versions_started = perf_counter()
+        retrieved = annotate(
+            retrieved, policy, self.version_lookup.metadata(sorted({chunk.document_id for chunk in retrieved}))
+        )
+        demoted = 0
+        if policy.mode == "in_force":
+            retrieved, demoted = demote_revoked(retrieved)
+        has_markers = any(chunk.version is not None and chunk.version.source == "markers" for chunk in retrieved)
+        versions_seconds += perf_counter() - versions_started
+        # Part of retrieval (the benchmark's query latency includes it), shown apart.
+        timings_ms["retrieval"] = round(timings_ms["retrieval"] + versions_seconds * 1000, 3)
+        versions_info = {
+            **policy.as_dict(),
+            "scope": "metadata" if has_history else "markers" if has_markers else "none",
+            "filtered": bool(policy.filters and has_history),
+            "demoted": demoted,
+            "outdated": sum(1 for chunk in retrieved if is_outdated(chunk)),
+        }
+        if versions_info["scope"] != "none":
+            # The learning mode's `versions` stage; absent where no chunk
+            # carries version information (PIAF, uploads).
+            timings_ms["versions"] = round(versions_seconds * 1000, 3)
+        if policy.mode == "as_of" and not has_history and has_markers:
+            # Compiled laws keep only the wording in force: a past date
+            # cannot be honoured there.
+            versions_info["notice"] = "markers_no_history"
         hybrid = mode == RetrievalMode.HYBRID
         return RetrievalOutcome(
             question=question,
@@ -360,12 +569,20 @@ class QueryService:
                     "label": citation.label(),
                     "law_number": citation.law_number,
                     "article": citation.article,
-                    "law_found": law_document_id is not None,
+                    "code": cited_code or citation.code,
+                    "celex": citation.celex,
+                    "law_found": law_document_id is not None or eu_act_found,
                     "article_found": bool(pinned),
                 }
                 if citation is not None
                 else None
             ),
+            graph=use_graph,
+            graph_notice=branch.notice,
+            graph_stats=dict(branch.stats),
+            graph_links=graph_links(branch, graph_list),
+            graph_chunks=list(branch.chunks),
+            versions=versions_info,
         )
 
     def query(
@@ -386,10 +603,17 @@ class QueryService:
         rrf_k: int | None = None,
         rerank: bool | None = None,
         citations: bool | None = None,
+        graph: bool | None = None,
+        versions: str | None = None,
+        llm_provider: str | None = None,
     ) -> QueryResponse:
         """`generation_top_k` sends only the first N retrieved chunks to the
         LLM; the benchmark retrieves 10 (for Recall@10) but must generate from
-        the same top-k as production."""
+        the same top-k as production. `llm_provider` picks the generation
+        provider (None = RAGLAB_DEFAULT_LLM_PROVIDER)."""
+        # Resolved before retrieval: an unknown provider fails fast with a 400.
+        provider = resolve_llm_provider(self.settings, llm_provider) if generate_answer else None
+        generator = self.generator_for(provider) if provider else None
         outcome = self.retrieve(
             question=question,
             corpus_name=corpus_name,
@@ -403,35 +627,42 @@ class QueryService:
             rrf_k=rrf_k,
             rerank=rerank,
             citations=citations,
+            graph=graph,
+            versions=versions,
         )
         answer = None
-        if generate_answer and not outcome.answers_from_documents:
+        stats: dict[str, float] = {}
+        if generator is not None and not outcome.answers_from_documents:
+            # The router declined: its canned answer replaces generation.
             assert outcome.routing is not None
             answer = outcome.routing.fallback_answer
-        elif generate_answer:
+        elif generator is not None:
             generation_started = perf_counter()
             context = outcome.retrieved[:generation_top_k] if generation_top_k else outcome.retrieved
-            answer = self.generator.generate_answer(question, context, model=llm_model)
+            answer = generator.generate_answer(question, context, model=llm_model)
             outcome.timings_ms["generation"] = round((perf_counter() - generation_started) * 1000, 3)
+            stats = dict(generator.last_stats)
         elapsed_ms = (perf_counter() - outcome.started) * 1000
-        self._log_completed(outcome, generate_answer=generate_answer, elapsed_ms=elapsed_ms)
-        return outcome.response(
-            answer=answer,
+        self._log_completed(
+            outcome,
+            generate_answer=generate_answer,
             elapsed_ms=elapsed_ms,
-            generation_stats=dict(self.generator.last_stats)
-            if generate_answer and outcome.answers_from_documents
-            else {},
+            generation_stats=stats,
+            llm_provider=provider,
         )
+        return outcome.response(answer=answer, elapsed_ms=elapsed_ms, generation_stats=stats)
 
     def stream_answer(
         self,
         outcome: RetrievalOutcome,
         *,
         llm_model: str | None = None,
+        llm_provider: str | None = None,
     ) -> Iterator[tuple[str, dict[str, Any]]]:
         """Generate the answer for a finished retrieval as (event, data) pairs.
 
-        `llm_model` overrides the configured generation model for this answer.
+        `llm_model` overrides the configured generation model for this answer;
+        `llm_provider` picks the provider (None = RAGLAB_DEFAULT_LLM_PROVIDER).
 
         Yields `stage` events around the prompt and generation stages (see
         `raglab.retrieval.stages`), one `token` event per fragment produced by
@@ -439,6 +670,8 @@ class QueryService:
         `first_token_ms` (time from the start of generation to the first
         fragment).
         """
+        provider = resolve_llm_provider(self.settings, llm_provider)
+        generator = self.generator_for(provider)
         prompt_started = perf_counter()
         yield "stage", stage_start("prompt", self._since_start(outcome, prompt_started))
         bundle = build_prompt_bundle(
@@ -464,7 +697,7 @@ class QueryService:
         first_token_ms: float | None = None
         parts: list[str] = []
         if outcome.answers_from_documents:
-            pieces = self.generator.stream_answer(outcome.question, outcome.retrieved, model=llm_model)
+            pieces = generator.stream_answer(outcome.question, outcome.retrieved, model=llm_model)
         else:
             # The router declined: its canned answer is the only fragment.
             assert outcome.routing is not None
@@ -476,7 +709,7 @@ class QueryService:
             yield "token", {"text": piece}
         generation_done = perf_counter()
         outcome.timings_ms["generation"] = round((generation_done - generation_started) * 1000, 3)
-        stats = dict(self.generator.last_stats)
+        stats = dict(generator.last_stats) if outcome.answers_from_documents else {}
         yield (
             "stage",
             stage_end(
@@ -484,15 +717,22 @@ class QueryService:
                 self._since_start(outcome, generation_done),
                 outcome.timings_ms["generation"],
                 counts={**stats, "fragments": len(parts), "first_token_ms": first_token_ms},
-                data={"model": llm_model or self.settings.generation_model},
+                data={"provider": provider, "model": _model_label(provider, llm_model, self.settings)},
             ),
         )
         elapsed_ms = (generation_done - outcome.started) * 1000
-        self._log_completed(outcome, generate_answer=True, elapsed_ms=elapsed_ms, streamed=True)
+        self._log_completed(
+            outcome,
+            generate_answer=True,
+            elapsed_ms=elapsed_ms,
+            streamed=True,
+            generation_stats=stats,
+            llm_provider=provider,
+        )
         response = outcome.response(
             answer="".join(parts).strip(),
             elapsed_ms=elapsed_ms,
-            generation_stats=stats if outcome.answers_from_documents else {},
+            generation_stats=stats,
         )
         yield "done", {**response.model_dump(mode="json"), "first_token_ms": first_token_ms}
 
@@ -516,6 +756,8 @@ class QueryService:
         generate_answer: bool,
         elapsed_ms: float,
         streamed: bool = False,
+        generation_stats: dict[str, float] | None = None,
+        llm_provider: str | None = None,
     ) -> None:
         log_event(
             LOGGER,
@@ -530,7 +772,12 @@ class QueryService:
             rrf_k=outcome.rrf_k,
             rerank=outcome.rerank,
             rerank_stats=outcome.rerank_stats,
+            graph=outcome.graph,
+            graph_notice=outcome.graph_notice,
+            graph_stats=outcome.graph_stats,
+            versions=outcome.versions,
             generate_answer=generate_answer,
+            llm_provider=llm_provider,
             streamed=streamed,
             retrieved_chunks=len(outcome.retrieved),
             filters=outcome.filters.model_dump() if outcome.filters else {},
@@ -539,6 +786,22 @@ class QueryService:
             timings_ms=outcome.timings_ms,
             routed_intent=outcome.routing.intent.intent.value if outcome.routing else None,
             abstained=not outcome.answers_from_documents if outcome.routing else None,
+        )
+        observe_query(
+            timings_ms=outcome.timings_ms,
+            scores=(chunk.score for chunk in outcome.retrieved),
+            strategy=str(outcome.index_run.strategy),
+            generated=generate_answer,
+            generation_stats=generation_stats if generate_answer else None,
+            rerank_stats=outcome.rerank_stats,
+            rerank_notice=outcome.rerank_notice,
+            score_type=(
+                "rerank"
+                if outcome.rerank
+                else "rrf"
+                if outcome.graph_stats.get("chunks")
+                else _SCORE_TYPES[outcome.retrieval_mode]
+            ),
         )
 
     @contextmanager
@@ -567,3 +830,11 @@ class QueryService:
             text("SELECT set_config('statement_timeout', :value, true)"),
             {"value": str(previous)},
         )
+
+
+def _model_label(provider: str, llm_model: str | None, settings: Settings) -> str | None:
+    """Model named in the generation stage: the requested one, else the
+    configured Ollama model; None lets an OpenAI-compatible server pick."""
+    if llm_model:
+        return llm_model
+    return settings.generation_model if provider == "ollama" else None

@@ -27,3 +27,6 @@ node_modules/
 data/lexml/fulltext/
 
 _site/
+
+data/legifrance/
+data/eurlex/

@@ -1,8 +1,12 @@
 from functools import lru_cache
 from pathlib import Path
+from typing import Self
 
-from pydantic import Field
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Answer generators the API, CLI and UI can pick from (see raglab.llm.providers).
+KNOWN_LLM_PROVIDERS = ("ollama", "llamacpp", "vllm")
 
 
 class Settings(BaseSettings):
@@ -26,6 +30,17 @@ class Settings(BaseSettings):
     llamacpp_start_command: str = ""
     llamacpp_stop_command: str = ""
     llamacpp_start_timeout_seconds: int = 300
+    # Sent as `Authorization: Bearer` when set (llama-server --api-key).
+    llamacpp_api_key: str = ""
+    # Optional vLLM server (OpenAI-compatible), used only for generation.
+    vllm_base_url: str = "http://127.0.0.1:8001/v1"
+    vllm_api_key: str = ""
+    # Generation providers offered by /api/query, the CLI and the UI,
+    # comma-separated among KNOWN_LLM_PROVIDERS. Unknown names and a default
+    # outside the list are rejected at startup (a typo must not silently
+    # fall back to Ollama).
+    llm_providers: str = "ollama"
+    default_llm_provider: str = "ollama"
     question_model_profile: str = "qwen35b-moe"
     question_model: str = "qwen3.6-35b-a3b"
     # RAGAS judge served by llama.cpp: a different model family from the
@@ -37,6 +52,34 @@ class Settings(BaseSettings):
     neo4j_user: str = "neo4j"
     neo4j_password: str = "raglab_neo4j"
     neo4j_database: str = "neo4j"
+
+    # Structured graph (phase 9.9): built from each index run's chunks right
+    # after indexing when Neo4j answers (skipped otherwise, the index stays
+    # usable). graph_profiles forces a profile per corpus, e.g.
+    # RAGLAB_GRAPH_PROFILES='{"bench_lexml_pt": "laws"}'; "auto" otherwise.
+    graph_build_on_index: bool = True
+    graph_profiles: dict[str, str] = Field(default_factory=dict)
+    graph_timeout_seconds: float = 3.0
+    # After Neo4j failed to answer, skip it for this long before trying again.
+    graph_retry_seconds: float = 30.0
+    # Graph retrieval branch (phase 9.9b), off until measured: seeds are the
+    # article the question cites and the articles of the best
+    # graph_seed_chunks dense / BM25 hits (at most graph_seed_articles);
+    # follow CITES one hop, graph_max_per_seed cited articles per seed,
+    # graph_max_articles in all, graph_chunks_per_article chunks each. RRF
+    # weight graph_weight (dense / BM25 keep theirs); after re-ranking, up to
+    # graph_group_max cited passages are kept right after the citing one.
+    graph_retrieval: bool = False
+    graph_seed_chunks: int = 10
+    graph_seed_articles: int = 10
+    graph_max_per_seed: int = 3
+    graph_max_articles: int = 12
+    graph_chunks_per_article: int = 2
+    graph_weight: float = 0.5
+    graph_group_max: int = 2
+    # Phase-8 entity store (chunks + LLM/spaCy entities in Neo4j), never
+    # measured: its Expert pages are hidden unless this flag is on.
+    entity_graph_enabled: bool = False
 
     entity_extraction_engine: str = "llm"
     entity_spacy_model: str = "xx_ent_wiki_sm"
@@ -56,6 +99,12 @@ class Settings(BaseSettings):
     # raglab.retrieval.citations). Measured in citations-v1: LexML questions
     # citing an article 0.093 -> 0.753 Recall@5 (+64/-0), no other change.
     citation_resolver: bool = True
+    # Article versions retrieval may use (phase 9.10, docs/versions.md):
+    # in_force (today, or the date the question asks about), all, or
+    # as_of=YYYY-MM-DD. Acts only on corpora with version metadata
+    # (Légifrance) or repeal markers (LexML). Shipped as `all` (every
+    # version, as before 9.10) until the GPU measurement shows in_force helps.
+    versions_default: str = "all"
     default_language: str = "fr"
     bm25_k1: float = 1.2
     bm25_b: float = 0.75
@@ -84,6 +133,10 @@ class Settings(BaseSettings):
     lexml_documents_dir: Path = Field(default_factory=lambda: Path("data/lexml/documents"))
     lexml_benchmark_dir: Path = Field(default_factory=lambda: Path("data/lexml/benchmark"))
     lexml_fulltext_dir: Path = Field(default_factory=lambda: Path("data/lexml/fulltext"))
+    # French codes with their version history (`raglab legifrance fetch`).
+    legifrance_dir: Path = Field(default_factory=lambda: Path("data/legifrance"))
+    # EU acts from EUR-Lex / CELLAR (`raglab eurlex fetch`).
+    eurlex_dir: Path = Field(default_factory=lambda: Path("data/eurlex"))
 
     generation_model: str = "qwen2.5:7b"
     generation_temperature: float = 0.1
@@ -159,6 +212,44 @@ class Settings(BaseSettings):
     api_rate_limit_requests: int = 0
     api_rate_limit_window_seconds: float = 60.0
     ready_timeout_seconds: float = 3.0
+    # Prometheus endpoint `/metrics` and the request-counting middleware.
+    metrics_enabled: bool = True
+
+    @field_validator("llm_providers")
+    @classmethod
+    def _normalize_llm_providers(cls, value: str) -> str:
+        names: list[str] = []
+        for raw in value.split(","):
+            name = raw.strip().lower()
+            if not name or name in names:
+                continue
+            if name not in KNOWN_LLM_PROVIDERS:
+                raise ValueError(
+                    f"RAGLAB_LLM_PROVIDERS: fournisseur inconnu {name!r} (attendus : {', '.join(KNOWN_LLM_PROVIDERS)})"
+                )
+            names.append(name)
+        if not names:
+            raise ValueError("RAGLAB_LLM_PROVIDERS doit lister au moins un fournisseur")
+        return ",".join(names)
+
+    @field_validator("default_llm_provider")
+    @classmethod
+    def _normalize_default_llm_provider(cls, value: str) -> str:
+        return value.strip().lower()
+
+    @model_validator(mode="after")
+    def _default_provider_enabled(self) -> Self:
+        if self.default_llm_provider not in self.llm_provider_names:
+            raise ValueError(
+                f"RAGLAB_DEFAULT_LLM_PROVIDER={self.default_llm_provider!r} n'est pas dans "
+                f"RAGLAB_LLM_PROVIDERS ({self.llm_providers})"
+            )
+        return self
+
+    @property
+    def llm_provider_names(self) -> list[str]:
+        """Enabled generation providers, in the order of RAGLAB_LLM_PROVIDERS."""
+        return [name for name in self.llm_providers.split(",") if name]
 
 
 @lru_cache(maxsize=1)

@@ -1,8 +1,8 @@
 import { data, expect, json, test } from "./fixtures/mock-api";
 
 test("Retrieval page: a query lists chunk cards with file name and score", async ({ page }) => {
-  await page.goto("/expert/query");
-  await expect(page.getByRole("heading", { name: "Retrieval", level: 2 })).toBeVisible();
+  await page.goto("/workshop/retrieval");
+  await expect(page.getByRole("heading", { name: "Interrogation", level: 2 })).toBeVisible();
 
   await page
     .locator(".form-row")
@@ -20,7 +20,7 @@ test("Retrieval page: a query lists chunk cards with file name and score", async
     await expect(card).toBeVisible();
     await expect(card).toContainText(`score ${chunk.score.toFixed(3)}`);
   }
-  await expect(page.getByRole("heading", { name: "Réponse" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Réponse", exact: true })).toBeVisible();
 });
 
 test("Retrieval page: hybrid mode sends its settings and shows dense / BM25 / RRF per chunk", async ({ page, api }) => {
@@ -39,11 +39,13 @@ test("Retrieval page: hybrid mode sends its settings and shows dense / BM25 / RR
       ],
     })(route);
   });
-  await page.goto("/expert/query");
+  await page.goto("/workshop/retrieval");
 
   const row = (label: RegExp) => page.locator(".form-row").filter({ has: page.locator("label", { hasText: label }) });
   await row(/^Question$/).locator("textarea").fill(data.QUESTION);
-  await row(/^Mode de retrieval$/).locator("select").selectOption("hybrid");
+  // Custom listbox: open it, then pick the option by its label.
+  await row(/^Mode de recherche$/).getByRole("combobox").click();
+  await page.getByRole("option", { name: "hybrid (RRF)" }).click();
   await row(/^Poids du BM25$/).locator("input").fill("0.3");
   await page.getByRole("button", { name: "Exécuter" }).click();
 
@@ -68,11 +70,11 @@ test("Retrieval page: the citations option pins the cited article and says which
       retrieved_chunks: [{ ...first, score: 1, citation_match: true }, { ...second, rank: 2 }],
     })(route);
   });
-  await page.goto("/expert/query");
+  await page.goto("/workshop/retrieval");
 
   const row = (label: RegExp) => page.locator(".form-row").filter({ has: page.locator("label", { hasText: label }) });
   await row(/^Question$/).locator("textarea").fill("O que dispõe o art. 49 da Lei nº 8.078?");
-  await row(/^Citations juridiques$/).getByRole("checkbox").check();
+  await row(/^Références d'articles de loi$/).getByRole("checkbox").check();
   await page.getByRole("button", { name: "Exécuter" }).click();
 
   await expect(page.getByText("Citation reconnue : art. 49 — Lei nº 8078")).toBeVisible();
@@ -83,8 +85,8 @@ test("Retrieval page: the citations option pins the cited article and says which
 });
 
 test("Benchmarks page: history table renders the experiment runs", async ({ page }) => {
-  await page.goto("/expert/benchmarks");
-  await page.getByRole("button", { name: "Historique" }).click();
+  await page.goto("/workshop/evaluation");
+  await page.getByRole("tab", { name: "Historique" }).click();
 
   const table = page.getByRole("table");
   await expect(table.getByRole("columnheader", { name: "R@5" })).toBeVisible();

@@ -81,9 +81,13 @@ class CrossEncoderScorer:
 
         with self._lock:
             self._ensure_loaded()
-            scores: list[float] = []
-            for start in range(0, len(passages), self.batch_size):
-                batch = list(passages[start : start + self.batch_size])
+            # Batches are padded to their longest pair: grouping passages of
+            # similar length cuts ~20% of the work for identical scores.
+            order = sorted(range(len(passages)), key=lambda position: len(passages[position]))
+            scores = [0.0] * len(passages)
+            for start in range(0, len(order), self.batch_size):
+                positions = order[start : start + self.batch_size]
+                batch = [passages[position] for position in positions]
                 encoded = self._tokenizer(
                     [query] * len(batch),
                     batch,
@@ -97,7 +101,8 @@ class CrossEncoderScorer:
                 encoded = {key: value.to(self.device) for key, value in encoded.items()}
                 with torch.inference_mode():
                     logits = self._model(**encoded).logits.view(-1).float()
-                scores.extend(logits.cpu().tolist())
+                for position, score in zip(positions, logits.cpu().tolist(), strict=True):
+                    scores[position] = score
             return scores
 
     def release(self) -> None:
@@ -236,6 +241,25 @@ def _reranker_key(settings: Settings) -> tuple:
 
 
 @lru_cache(maxsize=8)
+def rerank_gpu_status(device: str) -> str:
+    """Why the re-ranker can or cannot use a GPU, for the UI.
+
+    "ok": a CUDA device torch can use; "device_cpu": RAGLAB_RERANK_DEVICE is
+    not a CUDA device (GPU off by configuration, torch is not imported);
+    "torch_missing": the API environment has no torch; "cuda_unavailable":
+    torch sees no CUDA device (no GPU, a CPU-only torch build, or a driver
+    the API process cannot reach). Only device availability is probed: no
+    memory is allocated, so a GPU busy with another job still reads "ok".
+    """
+    if not device.startswith("cuda"):
+        return "device_cpu"
+    try:
+        import torch
+    except ImportError:
+        return "torch_missing"
+    return "ok" if torch.cuda.is_available() else "cuda_unavailable"
+
+
 def rerank_gpu_available(device: str) -> bool:
     """True when the configured rerank device is a CUDA device torch can use.
 
@@ -243,13 +267,7 @@ def rerank_gpu_available(device: str) -> bool:
     several seconds on CPU; the query path checks this before re-ranking by
     default (see `QueryService.retrieve`).
     """
-    if not device.startswith("cuda"):
-        return False
-    try:
-        import torch
-    except ImportError:
-        return False
-    return bool(torch.cuda.is_available())
+    return rerank_gpu_status(device) == "ok"
 
 
 def get_reranker(settings: Settings | None = None) -> Reranker:

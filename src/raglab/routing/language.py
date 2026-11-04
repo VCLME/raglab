@@ -1,10 +1,10 @@
-"""Lightweight fr / pt language detection: function words and diacritics.
+"""Lightweight fr / pt / en language detection: function words and diacritics.
 
 No model and no dependency. Each language gets one point per function word
 of the question found in its list and a point per diacritic or letter group
 only that language uses. Words shared by French and Portuguese (de, que, a...)
-are left out of both lists, so they never tip the balance. English markers
-only serve to answer "other".
+are left out of both lists, so they never tip the balance. English is
+detected from its function words only (the EU corpus has English versions).
 """
 
 from __future__ import annotations
@@ -69,11 +69,11 @@ def lexical_scores(text: str) -> dict[str, float]:
     fr = sum(token in _FR_WORDS for token in tokens) + sum(len(p.findall(lowered)) for p in _FR_PATTERNS)
     pt = sum(token in _PT_WORDS for token in tokens) + sum(len(p.findall(lowered)) for p in _PT_PATTERNS)
     en = sum(token in _EN_WORDS for token in tokens)
-    return {"fr": float(fr), "pt": float(pt), "other": float(en)}
+    return {"fr": float(fr), "pt": float(pt), "en": float(en)}
 
 
 def detect_language(text: str, *, fallback: dict[str, float] | None = None) -> LanguageDecision:
-    """Pick fr, pt or other.
+    """Pick fr, pt, en, or other when the text has no marker and no fallback.
 
     `fallback` maps language -> similarity to its nearest labelled example; it
     decides when the text has no marker at all (a single word like "Beleza").

@@ -12,8 +12,10 @@ from raglab.domain.enums import RetrievalMode
 from raglab.domain.schemas import RetrievedChunk
 from raglab.experiments.routing import (
     ABSTENTION_PATH,
+    IN_SCOPE_SETS,
     InScopeSet,
     abstention_metrics,
+    available_sets,
     calibrated_thresholds,
     candidate_points,
     intent_confusion,
@@ -109,7 +111,7 @@ def _clear_caches():
         ("Qual é o prazo de prescrição previsto na lei?", "pt"),
         ("Não encontrei a informação.", "pt"),
         ("D'accord, je comprends.", "fr"),
-        ("Which law sets the tax rate?", "other"),
+        ("Which law sets the tax rate?", "en"),
     ],
 )
 def test_detect_language_from_function_words(text, expected):
@@ -220,6 +222,7 @@ def test_fallback_answers_follow_the_language_and_intent():
     assert fallback_answer(Intent.DOCUMENTARY, "fr") == "Je ne trouve pas cela dans les documents."
     assert fallback_answer(Intent.OUT_OF_SCOPE, "pt") == "Não encontrei isso nos documentos."
     assert fallback_answer(Intent.DOCUMENTARY, "other") == "Je ne trouve pas cela dans les documents."
+    assert fallback_answer(Intent.OUT_OF_SCOPE, "en") == "I cannot find this in the documents."
     assert "documents indexés" in fallback_answer(Intent.CONVERSATIONAL, "fr")
 
 
@@ -378,9 +381,12 @@ def test_query_with_routing_never_abstains_on_a_cited_law_article(routed_env):
         patch("raglab.retrieval.service.rerank_gpu_available", return_value=True),
         patch("raglab.retrieval.service.find_law_document", return_value="lei-8078"),
         patch("raglab.retrieval.service.article_chunks", return_value=[pinned]),
+        patch("raglab.routing.router.cited_text_in_run", return_value=True),
     ):
         response = service.query(question=question, routing=True, retrieval_mode="hybrid", rerank=True, citations=True)
     assert response.routing.legal_citation == "art. 49 — Lei nº 8078"
+    assert response.routing.legal_citation_found is True
+    assert response.routing.corpus.source == "citation"
     assert response.routing.abstention.abstain is False
     assert response.routing.abstention.override == "legal_citation"
     assert response.answer == "Réponse générée"
@@ -389,6 +395,61 @@ def test_query_with_routing_never_abstains_on_a_cited_law_article(routed_env):
     assert response.rerank is True
     assert response.citation["article_found"] is True
     service.reranker.rerank.assert_called_once()
+
+
+def _cited_in(run_id):
+    return lambda _session, run, _citation: run.id == run_id
+
+
+def test_a_cited_french_code_article_routes_to_the_corpus_holding_it_and_is_answered(routed_env):
+    """The centroids point to LexML (same axes as "loi"); the cited article
+    lives in the other corpus, which wins, and the low score does not decline."""
+    question = "Que dit la loi à l'article L. 221-18 du code de la consommation ?"
+    service = _service([_chunk(0.2)], routing_abstention_threshold=0.8)
+    with (
+        patch("raglab.routing.router.cited_text_in_run", side_effect=_cited_in("run-piaf")),
+        patch("raglab.routing.step.cited_text_in_run", return_value=True),
+    ):
+        response = service.query(question=question, routing=True, citations=False)
+    routing = response.routing
+    assert routing.corpus.suggested_corpus == "piaf"
+    assert routing.corpus.source == "citation"
+    assert service._resolve_index_run.call_args.kwargs["index_run_id"] == "run-piaf"
+    assert routing.legal_citation == "art. L. 221-18 — Code de la consommation"
+    assert routing.abstention.abstain is False
+    assert routing.abstention.override == "legal_citation"
+    assert response.answer == "Réponse générée"
+
+
+def test_a_cited_eu_article_in_english_is_never_declined(routed_env):
+    service = _service([_chunk(0.1)], routing_abstention_threshold=0.8)
+    with (
+        patch("raglab.routing.router.cited_text_in_run", return_value=True),
+        patch("raglab.routing.step.cited_text_in_run", return_value=True),
+    ):
+        response = service.query(question="What does Article 33 GDPR require?", routing=True, citations=False)
+    assert response.routing.language.language == "en"
+    assert response.routing.legal_citation == "Article 33 — GDPR"
+    assert response.routing.abstention.abstain is False
+    assert response.answer == "Réponse générée"
+
+
+def test_a_citation_of_a_text_the_index_does_not_hold_follows_the_normal_rule(routed_env):
+    """A fabricated reference (the abstention set has one) can still be declined."""
+    service = _service([_chunk(0.3)], routing_abstention_threshold=0.8)
+    with (
+        patch("raglab.routing.router.cited_text_in_run", return_value=False),
+        patch("raglab.routing.step.cited_text_in_run", return_value=False),
+    ):
+        response = service.query(question="O que dispõe o art. 7º da Lei nº 99.871, de 2031?", routing=True)
+    routing = response.routing
+    assert routing.legal_citation == "art. 7 — Lei nº 99871 (2031)"
+    assert routing.legal_citation_found is False
+    assert routing.corpus.source == "routed"
+    assert routing.abstention.abstain is True
+    assert routing.abstention.reason == "low_score"
+    assert routing.abstention.override is None
+    assert response.answer == "Não encontrei isso nos documentos."
 
 
 def test_query_with_routing_uses_hybrid_and_rerank_when_it_answers(routed_env):
@@ -463,6 +524,25 @@ def test_abstention_metrics_count_intent_and_score_refusals():
     assert metrics["false_abstention_rate"] == pytest.approx(1 / 3, abs=1e-4)
     # Intent ignored: the conversational question scores 0.86 and gets answered.
     assert abstention_metrics(RECORDS, margin=None, threshold=0.8)["counts"]["tp"] == 1
+
+
+def test_available_sets_skip_missing_questions_and_unrequested_corpora(tmp_path):
+    present = tmp_path / "present.jsonl"
+    present.write_text("", encoding="utf-8")
+    sets = (
+        InScopeSet("a", present, "bench_a", "fr"),
+        InScopeSet("b", present, "bench_b", "pt"),
+        InScopeSet("missing", tmp_path / "missing.jsonl", "bench_c", "en"),
+    )
+    assert [s.name for s in available_sets(sets)] == ["a", "b"]
+    assert [s.name for s in available_sets(sets, ["bench_b", "bench_c"])] == ["b"]
+
+
+def test_default_sets_with_piaf_and_lexml_corpora_are_unchanged():
+    assert [s.name for s in available_sets(IN_SCOPE_SETS, ["bench_piaf_fr", "bench_lexml_pt"])] == [
+        "piaf",
+        "lexml_fulltext",
+    ]
 
 
 def test_offline_evaluation_never_abstains_on_a_legal_citation():

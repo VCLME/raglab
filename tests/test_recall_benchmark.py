@@ -342,6 +342,105 @@ def test_llamacpp_judge_grades_in_a_second_pass_inside_the_server(
     assert result["judge"].startswith("llamacpp:")
 
 
+@patch("raglab.experiments.recall.LocalLLMServer")
+@patch("raglab.experiments.recall.AnswerRelevancyJudge")
+@patch("raglab.experiments.recall.AnswerCorrectnessJudge")
+@patch("raglab.experiments.recall.FaithfulnessJudge")
+def test_llamacpp_generator_writes_answers_in_its_own_pass_before_the_judge(
+    faith_cls, corr_cls, relevancy_cls, server_cls, tmp_path: Path
+):
+    from raglab.experiments.ragas import JudgeConfig
+    from raglab.experiments.recall import GeneratorConfig
+
+    ds = tmp_path / "gt.jsonl"
+    ds.write_text(
+        "".join(
+            json.dumps({"id": f"c{i}", "question": f"Q{i}?", "expected_file_names": ["a.txt"]}) + "\n" for i in range(3)
+        ),
+        encoding="utf-8",
+    )
+    events: list[str] = []
+    for cls in (faith_cls, corr_cls, relevancy_cls):
+        cls.return_value.score.side_effect = lambda **kwargs: (
+            events.append("judge") or SimpleNamespace(score=1.0, reason="")
+        )
+    profiles = []
+
+    def server(settings, *, profile):
+        profiles.append(profile)
+        context = MagicMock()
+        context.__enter__.side_effect = lambda: events.append(f"up:{profile}")
+        context.__exit__.side_effect = lambda *args: events.append(f"down:{profile}")
+        return context
+
+    server_cls.side_effect = server
+    chunks = [
+        RetrievedChunk(
+            chunk_id=f"k{i}",
+            document_id="d",
+            file_name="a.txt",
+            source_path="a.txt",
+            chunk_text=f"t{i}",
+            score=1.0,
+            rank=i,
+        )
+        for i in range(1, 11)
+    ]
+
+    class Answerer:
+        last_stats = {"output_tokens": 7.0}
+
+        def generate_answer(self, question, context, model=None):
+            events.append("generate")
+            assert len(context) == 5  # the production top-k
+            return f"answer to {question}"
+
+    class Recording:
+        def __init__(self):
+            self.generate_flags = []
+            self.providers = []
+
+        def query(self, **kwargs):
+            self.generate_flags.append(kwargs["generate_answer"])
+            events.append("query")
+            return SimpleNamespace(retrieved_chunks=chunks, index_run_id="r", answer=None, timings_ms={"embed": 1.0})
+
+        def generator_for(self, provider):
+            self.providers.append(provider)
+            return Answerer()
+
+    service = RecallBenchmarkService(session=MagicMock())
+    service.query_service = Recording()
+    with (
+        patch("raglab.experiments.recall.create_experiment_run", return_value=SimpleNamespace(id="e", config_json={})),
+        patch("raglab.experiments.recall.store_experiment_result"),
+        patch("raglab.experiments.recall.complete_experiment_run"),
+    ):
+        result = service.run(
+            corpus_name="demo",
+            strategy=ChunkingStrategy.TRADITIONAL,
+            dataset_path=ds,
+            k_values=(1, 5, 10),
+            compute_ragas=True,
+            ragas_case_limit=2,
+            judge=JudgeConfig(backend="llamacpp", profile="judge-profile"),
+            generator=GeneratorConfig(provider="llamacpp", profile="writer-profile"),
+        )
+
+    # Retrieval never generates; the writer runs in its own server, then the judge in another.
+    assert service.query_service.generate_flags == [False, False, False]
+    assert service.query_service.providers == ["llamacpp"]
+    assert events[:3] == ["query", "query", "query"]
+    assert events[3:7] == ["up:writer-profile", "generate", "generate", "down:writer-profile"]
+    assert events[7] == "up:judge-profile" and events[-1] == "down:judge-profile"
+    assert profiles == ["writer-profile", "judge-profile"]
+    answers = [detail["answer"] for detail in result["details"]]
+    assert answers == ["answer to Q0?", "answer to Q1?", None]
+    assert result["details"][0]["generation_stats"] == {"output_tokens": 7.0}
+    assert "generation" in result["details"][0]["timings_ms"]
+    assert result["summary"]["faithfulness_judged"] == 2
+
+
 @patch("raglab.experiments.recall.AnswerRelevancyJudge")
 @patch("raglab.experiments.recall.AnswerCorrectnessJudge")
 @patch("raglab.experiments.recall.FaithfulnessJudge")

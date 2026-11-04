@@ -1,8 +1,12 @@
 from __future__ import annotations
 
 from enum import StrEnum
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, Field, PrivateAttr
+
+if TYPE_CHECKING:
+    from raglab.retrieval.citations import Citation
 
 
 class Intent(StrEnum):
@@ -46,7 +50,8 @@ class CorpusDecision(BaseModel):
     candidates: list[CorpusCandidate] = Field(default_factory=list)
     # Best score minus second best (0 with a single candidate).
     margin: float = 0.0
-    # "routed" (chosen by centroids), "requested" (caller's choice kept) or
+    # "routed" (chosen by centroids), "citation" (best-scored corpus holding
+    # the text the question cites), "requested" (caller's choice kept) or
     # "none" (no compatible index).
     source: str = "routed"
 
@@ -66,8 +71,12 @@ class RoutingDecision(BaseModel):
     language: LanguageDecision
     intent: IntentDecision
     corpus: CorpusDecision
-    # Label of the law cited by the question ("art. 49 — Lei nº 8078"), if any.
+    # Label of the text cited by the question ("art. 49 — Lei nº 8078",
+    # "art. L. 221-18 — Code de la consommation", "Article 32 — GDPR").
     legal_citation: str | None = None
+    # Whether the queried index holds the cited text: only then is the
+    # question never declined.
+    legal_citation_found: bool = False
     abstention: AbstentionDecision | None = None
     # True when the answer comes from the documents (generation runs).
     answer_from_documents: bool = True
@@ -77,7 +86,14 @@ class RoutingDecision(BaseModel):
     # Question vector, reused by retrieval on the routed index run; kept out
     # of the API payload.
     _query_embedding: list[float] | None = PrivateAttr(default=None)
+    # Parsed citation (`raglab.retrieval.citations.Citation`); typed Any to
+    # keep this module free of the retrieval imports.
+    _citation: Any = PrivateAttr(default=None)
 
     @property
     def query_embedding(self) -> list[float] | None:
         return self._query_embedding
+
+    @property
+    def citation(self) -> Citation | None:
+        return self._citation

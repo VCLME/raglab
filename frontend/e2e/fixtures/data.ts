@@ -4,11 +4,14 @@
  * with the frontend's own API types so a drift fails `tsc` on the e2e project.
  */
 import type {
+  GraphStatus,
+  OllamaStatus,
   ConfigResponse,
   CorpusSummary,
   ExperimentRunSummary,
   HealthResponse,
   IndexRunSummary,
+  LlmModelsResponse,
   OllamaModelsResponse,
   QueryResponse,
   RetrievedChunk,
@@ -61,6 +64,7 @@ export const corpora: CorpusSummary[] = [
     description: "Constitution de la Ve République",
     documents_count: 3,
     index_runs_count: 1,
+    features: { legal_citations: true },
   },
 ];
 
@@ -89,6 +93,48 @@ export const ollamaModels: OllamaModelsResponse = {
   models: [
     { name: "qwen2.5:7b", size: 4683087332, modified_at: "2026-10-01T10:00:00Z", digest: "845dbda0ea48" },
   ],
+};
+
+export const llmModels: LlmModelsResponse = {
+  default_provider: "ollama",
+  default_model: "qwen2.5:7b",
+  providers: [
+    {
+      name: "ollama",
+      label: "Ollama",
+      kind: "ollama",
+      base_url: "http://localhost:11434",
+      available: true,
+      error: null,
+      models: ["qwen2.5:7b"],
+    },
+    {
+      name: "llamacpp",
+      label: "llama.cpp",
+      kind: "openai",
+      base_url: "http://127.0.0.1:8080/v1",
+      available: true,
+      error: null,
+      models: ["gemma4-26b-a4b"],
+    },
+  ],
+};
+
+export const ollamaStatus: OllamaStatus = {
+  base_url: "http://localhost:11434",
+  reachable: true,
+  models_count: 1,
+  default_generation_model: "qwen2.5:7b",
+  default_generation_model_installed: true,
+};
+
+/** Graph of the default index run, built after it: the Graph step reads as done. */
+export const graphStatus: GraphStatus = {
+  index_run_id: INDEX_RUN_ID,
+  corpus: CORPUS,
+  available: true,
+  graph: { status: "completed", profile: "laws", built_at: "2026-10-30T09:20:00+00:00", duration_ms: 812, stats: {} },
+  counts: { nodes: { Document: 3, Article: 89 }, relationships: { "CITES->Article": 41 } },
 };
 
 export const suggestions: string[] = ["Quelle est la durée du mandat présidentiel ?"];

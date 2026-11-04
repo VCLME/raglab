@@ -5,58 +5,61 @@ import { get } from "../api/client";
 import type { HealthResponse } from "../api/types";
 import { useEducationalMode } from "../hooks/useEducationalMode";
 import { ChatIcon, FlaskIcon, GraduationIcon } from "./Icon";
-import { ApiKeyControl } from "./ApiKeyControl";
 import { LanguageSwitcher } from "./LanguageSwitcher";
+import { SlideIndicator } from "./SlideIndicator";
 
 export function TopBar() {
   const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
-  const isExpert = location.pathname.startsWith("/expert");
+  const isWorkshop = location.pathname.startsWith("/workshop");
   const [health, setHealth] = useState<HealthResponse | null>(null);
+  const [checked, setChecked] = useState(false);
   const [educational, setEducational] = useEducationalMode();
 
   useEffect(() => {
     let mounted = true;
-    const fetchOnce = () =>
+    let timer: ReturnType<typeof setTimeout>;
+    // Every 15 s, or every 3 s while the API does not answer.
+    const poll = () =>
       get<HealthResponse>("/api/health")
         .then((h) => {
-          if (mounted) setHealth(h);
+          if (!mounted) return;
+          setHealth(h);
+          timer = setTimeout(poll, 15000);
         })
         .catch(() => {
-          if (mounted) setHealth(null);
+          if (!mounted) return;
+          setHealth(null);
+          timer = setTimeout(poll, 3000);
+        })
+        .finally(() => {
+          if (mounted) setChecked(true);
         });
-    fetchOnce();
-    const id = setInterval(fetchOnce, 15000);
+    poll();
     return () => {
       mounted = false;
-      clearInterval(id);
+      clearTimeout(timer);
     };
   }, []);
 
-  const dotClass = !health
-    ? "err"
-    : health.status === "ok"
-    ? "ok"
-    : health.status === "degraded"
-    ? "warn"
-    : "err";
-
-  const dotLabel = !health
-    ? t("topbar.api_unreachable")
-    : t("topbar.api_label", {
-        api: health.api,
-        postgres: health.postgres,
-        ollama: health.ollama,
-      });
+  // A healthy API needs no indicator: only trouble is shown, in words.
+  // Neo4j is optional (graph pages only), so it does not count here.
+  const degraded = health !== null && (health.postgres !== "ok" || health.ollama !== "ok");
+  const trouble = !checked ? null : !health ? "down" : degraded ? "degraded" : null;
+  const troubleTitle = health
+    ? t("topbar.api_label", { api: health.api, postgres: health.postgres, ollama: health.ollama })
+    : undefined;
 
   return (
     <header className="topbar">
-      <div className="brand">
-        <span className={`dot ${dotClass}`} title={dotLabel} role="img" aria-label={dotLabel} />
-        {t("topbar.brand")}
-      </div>
-      <div className="inline" style={{ gap: 10 }}>
+      <div className="brand">{t("topbar.brand")}</div>
+      <div className="topbar-actions">
+        {trouble ? (
+          <span className={`api-down${trouble === "degraded" ? " warn" : ""}`} role="status" title={troubleTitle}>
+            {trouble === "down" ? t("topbar.api_down") : t("topbar.api_degraded")}
+          </span>
+        ) : null}
         <button
           className={`edu-toggle${educational ? " on" : ""}`}
           aria-pressed={educational}
@@ -66,28 +69,30 @@ export function TopBar() {
           <GraduationIcon />
           <span className="edu-toggle-label">{t("topbar.edu")}</span>
         </button>
-        <ApiKeyControl />
         <LanguageSwitcher />
         <div className="mode-switch" role="tablist" aria-label="Mode">
+          <SlideIndicator activeKey={isWorkshop} variant="pill" />
           <button
             role="tab"
-            aria-selected={!isExpert}
-            className={!isExpert ? "active" : ""}
+            aria-selected={!isWorkshop}
+            className={!isWorkshop ? "active" : ""}
+            data-active={!isWorkshop}
             onClick={() => navigate("/")}
             title={t("topbar.chat_title")}
           >
             <ChatIcon />
-            {t("topbar.chat")}
+            <span className="mode-label">{t("topbar.chat")}</span>
           </button>
           <button
             role="tab"
-            aria-selected={isExpert}
-            className={isExpert ? "active" : ""}
-            onClick={() => navigate("/expert")}
-            title={t("topbar.expert_title")}
+            aria-selected={isWorkshop}
+            className={isWorkshop ? "active" : ""}
+            data-active={isWorkshop}
+            onClick={() => navigate("/workshop")}
+            title={t("topbar.workshop_title")}
           >
             <FlaskIcon />
-            {t("topbar.expert")}
+            <span className="mode-label">{t("topbar.workshop")}</span>
           </button>
         </div>
       </div>

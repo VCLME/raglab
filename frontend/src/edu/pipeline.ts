@@ -10,8 +10,10 @@ export const DIAGRAM_NODES = [
   "embed",
   "retrieval",
   "lexical",
+  "graph",
   "fusion",
   "rerank",
+  "versions",
   "prompt",
   "generation",
   "answer",
@@ -108,6 +110,15 @@ export function failPipeline(state: PipelineState): PipelineState {
   return { ...state, nodes };
 }
 
+/** The user stopped the request: stages still running go back to waiting. */
+export function stopPipeline(state: PipelineState): PipelineState {
+  const nodes = { ...state.nodes };
+  DIAGRAM_NODES.forEach((id) => {
+    if (nodes[id].status === "running") nodes[id] = { status: "idle" };
+  });
+  return { ...state, nodes };
+}
+
 /**
  * Without stage events (API without streaming), rebuild what we can from the
  * per-stage durations of the response. Stages missing from timings_ms are
@@ -120,7 +131,7 @@ function fromTimings(state: PipelineState, result: QueryResponse): PipelineState
   if (timings.dense !== undefined) durations.retrieval = timings.dense;
   else if (timings.retrieval !== undefined && timings.lexical === undefined)
     durations.retrieval = timings.retrieval;
-  (["routing", "lexical", "fusion", "rerank", "generation"] as const).forEach((key) => {
+  (["routing", "lexical", "graph", "fusion", "rerank", "versions", "generation"] as const).forEach((key) => {
     if (timings[key] !== undefined) durations[key] = timings[key];
   });
   const planned = Object.keys(durations);

@@ -1,9 +1,12 @@
 """`raglab bench all`: rebuild every benchmark number from a single command.
 
-For each suite (PIAF in French, LexML full text in Portuguese) the runner:
+For each suite (PIAF in French, LexML full text in Portuguese, and on
+request the Code de la consommation with its version history or the EU
+compliance acts in three languages) the runner:
 
 1. makes sure the corpus is on disk (downloads / collects it otherwise) and,
-   for LexML, that every text still matches the frozen manifest;
+   for LexML, the French code and the EU acts, that every text still matches
+   the frozen manifest;
 2. ingests and indexes it in a dedicated corpus (`bench_*`), reusing a
    compatible index run when nothing changed;
 3. runs the recall benchmark on the frozen question set, generating and
@@ -27,7 +30,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from importlib import metadata
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import requests
 from sqlalchemy import text
@@ -36,6 +39,9 @@ from raglab.benchmarks.compare import case_rows
 from raglab.config import Settings, get_settings
 from raglab.domain.enums import ChunkingStrategy, RetrievalMode
 from raglab.experiments.ragas import JudgeConfig
+
+if TYPE_CHECKING:
+    from raglab.experiments.recall import GeneratorConfig
 from raglab.logging_utils import log_event
 
 LOGGER = logging.getLogger(__name__)
@@ -49,9 +55,13 @@ class Suite:
     corpus_dir: Path
     dataset_path: Path
     manifest_path: Path | None = None
+    # Run by `raglab bench all` without --suite. The French code is opt-in:
+    # it doubles the GPU time of a full run.
+    default: bool = True
 
 
 def default_suites(settings: Settings, repo_root: Path) -> list[Suite]:
+    """Suites of `raglab bench all` without `--suite` (the frozen comparison)."""
     return [
         Suite(
             name="piaf",
@@ -67,6 +77,50 @@ def default_suites(settings: Settings, repo_root: Path) -> list[Suite]:
             corpus_dir=settings.lexml_fulltext_dir / "corpus",
             dataset_path=repo_root / "benchmarks" / "lexml_fulltext" / "ground_truth.jsonl",
             manifest_path=repo_root / "benchmarks" / "lexml_fulltext" / "corpus_manifest.json",
+        ),
+        Suite(
+            name="legi_consommation",
+            language="fr",
+            corpus_name="bench_legi_consommation_fr",
+            corpus_dir=settings.legifrance_dir / "consommation" / "corpus",
+            dataset_path=repo_root / "benchmarks" / "legi_consommation" / "ground_truth.jsonl",
+            manifest_path=repo_root / "benchmarks" / "legi_consommation" / "corpus_manifest.json",
+            default=False,
+        ),
+        # Version traps on the Code de la consommation (9.10): questions whose
+        # naive answer comes from a repealed or rewritten version; run when
+        # named, `--suite legi_versions`.
+        Suite(
+            name="legi_versions",
+            language="fr",
+            corpus_name="bench_legi_consommation_fr",
+            corpus_dir=settings.legifrance_dir / "consommation" / "corpus",
+            dataset_path=repo_root / "benchmarks" / "legi_versions" / "ground_truth.jsonl",
+            manifest_path=repo_root / "benchmarks" / "legi_consommation" / "corpus_manifest.json",
+            default=False,
+        ),
+        # EU compliance acts (GDPR, AI Act, DORA, NIS 2 and the acts that
+        # complete them) in French, English and Portuguese: run when named,
+        # `--suite eurlex_compliance`.
+        Suite(
+            name="eurlex_compliance",
+            language="multi",
+            corpus_name="bench_eurlex_compliance",
+            corpus_dir=settings.eurlex_dir / "compliance" / "corpus",
+            dataset_path=repo_root / "benchmarks" / "eurlex_compliance" / "ground_truth.jsonl",
+            manifest_path=repo_root / "benchmarks" / "eurlex_compliance" / "corpus_manifest.json",
+            default=False,
+        ),
+        # Questions whose answer is in the article cited by another (9.9b), on
+        # the LexML corpus: run when named, `--suite lexml_references`.
+        Suite(
+            name="lexml_references",
+            language="pt",
+            corpus_name="bench_lexml_pt",
+            corpus_dir=settings.lexml_fulltext_dir / "corpus",
+            dataset_path=repo_root / "benchmarks" / "lexml_references" / "ground_truth.jsonl",
+            manifest_path=repo_root / "benchmarks" / "lexml_fulltext" / "corpus_manifest.json",
+            default=False,
         ),
     ]
 
@@ -93,12 +147,20 @@ def _ensure_corpus(suite: Suite, settings: Settings) -> None:
         from raglab.benchmarks.piaf import PIAFLoader
 
         PIAFLoader().download(suite.corpus_dir.parent, limit=500, sample_seed=42)
-    elif suite.name == "lexml_fulltext":
+    elif suite.name in ("lexml_fulltext", "lexml_references"):
         from raglab.lexml.fulltext import FullTextCollector
 
         FullTextCollector(settings).collect(
             output_dir=suite.corpus_dir.parent, years=range(1988, 2025), per_year=7, seed=42
         )
+    elif suite.name in ("legi_consommation", "legi_versions"):
+        from raglab.legifrance.collector import CodeCollector
+
+        CodeCollector(settings).collect(code="consommation", output_dir=suite.corpus_dir.parent)
+    elif suite.name == "eurlex_compliance":
+        from raglab.eurlex.collector import EurlexCollector
+
+        EurlexCollector(settings).collect(output_dir=suite.corpus_dir.parent)
     else:
         raise ValueError(f"Corpus absent et pas de recette pour le produire: {suite.corpus_dir}")
 
@@ -237,12 +299,20 @@ def run_suite(
     rrf_k: int | None = None,
     rerank: bool | None = None,
     citations: bool | None = None,
+    graph: bool | None = None,
+    versions: str | None = None,
+    generator: GeneratorConfig | None = None,
 ) -> dict[str, Any]:
     from raglab.db import session_scope
     from raglab.experiments.recall import RecallBenchmarkService
     from raglab.indexing.service import IndexingService
     from raglab.ingestion.service import IngestionService
 
+    if not suite.dataset_path.exists():
+        raise RuntimeError(
+            f"Pas de jeu de questions pour la suite {suite.name} ({suite.dataset_path}). "
+            "Voir docs/benchmarks/protocole.md pour le generer."
+        )
     _ensure_corpus(suite, settings)
     problems = verify_manifest(suite.corpus_dir, suite.manifest_path) if suite.manifest_path else []
     if problems:
@@ -276,6 +346,14 @@ def run_suite(
             {"name": suite.corpus_name},
         ).scalar_one()
     log_event(LOGGER, logging.INFO, "bench.suite.indexed", suite=suite.name, ingestion=ingestion, indexing=indexing)
+    graph_build: dict[str, Any] | None = None
+    if graph or (graph is None and settings.graph_retrieval):
+        from raglab.graph.structured import ensure_graph
+
+        # A reused index run may predate its graph or the current rules.
+        with session_scope() as session:
+            graph_build = ensure_graph(session, str(indexing["index_run_id"]), settings=settings)
+        log_event(LOGGER, logging.INFO, "bench.suite.graph", suite=suite.name, status=graph_build.get("status"))
 
     with session_scope() as session:
         service = RecallBenchmarkService(session, settings)
@@ -295,6 +373,9 @@ def run_suite(
                 rrf_k=rrf_k,
                 rerank=rerank,
                 citations=citations,
+                graph=graph,
+                versions=versions,
+                generator=generator,
             )
         finally:
             service.close()
@@ -311,8 +392,14 @@ def run_suite(
         "rrf_k": report.get("rrf_k"),
         "rerank": report.get("rerank"),
         "citations": report.get("citations"),
+        "graph": report.get("graph"),
+        "graph_notices": report.get("graph_notices"),
+        "versions": report.get("versions"),
+        **({"graph_build": graph_build.get("status")} if graph_build else {}),
         "summary": report["summary"],
         "by_type": report.get("by_type") or {},
+        **({"by_split": report["by_split"]} if report.get("by_split") else {}),
+        **({"by_type_heldout": report["by_type_heldout"]} if report.get("by_type_heldout") else {}),
         "report_path": report["report_path"],
         "experiment_run_id": report["experiment_run_id"],
         # Per-question outcomes, so two runs can be compared question by
@@ -336,6 +423,9 @@ def run_all(
     rrf_k: int | None = None,
     rerank: bool | None = None,
     citations: bool | None = None,
+    graph: bool | None = None,
+    versions: str | None = None,
+    generator: GeneratorConfig | None = None,
 ) -> dict[str, Any]:
     from raglab.db import initialize_database, session_scope
 
@@ -345,7 +435,11 @@ def run_all(
     initialize_database()
     with session_scope() as session:
         env = environment_report(settings, session, judge if ragas_limit else None)
-    selected = [suite for suite in default_suites(settings, repo_root) if not suites or suite.name in suites]
+    known = default_suites(settings, repo_root)
+    unknown = sorted(set(suites or []) - {suite.name for suite in known})
+    if unknown:
+        raise ValueError(f"Suite inconnue: {', '.join(unknown)}. Suites: {', '.join(s.name for s in known)}")
+    selected = [suite for suite in known if suite.name in suites] if suites else [s for s in known if s.default]
     mode = RetrievalMode(retrieval_mode or settings.default_retrieval_mode)
     do_rerank = settings.default_rerank if rerank is None else rerank
     results = [
@@ -361,6 +455,9 @@ def run_all(
             rrf_k=rrf_k,
             rerank=do_rerank,
             citations=citations,
+            graph=graph,
+            versions=versions,
+            generator=generator,
         )
         for suite in selected
     ]
@@ -369,6 +466,9 @@ def run_all(
         "strategy": strategy.value,
         "retrieval_mode": mode.value,
         "rerank": do_rerank,
+        "graph": settings.graph_retrieval if graph is None else graph,
+        "versions": settings.versions_default if versions is None else versions,
+        **({"generator": generator.label(settings)} if generator and generator.deferred else {}),
         **(
             {"rerank_model": settings.rerank_model_name, "rerank_candidates": settings.rerank_candidates}
             if do_rerank
@@ -410,6 +510,11 @@ def _retrieval_label(run: dict[str, Any], suite: dict[str, Any] | None) -> str:
         mode = f"hybrid (w={suite.get('lexical_weight')}, k={suite.get('rrf_k')})"
     if (suite or {}).get("rerank", run.get("rerank")):
         mode += f" + rerank ({run.get('rerank_candidates', '?')})"
+    if (suite or {}).get("graph", run.get("graph")):
+        mode += " + graph"
+    versions = (suite or {}).get("versions") or run.get("versions")
+    if versions and versions != "all":
+        mode += f" + versions={versions}"
     return mode
 
 
@@ -459,17 +564,25 @@ def render_markdown(results: list[dict[str, Any]]) -> str:
         if any(judged):
             lines.append("")
             lines.append(f"Juges RAGAS calculés sur les {max(j or 0 for j in judged)} premières questions.")
-        by_type_runs = [s.get("by_type") if s else None for s in per_run]
-        if any(by_type_runs):
-            types = sorted({t for bt in by_type_runs if bt for t in bt})
+        # Per question type, per split (dev / heldout) for sets that have one,
+        # and per type on the held-out part only (the numbers to report).
+        for key, heading in (
+            ("by_type", "par type"),
+            ("by_split", "par partie du jeu"),
+            ("by_type_heldout", "par type, partie heldout"),
+        ):
+            group_runs = [s.get(key) if s else None for s in per_run]
+            if not any(group_runs):
+                continue
+            groups = sorted({g for runs in group_runs if runs for g in runs})
             lines.append("")
-            lines.append("| Recall@5 / MRR par type | " + " | ".join(labels) + " |")
+            lines.append(f"| Recall@5 / MRR {heading} | " + " | ".join(labels) + " |")
             lines.append("|---|" + "---|" * len(labels))
-            for question_type in types:
+            for group in groups:
                 cells = []
-                for bt in by_type_runs:
-                    row = (bt or {}).get(question_type)
+                for runs in group_runs:
+                    row = (runs or {}).get(group)
                     cells.append(f"{row['recall@5']:.3f} / {row['mrr']:.3f} ({int(row['cases'])})" if row else "—")
-                lines.append(f"| {question_type} | " + " | ".join(cells) + " |")
+                lines.append(f"| {group} | " + " | ".join(cells) + " |")
         lines.append("")
     return "\n".join(lines)

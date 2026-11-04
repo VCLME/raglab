@@ -15,6 +15,7 @@ Every number comes from ``benchmarks/results/*.json``. A stage listed in
 from __future__ import annotations
 
 import argparse
+import hashlib
 import html
 import json
 import os
@@ -24,6 +25,8 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+
+import site_charts
 
 ROOT = Path(__file__).resolve().parent.parent
 SITE_SRC = ROOT / "site"
@@ -169,12 +172,12 @@ def html_table(stages: list[Stage], runs: dict[str, dict[str, Any]]) -> str:
     head = "".join(f'<th scope="col">{esc(name)}</th>' for name, _ in COLUMNS)
     body = []
     for stage, cells in table_rows(stages, runs):
-        status = f' <span class="tag">{esc(stage.status)}</span>' if stage.status else ""
+        status = f'<span class="tag">{esc(stage.status)}</span>' if stage.status else ""
         tds = "".join(
             f'<td class="pending">{esc(c)}</td>' if c == MEASURING else f'<td class="num">{esc(c)}</td>' for c in cells
         )
         body.append(
-            f'<tr><th scope="row">{esc(stage.name)}{status}<span class="change">{esc(stage.change)}</span></th>{tds}</tr>'
+            f'<tr><th scope="row">{status}{esc(stage.name)}<span class="change">{esc(stage.change)}</span></th>{tds}</tr>'
         )
     return (
         '<div class="table-wrap" role="region" aria-label="Before/after results" tabindex="0">'
@@ -278,11 +281,57 @@ def calibration_table() -> str:
     )
 
 
+def gpu_label(run: dict[str, Any] | None) -> str:
+    """'NVIDIA GeForce RTX 3070 Ti Laptop GPU, 8192 MiB, 595.79' -> 'RTX 3070 Ti Laptop GPU, 8 GB'."""
+    gpu = (run or {}).get("environment", {}).get("gpu")
+    if not gpu:
+        return "—"
+    parts = [p.strip() for p in gpu.split(",")]
+    name = parts[0].removeprefix("NVIDIA ").removeprefix("GeForce ")
+    mib = next((p for p in parts[1:] if p.endswith("MiB")), None)
+    return f"{name}, {int(mib.split()[0]) / 1024:.0f} GB" if mib else name
+
+
+def model_name(run: dict[str, Any] | None, key: str) -> str:
+    """'ollama:qwen2.5:7b (845dbda0ea48)' -> 'qwen2.5:7b'; 'BAAI/bge-reranker-v2-m3' -> 'bge-reranker-v2-m3'."""
+    value = (run or {}).get(key) or (run or {}).get("environment", {}).get(key)
+    if not value:
+        return "—"
+    value = value.split(" (")[0].removeprefix("ollama:")
+    return value.rsplit("/", 1)[-1]
+
+
 def headline(runs: dict[str, dict[str, Any]]) -> dict[str, str]:
     v0 = runs.get("baseline-v0")
     cache = runs.get("baseline-v0-cache")
+    v1 = runs.get("baseline-v1")
+    hybrid = runs.get("hybrid-v1")
+    cites = runs.get("citations-v1")
+    full = runs.get("full-v1")
+    default = runs.get("rerank-sorted-c40")
+    fast = runs.get("rerank-sorted-c20")
     ref_cases = by_type(v0, "lexml_fulltext", "reference", "cases")
     return {
+        "piaf_r5_v1": fmt_ratio(metric(v1, "piaf", "recall@5")),
+        "piaf_r5_full": fmt_ratio(metric(full, "piaf", "recall@5")),
+        "lexml_r5_v1": fmt_ratio(metric(v1, "lexml_fulltext", "recall@5")),
+        "lexml_r5_full": fmt_ratio(metric(full, "lexml_fulltext", "recall@5")),
+        "ref_r5_v1": fmt_pct(by_type(v1, "lexml_fulltext", "reference", "recall@5")),
+        "ref_r5_hybrid": fmt_pct(by_type(hybrid, "lexml_fulltext", "reference", "recall@5")),
+        "ref_r5_cites": fmt_pct(by_type(cites, "lexml_fulltext", "reference", "recall@5")),
+        "ref_r5_full": fmt_pct(by_type(full, "lexml_fulltext", "reference", "recall@5")),
+        "correct_lexml_v1": fmt_ratio(metric(v1, "lexml_fulltext", "answer_correctness_mean")),
+        "correct_lexml_full": fmt_ratio(metric(full, "lexml_fulltext", "answer_correctness_mean")),
+        "faith_lexml_v1": fmt_ratio(metric(v1, "lexml_fulltext", "faithfulness_mean")),
+        "faith_lexml_full": fmt_ratio(metric(full, "lexml_fulltext", "faithfulness_mean")),
+        "latency_v1": fmt_ms(metric(v1, "piaf", "latency_query_p50_ms")),
+        "latency_default": fmt_ms(metric(default, "piaf", "latency_query_p50_ms")),
+        "latency_default_lexml": fmt_ms(metric(default, "lexml_fulltext", "latency_query_p50_ms")),
+        "latency_fast": fmt_ms(metric(fast, "piaf", "latency_query_p50_ms")),
+        "lexml_r5_fast": fmt_ratio(metric(fast, "lexml_fulltext", "recall@5")),
+        "gpu_full": gpu_label(full),
+        "generator_full": model_name(full, "generation_model"),
+        "reranker_full": model_name(full, "rerank_model"),
         "ref_r5_v0": fmt_pct(by_type(v0, "lexml_fulltext", "reference", "recall@5")),
         "ref_cases": "—" if ref_cases is None else str(int(ref_cases)),
         "entity_r5_v0": fmt_pct(by_type(v0, "lexml_fulltext", "entity", "recall@5")),
@@ -303,11 +352,30 @@ def render(template: str, values: dict[str, str]) -> str:
     return re.sub(r"\{\{\s*([a-z0-9_]+)\s*\}\}", replace, template)
 
 
+ASSET_URL = re.compile(r'((?:src|href|content)="[^"]*?assets/)([^"?#]+)"')
+
+
+def versioned(page: str, assets: Path) -> str:
+    """Append ``?v=<sha8>`` to every asset URL so browsers and Pages never serve a stale file."""
+
+    def stamp(match: re.Match[str]) -> str:
+        path = assets / match.group(2)
+        if not path.is_file():
+            return match.group(0)
+        digest = hashlib.sha256(path.read_bytes()).hexdigest()[:8]
+        return f'{match.group(1)}{match.group(2)}?v={digest}"'
+
+    return ASSET_URL.sub(stamp, page)
+
+
 def build_site(out: Path, site_url: str) -> None:
     stages = load_stages()
     runs = load_results()
     values = {
         "results_table": html_table(stages, runs),
+        "chart_results": site_charts.results_chart(runs),
+        "chart_tradeoff": site_charts.cost_chart(runs),
+        "pipeline": site_charts.pipeline(runs, REPO_URL),
         "run_details": run_details(runs),
         "calibration_table": calibration_table(),
         "repo_url": REPO_URL,
@@ -318,6 +386,9 @@ def build_site(out: Path, site_url: str) -> None:
     if out.exists():
         shutil.rmtree(out)
     out.mkdir(parents=True)
+    # Assets first: page URLs carry a hash of the file they point to.
+    shutil.copytree(SITE_SRC / "assets", out / "assets")
+    shutil.copy2(ROOT / "docs" / "images" / "chat-welcome.png", out / "assets" / "chat-welcome.png")
     for page in sorted((SITE_SRC / "pages").glob("*.html")):
         raw = page.read_text(encoding="utf-8")
         meta, _, body = raw.partition("\n---\n")
@@ -331,12 +402,16 @@ def build_site(out: Path, site_url: str) -> None:
         }
         page_values["content"] = render(body, page_values)
         html_out = render(layout, page_values)
+        if page.stem == "index":
+            # The nav names sections of the overview: there they scroll in place (smoothly, see
+            # style.css); from the detail pages they lead back to the section and glide to it.
+            html_out = html_out.replace('href="./" data-nav="index"', 'href="#top" data-nav="index"')
+            for nav in ("results", "method"):
+                html_out = html_out.replace(f'href="./#{nav}" data-nav="{nav}"', f'href="#{nav}" data-nav="{nav}"')
         for nav in ("index", "results", "method"):
             current = ' aria-current="page"' if fields.get("nav") == nav else ""
             html_out = html_out.replace(f'data-nav="{nav}"', f'data-nav="{nav}"{current}')
-        (out / page.name).write_text(html_out, encoding="utf-8")
-    shutil.copytree(SITE_SRC / "assets", out / "assets")
-    shutil.copy2(ROOT / "docs" / "images" / "chat-welcome.png", out / "assets" / "chat-welcome.png")
+        (out / page.name).write_text(versioned(html_out, out / "assets"), encoding="utf-8")
     if REPORT_PDF.exists():
         shutil.copy2(REPORT_PDF, out / "raglab-report-fr.pdf")
     (out / ".nojekyll").write_text("", encoding="utf-8")

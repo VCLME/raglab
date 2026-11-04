@@ -10,6 +10,7 @@ from __future__ import annotations
 from time import perf_counter
 from typing import TYPE_CHECKING, Any
 
+from raglab.routing.citation import cited_text_in_run
 from raglab.routing.router import QueryRouter
 
 if TYPE_CHECKING:
@@ -31,13 +32,21 @@ def route_and_retrieve(service: QueryService, **kwargs: Any) -> RetrievalOutcome
         index_run_id=kwargs.get("index_run_id"),
         strategy=kwargs.get("strategy"),
     )
-    if decision.corpus.source == "routed":
+    if decision.corpus.source in ("routed", "citation"):
         kwargs["corpus_name"] = decision.corpus.corpus_name
         kwargs["index_run_id"] = decision.corpus.index_run_id
         # Routed runs share the router's embedding space: embed only once.
         kwargs["query_embedding"] = decision.query_embedding
     outcome = service.retrieve(**kwargs)
     finished = perf_counter()
+    if decision.citation is not None:
+        # The citation resolver already looked the text up when it ran.
+        found = (
+            bool(outcome.citation.get("law_found"))
+            if outcome.citation is not None
+            else cited_text_in_run(service.session, outcome.index_run, decision.citation)
+        )
+        decision = decision.model_copy(update={"legal_citation_found": found})
     outcome.routing = router.finish(decision, outcome.retrieved)
     outcome.timings_ms["routing"] = decision.timings_ms["total"]
     # The request started with the router, not with retrieval.

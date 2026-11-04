@@ -27,13 +27,29 @@ def test_build_prompt_bundle_includes_grounding_and_sources_instruction():
         no_context_answer="Pas assez de contexte.",
     )
 
-    assert "Réponds uniquement à partir du contexte fourni." in bundle.system_prompt
+    assert "Réponds uniquement à partir du contexte fourni, en français." in bundle.system_prompt
     assert '"Pas assez de contexte."' in bundle.system_prompt
     assert "[Rank X]" in bundle.system_prompt
-    assert "inline" in bundle.system_prompt
+    assert "recopie-les entre guillemets" in bundle.system_prompt
     assert "Fichier: law.txt" in bundle.user_prompt
     assert "Chemin: data/documents/law.txt" in bundle.user_prompt
     assert "Extrait:" in bundle.user_prompt
+
+
+def test_prompt_follows_the_question_language():
+    from raglab.generation.prompts import NO_CONTEXT_ANSWERS, question_language
+
+    portuguese = build_prompt_bundle("O que dispõe o art. 49 da Lei nº 8.078?", [_chunk()], no_context_answer="X.")
+    assert "em português" in portuguese.system_prompt
+    assert f'"{NO_CONTEXT_ANSWERS["pt"]}"' in portuguese.system_prompt
+    assert portuguese.user_prompt.startswith("Pergunta:")
+
+    english = build_prompt_bundle("Who must be notified after a major incident?", [_chunk()], no_context_answer="X.")
+    assert "in English" in english.system_prompt and english.user_prompt.startswith("Question:")
+
+    assert question_language("Quel est le délai de rétractation pour un achat en ligne ?") == "fr"
+    assert question_language("Pourquoi Napoléon a-t-il perdu à Waterloo ?") == "fr"
+    assert question_language("") == "fr"
 
 
 def test_generate_answer_returns_fallback_without_calling_ollama():

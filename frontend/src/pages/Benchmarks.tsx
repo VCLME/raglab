@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Tabs, tabPanelProps } from "../components/Tabs";
+import { useWorkshop } from "../workshop/state";
 import { apiFetch, get, post } from "../api/client";
 import { useApiAction, useApiLoad } from "../hooks/useApi";
 import type {
@@ -16,6 +18,8 @@ import { FieldRow } from "../components/FieldRow";
 import { JsonViewer } from "../components/JsonViewer";
 import { Spinner } from "../components/Spinner";
 import { StatusBadge } from "../components/StatusBadge";
+import { Select } from "../components/Select";
+import { VersionsField } from "../components/Versions";
 
 const MAX_COMPARED = 5;
 const STRATEGIES: ChunkingStrategy[] = ["traditional", "slide", "late"];
@@ -95,6 +99,7 @@ function LaunchTab({ onLaunched }: { onLaunched: () => void }) {
   const { t } = useTranslation();
   const corpora = useApiLoad<CorpusSummary[]>(() => get("/api/corpora"));
   const datasets = useApiLoad<BenchDatasetOnDisk[]>(() => get("/api/bench/datasets"));
+  const scope = useWorkshop().corpus?.name;
   const [corpus, setCorpus] = useState("");
   const [strategy, setStrategy] = useState<ChunkingStrategy>("traditional");
   const [datasetChoice, setDatasetChoice] = useState<string>("");  // value = "auto-lexml" | dataset_dir | "custom:<path>"
@@ -109,6 +114,10 @@ function LaunchTab({ onLaunched }: { onLaunched: () => void }) {
   const [rrfK, setRrfK] = useState("");
   const [rerank, setRerank] = useState(false);
   const [citations, setCitations] = useState(false);
+  const [graph, setGraph] = useState(false);
+  // Versions option (9.10): "all" (the shipped default) is the naive
+  // baseline, "in_force" the brick under measurement.
+  const [versions, setVersions] = useState("all");
 
   const action = useApiAction((body: unknown) =>
     post<{
@@ -125,12 +134,12 @@ function LaunchTab({ onLaunched }: { onLaunched: () => void }) {
     }
   }, [corpus, datasetChoice, datasets.data]);
 
-  // Preselect first corpus
+  // Preselect the Atelier's corpus, else the first one
   useEffect(() => {
     if (!corpus && corpora.data && corpora.data.length > 0) {
-      setCorpus(corpora.data[0].name);
+      setCorpus(corpora.data.some((c) => c.name === scope) ? scope! : corpora.data[0].name);
     }
-  }, [corpus, corpora.data]);
+  }, [corpus, corpora.data, scope]);
 
   const chosenDataset: BenchDatasetOnDisk | null = useMemo(() => {
     if (!datasetChoice || datasetChoice === "auto-lexml" || datasetChoice === "custom") return null;
@@ -165,6 +174,8 @@ function LaunchTab({ onLaunched }: { onLaunched: () => void }) {
         body.retrieval_mode = retrievalMode;
         body.rerank = rerank;
         body.citations = citations;
+        body.graph = graph;
+        body.versions = versions;
         if (retrievalMode === "hybrid") {
           if (lexicalWeight !== "") body.lexical_weight = Number(lexicalWeight);
           if (rrfK !== "") body.rrf_k = Number(rrfK);
@@ -179,41 +190,41 @@ function LaunchTab({ onLaunched }: { onLaunched: () => void }) {
   return (
     <div className="card">
       <FieldRow label={t("common.corpus")} hint={t("query.corpus_hint")}>
-        <select value={corpus} onChange={(e) => setCorpus(e.target.value)}>
+        <Select value={corpus} onChange={(e) => setCorpus(e.target.value)}>
           <option value="">{t("common.selected_placeholder")}</option>
           {(corpora.data ?? []).map((c) => (
             <option key={c.id} value={c.name}>
               {c.name} · {c.documents_count} docs
             </option>
           ))}
-        </select>
+        </Select>
       </FieldRow>
       <FieldRow label={t("common.strategy")}>
-        <select value={strategy} onChange={(e) => setStrategy(e.target.value as ChunkingStrategy)}>
+        <Select value={strategy} onChange={(e) => setStrategy(e.target.value as ChunkingStrategy)}>
           {STRATEGIES.map((s) => (
             <option key={s} value={s}>{s}</option>
           ))}
-        </select>
+        </Select>
       </FieldRow>
       <FieldRow label={t("benchmarks.backend_label")} hint={t("benchmarks.backend_hint")}>
-        <select
+        <Select
           value={backendChoice}
           onChange={(e) => setBackendChoice(e.target.value as BackendChoice)}
         >
           <option value="pgvector">{t("benchmarks.backend_pgvector")}</option>
           <option value="neo4j">{t("benchmarks.backend_neo4j")}</option>
           <option value="both">{t("benchmarks.backend_both")}</option>
-        </select>
+        </Select>
       </FieldRow>
       {backendChoice !== "neo4j" ? (
         <FieldRow label={t("retrieval.mode_label")} hint={t("retrieval.mode_hint")}>
-          <select value={retrievalMode} onChange={(e) => setRetrievalMode(e.target.value as RetrievalMode)}>
+          <Select value={retrievalMode} onChange={(e) => setRetrievalMode(e.target.value as RetrievalMode)}>
             {RETRIEVAL_MODES.map((m) => (
               <option key={m} value={m}>
                 {t(`retrieval.mode_${m}`)}
               </option>
             ))}
-          </select>
+          </Select>
         </FieldRow>
       ) : null}
       {backendChoice !== "neo4j" ? (
@@ -230,6 +241,19 @@ function LaunchTab({ onLaunched }: { onLaunched: () => void }) {
             <input type="checkbox" checked={citations} onChange={(e) => setCitations(e.target.checked)} />
             {t("retrieval.citations_checkbox")}
           </label>
+        </FieldRow>
+      ) : null}
+      {backendChoice !== "neo4j" ? (
+        <FieldRow label={t("retrieval.graph_label")} hint={t("retrieval.graph_hint")}>
+          <label className="inline" style={{ gap: 4 }}>
+            <input type="checkbox" checked={graph} onChange={(e) => setGraph(e.target.checked)} />
+            {t("retrieval.graph_checkbox")}
+          </label>
+        </FieldRow>
+      ) : null}
+      {backendChoice !== "neo4j" ? (
+        <FieldRow label={t("versions.label")} hint={t("versions.field_hint")}>
+          <VersionsField value={versions} onChange={setVersions} />
         </FieldRow>
       ) : null}
       {backendChoice !== "neo4j" && retrievalMode === "hybrid" ? (
@@ -258,7 +282,7 @@ function LaunchTab({ onLaunched }: { onLaunched: () => void }) {
             : undefined
         }
       >
-        <select value={datasetChoice} onChange={(e) => setDatasetChoice(e.target.value)}>
+        <Select value={datasetChoice} onChange={(e) => setDatasetChoice(e.target.value)}>
           <option value="auto-lexml">{t("benchmarks.dataset_auto_lexml")}</option>
           {(datasets.data ?? []).map((d) => (
             <option key={d.dataset_dir} value={d.dataset_dir}>
@@ -266,7 +290,7 @@ function LaunchTab({ onLaunched }: { onLaunched: () => void }) {
             </option>
           ))}
           <option value="custom">{t("benchmarks.dataset_custom")}</option>
-        </select>
+        </Select>
       </FieldRow>
       {datasetChoice === "custom" ? (
         <FieldRow label={t("benchmarks.dataset_custom_label")}>
@@ -306,10 +330,10 @@ function LaunchTab({ onLaunched }: { onLaunched: () => void }) {
       {computeRagas ? (
         <>
           <FieldRow label={t("benchmarks.judge_label")} hint={t("benchmarks.judge_hint")}>
-            <select value={judgeBackend} onChange={(e) => setJudgeBackend(e.target.value as "ollama" | "llamacpp")}>
+            <Select value={judgeBackend} onChange={(e) => setJudgeBackend(e.target.value as "ollama" | "llamacpp")}>
               <option value="ollama">{t("benchmarks.judge_ollama")}</option>
               <option value="llamacpp">{t("benchmarks.judge_llamacpp")}</option>
-            </select>
+            </Select>
           </FieldRow>
           <FieldRow label={t("benchmarks.ragas_limit_label")} hint={t("benchmarks.ragas_limit_hint")}>
             <input type="number" value={ragasLimit} onChange={(e) => setRagasLimit(e.target.value)} min={1} />
@@ -422,14 +446,14 @@ function CustomDatasetTab({ onCreated }: { onCreated: () => void }) {
         />
       </FieldRow>
       <FieldRow label={t("common.corpus")} hint={t("benchmarks.custom_corpus_hint")}>
-        <select value={corpus} onChange={(e) => setCorpus(e.target.value)}>
+        <Select value={corpus} onChange={(e) => setCorpus(e.target.value)}>
           <option value="">{t("common.none")}</option>
           {(corpora.data ?? []).map((c) => (
             <option key={c.id} value={c.name}>
               {c.name} · {c.documents_count} docs
             </option>
           ))}
-        </select>
+        </Select>
       </FieldRow>
       <FieldRow label={t("benchmarks.custom_description_label")} hint={t("common.optional")}>
         <input
@@ -484,7 +508,7 @@ function CustomDatasetTab({ onCreated }: { onCreated: () => void }) {
               label={t("benchmarks.custom_file_label")}
               hint={t("benchmarks.custom_file_hint")}
             >
-              <select
+              <Select
                 value=""
                 onChange={(e) => {
                   const picked = e.target.value;
@@ -506,7 +530,7 @@ function CustomDatasetTab({ onCreated }: { onCreated: () => void }) {
                     {d.file_name}
                   </option>
                 ))}
-              </select>
+              </Select>
             </FieldRow>
           ) : null}
           <FieldRow
@@ -713,10 +737,10 @@ function HistoryTab() {
         <div className="inline" style={{ marginBottom: 12, gap: 14 }}>
           <label className="inline" style={{ gap: 6 }}>
             <span className="muted" style={{ fontSize: 12 }}>{t("benchmarks.filter_corpus")}</span>
-            <select value={corpusFilter} onChange={(e) => setCorpusFilter(e.target.value)}>
+            <Select value={corpusFilter} onChange={(e) => setCorpusFilter(e.target.value)} size="sm" aria-label={t("benchmarks.filter_corpus")}>
               <option value="">{t("benchmarks.all_corpora")}</option>
               {corpora.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
+            </Select>
           </label>
           <span className="dim" style={{ fontSize: 11 }}>{t("benchmarks.chart_hint")}</span>
           <button className="ghost sm" onClick={runs.refresh} style={{ marginLeft: "auto" }}>
@@ -842,17 +866,18 @@ export function Benchmarks() {
         body={t("benchmarks.explain_body")}
         storageKey="raglab.explain.benchmarks"
       />
-      <div className="tabs">
-        <button className={tab === "launch" ? "active" : ""} onClick={() => setTab("launch")}>
-          {t("benchmarks.launch_tab")}
-        </button>
-        <button className={tab === "history" ? "active" : ""} onClick={() => setTab("history")}>
-          {t("benchmarks.history_tab")}
-        </button>
-        <button className={tab === "custom" ? "active" : ""} onClick={() => setTab("custom")}>
-          {t("benchmarks.custom_tab")}
-        </button>
-      </div>
+      <Tabs
+        idBase="bench"
+        label={t("benchmarks.tabs_label")}
+        value={tab}
+        onChange={setTab}
+        items={[
+          { key: "launch", label: t("benchmarks.launch_tab") },
+          { key: "history", label: t("benchmarks.history_tab") },
+          { key: "custom", label: t("benchmarks.custom_tab") },
+        ]}
+      />
+      <div {...tabPanelProps("bench", tab)}>
       {tab === "launch" ? (
         <LaunchTab
           key={launchStamp}
@@ -863,6 +888,7 @@ export function Benchmarks() {
       {tab === "custom" ? (
         <CustomDatasetTab onCreated={() => { setLaunchStamp((s) => s + 1); setTab("launch"); }} />
       ) : null}
+      </div>
     </div>
   );
 }

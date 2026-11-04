@@ -5,7 +5,8 @@ these sentences comes from `benchmarks/abstention/questions.jsonl` or from
 the PIAF / LexML ground truths, so the evaluation stays out of sample.
 
 - documentary: questions whose answer would sit in an indexed text
-  (encyclopedic in French, federal law in Portuguese, plus the reverse mix);
+  (encyclopedic in French, federal law in Portuguese, the French consumer
+  code, EU compliance acts in English, French and Portuguese, plus mixes);
 - conversational: talking to the assistant rather than asking about the texts;
 - out_of_scope: requests no document collection can answer (personal data,
   live information, tasks to perform, private company matters).
@@ -31,6 +32,10 @@ EXAMPLES: dict[str, dict[str, list[str]]] = {
             "Que prévoit le texte sur la durée du mandat présidentiel ?",
             "Quelles sont les conditions fixées par la loi pour obtenir cette exonération ?",
             "Quel organisme est chargé de contrôler l'application du règlement ?",
+            "Quel délai de rétractation le consommateur a-t-il après un achat à distance ?",
+            "Quelles informations le vendeur doit-il donner avant la conclusion du contrat ?",
+            "Dans quel délai une violation de données personnelles doit-elle être notifiée à l'autorité ?",
+            "Quelles obligations pèsent sur le fournisseur d'un système d'IA à haut risque ?",
         ],
         "pt": [
             "Qual é o prazo para a empresa recolher a contribuição prevista na lei?",
@@ -48,6 +53,18 @@ EXAMPLES: dict[str, dict[str, list[str]]] = {
             "Qual é a extensão do rio São Francisco?",
             "Em que ano foi fundada a cidade de Salvador?",
             "Como funciona o processo de fotossíntese nas algas?",
+            "Quando o responsável pelo tratamento deve nomear um encarregado da proteção de dados?",
+            "Que medidas de gestão de riscos de cibersegurança a diretiva exige das entidades essenciais?",
+        ],
+        "en": [
+            "What rights does the data subject have to obtain erasure of personal data?",
+            "Within how many hours must a personal data breach be reported to the supervisory authority?",
+            "Which AI practices are prohibited under the regulation?",
+            "What must a provider of a high-risk AI system document before placing it on the market?",
+            "Which entities fall within the scope of the cybersecurity directive?",
+            "How must financial entities manage ICT third-party risk?",
+            "What are the conditions for the lawful processing of personal data?",
+            "Who designates the national competent authorities?",
         ],
     },
     "conversational": {
@@ -87,6 +104,18 @@ EXAMPLES: dict[str, dict[str, list[str]]] = {
             "Certo, compreendi.",
             "Ah, legal.",
         ],
+        "en": [
+            "Hi there!",
+            "Good morning, how are you?",
+            "Thanks, that helps a lot.",
+            "What is your name?",
+            "Are you an AI?",
+            "How do you work?",
+            "I did not understand your answer.",
+            "Can you say that more simply?",
+            "See you later!",
+            "Okay, got it.",
+        ],
     },
     "out_of_scope": {
         "fr": [
@@ -120,6 +149,18 @@ EXAMPLES: dict[str, dict[str, list[str]]] = {
             "Quando é a próxima reunião da diretoria da empresa?",
             "Qual é a meta de vendas da nossa equipe neste trimestre?",
             "Marque uma consulta médica para amanhã.",
+        ],
+        "en": [
+            "How many vacation days do I have left this year?",
+            "Where is my parcel right now?",
+            "What is the weather forecast for tomorrow in Dublin?",
+            "What is the share price of Siemens today?",
+            "Who won the football match last night?",
+            "Write a cover letter for a marketing job.",
+            "Translate this paragraph into Spanish.",
+            "Write a Python script that renames my files.",
+            "When is our next team meeting?",
+            "Book a table for two tonight.",
         ],
     },
 }

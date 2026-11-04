@@ -13,3 +13,10 @@ def test_config_endpoint_exposes_safe_fields_only(client):
     # Aucune info sensible type mot de passe ou URL DB brute
     assert "database_url" not in body
     assert all("password" not in key.lower() for key in body.keys())
+
+
+def test_config_says_why_the_reranker_has_no_gpu(client):
+    body = client.get("/api/config").json()
+    assert body["rerank_device"]
+    assert body["rerank_gpu_status"] in {"ok", "device_cpu", "torch_missing", "cuda_unavailable"}
+    assert body["rerank_gpu"] == (body["rerank_gpu_status"] == "ok")

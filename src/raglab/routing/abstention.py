@@ -10,10 +10,12 @@ from raglab.routing.schemas import AbstentionDecision, Intent
 ABSTENTION_ANSWERS = {
     "fr": "Je ne trouve pas cela dans les documents.",
     "pt": "Não encontrei isso nos documentos.",
+    "en": "I cannot find this in the documents.",
 }
 CONVERSATIONAL_ANSWERS = {
     "fr": "Je réponds aux questions sur les documents indexés. Posez-moi une question sur leur contenu.",
     "pt": "Respondo a perguntas sobre os documentos indexados. Faça uma pergunta sobre o conteúdo deles.",
+    "en": "I answer questions about the indexed documents. Ask me about their content.",
 }
 
 SCORE_SOURCES = ("dense", "rerank")
@@ -68,11 +70,12 @@ def decide_abstention(
     score_source: str,
     legal_citation: bool = False,
 ) -> AbstentionDecision:
-    """A question citing a law ("art. 49 da Lei nº 8.078") is never declined:
-    it names a document, so it is documentary by construction, and its
-    passages are found by the citation resolver rather than by similarity
-    (identifiers embed poorly, so the dense score is low on exactly these
-    questions)."""
+    """`legal_citation`: the question cites a text the queried index holds
+    ("art. 49 da Lei nº 8.078", "article L. 221-18 du code de la
+    consommation", "Article 32 GDPR"). It is never declined: it names a
+    document, so it is documentary by construction, and its passages come
+    from the citation resolver rather than from similarity (identifiers
+    embed poorly, so the dense score is low on exactly these questions)."""
     if legal_citation:
         reason: str | None = None
     elif intent != Intent.DOCUMENTARY:

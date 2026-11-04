@@ -1,25 +1,41 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useGpuWhy } from "../hooks/useGpuWhy";
 import { ApiError, extractErrorDetail, get, queryWithStreaming } from "../api/client";
 import type {
+  CitationInfo,
   CorpusSummary,
   IndexRunSummary,
-  OllamaModelsResponse,
+  LlmModelsResponse,
+  QueryResponse,
+  RetrievalMode,
   RetrievedChunk,
   RoutingDecision,
+  VersionsInfo,
 } from "../api/types";
+import {
+  ChatOptions,
+  LEGAL_OPTIONS,
+  NO_OVERRIDES,
+  effectiveOptions,
+  type RetrievalOverrides,
+} from "../components/ChatOptions";
+import { parseVersionsValue } from "../components/Versions";
 import { ChunkCard } from "../components/ChunkCard";
-import { Citation } from "../components/Citation";
+import { extractCitedRanks, renderAnswer } from "../components/AnswerText";
+import { SendIcon, StopIcon } from "../components/Icon";
+import { PipelineStrip, type RouteInfo } from "../components/PipelineStrip";
+import { FieldLabelContext, Select } from "../components/Select";
 import { RoutingPanel } from "../components/RoutingPanel";
-import { SendIcon } from "../components/Icon";
 import { SourceList } from "../components/SourcePill";
-import { PipelineDiagram } from "../components/PipelineDiagram";
+import { Spinner } from "../components/Spinner";
 import { SuggestionChips } from "../components/SuggestionChips";
 import {
   StageScheduler,
   applyPlan,
   applyStage,
   failPipeline,
+  stopPipeline,
   finishPipeline,
   idlePipeline,
   prefersReducedMotion,
@@ -44,8 +60,22 @@ interface ChatTurn {
   error?: { message: string; detail: string | null };
   // Router decisions when routing was on for this turn.
   routing?: RoutingDecision | null;
+  // Stopped with the « Arrêter » button; a partial answer stays visible.
+  stopped?: boolean;
   // Stage-by-stage view of the request, drawn by the educational mode.
   pipeline?: PipelineState;
+  retrieval_mode?: RetrievalMode | null;
+  rerank?: boolean | null;
+  // "skipped_no_gpu" or "cpu" when the re-ranker had no GPU.
+  rerank_notice?: string | null;
+  citation?: CitationInfo | null;
+  lexemes?: string[];
+  // Graph branch: whether it ran, why it was skipped, its counters.
+  graph?: boolean | null;
+  graph_notice?: string | null;
+  graph_stats?: Record<string, number> | null;
+  // Version policy applied (versions option).
+  versions?: VersionsInfo | null;
 }
 
 function newTurnId(): string {
@@ -73,69 +103,29 @@ function formatRunLabel(run: IndexRunSummary): string {
 // Pause before closing each replayed stage, so the diagram can be followed.
 const REPLAY_STEP_MS = 280;
 
-const CITATION_REGEX = /\[(?:Rank|rank|Source\s+rank\s*=)\s*(\d+)\]/g;
-const TRAILING_SOURCES_REGEX = /\n+\s*Sources?\s*:[\s\S]*$/i;
+// While the API is not up yet (UI started first), lists are fetched again on this period.
+const RETRY_MS = 3000;
 
-function stripTrailingSources(answer: string): string {
-  return answer.replace(TRAILING_SOURCES_REGEX, "").trimEnd();
+/** LLM picker value: "" (server default) or "provider::model". */
+function llmValue(provider: string, model: string): string {
+  return `${provider}::${model}`;
 }
 
-function extractCitedRanks(answer: string): number[] {
-  const cleaned = stripTrailingSources(answer);
-  const ranks = new Set<number>();
-  CITATION_REGEX.lastIndex = 0;
-  let match: RegExpExecArray | null;
-  while ((match = CITATION_REGEX.exec(cleaned)) !== null) {
-    ranks.add(Number(match[1]));
-  }
-  return Array.from(ranks);
-}
-
-function renderAnswer(
-  answer: string,
-  chunks: RetrievedChunk[],
-  activeFile: string | null,
-  onSelectFile: (fileName: string) => void
-): React.ReactNode[] {
-  const cleaned = stripTrailingSources(answer);
-  const parts: React.ReactNode[] = [];
-  let lastIndex = 0;
-  CITATION_REGEX.lastIndex = 0;
-  let match: RegExpExecArray | null;
-  while ((match = CITATION_REGEX.exec(cleaned)) !== null) {
-    if (match.index > lastIndex) {
-      parts.push(cleaned.slice(lastIndex, match.index));
-    }
-    const rank = Number(match[1]);
-    const chunk = chunks.find((c) => c.rank === rank);
-    parts.push(
-      <Citation
-        key={`c-${match.index}-${rank}`}
-        rank={rank}
-        fileName={chunk?.file_name}
-        active={chunk ? activeFile === chunk.file_name : false}
-        onClick={() => {
-          if (chunk) onSelectFile(chunk.file_name);
-        }}
-      />
-    );
-    lastIndex = match.index + match[0].length;
-  }
-  if (lastIndex < cleaned.length) {
-    parts.push(cleaned.slice(lastIndex));
-  }
-  return parts.length > 0 ? parts : [cleaned];
+function parseLlm(value: string): { provider: string; model: string } | null {
+  const at = value.indexOf("::");
+  return at > 0 ? { provider: value.slice(0, at), model: value.slice(at + 2) } : null;
 }
 
 export function Chat() {
   const { t } = useTranslation();
   const config = useConfig();
-  const corpora = useApiLoad<CorpusSummary[]>(() => get("/api/corpora"));
-  const models = useApiLoad<OllamaModelsResponse>(() => get("/api/ollama/models"));
+  const corpora = useApiLoad<CorpusSummary[]>(() => get("/api/corpora"), [], { retryMs: RETRY_MS });
+  const llms = useApiLoad<LlmModelsResponse>(() => get("/api/llm/models"), [], { retryMs: RETRY_MS });
 
   const [corpus, setCorpus] = useState("");
   const [indexRunId, setIndexRunId] = useState("");
-  const [llmModel, setLlmModel] = useState("");
+  const [llm, setLlm] = useState("");
+  const [options, setOptions] = useState<RetrievalOverrides>(NO_OVERRIDES);
   const [routing, setRouting] = useState(false);
   const [question, setQuestion] = useState("");
   const [turns, setTurns] = useState<ChatTurn[]>([]);
@@ -144,8 +134,8 @@ export function Chat() {
 
   const streamRef = useRef<HTMLDivElement | null>(null);
   const [educational] = useEducationalMode();
-  const [diagramOpen, setDiagramOpen] = useState(true);
   const schedulerRef = useRef<StageScheduler | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     // With routing on, an empty corpus means "let the router choose".
@@ -159,7 +149,8 @@ export function Chat() {
       corpus
         ? get(`/api/index-runs?corpus=${encodeURIComponent(corpus)}`)
         : Promise.resolve([]),
-    [corpus]
+    [corpus],
+    { retryMs: RETRY_MS }
   );
 
   // Reset explicit index choice when corpus changes.
@@ -168,6 +159,7 @@ export function Chat() {
   }, [corpus]);
 
   const runsForCorpus = indexRuns.data ?? [];
+  const legalCorpus = !!corpora.data?.find((c) => c.name === corpus)?.features?.legal_citations;
   const resolvedRun =
     runsForCorpus.find((r) => r.id === indexRunId) ?? runsForCorpus[0] ?? null;
 
@@ -209,7 +201,16 @@ export function Chat() {
       generate: true,
       routing,
     };
-    if (llmModel) body.llm_model = llmModel;
+    const picked = parseLlm(llm);
+    if (picked) {
+      body.llm_provider = picked.provider;
+      body.llm_model = picked.model;
+    }
+    // Only the options changed in the popover: the rest keeps the server defaults.
+    // Article references, the graph and versions are not sent for a corpus without law articles.
+    (Object.keys(options) as (keyof RetrievalOverrides)[]).forEach((key) => {
+      if (options[key] !== null && (!LEGAL_OPTIONS.includes(key) || legalCorpus)) body[key] = options[key];
+    });
     const patchTurn = (update: (tn: ChatTurn) => Partial<ChatTurn>) =>
       setTurns((prev) => prev.map((tn) => (tn.id === id ? { ...tn, ...update(tn) } : tn)));
     // Stage events go through a queue so replayed stages light up one by one;
@@ -217,36 +218,50 @@ export function Chat() {
     schedulerRef.current?.cancel();
     const scheduler = new StageScheduler(prefersReducedMotion() ? 0 : REPLAY_STEP_MS);
     schedulerRef.current = scheduler;
+    const controller = new AbortController();
+    abortRef.current = controller;
     const patchPipeline = (update: (state: PipelineState) => PipelineState) =>
       patchTurn((tn) => ({ pipeline: update(tn.pipeline ?? startPipeline()) }));
+    const fromResponse = (r: QueryResponse): Partial<ChatTurn> => ({
+      chunks: r.retrieved_chunks,
+      index_run_id: r.index_run_id,
+      strategy: r.strategy,
+      retrieval_mode: r.retrieval_mode ?? null,
+      rerank: r.rerank ?? null,
+      rerank_notice: r.rerank_notice ?? null,
+      citation: r.citation ?? null,
+      lexemes: r.query_lexemes ?? [],
+      graph: r.graph ?? null,
+      graph_notice: r.graph_notice ?? null,
+      graph_stats: r.graph_stats ?? null,
+      versions: r.versions ?? null,
+      routing: r.routing ?? null,
+    });
     try {
       // Sources show up as soon as retrieval is done, then the answer grows
       // token by token (falls back to a single response without streaming).
       const result = await action.run(body, {
-        onRetrieval: (partial) =>
-          patchTurn(() => ({
-            chunks: partial.retrieved_chunks,
-            index_run_id: partial.index_run_id,
-            strategy: partial.strategy,
-            routing: partial.routing ?? null,
-          })),
+        onRetrieval: (partial) => patchTurn(() => fromResponse(partial)),
         onToken: (text) =>
           patchTurn((tn) => ({ answer: (tn.answer ?? "") + text, streaming: true })),
         onPipeline: (stages) => scheduler.push(() => patchPipeline((state) => applyPlan(state, stages))),
         onStage: (event) => scheduler.push(() => patchPipeline((state) => applyStage(state, event)), event),
+        signal: controller.signal,
       });
       scheduler.push(() => patchPipeline((state) => finishPipeline(state, result)));
       patchTurn(() => ({
+        ...fromResponse(result),
         answer: result.answer ?? t("chat.no_answer_generated"),
-        chunks: result.retrieved_chunks,
-        index_run_id: result.index_run_id,
-        strategy: result.strategy,
         elapsed_ms: result.elapsed_ms,
         first_token_ms: result.first_token_ms ?? null,
-        routing: result.routing ?? null,
         streaming: false,
       }));
     } catch (e) {
+      if (controller.signal.aborted) {
+        patchTurn(() => ({ streaming: false, stopped: true }));
+        scheduler.push(() => patchPipeline(stopPipeline));
+        return;
+      }
       const message =
         e instanceof ApiError
           ? e.message
@@ -257,19 +272,35 @@ export function Chat() {
       // A partial streamed answer stays visible above the error.
       patchTurn(() => ({ streaming: false, error: { message, detail } }));
       scheduler.push(() => patchPipeline(failPipeline));
+    } finally {
+      if (abortRef.current === controller) abortRef.current = null;
     }
   };
 
+  const stop = () => abortRef.current?.abort();
+
+  // Follow the conversation (new turn, answer growing, sources arriving), but
+  // not the learning-mode stage updates: they would pull the page away from a
+  // lesson the user just opened.
+  const latest = turns[turns.length - 1];
+  const followKey = `${turns.length}:${latest?.answer?.length ?? 0}:${latest?.chunks.length ?? 0}:${latest?.error ? 1 : 0}`;
   useEffect(() => {
     if (streamRef.current) {
       streamRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
     }
-  }, [turns]);
+  }, [followKey]);
 
-  useEffect(() => () => schedulerRef.current?.cancel(), []);
+  useEffect(
+    () => () => {
+      schedulerRef.current?.cancel();
+      abortRef.current?.abort();
+    },
+    []
+  );
 
   const reset = () => {
     schedulerRef.current?.cancel();
+    abortRef.current?.abort();
     setTurns([]);
     setExpanded({});
     setHighlight({});
@@ -283,10 +314,13 @@ export function Chat() {
     }
   };
 
-  const modelsList = models.data?.models ?? [];
-  const defaultModel =
-    config?.generation_model ?? models.data?.default_generation_model ?? "qwen2.5:7b";
+  const providers = llms.data?.providers ?? [];
+  const defaultModel = llms.data?.default_model ?? config?.generation_model ?? "qwen2.5:7b";
+  const defaultProvider =
+    providers.find((p) => p.name === (llms.data?.default_provider ?? config?.default_llm_provider))?.label ?? "Ollama";
 
+  const corpusList = corpora.data ?? [];
+  const apiWaiting = corpora.error !== null && corpora.data === null;
   const empty = turns.length === 0;
   const noRuns = !!corpus && !indexRuns.loading && runsForCorpus.length === 0;
   const lastTurn = turns[turns.length - 1];
@@ -296,45 +330,43 @@ export function Chat() {
     <div className="chat-page">
       <div className="settings-bar">
         <div className="compact-field">
-          <label>{t("chat.corpus_label")}</label>
-          <select value={corpus} onChange={(e) => setCorpus(e.target.value)}>
-            {(corpora.data ?? []).length === 0 ? (
-              <option value="">{t("chat.no_corpus_indexed")}</option>
-            ) : routing ? (
-              <option value="">{t("chat.corpus_auto")}</option>
-            ) : null}
-            {(corpora.data ?? []).map((c) => (
-              <option key={c.id} value={c.name}>
-                {t("chat.corpus_option", { name: c.name, count: c.documents_count })}
-              </option>
-            ))}
-          </select>
+          <label id="chat-corpus-label">{t("chat.corpus_label")}</label>
+          <FieldLabelContext.Provider value="chat-corpus-label">
+            <Select value={corpus} onChange={(e) => setCorpus(e.target.value)} disabled={corpusList.length === 0}>
+              {corpusList.length === 0 ? (
+                <option value="">
+                  {apiWaiting ? t("chat.api_waiting") : corpora.loading ? t("common.loading") : t("chat.no_corpus_indexed")}
+                </option>
+              ) : routing ? (
+                <option value="">{t("chat.corpus_auto")}</option>
+              ) : null}
+              {corpusList.map((c) => (
+                <option key={c.id} value={c.name}>
+                  {t("chat.corpus_option", { name: c.name, count: c.documents_count })}
+                </option>
+              ))}
+            </Select>
+          </FieldLabelContext.Provider>
         </div>
 
-        <div
-          className="compact-field"
-          style={{ minWidth: 300 }}
-          title={t("chat.index_title")}
-        >
-          <label>{t("chat.index_label")}</label>
-          <select
-            value={indexRunId}
-            onChange={(e) => setIndexRunId(e.target.value)}
-            disabled={noRuns}
-          >
-            <option value="">
-              {noRuns
-                ? t("chat.index_empty")
-                : resolvedRun
-                ? t("chat.index_latest_with", { label: formatRunLabel(resolvedRun) })
-                : t("chat.index_latest")}
-            </option>
-            {runsForCorpus.map((r) => (
-              <option key={r.id} value={r.id}>
-                {formatRunLabel(r)}
+        <div className="compact-field grow" title={t("chat.index_title")}>
+          <label id="chat-index-label">{t("chat.index_label")}</label>
+          <FieldLabelContext.Provider value="chat-index-label">
+            <Select value={indexRunId} onChange={(e) => setIndexRunId(e.target.value)} disabled={noRuns}>
+              <option value="">
+                {noRuns
+                  ? t("chat.index_empty")
+                  : resolvedRun
+                  ? t("chat.index_latest_with", { label: formatRunLabel(resolvedRun) })
+                  : t("chat.index_latest")}
               </option>
-            ))}
-          </select>
+              {runsForCorpus.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {formatRunLabel(r)}
+                </option>
+              ))}
+            </Select>
+          </FieldLabelContext.Provider>
         </div>
 
         <div className="compact-field" title={t("chat.routing_title")}>
@@ -350,19 +382,28 @@ export function Chat() {
         </div>
 
         <div className="settings-actions">
-          {turns.length > 0 ? (
-            <button className="ghost sm" onClick={reset}>
-              {t("chat.new_conversation")}
-            </button>
-          ) : null}
+          <ChatOptions value={options} onChange={setOptions} config={config} legalCorpus={legalCorpus} />
+          {/* Always there (disabled when empty) so the bar does not reflow at the first answer. */}
+          <button className="ghost sm" onClick={reset} disabled={turns.length === 0}>
+            {t("chat.new_conversation")}
+          </button>
         </div>
       </div>
+
+      {apiWaiting ? (
+        <p className="inline-status" role="status">
+          <Spinner /> {t("chat.api_waiting_hint")}
+        </p>
+      ) : null}
 
       {empty ? (
         <div>
           <div className="welcome">
             <h1>{t("chat.welcome_title")}</h1>
-            <p className="muted">{t("chat.welcome_subtitle")}</p>
+            <p className="muted">
+              {t("chat.welcome_subtitle")}
+              {suggestions.length > 0 ? ` ${t("chat.welcome_pick")}` : ""}
+            </p>
           </div>
           {suggestions.length > 0 ? (
             <SuggestionChips suggestions={suggestions} onPick={(s) => send(s)} />
@@ -396,61 +437,96 @@ export function Chat() {
           onChange={(e) => setQuestion(e.target.value)}
           onKeyDown={onKeyDown}
           placeholder={corpus || routing ? t("chat.placeholder") : t("chat.placeholder_empty")}
+          aria-label={t("chat.question_label")}
           rows={2}
         />
         <div className="composer-row">
           <div className="model-pick">
-            <span>{t("chat.llm_label")}</span>
-            <select
-              value={llmModel}
-              onChange={(e) => setLlmModel(e.target.value)}
+            <Select
+              size="sm"
+              value={llm}
+              onChange={(e) => setLlm(e.target.value)}
               title={t("chat.llm_title")}
+              aria-label={t("chat.llm_label")}
             >
-              <option value="">{t("common.defaut_is", { value: defaultModel })}</option>
-              {modelsList.map((m) => (
-                <option key={m.name} value={m.name}>
-                  {m.name}
-                </option>
+              <option value="">
+                {t("chat.llm_default", { model: defaultModel, provider: defaultProvider })}
+              </option>
+              {providers.map((p) => (
+                <optgroup key={p.name} label={p.label}>
+                  {p.available && p.models.length > 0 ? (
+                    p.models.map((m) => (
+                      <option key={m} value={llmValue(p.name, m)}>
+                        {m}
+                      </option>
+                    ))
+                  ) : (
+                    <option value={`${p.name}::`} disabled>
+                      {p.available ? t("chat.llm_no_models") : t("chat.llm_unreachable")}
+                    </option>
+                  )}
+                </optgroup>
               ))}
-            </select>
-            <span className="dim">
-              {resolvedRun
-                ? t("chat.composer_on_index", {
-                    strategy: resolvedRun.strategy,
-                    model: resolvedRun.embedding_model_name ?? "—",
-                  })
-                : corpus
-                ? t("chat.composer_no_index")
-                : routing
-                ? t("chat.corpus_auto")
-                : t("chat.composer_no_corpus")}
-            </span>
+            </Select>
           </div>
-          <button
-            onClick={() => send()}
-            disabled={action.loading || !question.trim() || (!corpus && !routing) || noRuns}
-          >
-            <SendIcon size={14} /> {t("common.submit")}
-          </button>
+          {/* While a request runs, the same place stops it. */}
+          {action.loading ? (
+            <button className="send ghost" onClick={stop}>
+              {t("chat.stop")}
+              <StopIcon size={13} />
+            </button>
+          ) : (
+            <button
+              className="send"
+              onClick={() => send()}
+              disabled={!question.trim() || (!corpus && !routing) || noRuns}
+            >
+              {t("common.submit")}
+              <SendIcon size={15} />
+            </button>
+          )}
         </div>
       </div>
     </div>
   );
 
   if (!educational) return page;
+  // Decisions of the last request (from its response), or what the current
+  // options will do before the first question.
+  const planned = effectiveOptions(options, config, legalCorpus);
+  const answered = !!lastTurn?.index_run_id;
+  const route: RouteInfo = {
+    known: answered,
+    mode: (answered ? lastTurn?.retrieval_mode : null) ?? planned.mode,
+    rerank: (answered ? lastTurn?.rerank : null) ?? planned.rerank,
+    // Before a question, a re-ranking left off for lack of GPU already says why.
+    rerankNotice: answered
+      ? lastTurn?.rerank_notice ?? null
+      : config?.rerank_gpu === false && !planned.rerank
+      ? "skipped_no_gpu"
+      : null,
+    rerankCandidates: config?.rerank_candidates ?? 40,
+    legalCorpus,
+    citationsOn: planned.citations,
+    citation: answered ? lastTurn?.citation ?? null : null,
+    graphOn: (answered ? lastTurn?.graph : null) ?? planned.graph,
+    graphNotice: answered ? lastTurn?.graph_notice ?? null : null,
+    graphStats: answered ? lastTurn?.graph_stats ?? null : null,
+    versionsMode: parseVersionsValue(planned.versions).mode,
+    versions: answered ? lastTurn?.versions ?? null : null,
+  };
   return (
-    <div className="edu-layout">
+    <div className="edu-shell">
+      <PipelineStrip
+        state={lastPipeline}
+        question={lastTurn?.question}
+        lexemes={lastTurn?.lexemes}
+        rrfK={config?.rrf_k ?? 60}
+        lexicalWeight={config?.hybrid_lexical_weight ?? 0.5}
+        graphWeight={config?.graph_weight ?? 0.5}
+        route={route}
+      />
       {page}
-      <aside className={`edu-aside${diagramOpen ? "" : " collapsed"}`} aria-label={t("edu.title")}>
-        <button
-          className="ghost sm edu-collapse"
-          aria-expanded={diagramOpen}
-          onClick={() => setDiagramOpen((open) => !open)}
-        >
-          {diagramOpen ? t("edu.hide") : t("edu.show")}
-        </button>
-        {diagramOpen ? <PipelineDiagram key={lastTurn?.id ?? "idle"} state={lastPipeline} /> : null}
-      </aside>
     </div>
   );
 }
@@ -471,6 +547,7 @@ function ChatTurnView({
   onSelectSource,
 }: TurnProps) {
   const { t } = useTranslation();
+  const gpuWhy = useGpuWhy();
   const [showDetail, setShowDetail] = useState(false);
   // When the router declines, the retrieved passages are not sources.
   const declined = turn.routing ? !turn.routing.answer_from_documents : false;
@@ -486,7 +563,7 @@ function ChatTurnView({
         {turn.question}
       </div>
 
-      {(turn.answer === null || turn.answer === "") && !turn.error ? (
+      {(turn.answer === null || turn.answer === "") && !turn.error && !turn.stopped ? (
         <div className="inline-status" role="status">
           <span className="dots">
             <span />
@@ -494,6 +571,12 @@ function ChatTurnView({
             <span />
           </span>
           {t("chat.loading")}
+        </div>
+      ) : null}
+
+      {turn.stopped && !turn.answer ? (
+        <div className="inline-status" role="status">
+          {t("chat.stopped")}
         </div>
       ) : null}
 
@@ -520,10 +603,11 @@ function ChatTurnView({
       {turn.answer ? (
         <div className="bubble assistant" aria-busy={turn.streaming ? true : undefined}>
           <div className="role">{t("chat.assistant_role")}</div>
-          <div style={{ whiteSpace: "pre-wrap" }}>
-            {renderAnswer(turn.answer, turn.chunks, highlight, onSelectSource)}
+          <div className="answer-text" style={{ whiteSpace: "pre-wrap" }}>
+            {renderAnswer(turn.answer, turn.chunks, highlight, (chunk) => onSelectSource(chunk.file_name))}
             {turn.streaming ? <span className="stream-caret" aria-hidden="true" /> : null}
           </div>
+          {turn.stopped ? <p className="answer-stopped">{t("chat.stopped")}</p> : null}
           {sourceChunks.length > 0 ? (
             <div className="sources">
               <div className="sources-label">
@@ -538,15 +622,9 @@ function ChatTurnView({
                 citedRanks={turn.answer ? extractCitedRanks(turn.answer) : undefined}
               />
               <button className="details-toggle" onClick={onToggleDetails}>
-                {expanded
-                  ? t("chat.chunks_hide", {
-                      count: visibleChunks.length,
-                      filtered: highlight ? t("chat.chunks_filtered_suffix") : "",
-                    })
-                  : t("chat.chunks_show", {
-                      count: visibleChunks.length,
-                      filtered: highlight ? t("chat.chunks_filtered_suffix") : "",
-                    })}
+                {t(`chat.chunks_${expanded ? "hide" : "show"}${highlight ? "_filtered" : ""}`, {
+                  count: visibleChunks.length,
+                })}
               </button>
               {expanded ? (
                 <div style={{ marginTop: 12 }}>
@@ -558,7 +636,22 @@ function ChatTurnView({
             </div>
           ) : null}
           {turn.routing ? <RoutingPanel routing={turn.routing} /> : null}
+          {turn.rerank_notice ? (
+            <p className="answer-notice" role="note">
+              {t(`chat.rerank_notice_${turn.rerank_notice}`, { defaultValue: turn.rerank_notice, why: gpuWhy })}
+            </p>
+          ) : null}
           <div className="answer-meta">
+            {turn.retrieval_mode ? (
+              <span>
+                {t("chat.meta_mode")} <code>{turn.retrieval_mode}{turn.rerank ? " + rerank" : ""}</code>
+              </span>
+            ) : null}
+            {turn.citation ? (
+              <span title={turn.citation.label}>
+                {t("chat.meta_citation")} <code>{turn.citation.label}</code>
+              </span>
+            ) : null}
             {turn.strategy ? (
               <span>
                 {t("chat.meta_strategy")} <code>{turn.strategy}</code>

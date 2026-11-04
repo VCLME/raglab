@@ -1,10 +1,18 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from raglab.domain.enums import ChunkingStrategy, RetrievalMode
+from raglab.domain.versions import parse_versions_option
+
+
+def _check_versions(value: str | None) -> str | None:
+    """`versions`: in_force, all or as_of=YYYY-MM-DD (422 otherwise)."""
+    parse_versions_option(value)
+    return value.strip() if isinstance(value, str) else value
 
 
 class HealthResponse(BaseModel):
@@ -53,8 +61,43 @@ class ConfigResponse(BaseModel):
     bm25_b: float
     default_rerank: bool = False
     rerank_gpu: bool = False
+    # RAGLAB_RERANK_DEVICE and why it can or cannot use a GPU: ok,
+    # device_cpu, torch_missing or cuda_unavailable (rerank_gpu_status).
+    rerank_device: str = ""
+    rerank_gpu_status: str = ""
     rerank_model_name: str = ""
     rerank_candidates: int = 0
+    # Phase-8 entity store pages (Expert flag).
+    entity_graph_enabled: bool = False
+    # Graph retrieval branch default and its RRF weight (phase 9.9b).
+    graph_retrieval: bool = False
+    graph_weight: float = 0.5
+    citation_resolver: bool = True
+    # Default of the versions option (phase 9.10).
+    versions_default: str = "all"
+    # Enabled generation providers (RAGLAB_LLM_PROVIDERS) and the default one.
+    llm_providers: list[str] = Field(default_factory=lambda: ["ollama"])
+    default_llm_provider: str = "ollama"
+
+
+class LLMProviderInfo(BaseModel):
+    name: str
+    label: str
+    # "ollama" (native API) or "openai" (OpenAI-compatible: llama.cpp, vLLM).
+    kind: str
+    base_url: str
+    available: bool
+    # Short reason when unavailable: "unreachable", "timeout", "http 401"...
+    error: str | None = None
+    models: list[str] = Field(default_factory=list)
+    # Model used when a request names none (None = the server's choice).
+    default_model: str | None = None
+
+
+class LLMModelsResponse(BaseModel):
+    default_provider: str
+    default_model: str | None = None
+    providers: list[LLMProviderInfo]
 
 
 class OllamaPullRequest(BaseModel):
@@ -136,22 +179,47 @@ class QueryRequest(BaseModel):
     retrieval_mode: RetrievalMode | None = None
     # Resolve legal citations ("art. 49 da Lei nº 8.078"); None = server default.
     citations: bool | None = None
+    # Graph branch: follow the legal references of the found articles
+    # (Neo4j); None = RAGLAB_GRAPH_RETRIEVAL.
+    graph: bool | None = None
+    # Article versions retrieval may use: in_force (today, or the date the
+    # question asks about), all, as_of=YYYY-MM-DD; None = RAGLAB_VERSIONS_DEFAULT.
+    versions: str | None = None
     lexical_weight: float | None = Field(None, ge=0.0, le=1.0)
     rrf_k: int | None = Field(None, ge=0)
     # Cross-encoder re-ranking of rerank_candidates first-stage chunks.
     # None = RAGLAB_DEFAULT_RERANK.
     rerank: bool | None = None
-    # Ollama model for the answer; None = RAGLAB_GENERATION_MODEL.
-    # Ignored by /api/graph/query.
+    # Model for the answer; None = RAGLAB_GENERATION_MODEL (Ollama) or the
+    # server's first model (llama.cpp, vLLM). Ignored by /api/graph/query.
     llm_model: str | None = None
     # Query router (phase 9.4): language, intent, corpus choice when `corpus`
     # and `index_run_id` are empty, abstention. Ignored by /api/graph/query.
     routing: bool = False
+    # Generation provider among RAGLAB_LLM_PROVIDERS (ollama, llamacpp,
+    # vllm); None = RAGLAB_DEFAULT_LLM_PROVIDER. Ignored by /api/graph/query.
+    llm_provider: str | None = None
     # Graph-only: "vector" = KNN, "hybrid" = KNN seed + entity re-rank.
     # Ignored by the pgvector /api/query endpoint.
     mode: str = "vector"
     seed_top_n: int = 3
     entity_weight: float = 0.3
+
+    @field_validator("versions")
+    @classmethod
+    def check_versions(cls, value: str | None) -> str | None:
+        return _check_versions(value)
+
+
+class CorpusFeatures(BaseModel):
+    # The corpus holds law or code articles (LexML `number`, Légifrance
+    # `article_number`, EU acts `celex` metadata): the Chat offers the article-reference
+    # option (citation resolver) only then.
+    legal_citations: bool = False
+    # Documents carry version metadata (Légifrance `etat`, dates): the
+    # versions option can pick the version of a date, not only demote
+    # repealed provisions.
+    version_history: bool = False
 
 
 class CorpusSummary(BaseModel):
@@ -160,6 +228,7 @@ class CorpusSummary(BaseModel):
     description: str | None = None
     documents_count: int
     index_runs_count: int
+    features: CorpusFeatures = Field(default_factory=CorpusFeatures)
 
 
 class CorpusDeleteResponse(BaseModel):
@@ -362,6 +431,66 @@ class SubgraphResponse(BaseModel):
     mentions: list[SubgraphEdge]
 
 
+class GraphBuildRequest(BaseModel):
+    # One of corpus (latest pgvector index run) or index_run_id.
+    corpus: str | None = None
+    index_run_id: str | None = None
+    # laws, eu_acts, generic or auto; None = RAGLAB_GRAPH_PROFILES, else auto.
+    profile: str | None = Field(None, pattern="^(auto|laws|eu_acts|generic)$")
+
+
+class GraphStatusResponse(BaseModel):
+    index_run_id: str
+    corpus: str | None = None
+    # False when Neo4j does not answer (the graph is optional).
+    available: bool
+    graph: dict[str, Any] | None = None
+    counts: dict[str, dict[str, int]] = Field(default_factory=dict)
+
+
+class GraphLaw(BaseModel):
+    uid: str
+    key: str | None = None
+    number: str | None = None
+    year: int | None = None
+    title: str | None = None
+    ementa: str | None = None
+    document_id: str | None = None
+    articles: int = 0
+    cited: int = 0
+    citing: int = 0
+
+
+class GraphNode(BaseModel):
+    id: str
+    kind: str
+    label: str | None = None
+    number: str | None = None
+    law_uid: str | None = None
+    law_key: str | None = None
+    title: str | None = None
+    preview: str | None = None
+    revoked: bool = False
+    focus: bool = False
+
+
+class GraphEdge(BaseModel):
+    source: str
+    target: str
+    type: str
+    mentions: int = 1
+    snippet: str | None = None
+    kind: str | None = None
+    articles: list[str] = Field(default_factory=list)
+
+
+class GraphNeighbourhoodResponse(BaseModel):
+    nodes: list[GraphNode]
+    edges: list[GraphEdge]
+    # Articles of the law that neither cite nor are cited (not drawn).
+    isolated_articles: int = 0
+
+
 class RecallRequest(BaseModel):
     corpus: str
     strategy: ChunkingStrategy
@@ -376,6 +505,8 @@ class RecallRequest(BaseModel):
     rrf_k: int | None = Field(None, ge=0)
     rerank: bool | None = None
     citations: bool | None = None
+    graph: bool | None = None
+    versions: str | None = None
     compute_ragas: bool = False
     # Grade only the first N cases (retrieval still runs on all of them).
     ragas_case_limit: int | None = Field(None, ge=1)
@@ -384,6 +515,26 @@ class RecallRequest(BaseModel):
     # RAGLAB_LLAMACPP_BASE_URL; the API container cannot start it).
     judge_backend: str = "ollama"
     judge_model: str | None = None
+
+    @field_validator("versions")
+    @classmethod
+    def check_versions(cls, value: str | None) -> str | None:
+        return _check_versions(value)
+
+
+class DriftSelection(BaseModel):
+    index_run_id: str | None = None
+    experiment_run_id: str | None = None
+    since: datetime | None = None
+    until: datetime | None = None
+
+
+class DriftRequest(BaseModel):
+    baseline: DriftSelection
+    candidate: DriftSelection
+    alpha: float = Field(default=0.05, gt=0, lt=1)
+    mean_threshold: float = Field(default=0.05, ge=0)
+    min_samples: int = Field(default=10, ge=2)
 
 
 class RoutingExperimentRequest(BaseModel):

@@ -28,6 +28,7 @@ from raglab.domain.enums import ChunkingStrategy, RetrievalMode
 from raglab.experiments.recall import _chunk_covers_span, _percentile
 from raglab.retrieval.service import QueryService
 from raglab.routing.abstention import best_score, threshold_for
+from raglab.routing.citation import cited_text_in_run
 from raglab.routing.intent import decide_intent
 from raglab.routing.router import QueryRouter
 from raglab.routing.schemas import Intent
@@ -52,7 +53,36 @@ IN_SCOPE_SETS = (
         "bench_lexml_pt",
         "pt",
     ),
+    # Used once their frozen questions exist (generated on GPU); the EU set
+    # mixes en / fr / pt, each row carries its question's language.
+    InScopeSet(
+        "legi_consommation",
+        REPO_ROOT / "benchmarks" / "legi_consommation" / "ground_truth.jsonl",
+        "bench_legi_consommation_fr",
+        "fr",
+    ),
+    InScopeSet(
+        "eurlex_compliance",
+        REPO_ROOT / "benchmarks" / "eurlex_compliance" / "ground_truth.jsonl",
+        "bench_eurlex_compliance",
+        "multi",
+    ),
 )
+
+
+def available_sets(in_scope_sets: tuple[InScopeSet, ...], corpora: list[str] | None = None) -> tuple[InScopeSet, ...]:
+    """Sets whose questions exist and whose corpus the router may choose.
+
+    With `--corpus` given, only those corpora's sets are evaluated, so
+    `--corpus bench_piaf_fr --corpus bench_lexml_pt` keeps measuring exactly
+    the PIAF + LexML sample, whatever other corpora are indexed.
+    """
+    return tuple(s for s in in_scope_sets if s.path.exists() and (not corpora or s.corpus_name in corpora))
+
+
+def _row_language(in_scope: InScopeSet, row: dict[str, Any]) -> str:
+    return row.get("language") or (row.get("context") or {}).get("question_language") or in_scope.language
+
 
 # Intent margins swept; None = intent ignored (abstention on the score only).
 INTENT_MARGINS: tuple[float | None, ...] = (None, -0.05, -0.02, 0.0, 0.02, 0.05, 0.1)
@@ -124,7 +154,7 @@ def load_cases(
                     id=row["id"],
                     question=row["question"],
                     category="in_scope",
-                    language=in_scope.language,
+                    language=_row_language(in_scope, row),
                     source=in_scope.name,
                     subtype=row.get("question_type"),
                     expected_corpus=in_scope.corpus_name,
@@ -163,7 +193,7 @@ def load_calibration(
                     id=row["id"],
                     question=row["question"],
                     category="in_scope",
-                    language=in_scope.language,
+                    language=_row_language(in_scope, row),
                     source=in_scope.name,
                     expected_corpus=in_scope.corpus_name,
                 )
@@ -375,6 +405,7 @@ class RoutingExperimentService:
         abstention_path: Path = ABSTENTION_PATH,
         in_scope_sets: tuple[InScopeSet, ...] = IN_SCOPE_SETS,
     ) -> dict[str, Any]:
+        in_scope_sets = available_sets(in_scope_sets, corpora)
         cases = load_cases(
             abstention_path=abstention_path, in_scope_sets=in_scope_sets, sample_size=sample_size, seed=seed
         )
@@ -412,7 +443,9 @@ class RoutingExperimentService:
                     "corpus_routed": decision.corpus.corpus_name,
                     "corpus_margin": decision.corpus.margin,
                     "corpus_scores": {c.corpus_name: c.score for c in decision.corpus.candidates},
-                    "legal_citation": decision.legal_citation is not None,
+                    # Same rule as the router: a cited text the index holds.
+                    "legal_citation": decision.citation is not None
+                    and cited_text_in_run(self.session, outcome.index_run, decision.citation),
                     "best_score": best_score(outcome.retrieved, self.settings.routing_score_source),
                     "scores": [round(chunk.score, 4) for chunk in outcome.retrieved],
                     "hit": any(_chunk_covers_span(chunk, span) for chunk in chunks for span in case.expected_spans),
@@ -450,6 +483,7 @@ class RoutingExperimentService:
                 "seed": seed,
                 "top_k": top_k,
                 "calibration_size": calibration_size,
+                "in_scope_sets": [s.name for s in in_scope_sets],
                 "retrieval_mode": (retrieval_mode or RetrievalMode(self.settings.default_retrieval_mode)).value,
                 "rerank": self.settings.default_rerank if rerank is None else rerank,
                 "citations": self.settings.citation_resolver if citations is None else citations,

@@ -1,14 +1,34 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import func, select
+from sqlalchemy import exists, func, or_, select
 from sqlalchemy.orm import Session
 
 from raglab.api.deps import get_db
-from raglab.api.schemas import CorpusDeleteResponse, CorpusDocument, CorpusSummary, IndexRunSummary
+from raglab.api.schemas import CorpusDeleteResponse, CorpusDocument, CorpusFeatures, CorpusSummary, IndexRunSummary
 from raglab.db.models import Chunk, Corpus, Document, EmbeddingSpace, IndexRun
+from raglab.retrieval.versions import corpus_has_versions
 
 router = APIRouter(tags=["corpora"])
+
+# Metadata keys of a law / code article: LexML laws carry `number`,
+# Légifrance articles `article_number`, EU act units `celex` (what the
+# citation resolver matches).
+LEGAL_METADATA_KEYS = ("number", "article_number", "celex")
+
+
+def legal_articles_query(corpus_id: str):
+    """EXISTS: one document of the corpus is a law or code article.
+
+    JSONB `?` on the document metadata; EXISTS stops at the first match, so a
+    legal corpus answers at once and others scan only their own documents.
+    """
+    return select(
+        exists().where(
+            Document.corpus_id == corpus_id,
+            or_(*(Document.metadata_json.has_key(key) for key in LEGAL_METADATA_KEYS)),
+        )
+    )
 
 
 @router.get("/api/corpora", response_model=list[CorpusSummary])
@@ -22,6 +42,8 @@ def list_corpora(session: Session = Depends(get_db)) -> list[CorpusSummary]:
         runs_count = session.execute(
             select(func.count()).select_from(IndexRun).where(IndexRun.corpus_id == corpus.id)
         ).scalar_one()
+        legal = bool(session.execute(legal_articles_query(corpus.id)).scalar_one())
+        history = legal and corpus_has_versions(session, corpus.id)
         summaries.append(
             CorpusSummary(
                 id=corpus.id,
@@ -29,6 +51,7 @@ def list_corpora(session: Session = Depends(get_db)) -> list[CorpusSummary]:
                 description=corpus.description,
                 documents_count=docs_count or 0,
                 index_runs_count=runs_count or 0,
+                features=CorpusFeatures(legal_citations=legal, version_history=history),
             )
         )
     return summaries

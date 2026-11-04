@@ -57,6 +57,19 @@ def upsert_document(session: Session, *, corpus: Corpus, payload: DocumentPayloa
             Document.source_path == str(payload.source_path),
         )
     )
+    if existing is None:
+        # The same file read from another checkout of the folder (another
+        # worktree, a moved data directory) is the same document: matching
+        # on the absolute path alone duplicated all 761 PIAF documents once.
+        existing = session.scalar(
+            select(Document)
+            .where(
+                Document.corpus_id == corpus.id,
+                Document.file_name == payload.file_name,
+                Document.checksum == payload.checksum,
+            )
+            .limit(1)
+        )
     is_new = existing is None
     document = existing or Document(corpus_id=corpus.id, source_path=str(payload.source_path))
 

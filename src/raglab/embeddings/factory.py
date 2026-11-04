@@ -3,6 +3,7 @@ from threading import Lock
 from raglab.config import Settings, get_settings
 from raglab.embeddings.ollama_provider import OllamaEmbeddingProvider
 from raglab.embeddings.transformers_provider import TransformersEmbeddingProvider
+from raglab.observability.metrics import record_cache_lookup
 
 # Providers load their model lazily and keep it in memory. Building a new one
 # per query reloaded the transformers weights from disk on every request;
@@ -39,6 +40,7 @@ def build_embedding_provider(settings: Settings | None = None):
     key = _cache_key(resolved)
     with _CACHE_LOCK:
         provider = _CACHE.get(key)
+        record_cache_lookup("embedder", hit=provider is not None)
         if provider is None:
             provider = _create(resolved)
             _CACHE[key] = provider

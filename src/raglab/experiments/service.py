@@ -170,6 +170,7 @@ class ExperimentService:
                         "retrieval_reciprocal_rank": retrieval_rr,
                         "first_relevant_rank": first_rank,
                         "elapsed_ms": response.elapsed_ms,
+                        "retrieved_scores": [chunk.score for chunk in response.retrieved_chunks],
                     }
                     store_experiment_result(
                         self.session,

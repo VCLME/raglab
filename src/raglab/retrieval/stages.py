@@ -2,7 +2,8 @@
 
 The stage list is derived from what the request actually ran: the stage keys
 of `RetrievalOutcome.timings_ms` (`embed`, `retrieval`, and `dense`,
-`lexical`, `fusion`, `rerank` when hybrid retrieval or re-ranking ran), the
+`lexical`, `fusion`, `rerank` when hybrid retrieval or re-ranking ran,
+`versions` when a passage carries version information), the
 router decision when one is attached, then `prompt` and `generation` when an
 answer is generated. A stage the pipeline did not run is simply absent.
 
@@ -17,11 +18,12 @@ import math
 from typing import Any
 
 # Order of the retrieval-side stages, as drawn in the UI diagram.
-RETRIEVAL_STAGES = ("routing", "embed", "retrieval", "lexical", "fusion", "rerank")
+RETRIEVAL_STAGES = ("routing", "embed", "retrieval", "lexical", "graph", "fusion", "rerank", "versions")
 GENERATION_STAGES = ("prompt", "generation")
 
 VECTOR_PREVIEW = 8
 TOP_CHUNKS = 5
+GRAPH_LINKS = 8
 EXCERPT_CHARS = 160
 PROMPT_PREVIEW_CHARS = 600
 
@@ -65,7 +67,7 @@ def _retrieval_durations(timings_ms: dict[str, float]) -> dict[str, float]:
         durations["retrieval"] = timings_ms["dense"]
     elif "retrieval" in timings_ms and "lexical" not in timings_ms:
         durations["retrieval"] = timings_ms["retrieval"]
-    for key in ("lexical", "fusion", "rerank"):
+    for key in ("lexical", "graph", "fusion", "rerank", "versions"):
         if key in timings_ms:
             durations[key] = timings_ms[key]
     return durations
@@ -78,11 +80,26 @@ def _chunk_preview(chunk: Any) -> dict[str, Any]:
         "file_name": payload.get("file_name"),
         "excerpt": (payload.get("chunk_text") or "")[:EXCERPT_CHARS],
     }
-    # `score` plus whatever intermediate scores the pipeline filled in
-    # (dense_score, lexical_score, fused_score, rerank_score).
+    # `score` plus whatever intermediate scores and ranks the pipeline filled
+    # in (dense_*, lexical_*, fused_*, rerank_*): the learning mode draws the
+    # RRF formula and the re-ranking reorder from them.
     for key, value in payload.items():
-        if key.endswith("score") and value is not None:
+        if (key.endswith("score") or key.endswith("_rank")) and value is not None:
             preview[key] = value
+    # Passages placed by a rule rather than by their score: the cited article
+    # (citation resolver), a cited passage kept next to the one citing it.
+    for key in ("citation_match", "graph_pinned"):
+        if payload.get(key):
+            preview[key] = True
+    version = payload.get("version")
+    if version:
+        # Version state of the passage (versions option): the learning mode
+        # shows which version it is and whether it applies.
+        preview["version"] = {
+            key: version[key]
+            for key in ("source", "etat", "in_force", "date_debut", "date_fin", "article", "revoked_only", "demoted")
+            if version.get(key) is not None
+        }
     return preview
 
 
@@ -115,6 +132,26 @@ def _stage_details(stage: str, outcome: Any) -> tuple[dict[str, Any], dict[str, 
         return ({"dimension": vector["dimension"]} if vector else {}), vector
     if stage == "routing":
         return {}, _routing_payload(getattr(outcome, "routing", None))
+    if stage == "graph":
+        # What the third branch found: seeds, cited articles followed, the
+        # passages it fetched and those new to the fusion; or why it was
+        # skipped (Neo4j off, no graph for the index run).
+        data: dict[str, Any] = {
+            "links": list(getattr(outcome, "graph_links", []))[:GRAPH_LINKS],
+            "top_chunks": _top_chunks(getattr(outcome, "graph_chunks", [])),
+        }
+        notice = getattr(outcome, "graph_notice", None)
+        if notice:
+            data["notice"] = notice
+        return dict(getattr(outcome, "graph_stats", {}) or {}), data
+    if stage == "versions":
+        # The rule applied (mode, reference date and where it came from) and
+        # what it did: versions filtered before ranking, repealed-only
+        # passages moved last, outdated passages still in the list.
+        info = dict(getattr(outcome, "versions", None) or {})
+        version_counts: dict[str, Any] = {key: info[key] for key in ("demoted", "outdated") if key in info}
+        version_counts["chunks_out"] = len(retrieved)
+        return version_counts, {"policy": info, "top_chunks": _top_chunks(retrieved)}
     counts: dict[str, Any] = {"chunks_out": len(retrieved)}
     if stage == "retrieval":
         counts["top_k"] = outcome.top_k

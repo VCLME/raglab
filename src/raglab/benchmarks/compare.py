@@ -11,6 +11,10 @@ independent confidence intervals side by side:
 
 A difference is called significant when the McNemar p-value is below 0.05
 (recall) or when the 95% interval of the difference excludes 0 (MRR).
+
+On sets where a version can be outdated (phase 9.10), the share of questions
+with an outdated version ranked above the one that answers
+(`outdated_hit@k`, lower is better) is compared the same way as Recall@k.
 """
 
 from __future__ import annotations
@@ -21,7 +25,15 @@ import random
 from pathlib import Path
 from typing import Any
 
-CASE_FIELDS = ("recall@1", "recall@5", "recall@10", "reciprocal_rank")
+CASE_FIELDS = (
+    "recall@1",
+    "recall@5",
+    "recall@10",
+    "reciprocal_rank",
+    "outdated_hit@5",
+    "outdated_hit@10",
+    "outdated_answer",
+)
 
 
 def case_rows(report: dict[str, Any]) -> list[dict[str, Any]]:
@@ -32,6 +44,8 @@ def case_rows(report: dict[str, Any]) -> list[dict[str, Any]]:
         row: dict[str, Any] = {"id": detail["id"]}
         if detail.get("question_type"):
             row["type"] = detail["question_type"]
+        if detail.get("split"):
+            row["split"] = detail["split"]
         for field in CASE_FIELDS:
             if field in metrics:
                 row[field] = float(metrics[field]) if field == "reciprocal_rank" else int(bool(metrics[field]))
@@ -101,6 +115,33 @@ def compare_suite(cases_a: list[dict[str, Any]], cases_b: list[dict[str, Any]], 
             "ci95": [round(mrr_low, 4), round(mrr_high, 4)],
             "significant": mrr_low > 0 or mrr_high < 0,
         },
+        **_outdated_entry(pairs, k),
+    }
+
+
+def _outdated_entry(pairs: list[tuple[dict[str, Any], dict[str, Any]]], k: int) -> dict[str, Any]:
+    """Outdated hits fixed / introduced by run b (McNemar), when both runs
+    recorded them."""
+    key = f"outdated_hit@{k}"
+    rows = [(x, y) for x, y in pairs if key in x and key in y]
+    if not rows:
+        return {}
+    fixed = sum(1 for x, y in rows if x[key] and not y[key])
+    introduced = sum(1 for x, y in rows if y[key] and not x[key])
+    rate_a = sum(x[key] for x, _ in rows) / len(rows)
+    rate_b = sum(y[key] for _, y in rows) / len(rows)
+    p_value = mcnemar_exact(fixed, introduced)
+    return {
+        key: {
+            "questions": len(rows),
+            "a": round(rate_a, 4),
+            "b": round(rate_b, 4),
+            "delta": round(rate_b - rate_a, 4),
+            "fixed": fixed,
+            "introduced": introduced,
+            "p_value": round(p_value, 4),
+            "significant": p_value < 0.05,
+        }
     }
 
 
@@ -122,6 +163,28 @@ def compare_runs(run_a: dict[str, Any], run_b: dict[str, Any], *, k: int = 5) ->
                     k=k,
                 )
                 for question_type in types
+            }
+        splits = sorted({row["split"] for row in cases_a if row.get("split")})
+        if splits:
+            # Questions never looked at while tuning are reported apart.
+            entry["by_split"] = {
+                split: compare_suite(
+                    [row for row in cases_a if row.get("split") == split],
+                    [row for row in cases_b if row.get("split") == split],
+                    k=k,
+                )
+                for split in splits
+            }
+        heldout_types = [t for t in types if any(r.get("split") == "heldout" and r.get("type") == t for r in cases_a)]
+        if heldout_types:
+            # The numbers to report: each question type on the held-out part.
+            entry["by_type_heldout"] = {
+                question_type: compare_suite(
+                    [row for row in cases_a if row.get("split") == "heldout" and row.get("type") == question_type],
+                    [row for row in cases_b if row.get("split") == "heldout" and row.get("type") == question_type],
+                    k=k,
+                )
+                for question_type in heldout_types
             }
         result["suites"][suite_a["suite"]] = entry
     return result
@@ -147,5 +210,34 @@ def render(comparison: dict[str, Any], *, k: int = 5) -> str:
         lines.append(line(suite_name, entry))
         for question_type, sub in entry.get("by_type", {}).items():
             lines.append(line(f"{suite_name} · {question_type}", sub))
+        for split, sub in entry.get("by_split", {}).items():
+            lines.append(line(f"{suite_name} · {split}", sub))
+        for question_type, sub in entry.get("by_type_heldout", {}).items():
+            lines.append(line(f"{suite_name} · heldout · {question_type}", sub))
+    outdated_key = f"outdated_hit@{k}"
+    rows = [
+        (name, sub)
+        for suite_name, entry in comparison["suites"].items()
+        for name, sub in [
+            (suite_name, entry),
+            *((f"{suite_name} · {t}", e) for t, e in entry.get("by_type", {}).items()),
+            *((f"{suite_name} · {s}", e) for s, e in entry.get("by_split", {}).items()),
+        ]
+        if outdated_key in sub
+    ]
+    if rows:
+        lines += [
+            "",
+            f"Version périmée classée avant la bonne dans le top {k} (plus bas = mieux) :",
+            "",
+            "| Jeu | Questions | Taux | Corrigées / introduites | p (McNemar) |",
+            "|---|---|---|---|---|",
+        ]
+        for name, sub in rows:
+            o = sub[outdated_key]
+            rate = f"{o['a']:.3f} → {o['b']:.3f} ({o['delta']:+.3f}){' ✱' if o['significant'] else ''}"
+            lines.append(
+                f"| {name} | {o['questions']} | {rate} | {o['fixed']} / {o['introduced']} | {o['p_value']:.3f} |"
+            )
     lines += ["", "✱ = écart significatif (p < 0,05 pour le recall, IC 95 % excluant 0 pour le MRR)."]
     return "\n".join(lines)

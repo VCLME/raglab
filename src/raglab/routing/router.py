@@ -11,8 +11,9 @@ from raglab.db.crud import get_index_run
 from raglab.domain.enums import ChunkingStrategy
 from raglab.domain.errors import run_with_timeout
 from raglab.embeddings.factory import build_embedding_provider
-from raglab.retrieval.citations import parse_citation
+from raglab.retrieval.citations import Citation, parse_citation
 from raglab.routing.abstention import best_score, decide_abstention, fallback_answer, threshold_for
+from raglab.routing.citation import cited_text_in_run
 from raglab.routing.corpus import embedding_identity, list_candidate_runs, score_corpora
 from raglab.routing.intent import get_intent_classifier, normalize
 from raglab.routing.language import detect_language
@@ -56,14 +57,15 @@ class QueryRouter:
         detected = perf_counter()
         intent = classifier.classify(embedding, margin=self.settings.routing_intent_margin)
         classified = perf_counter()
+        citation = parse_citation(question)
         corpus = self._choose_corpus(
             embedding,
             corpus_name=corpus_name,
             index_run_id=index_run_id,
             strategy=strategy,
             candidate_corpora=candidate_corpora,
+            citation=citation,
         )
-        citation = parse_citation(question)
         routed = perf_counter()
         decision = RoutingDecision(
             language=language,
@@ -79,6 +81,7 @@ class QueryRouter:
             },
         )
         decision._query_embedding = list(raw_embedding)
+        decision._citation = citation
         return decision
 
     def _choose_corpus(
@@ -89,6 +92,7 @@ class QueryRouter:
         index_run_id: str | None,
         strategy: ChunkingStrategy | None,
         candidate_corpora: list[str] | None,
+        citation: Citation | None = None,
     ) -> CorpusDecision:
         runs = list_candidate_runs(
             self.session,
@@ -117,6 +121,21 @@ class QueryRouter:
                 margin=margin,
                 source="requested",
             )
+        if citation is not None:
+            # A cited text decides: the best-scored corpus that holds it (the
+            # French code, the EU acts and the Brazilian laws are all legal
+            # text, their centroids alone may not separate them).
+            runs_by_id = {run.id: run for run in runs}
+            for candidate in candidates:
+                if cited_text_in_run(self.session, runs_by_id[candidate.index_run_id], citation):
+                    return CorpusDecision(
+                        corpus_name=candidate.corpus_name,
+                        index_run_id=candidate.index_run_id,
+                        suggested_corpus=candidate.corpus_name,
+                        candidates=candidates,
+                        margin=margin,
+                        source="citation",
+                    )
         return CorpusDecision(
             corpus_name=suggested.corpus_name if suggested else None,
             index_run_id=suggested.index_run_id if suggested else None,
@@ -134,7 +153,7 @@ class QueryRouter:
             score=best_score(retrieved, source),
             threshold=threshold_for(self.settings, decision.corpus.corpus_name),
             score_source=source,
-            legal_citation=decision.legal_citation is not None,
+            legal_citation=decision.legal_citation_found,
         )
         declined = abstention.abstain
         return decision.model_copy(

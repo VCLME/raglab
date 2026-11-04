@@ -40,6 +40,36 @@ Limites connues :
 - les lois qui en modifient d'autres recopient des articles entiers : un « Art. 2º » cité à l'intérieur d'un article modificatif peut être pris pour le début de l'article 2 ;
 - seules les lois fédérales numérotées sont reconnues ; décrets, portarias et lois d'État ne le sont pas.
 
+## Profil français (codes)
+
+Les codes français collectés par `raglab legifrance fetch` sont rangés à raison d'un document par version d'article, avec le code et le numéro d'article dans les métadonnées (voir [corpus-legi.md](corpus-legi.md)). Quand la question ne cite pas de loi brésilienne, le résolveur cherche une citation d'article de code :
+
+| Question | Citation lue |
+|---|---|
+| « Que prévoit l'article L. 221-18 du Code de la consommation ? » | art. L. 221-18, Code de la consommation |
+| « Que dit l'art. R. 212-1 ? » | art. R. 212-1, code non précisé |
+| « Que dispose l'article 1240 du code civil ? » | art. 1240, Code civil |
+| « Que dit l'article 4 de la loi n° 89-462 ? » | rien |
+
+Un numéro avec une lettre de partie (L, R, D, A, LO) suffit ; un numéro sans lettre n'est retenu que si un code est nommé juste après, car lois et décrets numérotent leurs articles de la même façon. Une trentaine de codes sont reconnus par leur nom ou leur abréviation (« C. consom. », « C. civ. »). L'article est retrouvé par `article_number` (et `code` s'il est nommé) : la version en vigueur, sinon la plus récente, ou celle en vigueur à la date de référence de l'option `versions` quand la question porte sur le passé (« l'article L. 121-21 avant 2016 », voir [versions.md](versions.md)) ; ses chunks sont épinglés en tête et la recherche est restreinte au code (`metadata_equals` sur `code`). La réponse de l'API porte `law_number: null` et `code`. Les citations brésiliennes sont lues en premier, inchangées.
+
+## Profil UE (actes européens)
+
+Les actes de l'UE collectés par `raglab eurlex fetch` (RGPD, AI Act, DORA, NIS 2 et les actes qui les complètent) sont rangés à raison d'un document par considérant, article ou annexe, par langue et par version, avec le CELEX de l'acte et l'unité dans les métadonnées (voir [corpus-eurlex.md](corpus-eurlex.md)). Quand la question ne cite pas de loi brésilienne, le résolveur cherche une citation d'acte de l'UE avant une citation de code français :
+
+| Question | Citation lue |
+|---|---|
+| « Que dit l'article 32 du RGPD ? » | Article 32 — RGPD |
+| « What does Article 6(1)(a) GDPR require? » | Article 6(1)(a) — GDPR |
+| « O que prevê o artigo 5.º do Regulamento (UE) 2016/679? » | Artigo 5 — RGPD |
+| « Que dit le considérant 39 du RGPD ? » | Considérant 39 — RGPD |
+| « What does the GDPR say about consent? » | l'acte seul |
+| « What does Article 6 say about lawfulness? » | rien |
+
+L'acte doit être nommé, par son numéro (« règlement (UE) 2016/679 », « Directive 95/46/EC », « Regulamento (UE) n.º 600/2014 ») ou par son nom court dans l'une des trois langues (RGPD, GDPR, AI Act, règlement sur l'IA, DORA, NIS 2…) ; un considérant suffit seul, puisque seuls les actes de l'UE en ont. Un article sans acte écrit juste après lui appartient à l'acte nommé juste après (« l'article 5 de DORA »), sinon au premier acte de la question. Les renvois sont lus par les règles de `raglab.eurlex.references` (paragraphe, point, « du présent règlement », « dudit règlement », « thereof »…), les mêmes que celles qui construisent le graphe.
+
+L'unité est retrouvée par `celex`, `unit` et `unit_number` dans la langue de la question si le corpus l'a, sinon dans une autre langue ; la version en vigueur d'abord. Ses chunks sont épinglés en tête et la recherche est restreinte à l'acte (`metadata_equals` sur `celex`) ; quand seul l'acte est cité, la recherche est restreinte à l'acte s'il est dans le corpus. La réponse de l'API porte `law_number: null` et `celex`. Avec la branche graphe, l'article cité sert aussi de départ, comme un article de loi brésilienne.
+
 ## Résultats
 
 Recall@5 sur les 97 questions `reference` de LexML (comparaison appariée, McNemar exact) :

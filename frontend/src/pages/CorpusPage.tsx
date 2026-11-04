@@ -1,11 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
+import { Tabs, tabPanelProps } from "../components/Tabs";
+import { useWorkshop } from "../workshop/state";
 import { apiFetch, get, post } from "../api/client";
 import { useApiAction, useApiLoad } from "../hooks/useApi";
-import type {
-  CorpusSummary,
-} from "../api/types";
 import { ErrorBanner } from "../components/ErrorBanner";
 import { ExplainBanner } from "../components/ExplainBanner";
 import { FieldRow } from "../components/FieldRow";
@@ -13,8 +11,9 @@ import { JsonViewer } from "../components/JsonViewer";
 import { Spinner } from "../components/Spinner";
 import { Ingest } from "./Ingest";
 import { LexML } from "./LexML";
+import { Select } from "../components/Select";
 
-type TabKey = "folder" | "bench" | "lexml" | "manage";
+type TabKey = "corpora" | "folder" | "bench" | "lexml" | "official";
 
 interface BenchLoaderInfo {
   name: string;
@@ -73,13 +72,13 @@ function BenchDownloadTab() {
       <h3>{t("corpus_page.bench_title")}</h3>
       <p className="muted" style={{ marginTop: -10 }}>{t("corpus_page.bench_help")}</p>
       <FieldRow label={t("corpus_page.bench_loader_label")}>
-        <select value={loader} onChange={(e) => setLoader(e.target.value)}>
+        <Select value={loader} onChange={(e) => setLoader(e.target.value)}>
           {(loaders.data ?? []).map((l) => (
             <option key={l.name} value={l.name}>
               {l.name} · {l.language} · {l.licence}
             </option>
           ))}
-        </select>
+        </Select>
         {chosen ? (
           <span className="hint">{chosen.description} — <a href={chosen.source} target="_blank" rel="noreferrer">{chosen.source}</a></span>
         ) : null}
@@ -116,9 +115,10 @@ function BenchDownloadTab() {
   );
 }
 
-function CorporaManageTab() {
-  const { t } = useTranslation();
-  const corpora = useApiLoad<CorpusSummary[]>(() => get("/api/corpora"));
+/** Corpora of the lab, with the one the Atelier follows and a delete action. */
+function CorporaTab() {
+  const { t, i18n } = useTranslation();
+  const { corpora, corpus, setCorpus, refresh, loading, error } = useWorkshop();
   const deleteCorpus = useApiAction((name: string) =>
     apiFetch<CorpusDeleteResponse>(`/api/corpora/${encodeURIComponent(name)}`, { method: "DELETE" })
   );
@@ -129,18 +129,18 @@ function CorporaManageTab() {
         ? t("manage.confirm_delete_empty", { name })
         : t("manage.confirm_delete_full", { name, docs, runs });
     if (!confirm(msg)) return;
-    await deleteCorpus.run(name);
-    corpora.refresh();
+    await deleteCorpus.run(name).catch(() => undefined);
+    refresh();
   };
 
   return (
-    <div className="card">
+    <section className="card">
       <h3>{t("corpus_page.manage_title")}</h3>
-      <p className="muted" style={{ marginTop: -10 }}>{t("corpus_page.manage_help")}</p>
-      {corpora.loading ? <Spinner /> : null}
-      <ErrorBanner error={corpora.error || deleteCorpus.error} />
+      <p className="muted card-lead">{t("corpus_page.manage_help")}</p>
+      {loading && !corpora.length ? <Spinner /> : null}
+      <ErrorBanner error={error || deleteCorpus.error} />
       {deleteCorpus.data ? (
-        <div className="badge ok" style={{ marginBottom: 12 }}>
+        <div className="badge ok notice-line">
           {t("manage.corpora_deleted", {
             corpus: deleteCorpus.data.corpus,
             docs: deleteCorpus.data.documents_deleted,
@@ -149,23 +149,34 @@ function CorporaManageTab() {
           })}
         </div>
       ) : null}
-      {corpora.data && corpora.data.length > 0 ? (
+      {corpora.length > 0 ? (
         <table className="table">
           <thead>
             <tr>
               <th>{t("common.name")}</th>
-              <th>{t("common.documents")}</th>
-              <th>{t("common.index_runs")}</th>
+              <th>{t("corpus_page.description")}</th>
+              <th className="num">{t("common.documents")}</th>
+              <th className="num">{t("common.index_runs")}</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
-            {corpora.data.map((c) => (
-              <tr key={c.id}>
-                <td><code>{c.name}</code></td>
-                <td>{c.documents_count}</td>
-                <td>{c.index_runs_count}</td>
-                <td style={{ textAlign: "right" }}>
+            {corpora.map((c) => (
+              <tr key={c.id} className={c.name === corpus?.name ? "highlight" : undefined}>
+                <td>
+                  <code>{c.name}</code>
+                </td>
+                <td className="muted">{c.description ?? "—"}</td>
+                <td className="num">{c.documents_count.toLocaleString(i18n.language)}</td>
+                <td className="num">{c.index_runs_count}</td>
+                <td className="num row-actions">
+                  {c.name === corpus?.name ? (
+                    <span className="muted">{t("workshop.selected")}</span>
+                  ) : (
+                    <button className="ghost sm" onClick={() => setCorpus(c.name)}>
+                      {t("workshop.select")}
+                    </button>
+                  )}
                   <button
                     className="ghost sm"
                     onClick={() => onDelete(c.name, c.documents_count, c.index_runs_count)}
@@ -178,30 +189,92 @@ function CorporaManageTab() {
             ))}
           </tbody>
         </table>
-      ) : corpora.data ? (
+      ) : !loading ? (
         <p className="muted">{t("manage.no_corpora")}</p>
       ) : null}
-      <div style={{ marginTop: 12 }}>
-        <Link to="/expert/index">
-          <button className="ghost sm">{t("nav.index")} →</button>
-        </Link>
-      </div>
+    </section>
+  );
+}
+
+interface OfficialSource {
+  key: "legi" | "eurlex";
+  corpus: string;
+  fetch: string;
+}
+
+const OFFICIAL_SOURCES: OfficialSource[] = [
+  { key: "legi", corpus: "bench_legi_consommation_fr", fetch: "raglab legifrance fetch --code consommation" },
+  { key: "eurlex", corpus: "bench_eurlex_compliance", fetch: "raglab eurlex fetch" },
+];
+
+/**
+ * Code de la consommation (Légifrance) and EU compliance acts (EUR-Lex): the
+ * API has no endpoint to fetch them, so the tab gives the commands and says
+ * whether the corpus is already in the lab.
+ */
+function OfficialSourcesTab() {
+  const { t, i18n } = useTranslation();
+  const { corpora, setCorpus } = useWorkshop();
+  return (
+    <div className="source-list">
+      {OFFICIAL_SOURCES.map((source) => {
+        const loaded = corpora.find((c) => c.name === source.corpus);
+        return (
+          <section key={source.key} className="card">
+            <h3>{t(`corpus_page.official_${source.key}_title`)}</h3>
+            <p className="card-lead">{t(`corpus_page.official_${source.key}_body`)}</p>
+            <dl className="kv">
+              <div>
+                <dt>{t("corpus_page.official_corpus")}</dt>
+                <dd>
+                  <code>{source.corpus}</code>{" "}
+                  {loaded ? (
+                    <>
+                      <span className="badge ok">
+                        {t("corpus_page.official_loaded", {
+                          count: loaded.documents_count,
+                          value: loaded.documents_count.toLocaleString(i18n.language),
+                        })}
+                      </span>{" "}
+                      <button className="ghost sm" onClick={() => setCorpus(source.corpus)}>
+                        {t("workshop.select")}
+                      </button>
+                    </>
+                  ) : (
+                    <span className="badge info">{t("corpus_page.official_missing")}</span>
+                  )}
+                </dd>
+              </div>
+              <div>
+                <dt>{t("corpus_page.official_source")}</dt>
+                <dd>{t(`corpus_page.official_${source.key}_source`)}</dd>
+              </div>
+            </dl>
+            <div className="command-block">
+              <span className="muted">{t("corpus_page.official_commands")}</span>
+              <pre>{`${source.fetch}\n${t("corpus_page.official_ingest_cmd", { corpus: source.corpus })}`}</pre>
+            </div>
+          </section>
+        );
+      })}
     </div>
   );
 }
 
 export function CorpusPage() {
   const { t } = useTranslation();
-  const [tab, setTab] = useState<TabKey>("folder");
+  const { corpora } = useWorkshop();
+  const [tab, setTab] = useState<TabKey>("corpora");
 
-  const tabs = useMemo<{ key: TabKey; label: string }[]>(
+  const tabs = useMemo(
     () => [
-      { key: "folder", label: t("corpus_page.tab_folder") },
-      { key: "bench", label: t("corpus_page.tab_bench") },
-      { key: "lexml", label: t("corpus_page.tab_lexml") },
-      { key: "manage", label: t("corpus_page.tab_manage") },
+      { key: "corpora" as const, label: t("corpus_page.tab_corpora"), count: corpora.length },
+      { key: "folder" as const, label: t("corpus_page.tab_folder") },
+      { key: "bench" as const, label: t("corpus_page.tab_bench") },
+      { key: "lexml" as const, label: t("corpus_page.tab_lexml") },
+      { key: "official" as const, label: t("corpus_page.tab_official") },
     ],
-    [t]
+    [t, corpora.length]
   );
 
   return (
@@ -215,21 +288,14 @@ export function CorpusPage() {
         body={t("corpus_page.explain_body")}
         storageKey="raglab.explain.corpus"
       />
-      <div className="tabs">
-        {tabs.map((tb) => (
-          <button
-            key={tb.key}
-            className={tab === tb.key ? "active" : ""}
-            onClick={() => setTab(tb.key)}
-          >
-            {tb.label}
-          </button>
-        ))}
+      <Tabs idBase="corpus" label={t("corpus_page.tabs_label")} items={tabs} value={tab} onChange={setTab} />
+      <div {...tabPanelProps("corpus", tab)}>
+        {tab === "corpora" ? <CorporaTab /> : null}
+        {tab === "folder" ? <Ingest /> : null}
+        {tab === "bench" ? <BenchDownloadTab /> : null}
+        {tab === "lexml" ? <LexML /> : null}
+        {tab === "official" ? <OfficialSourcesTab /> : null}
       </div>
-      {tab === "folder" ? <Ingest /> : null}
-      {tab === "bench" ? <BenchDownloadTab /> : null}
-      {tab === "lexml" ? <LexML /> : null}
-      {tab === "manage" ? <CorporaManageTab /> : null}
     </div>
   );
 }

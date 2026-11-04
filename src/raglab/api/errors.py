@@ -14,7 +14,8 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from raglab.config import Settings
-from raglab.domain.errors import StageTimeoutError
+from raglab.domain.errors import GraphUnavailableError, StageTimeoutError
+from raglab.llm.errors import LLMProviderError
 from raglab.ollama.errors import OllamaError, OllamaOutOfMemoryError
 
 
@@ -39,6 +40,15 @@ def describe_error(exc: Exception, settings: Settings) -> ErrorInfo | None:
             body["stage"] = exc.stage
             body["timeout_seconds"] = exc.timeout_seconds
         return ErrorInfo(exc.status_code, body, headers)
+    if isinstance(exc, LLMProviderError):
+        # llama.cpp / vLLM (and an unknown provider name, 400).
+        provider_body: dict = {"detail": str(exc), "error": type(exc).__name__, "provider": exc.provider}
+        if exc.cause:
+            provider_body["cause"] = exc.cause
+        if isinstance(exc, StageTimeoutError):
+            provider_body["stage"] = exc.stage
+            provider_body["timeout_seconds"] = exc.timeout_seconds
+        return ErrorInfo(exc.status_code, provider_body)
     if isinstance(exc, StageTimeoutError):
         return ErrorInfo(
             504,
@@ -49,6 +59,8 @@ def describe_error(exc: Exception, settings: Settings) -> ErrorInfo | None:
                 "timeout_seconds": exc.timeout_seconds,
             },
         )
+    if isinstance(exc, GraphUnavailableError):
+        return ErrorInfo(503, {"detail": str(exc), "error": "GraphUnavailableError"})
     # Raw transport errors from code paths that do not type them yet
     # (embeddings via Ollama, llama.cpp client).
     if isinstance(exc, requests.exceptions.Timeout):
@@ -77,7 +89,9 @@ def register_error_handlers(app: FastAPI, settings: Settings) -> None:
 
     for exc_type in (
         OllamaError,
+        LLMProviderError,
         StageTimeoutError,
+        GraphUnavailableError,
         requests.exceptions.Timeout,
         requests.exceptions.ConnectionError,
         ValueError,

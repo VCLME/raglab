@@ -4,10 +4,13 @@ import json
 import logging
 import math
 import random
+from collections import Counter
+from contextlib import AbstractContextManager, nullcontext
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
-from typing import Any
+from time import perf_counter
+from typing import Any, cast
 
 from sqlalchemy.orm import Session
 
@@ -18,7 +21,16 @@ from raglab.db.crud import (
     store_experiment_result,
 )
 from raglab.domain.enums import ChunkingStrategy, ExperimentStatus, RetrievalMode
-from raglab.experiments.metrics import first_relevant_rank, hit_at_k, precision_at_k, reciprocal_rank, relevance_flags
+from raglab.domain.versions import is_outdated
+from raglab.experiments.metrics import (
+    answer_cites_outdated,
+    first_relevant_rank,
+    hit_at_k,
+    outdated_hit_at_k,
+    precision_at_k,
+    reciprocal_rank,
+    relevance_flags,
+)
 from raglab.experiments.ragas import (
     AnswerCorrectnessJudge,
     AnswerRelevancyJudge,
@@ -37,6 +49,36 @@ LOGGER = logging.getLogger(__name__)
 
 
 @dataclass(slots=True)
+class GeneratorConfig:
+    """Which model writes the benchmark answers.
+
+    `provider=None` (or "ollama") keeps the production path: answers are
+    generated during the retrieval loop. Another provider (llama.cpp, vLLM)
+    generates in a pass of its own once retrieval is done and the
+    cross-encoder released; with "llamacpp", llama-server is started for that
+    pass with `profile` (default `RAGLAB_QUESTION_MODEL_PROFILE`) and stopped
+    before the judge's own server starts.
+    """
+
+    provider: str | None = None
+    model: str | None = None
+    profile: str | None = None
+
+    @property
+    def deferred(self) -> bool:
+        return self.provider not in (None, "ollama")
+
+    def label(self, settings: Settings) -> str:
+        if not self.deferred:
+            return f"ollama:{self.model or settings.generation_model}"
+        if self.model:
+            return f"{self.provider}:{self.model}"
+        if self.provider == "llamacpp":
+            return f"llamacpp:{self.profile or settings.question_model_profile}"
+        return f"{self.provider}:default"
+
+
+@dataclass(slots=True)
 class RecallBenchmarkCase:
     case_id: str
     question: str
@@ -45,6 +87,26 @@ class RecallBenchmarkCase:
     ground_truth_answer: str | None = None
     expected_spans: list[dict[str, Any]] = field(default_factory=list)
     question_type: str | None = None
+    # "dev" (looked at while tuning) or "heldout" (never looked at), for sets that have one.
+    split: str | None = None
+    # Versions set (phase 9.10): the outdated version that would mislead
+    # ({kind, file_names, article, answer, ...}) and facts about the case
+    # (`as_of`: the date the question asks about, `article`).
+    trap: dict[str, Any] | None = None
+    context: dict[str, Any] | None = None
+
+    def reference_date(self) -> date:
+        """The date the answer must be valid on: the one the question asks
+        about, else today."""
+        as_of = (self.context or {}).get("as_of")
+        return date.fromisoformat(as_of) if as_of else date.today()
+
+    def is_outdated(self, chunk: dict[str, Any]) -> bool:
+        """The chunk comes from the trap version, or (sets without a trap)
+        from a version that does not apply on the reference date."""
+        if self.trap and self.trap.get("file_names"):
+            return chunk["file_name"] in self.trap["file_names"]
+        return is_outdated(chunk, self.reference_date())
 
 
 class RecallBenchmarkService:
@@ -79,6 +141,8 @@ class RecallBenchmarkService:
         rrf_k: int | None,
         rerank: bool | None = None,
         citations: bool | None = None,
+        graph: bool | None = None,
+        versions: str | None = None,
     ) -> dict[str, Any]:
         """Resolved retrieval parameters, recorded with the run and passed to each query."""
         mode = RetrievalMode(retrieval_mode or self.settings.default_retrieval_mode)
@@ -95,6 +159,10 @@ class RecallBenchmarkService:
             config["rrf_k"] = self.settings.rrf_k if rrf_k is None else rrf_k
         if citations is not None:
             config["citations"] = citations
+        if graph is not None:
+            config["graph"] = graph
+        if versions is not None:
+            config["versions"] = versions
         return config
 
     def _rerank_record(self, retrieval: dict[str, Any]) -> dict[str, Any]:
@@ -137,6 +205,9 @@ class RecallBenchmarkService:
                         ground_truth_answer=payload.get("ground_truth_answer"),
                         expected_spans=payload.get("expected_spans", []),
                         question_type=payload.get("question_type"),
+                        split=payload.get("split"),
+                        trap=payload.get("trap"),
+                        context=payload.get("context"),
                     )
                 )
         if not cases:
@@ -243,6 +314,9 @@ class RecallBenchmarkService:
         rrf_k: int | None = None,
         rerank: bool | None = None,
         citations: bool | None = None,
+        graph: bool | None = None,
+        versions: str | None = None,
+        generator: GeneratorConfig | None = None,
     ) -> dict[str, Any]:
         """Run retrieval on every case, then (optionally) grade answers.
 
@@ -262,7 +336,17 @@ class RecallBenchmarkService:
             cases = self._load_cases(dataset_path.resolve())
 
         judge = judge or JudgeConfig()
-        retrieval = self._retrieval_config(retrieval_mode, lexical_weight, rrf_k, rerank=rerank, citations=citations)
+        generator = generator or GeneratorConfig()
+        deferred = compute_ragas and generator.deferred and self.backend == "pgvector"
+        retrieval = self._retrieval_config(
+            retrieval_mode,
+            lexical_weight,
+            rrf_k,
+            rerank=rerank,
+            citations=citations,
+            graph=graph,
+            versions=versions,
+        )
         rerank_record = self._rerank_record(retrieval)
         benchmark_label = benchmark_name or _infer_benchmark_name(dataset_path)
         run_name = f"recall-{benchmark_label}-{datetime.now(UTC).strftime('%Y%m%d-%H%M%S')}"
@@ -287,6 +371,7 @@ class RecallBenchmarkService:
                 **(
                     {
                         "judge": judge.label(self.settings),
+                        "generator": generator.label(self.settings),
                         "ragas_case_limit": ragas_case_limit,
                         "generation_top_k": self.settings.default_top_k,
                     }
@@ -319,6 +404,8 @@ class RecallBenchmarkService:
         first_rank_count = 0
         grade_limit = len(cases) if ragas_case_limit is None else ragas_case_limit
         generation_top_k = self.settings.default_top_k
+        # (position in details, question, retrieved chunks) for the deferred generation pass.
+        pending: list[tuple[int, str, list[Any]]] = []
 
         try:
             for position, case in enumerate(cases):
@@ -328,13 +415,13 @@ class RecallBenchmarkService:
                     "corpus_name": corpus_name,
                     "strategy": strategy,
                     "top_k": max_k,
-                    "generate_answer": generate,
+                    "generate_answer": generate and not deferred,
                 }
                 if index_run_id:
                     query_kwargs["index_run_id"] = index_run_id
                 if self.backend == "pgvector":
                     query_kwargs.update(retrieval)
-                if generate and self.backend == "pgvector":
+                if generate and not deferred and self.backend == "pgvector":
                     # Retrieval keeps max_k chunks for Recall@k, but the
                     # answer is generated from the production top-k only.
                     query_kwargs["generation_top_k"] = generation_top_k
@@ -354,21 +441,30 @@ class RecallBenchmarkService:
                     precision_sums[k] += precision
                     metrics_for_case[f"recall@{k}"] = hit
                     metrics_for_case[f"precision@{k}"] = precision
+                # Versions failure mode: an outdated version ranked above the
+                # one that answers, where a version can be outdated at all.
+                if case.trap or any(chunk.get("version") for chunk in retrieved):
+                    outdated = [case.is_outdated(chunk) for chunk in retrieved]
+                    for k in k_values:
+                        metrics_for_case[f"outdated_hit@{k}"] = outdated_hit_at_k(flags, outdated, k)
 
                 reciprocal_rank_sum += case_reciprocal_rank
                 if first_rank is not None:
                     first_rank_sum += first_rank
                     first_rank_count += 1
                 index_run_ids.append(response.index_run_id)
+                if generate and deferred:
+                    pending.append((len(details), case.question, list(response.retrieved_chunks)))
                 details.append(
                     {
                         "id": case.case_id,
                         "question": case.question,
                         "question_type": case.question_type,
+                        **({"split": case.split} if case.split else {}),
                         "expected_file_names": case.expected_file_names,
                         "expected_urns": case.expected_urns,
                         "retrieved_chunks": retrieved,
-                        "answer": response.answer if generate else None,
+                        "answer": response.answer if generate and not deferred else None,
                         "generation_context_size": (
                             (min(generation_top_k, len(retrieved)) if self.backend == "pgvector" else len(retrieved))
                             if generate
@@ -376,6 +472,8 @@ class RecallBenchmarkService:
                         ),
                         "timings_ms": dict(getattr(response, "timings_ms", {}) or {}),
                         "rerank_stats": dict(getattr(response, "rerank_stats", {}) or {}),
+                        "graph_notice": getattr(response, "graph_notice", None),
+                        "graph_stats": dict(getattr(response, "graph_stats", {}) or {}),
                         "generation_stats": dict(getattr(response, "generation_stats", {}) or {}),
                         "metrics": metrics_for_case,
                     }
@@ -383,6 +481,13 @@ class RecallBenchmarkService:
 
             if compute_ragas and retrieval.get("rerank"):
                 self._release_reranker()
+            if pending:
+                self._generate_deferred(pending, details, generator, generation_top_k)
+            for case, detail in zip(cases, details, strict=True):
+                if case.trap and detail.get("answer"):
+                    detail["metrics"]["outdated_answer"] = answer_cites_outdated(
+                        detail["answer"], case.trap, (case.context or {}).get("article")
+                    )
             ragas_scores = self._grade(cases, details, judge) if compute_ragas else {}
 
             for case, detail, run_id in zip(cases, details, index_run_ids, strict=True):
@@ -397,10 +502,13 @@ class RecallBenchmarkService:
                     metrics_json={
                         **detail["metrics"],
                         "timings_ms": detail["timings_ms"],
+                        # Kept for `raglab experiment drift` (score distributions).
+                        "retrieved_scores": [chunk["score"] for chunk in detail["retrieved_chunks"]],
                         "expected_file_names": case.expected_file_names,
                         "expected_urns": case.expected_urns,
                         "expected_spans": case.expected_spans,
                         "question_type": case.question_type,
+                        **({"split": case.split} if case.split else {}),
                     },
                 )
 
@@ -413,16 +521,24 @@ class RecallBenchmarkService:
             summary.update(_confidence_intervals(details, k_values))
             summary.update(_latency_summary(details))
             summary.update(_rerank_cache_summary(details))
+            summary.update(_outdated_summary(details, k_values))
             for metric, scores in ragas_scores.items():
                 summary[f"{metric}_mean"] = sum(scores) / len(scores) if scores else None
                 summary[f"{metric}_judged"] = len(scores)
 
             by_type = _summarise_by_type(details, k_values)
+            by_split = _summarise_by_type(details, k_values, key="split")
+            # Each type on the questions never looked at while tuning.
+            by_type_heldout = _summarise_by_type(
+                [detail for detail in details if detail.get("split") == "heldout"], k_values
+            )
             experiment_run.config_json = {
                 **experiment_run.config_json,
                 "total_cases": total_cases,
                 "summary": summary,
                 **({"by_type": by_type} if by_type else {}),
+                **({"by_split": by_split} if by_split else {}),
+                **({"by_type_heldout": by_type_heldout} if by_type_heldout else {}),
             }
             self.session.add(experiment_run)
             complete_experiment_run(self.session, experiment_run, ExperimentStatus.COMPLETED)
@@ -447,8 +563,15 @@ class RecallBenchmarkService:
             "judge": judge.label(self.settings) if compute_ragas else None,
             "summary": summary,
             "by_type": by_type,
+            **({"by_split": by_split} if by_split else {}),
+            **({"by_type_heldout": by_type_heldout} if by_type_heldout else {}),
             "details": details,
         }
+        if retrieval.get("graph"):
+            # How many questions ran without the graph branch, and why: a
+            # graph run measured without Neo4j must not pass for a graph run.
+            notices = Counter(detail["graph_notice"] for detail in details if detail.get("graph_notice"))
+            payload["graph_notices"] = dict(notices)
         report_path = self._write_report(f"recall-{benchmark_label}", payload)
         payload["report_path"] = str(report_path)
         log_event(
@@ -464,6 +587,31 @@ class RecallBenchmarkService:
             experiment_run_id=experiment_run.id,
         )
         return payload
+
+    def _generate_deferred(
+        self,
+        pending: list[tuple[int, str, list[Any]]],
+        details: list[dict[str, Any]],
+        generator: GeneratorConfig,
+        generation_top_k: int,
+    ) -> None:
+        """Generation pass for a provider other than Ollama: same prompt and
+        same top-k context as the production path, after retrieval."""
+        # Deferred generation is pgvector-only (see `run`), so this is a QueryService.
+        answerer = cast(QueryService, self.query_service).generator_for(generator.provider)
+        server: AbstractContextManager[Any] = (
+            LocalLLMServer(self.settings, profile=generator.profile or self.settings.question_model_profile)
+            if generator.provider == "llamacpp"
+            else nullcontext()
+        )
+        with server:
+            for position, question, chunks in pending:
+                started = perf_counter()
+                answer = answerer.generate_answer(question, chunks[:generation_top_k], model=generator.model)
+                detail = details[position]
+                detail["answer"] = answer
+                detail["timings_ms"]["generation"] = round((perf_counter() - started) * 1000, 3)
+                detail["generation_stats"] = dict(answerer.last_stats)
 
     def _grade(
         self,
@@ -603,12 +751,15 @@ def _rerank_cache_summary(details: list[dict[str, Any]]) -> dict[str, float]:
     return {"rerank_cache_hit_rate": round(hits / candidates, 4)}
 
 
-def _summarise_by_type(details: list[dict[str, Any]], k_values: tuple[int, ...]) -> dict[str, dict[str, float]]:
-    """Recall@k and MRR per question type, for typed datasets only."""
+def _summarise_by_type(
+    details: list[dict[str, Any]], k_values: tuple[int, ...], key: str = "question_type"
+) -> dict[str, dict[str, float]]:
+    """Recall@k and MRR per question type (or per split with key="split"),
+    for datasets that carry it only."""
     groups: dict[str, list[dict[str, Any]]] = {}
     for detail in details:
-        if detail.get("question_type"):
-            groups.setdefault(detail["question_type"], []).append(detail["metrics"])
+        if detail.get(key):
+            groups.setdefault(detail[key], []).append(detail["metrics"])
     summary: dict[str, dict[str, float]] = {}
     for question_type, metrics in sorted(groups.items()):
         count = len(metrics)
@@ -616,7 +767,24 @@ def _summarise_by_type(details: list[dict[str, Any]], k_values: tuple[int, ...])
         for k in k_values:
             row[f"recall@{k}"] = sum(int(m[f"recall@{k}"]) for m in metrics) / count
         row["mrr"] = sum(m["reciprocal_rank"] for m in metrics) / count
+        row.update(_outdated_summary([{"metrics": m} for m in metrics], k_values))
         summary[question_type] = row
+    return summary
+
+
+def _outdated_summary(details: list[dict[str, Any]], k_values: tuple[int, ...]) -> dict[str, float]:
+    """Share of cases with an outdated version above the one that answers
+    (`outdated_hit@k`, over the cases where a version can be outdated) and of
+    generated answers citing the outdated version (`outdated_answer_rate`)."""
+    summary: dict[str, float] = {}
+    for k in k_values:
+        values = [d["metrics"][f"outdated_hit@{k}"] for d in details if f"outdated_hit@{k}" in d["metrics"]]
+        if values:
+            summary[f"outdated_hit@{k}"] = sum(int(value) for value in values) / len(values)
+    answers = [d["metrics"]["outdated_answer"] for d in details if "outdated_answer" in d["metrics"]]
+    if answers:
+        summary["outdated_answer_rate"] = sum(int(value) for value in answers) / len(answers)
+        summary["outdated_answer_judged"] = len(answers)
     return summary
 
 

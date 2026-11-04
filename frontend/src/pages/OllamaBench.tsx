@@ -8,12 +8,13 @@ import type {
   OllamaModelsResponse,
 } from "../api/types";
 import { ErrorBanner } from "../components/ErrorBanner";
-import { ExplainBanner } from "../components/ExplainBanner";
 import { FieldRow } from "../components/FieldRow";
 import { JsonViewer } from "../components/JsonViewer";
 import { Spinner } from "../components/Spinner";
+import { Select } from "../components/Select";
 
-export function Playground() {
+/** Ollama test bench (formerly the Playground page): the model alone, no retrieval, every sampling parameter. */
+export function OllamaBench() {
   const { t } = useTranslation();
   const modelsLoad = useApiLoad<OllamaModelsResponse>(() => get("/api/ollama/models"));
   const [model, setModel] = useState("");
@@ -75,24 +76,16 @@ export function Playground() {
 
   return (
     <div>
-      <div className="page-header">
-        <h2>{t("playground.title")}</h2>
-        <span className="muted">{t("playground.subtitle")}</span>
-      </div>
-      <ExplainBanner
-        subtitle={t("playground.subtitle")}
-        body={t("playground.explain_body")}
-        storageKey="raglab.explain.playground"
-      />
       <div className="split">
         <div>
           <div className="card">
-            <h3>{t("playground.model_params")}</h3>
+            <h3>{t("models.bench_title")}</h3>
+            <p className="muted card-lead">{t("models.bench_lead")}</p>
             <FieldRow
               label={t("playground.model_label")}
               hint={t("playground.model_default_hint", { value: defaultModel })}
             >
-              <select value={model} onChange={(e) => setModel(e.target.value)}>
+              <Select value={model} onChange={(e) => setModel(e.target.value)}>
                 <option value="">
                   {t("playground.model_default_option", { value: defaultModel })}
                 </option>
@@ -101,7 +94,7 @@ export function Playground() {
                     {m.name}
                   </option>
                 ))}
-              </select>
+              </Select>
             </FieldRow>
             <FieldRow label={t("playground.system_label")} hint={t("playground.system_hint")}>
               <textarea value={system} onChange={(e) => setSystem(e.target.value)} rows={4} />

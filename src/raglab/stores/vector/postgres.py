@@ -3,11 +3,32 @@ from __future__ import annotations
 from typing import Any
 
 from pgvector.sqlalchemy import VECTOR
-from sqlalchemy import Float, bindparam, cast, func, select, text
+from sqlalchemy import Float, and_, bindparam, cast, func, not_, or_, select, text
 from sqlalchemy.orm import Session
 
 from raglab.db.models import Chunk, ChunkEmbedding, Document, IndexRun
 from raglab.domain.schemas import RetrievalFilters, RetrievedChunk
+
+
+def valid_at_condition(day: str):
+    """Document versions in force on `day` (ISO), by their metadata.
+
+    Same rule as `raglab.retrieval.versions.valid_at`: started on or before
+    the day, not ended yet, not annulled. Documents without version metadata
+    (no `etat`: PIAF, LexML, uploads) always pass. ISO dates compare as
+    strings; a JSON null reads as SQL NULL.
+    """
+    meta = Document.metadata_json
+    start = meta["date_debut"].astext
+    end = meta["date_fin"].astext
+    return or_(
+        not_(meta.has_key("etat")),
+        and_(
+            meta["etat"].astext != "ANNULE",
+            or_(start.is_(None), start <= day),
+            or_(end.is_(None), end > day),
+        ),
+    )
 
 
 class PostgresVectorStore:
@@ -45,6 +66,8 @@ class PostgresVectorStore:
             stmt = stmt.where(Document.metadata_json.contains({"tags": [tag]}))
         for key, value in filters.metadata_equals.items():
             stmt = stmt.where(Document.metadata_json.contains({key: value}))
+        if filters.valid_at:
+            stmt = stmt.where(valid_at_condition(filters.valid_at))
 
         return stmt
 

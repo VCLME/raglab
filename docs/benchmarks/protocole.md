@@ -72,6 +72,68 @@ Chaque cas enregistre `lexical_overlap` : la part des mots de la question (plus 
 
 **Relecture.** 40 questions ont été relues à la main. Les défauts trouvés (réponses sans contenu comme « (VETADO) » ou « Esta Lei entra em vigor… », renvois vagues comme « conforme o inciso VI ») sont devenus des règles automatiques, appliquées après coup par `raglab lexml review-questions` : 23 cas sur 300 sont marqués `review_status: "rejected"` avec leur `rejection_reason`. Ils restent dans le fichier pour l'audit, le benchmark les ignore. Résultat : **277 questions utilisables** (93 paraphrases, 97 références, 87 entités) sur 168 lois. Le jeu est figé dans `benchmarks/lexml_fulltext/`.
 
+## Code de la consommation (français)
+
+```bash
+raglab legifrance fetch --code consommation
+raglab legifrance questions --count 300 --seed 42 --output-dir benchmarks/legi_consommation
+raglab legifrance review-questions --ground-truth benchmarks/legi_consommation/ground_truth.jsonl
+```
+
+**Corpus.** Le Code de la consommation avec tout son historique (1993 à octobre 2026), un document par version d'article : 5 998 versions de 3 391 articles, dont 2 106 en vigueur, 5,6 millions de caractères. Source : données LEGI de la DILA (Licence Ouverte 2.0) via le dépôt git du code publié par tricoteuses, figé sur un commit ; `benchmarks/legi_consommation/corpus_manifest.json` donne l'empreinte de chaque texte. Le choix de la source et le format sont détaillés dans [corpus-legi.md](../corpus-legi.md).
+
+**Questions.** Même méthode que LexML, avec ces différences :
+
+- **le type principal est `scenario`** (55 % du jeu visé ; `paraphrase`, `reference` et `entity` 15 % chacun) : une situation concrète, vue par un consommateur, une entreprise ou un avocat, en français naturel (« Mon client a acheté un canapé en ligne il y a dix jours, peut-il encore se rétracter ? », « Un vendeur peut-il me facturer des frais de recouvrement ? »). On sait quel article répond (le passage d'or), la question ne le révèle pas : aucun numéro d'article, aucun nom de code, aucune suite de 6 mots recopiée du passage, aucune année (une situation datée appellerait la version de cette date, pas celle en vigueur). Pourquoi : « Que dit l'article L. 221-18 du code de la consommation ? » se résout par un Ctrl+F, et les vrais utilisateurs décrivent leur cas sans citer la loi. Les questions `reference` restent, minoritaires, parce que les juristes citent les articles (mode d'échec « identifiants ») ; les résultats sont donnés par type (`by_type`) ;
+
+- les passages sont tirés dans les versions **en vigueur** des articles numérotés (L., R., D. ; pas les annexes, qui sont des formulaires), un par article d'abord ; un article plus court que 700 caractères est pris en entier s'il en fait au moins 200 ;
+- le rédacteur reçoit la place de l'article dans le code (Partie > Livre > Titre…) au lieu de l'ementa ;
+- une question `reference` doit citer l'article sous une forme que lit le résolveur de citations (« article L. 221-18 du code de la consommation ») ; une `scenario`, une `paraphrase` ou une `entity` ne doit citer ni article ni numéro de loi, décret ou ordonnance ;
+- les filtres de formulation sont en français : « cet article », « le présent code », « mentionné », « ci-dessus » rendent une question vague ; « (Abrogé) », « entrent en vigueur… » ou « par décret en Conseil d'État » seuls ne sont pas des réponses ;
+- chaque cas porte une partie `split` tirée avec la graine, par type : un quart `dev` (qu'on peut regarder pendant la mise au point d'une méthode), trois quarts `heldout` (jamais regardés). Le rapport donne Recall@k et MRR par partie (`by_split`), pour vérifier qu'un gain tient sur les questions jamais vues, comme pour le résolveur de citations sur LexML ;
+- `context` note l'article, le nombre de versions de même numéro et si la réponse figure aussi dans une autre version (`answer_in_other_version`) : retrouver une version ancienne compte comme un échec (mauvais fichier), et ce champ permet de mesurer ce piège à part.
+
+La suite `legi_consommation` ne tourne que sur demande (`raglab bench all --suite legi_consommation`). Depuis 9.10, l'option `--versions` choisit les versions visibles : `all` (défaut livré, toutes les versions, la référence « RAG classique ») ou `in_force` (versions en vigueur, la brique mesurée) ; chaque run la nomme explicitement.
+
+### Le jeu « versions » (9.10)
+
+```bash
+raglab legifrance version-questions --count 100 --seed 42 --output-dir benchmarks/legi_versions
+raglab legifrance review-questions --ground-truth benchmarks/legi_versions/ground_truth.jsonl
+```
+
+Environ 100 questions posées comme des situations (« Mon client a sept jours pour se rétracter, c'est bien ça ? » : ni numéro d'article sauf pour un numéro réutilisé, ni nom de code, ni formulation recopiée, date passée dite comme un utilisateur la dit), dont la réponse naïve vient d'une version qui ne s'applique plus : ligne réécrite (`rewritten`, 40 %), numéro réutilisé (`reused_number`, 20 %), article déplacé (`moved`, 20 %), question sur le passé (`as_of`, 20 %, la version attendue est l'ancienne). Les paires sont trouvées par des règles dans l'historique ; une question n'est gardée que si la réponse est copiée de la version attendue et, pour `rewritten` et `as_of`, la réponse périmée copiée du piège, chacune absente de l'autre version. Chaque cas porte `expected_spans` sur la version attendue, `trap` (fichiers, article, réponse périmée) et `context.as_of` pour les questions sur le passé ; partie `dev` / `heldout` comme ci-dessus. Métriques en plus du Recall@k : `outdated_hit@k` (une version périmée classée au-dessus de la bonne dans le top-k) et `outdated_answer_rate` (réponse générée qui reprend la version périmée). Détail dans [versions.md](../versions.md). Suite `legi_versions`, sur demande.
+
+## Actes de l'UE (conformité)
+
+```bash
+raglab eurlex fetch
+raglab eurlex questions --count 300 --seed 42 --output-dir benchmarks/eurlex_compliance
+raglab eurlex review-questions --ground-truth benchmarks/eurlex_compliance/ground_truth.jsonl
+```
+
+**Corpus.** 15 actes (RGPD, AI Act, DORA, NIS 2, sept actes de niveau 2 de DORA, le règlement d'exécution de NIS 2, le règlement sur le groupe scientifique de l'AI Act, l'omnibus numérique sur l'IA, les clauses contractuelles types), en français, anglais et portugais, un document par considérant, article ou annexe, par langue et par version : 4 236 documents, 7,9 millions de caractères. Source : CELLAR (Office des publications, sans compte), versions consolidées figées ; `benchmarks/eurlex_compliance/corpus_manifest.json` donne l'empreinte de chaque texte et de chaque fichier téléchargé. Détails dans [corpus-eurlex.md](../corpus-eurlex.md).
+
+**Questions.** Même méthode que LexML et le Code de la consommation, avec ces différences :
+
+- les passages sont tirés dans les unités **en vigueur** (considérants, articles, annexes), une unité à la fois toutes langues confondues, articles et annexes d'abord, dans une langue tirée avec la graine ;
+- le type principal, au moins la moitié du jeu, est `scenario` : une situation de conformité concrète (entreprise, DPO, banque) en langage courant, sans nommer l'acte (numéro ou nom court) ni d'article, de considérant ou d'annexe, et sans reprendre 5 mots consécutifs du passage (filtres `names_reference`, `copies_passage`) ;
+- les autres types : `paraphrase`, `reference` (l'unité citée comme un juriste, lue par le résolveur), `entity`, `cross_reference` (la question cite l'unité A, la réponse est dans l'unité B que A cite ; pertinence sur B seule, la phrase de A dans `citing_spans`) et `cross_language` (question dans une autre langue que le passage) ;
+- les filtres de formulation couvrent les trois langues (« this Article », « cet article », « este artigo », « mentioned », « ci-dessus ») ; la langue de la question est vérifiée ;
+- `context` note l'unité, les langues, les fichiers de la même unité dans les autres langues, le nombre de versions et si la réponse figure aussi dans une version ancienne (`answer_in_other_version`) ; partie `split` tirée avec la graine (un quart `dev`, le reste `heldout`).
+
+La pertinence reste au niveau du passage du fichier tiré : retrouver le même article dans une autre langue ne compte pas (les autres fichiers sont dans `context.same_unit_files`, pour une analyse à part). La suite `eurlex_compliance` ne tourne que sur demande (`raglab bench all --suite eurlex_compliance`).
+
+## Changer de générateur
+
+Par défaut, les réponses notées sont écrites par le générateur de production (Ollama, `qwen2.5:7b`) pendant la boucle de recherche. Pour mesurer un autre modèle sans changer la production :
+
+```bash
+raglab bench all --label gen-qwen36-v1 --generator-provider llamacpp --generator-profile qwen35b-moe
+```
+
+Avec un autre fournisseur qu'Ollama, la génération devient une passe à part : la recherche tourne d'abord sur toutes les questions, le cross-encoder est libéré, llama-server démarre avec le profil demandé, écrit les réponses (même prompt, mêmes 5 passages qu'en production), puis s'arrête avant que le juge démarre le sien. Les deux modèles ne sont jamais chargés ensemble. Le fichier de résultat note le générateur (`generator`) ; le juge reste Gemma 4, d'une autre famille.
+
 ## Limites connues
 
 - Les questions LexML sont écrites par un modèle (Qwen3.6 MoE). Elles servent à évaluer le retrieval, pas les réponses : elles ne favorisent pas un générateur, mais elles héritent des tournures du rédacteur. Le juge RAGAS (phase 9.1b) sera un modèle d'une autre famille, Gemma 4, pour éviter qu'un modèle note ses propres réponses.

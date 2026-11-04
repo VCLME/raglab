@@ -10,6 +10,9 @@ Par où commencer selon ce que vous voulez faire. Le [README du dépôt](../READ
 | [architecture.md](architecture.md) | les composants, le chemin d'une requête, la chaîne de mesure (diagrammes) |
 | [technical-choices.md](technical-choices.md) | pourquoi pgvector, Ollama, e5-small, Typer… |
 | [data-model.md](data-model.md) | le schéma PostgreSQL (corpus, documents, index runs, espaces d'embedding) |
+| [modes-de-recherche.md](modes-de-recherche.md) | les modes de recherche (vectoriel, mots-clés, hybride, graphe), le re-ranking, les références d'articles : chaque option, son défaut et son effet mesuré |
+| [graphe.md](graphe.md) | le graphe des renvois dans Neo4j : lois, articles, `CITES`, `AMENDS`, `REVOKES`, précision mesurée |
+| [versions.md](versions.md) | les versions des textes : articles abrogés, réécrits, numéros réutilisés ; l'option `versions`, le jeu « versions » et sa métrique |
 | [roadmap.md](roadmap.md) | ce qui est livré, phase par phase, et ce qui vient |
 
 ## Le faire tourner
@@ -17,7 +20,7 @@ Par où commencer selon ce que vous voulez faire. Le [README du dépôt](../READ
 | Document | Pour savoir |
 |---|---|
 | [run-and-test.md](run-and-test.md) | installer, lancer en Docker ou en local, exécuter les tests |
-| [frontend-ui.md](frontend-ui.md) | les pages de l'interface (Chat, mode Expert) |
+| [frontend-ui.md](frontend-ui.md) | les pages de l'interface (Chat, Atelier) |
 | [real-rag-lexml-load.md](real-rag-lexml-load.md) | charger le corpus LexML historique (fiches) en une commande |
 
 ## Le mesurer
@@ -25,6 +28,9 @@ Par où commencer selon ce que vous voulez faire. Le [README du dépôt](../READ
 | Document | Pour savoir |
 |---|---|
 | [benchmarks/protocole.md](benchmarks/protocole.md) | comment raglab mesure : jeux figés, corpus complet, pertinence au niveau du passage, questions LexML typées |
+| [corpus-legi.md](corpus-legi.md) | le corpus français : Code de la consommation avec son historique de versions, source, chiffres, questions |
+| [corpus-eurlex.md](corpus-eurlex.md) | le corpus de conformité UE : RGPD, AI Act, DORA, NIS 2 et leurs actes délégués, en trois langues, versions consolidées, graphe des renvois |
+| [citations.md](citations.md) | le résolveur de citations juridiques (lois brésiliennes, codes français, actes de l'UE) |
 | [benchmarks/juges.md](benchmarks/juges.md) | les juges RAGAS (Gemma 4 via llama.cpp), la notation en deux passes, la calibration |
 | [benchmarks/baseline.md](benchmarks/baseline.md) | la configuration de référence et ses chiffres |
 | [../benchmarks/README.md](../benchmarks/README.md) | le contenu des jeux figés versionnés |
@@ -45,4 +51,5 @@ Par où commencer selon ce que vous voulez faire. Le [README du dépôt](../READ
 |---|---|
 | [exploitation.md](exploitation.md) | démarrer / arrêter, budget GPU, réglages llama.cpp, sauvegardes, dépannage des erreurs Ollama |
 | [api-production.md](api-production.md) | streaming SSE, budgets par étape, `X-Request-ID`, clé d'API, rate limit, `/health` et `/ready` |
+| [observabilite.md](observabilite.md) | métriques Prometheus (`/metrics`), tableau de bord Grafana (profil `obs`), rapport de dérive |
 | [portes-qualite.md](portes-qualite.md) | vérifier qu'un changement ne dégrade pas la qualité |

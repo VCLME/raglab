@@ -50,3 +50,21 @@ def test_render_marks_significant_rows():
     text = render({"a": "v1", "b": "hybrid", "suites": {"lexml_fulltext": compare_suite(before, after)}})
     assert "`v1` → `hybrid`" in text
     assert "0.000 → 1.000 (+1.000) ✱" in text
+
+
+def test_split_is_kept_per_question_and_summarised():
+    from raglab.benchmarks.compare import case_rows
+    from raglab.experiments.recall import _summarise_by_type
+
+    metrics = {"recall@1": True, "recall@5": True, "reciprocal_rank": 1.0}
+    details = [
+        {"id": "a", "question_type": "reference", "split": "dev", "metrics": metrics},
+        {"id": "b", "question_type": "reference", "split": "heldout", "metrics": {**metrics, "recall@5": False}},
+        {"id": "c", "question_type": "paraphrase", "metrics": metrics},
+    ]
+    rows = case_rows({"details": details})
+    assert [row.get("split") for row in rows] == ["dev", "heldout", None]
+    by_split = _summarise_by_type(details, (1, 5), key="split")
+    assert by_split["dev"]["recall@5"] == 1.0
+    assert by_split["heldout"]["recall@5"] == 0.0
+    assert set(by_split) == {"dev", "heldout"}

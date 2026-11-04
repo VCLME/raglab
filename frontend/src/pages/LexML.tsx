@@ -10,6 +10,7 @@ import { JsonViewer } from "../components/JsonViewer";
 import { SelectWithOther } from "../components/SelectWithOther";
 import { Spinner } from "../components/Spinner";
 import { useConfig } from "../hooks/useConfig";
+import { Select } from "../components/Select";
 
 const STRATEGIES: ChunkingStrategy[] = ["traditional", "slide", "late"];
 
@@ -39,10 +40,7 @@ export function LexML() {
 
   return (
     <div>
-      <div className="page-header">
-        <h2>{t("lexml.title")}</h2>
-        <span className="muted">{t("lexml.subtitle")}</span>
-      </div>
+      <p className="muted card-lead">{t("lexml.subtitle")}</p>
       <div className="split">
         <div className="card">
           <h3>{t("lexml.get_data_title")}</h3>
@@ -78,13 +76,13 @@ export function LexML() {
             <input value={corpus} onChange={(e) => setCorpus(e.target.value)} />
           </FieldRow>
           <FieldRow label={t("common.strategy")}>
-            <select value={strategy} onChange={(e) => setStrategy(e.target.value as ChunkingStrategy)}>
+            <Select value={strategy} onChange={(e) => setStrategy(e.target.value as ChunkingStrategy)}>
               {STRATEGIES.map((s) => (
                 <option key={s} value={s}>
                   {s}
                 </option>
               ))}
-            </select>
+            </Select>
           </FieldRow>
           <FieldRow label={t("lexml.tags_label")} hint={t("ingest.tags_hint")}>
             <input value={tagsRaw} onChange={(e) => setTagsRaw(e.target.value)} />
@@ -198,10 +196,10 @@ export function LexML() {
           </div>
           <div>
             <FieldRow label={t("lexml.question_backend")} hint={t("lexml.question_backend_hint")}>
-              <select value={questionBackend} onChange={(e) => setQuestionBackend(e.target.value as "llamacpp" | "ollama")}>
+              <Select value={questionBackend} onChange={(e) => setQuestionBackend(e.target.value as "llamacpp" | "ollama")}>
                 <option value="llamacpp">llama.cpp (Qwen3.6 35B MoE)</option>
                 <option value="ollama">Ollama ({config?.generation_model ?? "qwen2.5:7b"})</option>
-              </select>
+              </Select>
             </FieldRow>
             <FieldRow label={t("lexml.question_count")} hint={t("lexml.question_count_hint")}>
               <input type="number" value={questionCount} onChange={(e) => setQuestionCount(e.target.value)} min={1} />
