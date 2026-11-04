@@ -341,6 +341,15 @@ raglab lexml ingest --corpus lexml
 
 Les fichiers `*.json` generes a cote des `*.txt` LexML sont automatiquement relus comme metadata au moment de cette ingestion.
 
+Corpus « Bresil expat » (19 textes federaux compiles, Planalto et Receita Federal, voir [corpus-br-expat.md](corpus-br-expat.md)) :
+
+```powershell
+raglab lexml br-expat
+raglab bench all --suite br_expat --label brexpat-full-v1 --ragas-limit 0
+```
+
+La commande `bench all` ingere et indexe le corpus dans `bench_br_expat_pt` avant de lancer les 38 questions figees.
+
 ## 11. Lancer le benchmark de recall
 
 Une fois le corpus LexML ingere et indexe :
