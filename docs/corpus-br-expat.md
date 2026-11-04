@@ -69,6 +69,7 @@ python scripts/br_expat_report.py brexpat-naive-v1 brexpat-full-v1 --answers bre
 - **Pipeline complet** (défaut) : hybride BM25 + dense (RRF), re-ranking bge-reranker-v2-m3, résolveur de citations, versions `in_force`.
 - Dans les deux cas, réponses écrites par **Qwen3.6-35B-A3B** (llama.cpp, profil `qwen35b-moe-rag`) avec le prompt V4 (réponse dans la langue de la question, citation d'abord), à partir des 5 premiers passages, et notées par le juge habituel (Gemma 4 26B-A4B) : exactitude par rapport à la réponse attendue, fidélité au contexte.
 - Mesures du 4 novembre 2026 sur une RTX 3070 Ti 8 Go, commit `f3fd1be`.
+- La **traduction des questions pour le BM25** ([langues-croisees.md](langues-croisees.md)) est devenue le défaut pendant ces mesures (PR #75) : `brexpat-full-v1` est le pipeline complet **sans** elle, tel qu'il était au début du travail.
 
 ### Recherche, niveau article
 
