@@ -122,3 +122,37 @@ def test_versions_filter_is_checked_after_the_exact_ranking():
     assert "FROM (SELECT" in ranked
     assert ranked.index("metadata_json ->>") > ranked.index(") AS ranked")
     assert "FROM (SELECT" not in full and "metadata_json ->>" in full
+
+
+# The distance expression, then the chunk id (SQLAlchemy renders the
+# expression, not its `distance` label).
+TIE_BREAK = r"ORDER BY .+ <=> :query_vec, chunks\.id\s+LIMIT"
+
+
+def test_equal_distances_are_ordered_by_chunk_id():
+    # Chunks with the same text share an embedding: without a second key
+    # their order changed from run to run.
+    assert re.search(TIE_BREAK, _search(PostgresVectorStore(), 5)[0])
+
+
+def test_hnsw_orders_by_distance_only():
+    # A second sort key makes PostgreSQL drop the HNSW index (measured:
+    # parallel seq scan and sort instead of the index scan).
+    knn = _search(PostgresVectorStore(search_mode="hnsw"), 5)[-1]
+    assert "chunks.id" not in knn[knn.rindex("ORDER BY") :]
+
+
+def test_versions_filter_keeps_the_chunk_id_tie_break():
+    session = MagicMock()
+    session.execute.return_value.all.return_value = []
+    PostgresVectorStore().search(
+        session,
+        index_run=_index_run(),
+        query_embedding=[0.0] * 384,
+        top_k=5,
+        filters=RetrievalFilters(valid_at="2026-11-03"),
+    )
+    ranked, full = _statements(session)
+    assert re.search(TIE_BREAK, ranked)  # inner ranking
+    assert re.search(r"ORDER BY ranked\.distance, ranked\.id\s+LIMIT", ranked)
+    assert re.search(TIE_BREAK, full)

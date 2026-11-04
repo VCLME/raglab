@@ -195,8 +195,14 @@ class PostgresVectorStore:
         # filter to know when it has enough rows.
         day = filters.valid_at if filters is not None and self.search_mode == "exact" else None
 
+        # Chunk.id breaks ties, as in BM25: chunks with the same text share an
+        # embedding (articles repeated in the Code de la consommation), and
+        # their order changed from one run to the next. Not in HNSW mode: a
+        # second sort key makes PostgreSQL skip the index for a full sort.
+        order = (distance, Chunk.id) if self.search_mode == "exact" else (distance,)
+
         def full():
-            return self._apply_filters(stmt, filters).order_by(distance).limit(top_k)
+            return self._apply_filters(stmt, filters).order_by(*order).limit(top_k)
 
         # The HNSW index is shared by every index run of the same dimension,
         # and pgvector applies the WHERE clause (this run, filters) after the
@@ -210,8 +216,8 @@ class PostgresVectorStore:
         if day:
             rows = ranked_in_force(
                 session,
-                self._apply_filters(stmt, without_valid_at(filters)).order_by(distance),
-                lambda inner: [inner.c.distance],
+                self._apply_filters(stmt, without_valid_at(filters)).order_by(*order),
+                lambda inner: [inner.c.distance, inner.c.id],
                 day=day,
                 top_k=top_k,
                 full=full,
