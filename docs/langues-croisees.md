@@ -116,7 +116,37 @@ Questions d'abstention (80) : décisions identiques avec et sans traduction (50 
 - **choix du corpus** : 38 questions françaises sont envoyées vers PIAF, le corpus français. Avec e5-small, une question française est plus proche du centroïde d'un corpus français que du corpus portugais qui contient la réponse (par exemple 0,857 contre 0,850 ; la même question en portugais : LexML 0,896, PIAF 0,866) ;
 - **abstention** : sur les questions bien routées, le meilleur cosinus d'une question française est inférieur d'environ 0,03 à celui de la même question en portugais (médianes 0,852 et 0,886). Le seuil de LexML, calibré sur des questions portugaises, refuse donc 27 questions françaises sur 61, aucune portugaise.
 
-Les seuils n'ont pas été modifiés : la correction est une brique à part, à mesurer sur ce jeu (choix du corpus et score d'abstention calculés aussi sur la question traduite, ou seuils par langue). D'ici là, une question française sur les lois brésiliennes doit nommer son corpus et laisser le routeur désactivé (le défaut du Chat : le corpus y est choisi, le routeur est une option). Avec le routeur, même un corpus nommé garde l'abstention, qui refuse à tort environ 4 questions françaises sur 10 bien routées ; en choix automatique, la question est perdue deux fois sur trois.
+Les seuils n'ont pas été modifiés. La correction est la brique suivante.
+
+## Routage multilingue
+
+Option `RAGLAB_ROUTING_CROSS_LANGUAGE` ([`router.py`](../src/raglab/routing/router.py), [`step.py`](../src/raglab/routing/step.py)), **désactivée par défaut** en attendant la décision du propriétaire. Elle s'appuie sur la traduction de la question (activée) et ne change que le routeur :
+
+- **choix du corpus** : un corpus dans une autre langue que la question, dont le score de centroïde est à moins de `RAGLAB_ROUTING_TRANSLATION_MARGIN` (0,02) du meilleur, est re-noté sur la question traduite dans sa langue (un appel au rédacteur par langue, mis en cache et réutilisé ensuite par le BM25). Chaque corpus est ainsi comparé dans sa propre langue. Le score gardé est le meilleur des deux ; les deux restent dans la décision (`original_score`, `translated_score`) ;
+- **abstention** : quand la question a été traduite pour le corpus choisi, la question traduite est cherchée (dense) dans le même index ; son meilleur cosinus parmi les passages **effectivement retenus** est l'échelle sur laquelle le seuil du corpus a été calibré. Le score comparé au seuil est le meilleur des deux (`abstention.translated_score`). Les seuils ne changent pas.
+
+Un corpus nommé par l'appelant n'est jamais re-noté ; le corpus UE (`multi`) non plus.
+
+### Mesure
+
+Même protocole que ci-dessus, avec en plus 100 questions PIAF (françaises, corpus français) pour vérifier qu'elles ne partent pas vers LexML ; traduction de la question activée dans les trois runs ; 4 novembre 2026. Rapports : [`router-crosslang-off-v1.json`](../benchmarks/routing/router-crosslang-off-v1.json), [`router-crosslang-m05-v1.json`](../benchmarks/routing/router-crosslang-m05-v1.json), [`router-crosslang-m02-v1.json`](../benchmarks/routing/router-crosslang-m02-v1.json).
+
+| Répondues depuis le bon passage (sur 100) | Sans | Marge 0,05 | **Marge 0,02 (défaut)** |
+|---|---|---|---|
+| Français → LexML | 33 | 85 (52 gagnées, 0 perdue, p < 0,001) | **75** (42 gagnées, 0 perdue, p < 0,001) |
+| Mêmes questions en portugais | 87 | 85 (0 / 2, n.s.) | 85 (0 / 2, n.s.) |
+| PIAF (français) | 94 | 87 (0 / 7, p = 0,016) | **94** (0 / 0) |
+| Questions à refuser bien refusées (sur 80) | 50 | 47 (3 / 6, n.s.) | 46 (0 / 4, p = 0,125, n.s.) |
+| Latence routeur + recherche p50 / p95, portugais | 725 / 885 ms | 3 167 / 4 086 ms | 719 / 1 842 ms |
+| Latence p50 / p95, PIAF | 554 / 659 ms | 620 / 2 198 ms | 524 / 584 ms |
+
+Détail à la marge 0,02 : 84 questions françaises routées vers LexML (62 sans), 5 refusées à tort (33 sans) ; 2 questions portugaises partent vers PIAF ; aucune question PIAF ne part vers LexML. Latence des questions françaises inchangée (environ 2,7 s p50) : la traduction qui sert au routeur est celle que le BM25 aurait faite.
+
+**Pourquoi 0,02 et pas 0,05.** À 0,05, presque toutes les questions sont traduites pour comparer l'autre corpus : chaque question portugaise paie 2,4 s pour une comparaison avec PIAF, et 7 questions PIAF partent vers LexML, une fois traduites en portugais. Les enregistrements gardent les deux scores de chaque corpus candidat, ce qui permet de rejouer le choix du corpus hors ligne pour d'autres marges : 0,01 donne 77 questions françaises bien routées, 0,02 en donne 84, 0,03 en donne 95 mais traduit 36 questions portugaises sur 100. La marge 0,02 garde PIAF et le portugais intacts.
+
+**Le coût : l'abstention.** 4 questions hors périmètre de plus ne sont plus refusées (n.s.). Une question hors sujet traduite peut changer de corpus, et les deux seuils n'ont pas la même hauteur (PIAF 0,79, LexML 0,85) : une question portugaise hors sujet (« Qual é a receita tradicional de feijoada? ») qui part vers PIAF passe sous un seuil plus bas. Les 4 refus perdus sont tous de ce type (deux hors périmètre, deux « presque dans le sujet », toutes en portugais). À la marge 0,05, trois questions françaises hors sujet faisaient aussi le chemin inverse et étaient désormais refusées.
+
+**Décision.** Le gain sur le mode d'échec visé est net (+42 questions sur 100, aucune perdue) et aucun autre jeu ne régresse de façon significative. La brique reste toutefois **désactivée par défaut** : activer `RAGLAB_ROUTING_CROSS_LANGUAGE=true` revient au propriétaire, au vu du coût sur l'abstention. Désactivée, la recommandation reste valable : une question française sur les lois brésiliennes doit nommer son corpus, routeur désactivé (le défaut du Chat).
 
 Le surcoût de latence vient de la traduction (2,4 s p50) ; la recherche des questions portugaises est aussi un peu plus lente pendant le run avec traduction (794 contre 653 ms p50), le rédacteur occupant le GPU à côté du re-ranker.
 

@@ -251,10 +251,13 @@ class Settings(BaseSettings):
     # translation on, a candidate corpus in another language than the
     # question, within routing_translation_margin of the best centroid
     # score, is rescored on the question translated into its language; the
-    # dense abstention score also reads the translated question. Off until
-    # measured on the lexml_fr set.
+    # dense abstention score also reads the translated question. Measured
+    # (router-crosslang-m02-v1): French questions on LexML answered from the
+    # right passage 33 -> 75 of 100, PIAF unchanged, Portuguese -2 and
+    # off-topic refusals -4 of 80 (n.s.); margin 0.05 also pulled 7 PIAF
+    # questions to LexML. Off by default pending the owner's call.
     routing_cross_language: bool = False
-    routing_translation_margin: float = 0.05
+    routing_translation_margin: float = 0.02
 
     chunk_size: int = 900
     chunk_overlap: int = 150
