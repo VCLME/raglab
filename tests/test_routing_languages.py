@@ -158,3 +158,18 @@ def test_compare_lists_every_setting():
     names = [row["name"] for row in comparison["rows"]]
     assert names[0] == "default"
     assert "c_examples" in names
+
+
+def test_a_language_without_calibration_reads_the_translated_score():
+    report = _report()
+    # No French calibration on lexml: the French question keeps the corpus
+    # threshold (0.85), read on the better of original and translated (0.88).
+    report["calibration"] = [
+        row for row in report["calibration"] if row["language"] != "fr" or row["corpus"] != "lexml"
+    ]
+    run = replay(report, RoutingPolicy("chunks", 0.02), AbstentionPolicy("dense", "language", 0.5))
+    assert run["metrics"]["by_source"]["lexml_fr"]["refused"] == 0
+    assert run["metrics"]["by_source"]["lexml_fr"]["latency_p50_ms"] == pytest.approx(20 + 350 + 5)
+    # With its own calibration (0.84 on the original score 0.83) it is refused.
+    run = replay(_report(), RoutingPolicy("chunks", 0.02), AbstentionPolicy("dense", "language", 0.5))
+    assert run["metrics"]["by_source"]["lexml_fr"]["refused"] == 1

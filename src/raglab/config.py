@@ -268,12 +268,14 @@ class Settings(BaseSettings):
     # corpus -> question language -> threshold, one table per score source,
     # calibrated on benchmarks/lexml_fr/calibration*.jsonl and PIAF questions
     # disjoint from the evaluated ones. Read before the per-corpus value
-    # when the option is on.
-    # Measured (router-language-thresholds-v1): 46 -> 58 of 80 refusals kept
-    # (p < 0.001), French and Portuguese unchanged, PIAF -3 (n.s.), false
-    # refusals 2.3% -> 4.0%. With it on, abstention reads the original
-    # question's score: #76's translated dense score is not needed.
-    routing_language_thresholds: bool = False
+    # when the option is on. A pair with its own value reads the original
+    # question's score (#76's translated dense score is not needed); a pair
+    # without one keeps the corpus threshold on the translated score.
+    # Measured (router-language-thresholds-v2): 46 -> 55 of 80 refusals kept
+    # (p = 0.004), French and Portuguese unchanged, PIAF -3 (n.s.), false
+    # refusals 2.3% -> 3.3%; with four candidate corpora (BR Expat, EUR-Lex)
+    # 45 -> 50, no answer lost. On by default (owner decision, 4 November 2026).
+    routing_language_thresholds: bool = True
     routing_language_abstention_thresholds: dict[str, dict[str, float]] = Field(
         default_factory=lambda: {"bench_lexml_pt": {"fr": 0.8095, "pt": 0.8611}, "bench_piaf_fr": {"fr": 0.797}}
     )

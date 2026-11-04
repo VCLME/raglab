@@ -435,13 +435,28 @@ def replay(
         "rerank": report["config"]["rerank_abstention_thresholds"],
     }
     lookup = calibrate(report["calibration"], abstention, languages, production)
+    # As the router: a (corpus, language) pair without its own threshold
+    # keeps the corpus threshold and the translated question's score (#76),
+    # which that threshold was calibrated for.
+    own = (
+        {
+            (row["corpus"], row["language"])
+            for row in report["calibration"]
+            if _record_score(row, abstention.score) is not None
+        }
+        if abstention.thresholds == "language" and abstention.score == "dense"
+        else None
+    )
     outcomes: list[dict[str, Any]] = []
     for record in report["records"]:
         scores = corpus_scores(record, routing, languages)
         corpus = max(scores, key=lambda name: scores[name])
         entry = record["corpora"][corpus]
         intent = decide_intent(record["intent_scores"], margin=SELECTED_INTENT_MARGIN)
-        score = _record_score(entry, abstention.score)
+        source = abstention.score
+        if own is not None and (corpus, record["language_detected"]) not in own:
+            source = "dense_xl"
+        score = _record_score(entry, source)
         threshold = lookup(corpus, record["language_detected"])
         if entry.get("legal_citation_found"):
             refused = False
@@ -460,7 +475,7 @@ def replay(
             + timings.get("embed", 0.0)
             + timings.get("retrieval", 0.0)
             + timings.get("rerank", 0.0)
-            + (entry.get("translated_dense_ms", 0.0) if abstention.score == "dense_xl" else 0.0)
+            + (entry.get("translated_dense_ms", 0.0) if source == "dense_xl" else 0.0)
         )
         expected = record["expected_corpus"]
         outcomes.append(
