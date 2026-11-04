@@ -1,0 +1,35 @@
+{
+  "loader": "legi_consommation",
+  "language": "fr",
+  "licence": "Licence Ouverte 2.0 (données LEGI de la DILA, via tricoteuses)",
+  "code": "Code de la consommation",
+  "source_commit": "77f038165bef484ad327af7b0f27258e0d8b1d15",
+  "generator_model": "qwen3.6-35b-a3b",
+  "generator_backend": "llamacpp",
+  "seed": 42,
+  "case_count": 300,
+  "by_type": {
+    "scenario": 88,
+    "paraphrase": 164,
+    "reference": 24,
+    "entity": 24
+  },
+  "by_split": {
+    "dev": 75,
+    "heldout": 225
+  },
+  "cases_on_articles_with_history": 124,
+  "rejected": {
+    "invalid_json": 0,
+    "quote_not_found": 11,
+    "answer_too_long": 8,
+    "leaks_reference": 21,
+    "reference_missing": 2,
+    "vague": 1,
+    "boilerplate_answer": 7,
+    "names_code": 1,
+    "copies_wording": 20,
+    "dated": 0
+  },
+  "corpus_dir": "C:\\Users\\lucme\\source\\rag\\.claude\\worktrees\\bench-protocol\\data\\legifrance\\consommation\\corpus"
+}

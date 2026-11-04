@@ -1,0 +1,43 @@
+{
+  "loader": "eurlex_compliance",
+  "language": "multi",
+  "licence": "© Union européenne, EUR-Lex / CELLAR ; réutilisation autorisée (décision 2011/833/UE de la Commission)",
+  "rules_version": 5,
+  "generator_model": "qwen3.6-35b-a3b",
+  "generator_backend": "llamacpp",
+  "seed": 42,
+  "case_count": 300,
+  "by_type": {
+    "scenario": 116,
+    "paraphrase": 41,
+    "reference": 41,
+    "entity": 40,
+    "cross_reference": 22,
+    "cross_language": 40
+  },
+  "scenario_share": 0.387,
+  "by_split": {
+    "dev": 75,
+    "heldout": 225
+  },
+  "by_question_language": {
+    "fr": 97,
+    "en": 119,
+    "pt": 84
+  },
+  "rejected": {
+    "copies_passage": 86,
+    "names_reference": 22,
+    "leaks_reference": 14,
+    "reference_missing": 4,
+    "leaks_target": 6,
+    "vague": 15,
+    "answer_too_long": 13,
+    "quote_not_found": 59,
+    "boilerplate_answer": 6,
+    "wrong_language": 33,
+    "answer_in_citing_unit": 1,
+    "invalid_json": 1
+  },
+  "corpus_dir": "C:\\Users\\lucme\\source\\rag\\.claude\\worktrees\\bench-protocol\\data\\eurlex\\compliance\\corpus"
+}
