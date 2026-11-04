@@ -201,7 +201,8 @@ class QueryRouter:
         decision stands."""
         decision = classifier.classify(embedding, margin=self.settings.routing_intent_margin)
         calibration = load_joint_calibration(self.settings.routing_intent_logistic_path)
-        if calibration is None or calibration.logistic is None:
+        # A model trained in another embedding space (other dimension) is ignored.
+        if calibration is None or calibration.logistic is None or calibration.logistic.weights.shape != embedding.shape:
             return decision
         probability = calibration.logistic.probability(embedding)
         scores = decision.scores

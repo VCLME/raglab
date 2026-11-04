@@ -1,6 +1,6 @@
 # Intention et abstention : voisins proches, règle jointe et généralisation
 
-> **Mise à jour (deuxième partie, plus bas).** L'option de #80 ne généralise pas aux questions réelles. Une régression logistique entraînée avec des questions documentaires à la première personne, seule, améliore les quatre jeux mesurés (+6 à +10 refus justifiés, aucune réponse perdue, faux refus 1,9 % à 4,0 %), confirmée en direct sur un jeu de validation indépendant écrit après son choix ; le rappel reste entre 0,66 et 0,80. Voir [Deuxième partie : généralisation](#deuxième-partie--généralisation-questions-réelles).
+> **Mise à jour (deuxième partie, plus bas).** L'option de #80 ne généralise pas aux questions réelles. Une régression logistique entraînée avec des questions documentaires à la première personne, seule, améliore les quatre jeux mesurés (+6 à +10 refus justifiés, aucune réponse perdue, faux refus 1,9 % à 4,0 %), confirmée en direct sur un jeu de validation indépendant écrit après son choix ; le rappel reste entre 0,66 et 0,80. **Activée par défaut** (`RAGLAB_ROUTING_INTENT_METHOD=logistic`, décision du propriétaire du 4 novembre 2026). Voir [Deuxième partie : généralisation](#deuxième-partie--généralisation-questions-réelles).
 
 Suite de [routage-multilingue.md](routage-multilingue.md) et de [routing.md](routing.md) (phase 9.4, mode d'échec « hors périmètre »). Avec les seuils par langue, le routeur garde 55 refus justifiés sur 80 : le rappel d'abstention plafonne vers 0,7, même avec des seuils réglés sur les questions évaluées. Les questions manquées ne sont plus un problème de langue ni de seuil : ce sont des demandes de tâche, des questions personnelles ou de culture générale, dont le score de passage ressemble à celui d'une question du corpus. Ce document compare des façons de mieux lire **l'intention**, toutes **sans LLM dans le routeur**, et retient la meilleure derrière une option.
 
@@ -230,15 +230,15 @@ Réponses perdues par la variante pré-enregistrée, par jeu et par corpus (McNe
 
 | Variable | Défaut | Effet |
 |---|---|---|
-| `RAGLAB_ROUTING_INTENT_METHOD` | `centroids` | `logistic` : la régression logistique de `RAGLAB_ROUTING_INTENT_LOGISTIC_PATH` décide seule de l'intention (au-dessus de sa coupure, refus nommé d'après les centroïdes : conversationnelle ou hors périmètre) ; l'abstention garde les seuils seuls ; `knn` = l'option de #80 |
+| `RAGLAB_ROUTING_INTENT_METHOD` | `logistic` | `logistic` : la régression logistique de `RAGLAB_ROUTING_INTENT_LOGISTIC_PATH` décide seule de l'intention (au-dessus de sa coupure, refus nommé d'après les centroïdes : conversationnelle ou hors périmètre) ; l'abstention garde les seuils seuls ; `centroids` = l'intention d'avant ; `knn` = l'option de #80 |
 | `RAGLAB_ROUTING_INTENT_LOGISTIC_PATH` | `benchmarks/routing/intent_logistic.json` | poids, biais, coupure (0,4912, quantile 97 % des questions de calibration hors pli) ; écrit par `raglab experiment intent-generalization ... --export lr_fp_first_c0.97` |
 | `RAGLAB_ROUTING_INTENT_TRAINING_PATH` | `benchmarks/routing/intent_training.jsonl` | exemples à la première personne, lus par l'option kNN quand sa calibration le demande |
 
 Mêmes surfaces que les autres réglages du routeur (CLI `--routing`, API `routing: true`, interrupteur « Routage ») ; en mode expert, le panneau du routeur affiche la probabilité « non documentaire » à côté des scores des centroïdes.
 
-### Recommandation
+### Décision
 
-**Activer `RAGLAB_ROUTING_INTENT_METHOD=logistic` par défaut est défendable, et je le propose au propriétaire sans le faire** :
+**`RAGLAB_ROUTING_INTENT_METHOD=logistic` est activé par défaut** (proposé avec la mesure, accepté par le propriétaire le 4 novembre 2026). Les raisons :
 
 - c'est la seule variante qui améliore les quatre jeux à la fois : +6 à +10 refus justifiés, sans perte de réponse documentaire sur aucun corpus, avec des faux refus entre 1,9 % et 4,0 % (le défaut : 2,9 % à 3,3 %) ;
 - elle a été choisie avant la validation 2 et confirmée en direct sur celle-ci, avec le code du routeur ;

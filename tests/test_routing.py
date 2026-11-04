@@ -1131,3 +1131,23 @@ def test_logistic_intent_method_decides_alone(tmp_path, bias, expected):
     assert decision.intent.intent == expected
     assert decision.intent.not_documentary_probability == pytest.approx(1 / (1 + np.exp(-bias)), abs=1e-3)
     clear_knn_cache()
+
+
+def test_logistic_intent_is_the_default_and_ignores_a_model_of_another_dimension(tmp_path):
+    from raglab.routing.intent_knn import clear_knn_cache
+
+    assert Settings().routing_intent_method == "logistic"
+    clear_knn_cache()
+    path = tmp_path / "intent_logistic.json"
+    model = {"weights": [0.0] * 384, "bias": 5.0, "scale": 20.0, "threshold": 0.5, "quantile": 0.97}
+    path.write_text(json.dumps({"k": 20, "quantile": 0.0, "groups": {}, "logistic": model}))
+    router = _router(routing_intent_logistic_path=path)
+    with (
+        patch("raglab.routing.router.list_candidate_runs", return_value=_runs()),
+        patch("raglab.routing.intent.iter_examples", return_value=EXAMPLES),
+    ):
+        decision = router.route("Que dit la loi ?")
+    # 5-dimension fake embeddings: the centroid decision stands.
+    assert decision.intent.method == "centroids"
+    assert decision.intent.intent == Intent.DOCUMENTARY
+    clear_knn_cache()
