@@ -61,6 +61,7 @@ def run_query(
         rrf_k=body.rrf_k,
         rerank=body.rerank,
         citations=body.citations,
+        routing=body.routing,
         graph=body.graph,
         versions=body.versions,
     )
@@ -116,6 +117,7 @@ def stream_query(
         rrf_k=body.rrf_k,
         rerank=body.rerank,
         citations=body.citations,
+        routing=body.routing,
         graph=body.graph,
         versions=body.versions,
     )

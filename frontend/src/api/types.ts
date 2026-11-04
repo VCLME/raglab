@@ -349,6 +349,42 @@ export interface QueryResponse {
   // fusion / rerank when those stages ran) and Ollama token counters.
   timings_ms?: Record<string, number>;
   generation_stats?: Record<string, number>;
+  // Present when the request enabled the query router (phase 9.4).
+  routing?: RoutingDecision | null;
+}
+
+export type RoutingIntent = "documentary" | "conversational" | "out_of_scope";
+
+export interface RoutingDecision {
+  language: { language: string; scores: Record<string, number>; method: string };
+  intent: {
+    intent: RoutingIntent;
+    scores: Record<string, number>;
+    margin: number;
+    nearest_example: string | null;
+  };
+  corpus: {
+    corpus_name: string | null;
+    index_run_id: string | null;
+    suggested_corpus: string | null;
+    candidates: { corpus_name: string; index_run_id: string; score: number }[];
+    margin: number;
+    source: "routed" | "citation" | "requested" | "none";
+  };
+  legal_citation?: string | null;
+  legal_citation_found?: boolean;
+  abstention: {
+    abstain: boolean;
+    reason: string | null;
+    score_source: string;
+    best_score: number | null;
+    threshold: number | null;
+    // "legal_citation" when the question cites a law: never declined.
+    override?: string | null;
+  } | null;
+  answer_from_documents: boolean;
+  fallback_answer: string | null;
+  timings_ms: Record<string, number>;
 }
 
 /** SSE `stage` event of /api/query/stream (educational mode). */

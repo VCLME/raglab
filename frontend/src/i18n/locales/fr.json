@@ -140,7 +140,11 @@
     "help_mode": "Vectorielle compare le sens de la question à celui des passages, mots-clés (BM25) cherche les mots exacts, hybride lance les deux puis fusionne leurs classements (RRF) : la meilleure qualité mesurée.",
     "help_rerank": "Un cross-encoder relit les 40 premiers candidats avec la question et les réordonne : plus précis que la fusion, environ 0,5 s par question sur GPU, plusieurs secondes sur CPU.",
     "help_citations": "Si la question cite un article (« art. 49 da Lei 8.078 », « article L. 221-18 du Code de la consommation »), la recherche est limitée à ce texte et l'article cité passe en tête.",
-    "help_graph": "Suit dans Neo4j les renvois des meilleurs passages (« nos termos do art. 12 ») et ajoute à la fusion les articles cités que les autres recherches ont manqués."
+    "help_graph": "Suit dans Neo4j les renvois des meilleurs passages (« nos termos do art. 12 ») et ajoute à la fusion les articles cités que les autres recherches ont manqués.",
+    "routing_label": "Routage",
+    "routing_title": "Détecter la langue et l'intention, choisir le corpus et s'abstenir quand les documents ne répondent pas",
+    "corpus_auto": "Automatique (routeur)",
+    "options_routing_short": "routeur"
   },
   "dashboard": {
     "pull_in_progress": "Téléchargement…",
@@ -188,7 +192,12 @@
     "chunks_header": "Chunks récupérés ({{count}})",
     "raw_payload": "Réponse brute (JSON)",
     "loading": "interrogation du RAG…",
-    "writer_hint": "Rédigée par {{provider}} · {{model}}."
+    "writer_hint": "Rédigée par {{provider}} · {{model}}.",
+    "routing_label": "Routage",
+    "routing_checkbox": "Router la question (langue, intention, corpus, abstention)",
+    "routing_hint": "Sans corpus ni index choisi, le routeur choisit le corpus.",
+    "corpus_auto": "Automatique (routeur)",
+    "routing_header": "Routage"
   },
   "playground": {
     "model_label": "Modèle",
@@ -504,6 +513,44 @@
     "download": "Télécharger",
     "downloading": "Téléchargement…",
     "pull_status": "statut : {{status}}"
+  },
+  "routing": {
+    "title": "Routage",
+    "language": "Langue",
+    "intent": "Intention",
+    "corpus": "Corpus",
+    "abstention": "Abstention",
+    "timings": "Temps",
+    "margin": "marge",
+    "answered": "Réponse depuis les documents",
+    "declined": "Pas de réponse documentaire ({{reason}})",
+    "suggested": "(le routeur aurait choisi {{corpus}})",
+    "no_candidate": "aucun index compatible",
+    "intent_rule": "documentaire sauf si une autre intention le dépasse de plus de {{margin}}",
+    "nearest_example": "exemple le plus proche : « {{text}} »",
+    "citation_override": "Citation juridique ({{label}}) : jamais d'abstention",
+    "abstention_rule": "meilleur score {{source}} {{score}} (seuil {{threshold}})",
+    "intents": {
+      "documentary": "documentaire",
+      "conversational": "conversation",
+      "out_of_scope": "hors périmètre"
+    },
+    "reasons": {
+      "intent": "intention",
+      "low_score": "score trop faible",
+      "no_passage": "aucun passage",
+      "none": "—"
+    },
+    "methods": {
+      "lexical": "mots-outils",
+      "embedding": "exemple le plus proche"
+    },
+    "corpus_sources": {
+      "citation": "choisi par la citation (texte cité présent)",
+      "routed": "choisi par le routeur",
+      "requested": "choisi par l'utilisateur",
+      "none": "aucun corpus"
+    }
   },
   "edu": {
     "title": "Le pipeline en direct",

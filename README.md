@@ -157,8 +157,7 @@ Details (French): [protocol](docs/benchmarks/protocole.md) · [judges and calibr
 
 - A bigger cross-reference set, so the citation graph's effect (9.9) can be told from noise.
 - The weak spots on EU texts: questions whose answer sits in a referenced article, and questions asked in another language than the text.
-- Choose the operating point of query routing and abstention (9.4), re-measured on the current pipeline.
-- Qwen3.6 as the default answer writer, once it is checked to fit the 8 GB GPU.
+- Raise the router's recall on questions to refuse to 0.85 while keeping false refusals under 5% (9.4 ships the prudent point).
 - Run the same benchmark on a client's own documents before any deployment.
 
 ---

@@ -10,6 +10,7 @@ import type {
   QueryResponse,
   RetrievalMode,
   RetrievedChunk,
+  RoutingDecision,
   VersionsInfo,
 } from "../api/types";
 import {
@@ -25,6 +26,7 @@ import { extractCitedRanks, renderAnswer } from "../components/AnswerText";
 import { SendIcon, StopIcon } from "../components/Icon";
 import { PipelineStrip, type RouteInfo } from "../components/PipelineStrip";
 import { FieldLabelContext, Select } from "../components/Select";
+import { RoutingPanel } from "../components/RoutingPanel";
 import { SourceList } from "../components/SourcePill";
 import { Spinner } from "../components/Spinner";
 import { SuggestionChips } from "../components/SuggestionChips";
@@ -56,6 +58,8 @@ interface ChatTurn {
   first_token_ms?: number | null;
   streaming?: boolean;
   error?: { message: string; detail: string | null };
+  // Router decisions when routing was on for this turn.
+  routing?: RoutingDecision | null;
   // Stopped with the « Arrêter » button; a partial answer stays visible.
   stopped?: boolean;
   // Stage-by-stage view of the request, drawn by the educational mode.
@@ -124,6 +128,7 @@ export function Chat() {
   const [indexRunId, setIndexRunId] = useState("");
   const [llm, setLlm] = useState("");
   const [options, setOptions] = useState<RetrievalOverrides>(NO_OVERRIDES);
+  const [routing, setRouting] = useState(false);
   const [question, setQuestion] = useState("");
   const [turns, setTurns] = useState<ChatTurn[]>([]);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -135,10 +140,11 @@ export function Chat() {
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
-    if (!corpus && corpora.data && corpora.data.length > 0) {
+    // With routing on, an empty corpus means "let the router choose".
+    if (!routing && !corpus && corpora.data && corpora.data.length > 0) {
       setCorpus(corpora.data[0].name);
     }
-  }, [corpus, corpora.data]);
+  }, [corpus, corpora.data, routing]);
 
   const indexRuns = useApiLoad<IndexRunSummary[]>(
     () =>
@@ -172,7 +178,7 @@ export function Chat() {
 
   const send = async (overrideQuestion?: string) => {
     const q = (overrideQuestion ?? question).trim();
-    if (!q || !corpus) return;
+    if (!q || (!corpus && !routing)) return;
     const id = newTurnId();
     setTurns((prev) => [
       ...prev,
@@ -191,10 +197,11 @@ export function Chat() {
 
     const body: Record<string, unknown> = {
       question: q,
-      corpus,
+      corpus: corpus || null,
       index_run_id: indexRunId || null,
       top_k: 5,
       generate: true,
+      routing,
     };
     const picked = parseLlm(llm);
     if (picked) {
@@ -231,6 +238,7 @@ export function Chat() {
       graph_notice: r.graph_notice ?? null,
       graph_stats: r.graph_stats ?? null,
       versions: r.versions ?? null,
+      routing: r.routing ?? null,
     });
     try {
       // Sources show up as soon as retrieval is done, then the answer grows
@@ -334,7 +342,7 @@ export function Chat() {
   const corpusList = corpora.data ?? [];
   const apiWaiting = corpora.error !== null && corpora.data === null;
   const empty = turns.length === 0;
-  const noRuns = !indexRuns.loading && runsForCorpus.length === 0;
+  const noRuns = !!corpus && !indexRuns.loading && runsForCorpus.length === 0;
   const lastTurn = turns[turns.length - 1];
   const lastPipeline = lastTurn?.pipeline ?? idlePipeline();
 
@@ -349,6 +357,8 @@ export function Chat() {
                 <option value="">
                   {apiWaiting ? t("chat.api_waiting") : corpora.loading ? t("common.loading") : t("chat.no_corpus_indexed")}
                 </option>
+              ) : routing ? (
+                <option value="">{t("chat.corpus_auto")}</option>
               ) : null}
               {corpusList.map((c) => (
                 <option key={c.id} value={c.name}>
@@ -380,7 +390,14 @@ export function Chat() {
         </div>
 
         <div className="settings-actions">
-          <ChatOptions value={options} onChange={setOptions} config={config} legalCorpus={legalCorpus} />
+          <ChatOptions
+            value={options}
+            onChange={setOptions}
+            config={config}
+            legalCorpus={legalCorpus}
+            routing={routing}
+            onRoutingChange={setRouting}
+          />
           {/* Always there (disabled when empty) so the bar does not reflow at the first answer. */}
           <button className="ghost sm" onClick={reset} disabled={turns.length === 0}>
             {t("chat.new_conversation")}
@@ -434,7 +451,7 @@ export function Chat() {
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
           onKeyDown={onKeyDown}
-          placeholder={corpus ? t("chat.placeholder") : t("chat.placeholder_empty")}
+          placeholder={corpus || routing ? t("chat.placeholder") : t("chat.placeholder_empty")}
           aria-label={t("chat.question_label")}
           rows={2}
         />
@@ -479,7 +496,7 @@ export function Chat() {
             <button
               className="send"
               onClick={() => send()}
-              disabled={!question.trim() || !corpus || noRuns}
+              disabled={!question.trim() || (!corpus && !routing) || noRuns}
             >
               {t("common.submit")}
               <SendIcon size={15} />
@@ -549,9 +566,12 @@ function ChatTurnView({
   const { t } = useTranslation();
   const gpuWhy = useGpuWhy();
   const [showDetail, setShowDetail] = useState(false);
+  // When the router declines, the retrieved passages are not sources.
+  const declined = turn.routing ? !turn.routing.answer_from_documents : false;
+  const sourceChunks = declined ? [] : turn.chunks;
   const visibleChunks = highlight
-    ? turn.chunks.filter((c) => c.file_name === highlight)
-    : turn.chunks;
+    ? sourceChunks.filter((c) => c.file_name === highlight)
+    : sourceChunks;
 
   return (
     <>
@@ -605,15 +625,15 @@ function ChatTurnView({
             {turn.streaming ? <span className="stream-caret" aria-hidden="true" /> : null}
           </div>
           {turn.stopped ? <p className="answer-stopped">{t("chat.stopped")}</p> : null}
-          {turn.chunks.length > 0 ? (
+          {sourceChunks.length > 0 ? (
             <div className="sources">
               <div className="sources-label">
                 {t("chat.sources_header", {
-                  count: new Set(turn.chunks.map((c) => c.file_name)).size,
+                  count: new Set(sourceChunks.map((c) => c.file_name)).size,
                 })}
               </div>
               <SourceList
-                chunks={turn.chunks}
+                chunks={sourceChunks}
                 onSelect={onSelectSource}
                 activeFile={highlight}
                 citedRanks={turn.answer ? extractCitedRanks(turn.answer) : undefined}
@@ -632,6 +652,7 @@ function ChatTurnView({
               ) : null}
             </div>
           ) : null}
+          {turn.routing ? <RoutingPanel routing={turn.routing} /> : null}
           {turn.rerank_notice ? (
             <p className="answer-notice" role="note">
               {t(`chat.rerank_notice_${turn.rerank_notice}`, { defaultValue: turn.rerank_notice, why: gpuWhy })}

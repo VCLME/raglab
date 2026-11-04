@@ -140,7 +140,11 @@
     "help_mode": "Vector compares the question's meaning with the passages', keywords (BM25) looks for the exact words, hybrid runs both then fuses their rankings (RRF): the best measured quality.",
     "help_rerank": "A cross-encoder rereads the first 40 candidates with the question and reorders them: more precise than fusion, about 0.5 s per question on GPU, several seconds on CPU.",
     "help_citations": "If the question cites an article (“art. 49 da Lei 8.078”, “article L. 221-18 du Code de la consommation”), the search is limited to that text and the cited article goes first.",
-    "help_graph": "Follows in Neo4j the cross-references of the best passages (“nos termos do art. 12”) and adds to the fusion the cited articles the other searches missed."
+    "help_graph": "Follows in Neo4j the cross-references of the best passages (“nos termos do art. 12”) and adds to the fusion the cited articles the other searches missed.",
+    "routing_label": "Routing",
+    "routing_title": "Detect language and intent, pick the corpus and abstain when the documents do not answer",
+    "corpus_auto": "Automatic (router)",
+    "options_routing_short": "router"
   },
   "dashboard": {
     "pull_in_progress": "Pulling…",
@@ -188,7 +192,12 @@
     "chunks_header": "Retrieved chunks ({{count}})",
     "raw_payload": "Raw response (JSON)",
     "loading": "querying the RAG…",
-    "writer_hint": "Written by {{provider}} · {{model}}."
+    "writer_hint": "Written by {{provider}} · {{model}}.",
+    "routing_label": "Routing",
+    "routing_checkbox": "Route the question (language, intent, corpus, abstention)",
+    "routing_hint": "With no corpus or index selected, the router picks the corpus.",
+    "corpus_auto": "Automatic (router)",
+    "routing_header": "Routing"
   },
   "playground": {
     "model_label": "Model",
@@ -504,6 +513,44 @@
     "download": "Download",
     "downloading": "Downloading…",
     "pull_status": "status: {{status}}"
+  },
+  "routing": {
+    "title": "Routing",
+    "language": "Language",
+    "intent": "Intent",
+    "corpus": "Corpus",
+    "abstention": "Abstention",
+    "timings": "Timings",
+    "margin": "margin",
+    "answered": "Answered from the documents",
+    "declined": "No document answer ({{reason}})",
+    "suggested": "(the router would pick {{corpus}})",
+    "no_candidate": "no compatible index",
+    "intent_rule": "documentary unless another intent beats it by more than {{margin}}",
+    "nearest_example": "nearest example: “{{text}}”",
+    "citation_override": "Legal citation ({{label}}): never declined",
+    "abstention_rule": "best {{source}} score {{score}} (threshold {{threshold}})",
+    "intents": {
+      "documentary": "documentary",
+      "conversational": "conversational",
+      "out_of_scope": "out of scope"
+    },
+    "reasons": {
+      "intent": "intent",
+      "low_score": "score too low",
+      "no_passage": "no passage",
+      "none": "—"
+    },
+    "methods": {
+      "lexical": "function words",
+      "embedding": "nearest example"
+    },
+    "corpus_sources": {
+      "citation": "chosen by the citation (cited text indexed)",
+      "routed": "picked by the router",
+      "requested": "picked by the user",
+      "none": "no corpus"
+    }
   },
   "edu": {
     "title": "The pipeline, live",

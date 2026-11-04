@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from types import SimpleNamespace
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 
 def _run(**overrides):
@@ -127,3 +127,26 @@ def test_detail_endpoint_returns_run_plus_cases(client, mock_session):
     assert body["results"][0]["case_id"] == "piaf-q1"
     assert body["results"][0]["retrieved_chunk_ids"] == ["c1", "c2"]
     assert body["results"][0]["metrics"]["recall@1"] is True
+
+
+def test_routing_endpoint_runs_the_router_evaluation(client):
+    with patch("raglab.api.routers.experiments.RoutingExperimentService") as cls:
+        cls.return_value.run.return_value = {"kind": "routing", "summary": {}}
+        response = client.post(
+            "/api/experiments/routing",
+            json={"corpora": ["bench_piaf_fr", "bench_lexml_pt"], "sample_size": 20, "seed": 7, "rerank": True},
+        )
+    assert response.status_code == 200
+    assert response.json()["kind"] == "routing"
+    kwargs = cls.return_value.run.call_args.kwargs
+    assert kwargs == {
+        "corpora": ["bench_piaf_fr", "bench_lexml_pt"],
+        "strategy": None,
+        "sample_size": 20,
+        "seed": 7,
+        "top_k": 5,
+        "calibration_size": 100,
+        "retrieval_mode": None,
+        "rerank": True,
+        "citations": None,
+    }

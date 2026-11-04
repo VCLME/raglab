@@ -74,3 +74,8 @@ def test_query_endpoint_forwards_llm_model(client):
 
 def test_query_endpoint_defaults_llm_model_to_none(client):
     assert _query_kwargs(client)["llm_model"] is None
+
+
+def test_query_endpoint_forwards_routing(client):
+    assert _query_kwargs(client, routing=True)["routing"] is True
+    assert _query_kwargs(client)["routing"] is False

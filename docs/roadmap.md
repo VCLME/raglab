@@ -144,7 +144,7 @@ Objectif : passer du laboratoire à un pipeline RAG prêt pour la production, ch
 | Identifiants (« art. 49 da Lei 8.078 ») | résolveur de citations (9.3b) | ✅ 9 % → 72 % (LexML) ; questions à numéro d'article du Code de la consommation 0,46 → 1,00 |
 | Renvois (la réponse est dans l'article cité) | graphe des citations dans Neo4j (9.9) | mesuré, pas de gain significatif : +6,5 pts sur 46 questions de renvois (n.s.), −2,3 pts sur les textes de l'UE (n.s.) ; reste désactivé |
 | Versions (article abrogé ou réécrit cité comme en vigueur) | filtre `versions` (`in_force` par défaut), statut de version par chunk (9.10) | ✅ actif par défaut : Code de la consommation Recall@5 0,66 → 0,82, version périmée en tête 57 % → 0 % ; jeu « versions » 0,75 → 0,93, version périmée en tête 30 % → 0 % |
-| Hors périmètre | routeur et abstention (9.4) | re-mesuré sur le pipeline actuel ; point de fonctionnement à choisir. Candidat : précision 0,958 / rappel 0,850 à 3,8 % de fausses abstentions (score dense, `benchmarks/routing/router-dense-v1.json`) |
+| Hors périmètre | routeur et abstention (9.4) | ✅ derrière un flag (`routing`), point A prudent : précision 1,00 / rappel 0,625 / 0 % de fausses abstentions (score dense, pipeline actuel). Objectif suivant : rappel 0,85 avec moins de 5 % de faux refus, atteint à q10 % sur ce tirage (0,850 / 3,8 %), à confirmer |
 
 Chiffres et précautions : [benchmarks/resultats-2026-11.md](benchmarks/resultats-2026-11.md).
 
@@ -199,6 +199,14 @@ Toute nouvelle brique doit servir l'un de ces modes d'échec ou l'expérience de
 
 - **9.7 — Portes de qualité (outillage en place)** : `raglab gate` et seuils versionnés dans `benchmarks/thresholds.json` (à fixer depuis `baseline-v1`), workflow hebdomadaire de retrieval sur CPU, voir [portes-qualite.md](portes-qualite.md)
 
+**9.4 — Routeur de requêtes et abstention ✅ (PR #35)** : voir [routing.md](routing.md)
+
+- routeur sans LLM derrière un flag (`routing`, désactivé par défaut) dans `QueryService`, `/api/query`, `/api/query/stream`, `raglab query --routing`, Chat et Retrieval (panneau détaillé en mode expert)
+- langue fr / pt / autre par mots-outils et diacritiques, repli sur l'exemple étiqueté le plus proche ; intention par centroïdes d'exemples écrits à part (`documentary`, `conversational`, `out_of_scope`) avec marge ; corpus par centroïde des embeddings de chunks de chaque index_run (mis en cache) ; abstention sous un seuil par corpus, score dense aujourd'hui, score du reranker 9.3 ensuite
+- `raglab experiment routing` / `POST /api/experiments/routing` : jeu d'abstention + 80 questions in-scope tirées, seuils calibrés sur 200 autres questions in-scope, balayage et courbe précision / rappel, trois points candidats
+- mesuré (CPU) : langue 99,4 %, corpus 100 %, décision du routeur p95 7,5 ms (l'embedding de la question, 25 ms, est partagé avec le retrieval) ; abstention au point prudent : précision 0,98, rappel 0,75, 1,2 % de fausses abstentions ; le rappel cible (0,8) n'est atteint qu'à 15 % de fausses abstentions ; point A retenu par le propriétaire
+- re-mesuré le 4 novembre 2026 sur le pipeline complet : point A recalibré pour chaque source de score (dense PIAF 0,7929 / LexML 0,8485 : précision 1,00, rappel 0,625, 0 % ; reranker −5,4414 / −3,9102 : 0,982 / 0,700 / 1,2 %) ; un seuil dense ne sert jamais pour le score du reranker ; règle pour les prochaines mesures : marge 0,02, maximiser le rappel avec moins de 5 % de faux refus, objectif 0,85
+
 **9.6 — Observabilité ✅ (PR #34)** : voir [observabilite.md](observabilite.md)
 
 **9.9 — Graphe des citations 🚧 (9.9a en revue)** : mode d'échec « renvois », voir [graphe.md](graphe.md)
@@ -231,4 +239,4 @@ Toute nouvelle brique doit servir l'un de ces modes d'échec ou l'expérience de
 - `raglab experiment drift` et `POST /api/experiments/drift` : test KS sur les distributions de scores et de rangs, écarts des moyennes RAGAS / MRR / recall entre deux index runs, experiment runs ou fenêtres de dates ; Markdown ou JSON, `--fail-on-drift` ; scores désormais stockés dans `metrics_json.retrieved_scores`
 - coût mesuré sans GPU (`scripts/bench_observability.py`) : +105 µs sur une requête simulée de 60 ms (+0,17 %, objectif < 1 %) ; capture Grafana sur trafic réel dans [observabilite.md](observabilite.md#profil-compose-obs)
 
-**À venir** : 9.4 compréhension de la requête et abstention · 9.7 portes de qualité · 9.8 vitrine
+**À venir** : 9.7 portes de qualité · 9.8 vitrine
