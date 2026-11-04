@@ -57,7 +57,7 @@
     "label": "rerank-sorted-c40",
     "name": "Sorted re-ranking batches",
     "change": "+ re-ranking pairs sorted by length before batching: same scores, less padding (retrieval only, not judged)",
-    "status": "default"
+    "status": "retrieval default"
   },
   {
     "label": "rerank-sorted-c20",
@@ -70,5 +70,35 @@
     "name": "30 candidates",
     "change": "30 re-ranking candidates (latency sweep point, retrieval only)",
     "status": "comparison"
+  },
+  {
+    "label": "answer-lang-v1",
+    "name": "Multilingual fallback prompt",
+    "change": "answer prompt with a fallback sentence in three languages and \"answer partially\" (rejected: refusals doubled)",
+    "status": "rejected"
+  },
+  {
+    "label": "prompt-v4",
+    "name": "Grounded prompt",
+    "change": "+ answer prompt in the question's language, quote the answering sentence before answering (fewer unjustified refusals, no wrong-language answers)",
+    "status": "default"
+  },
+  {
+    "label": "gen-qwen36-v1",
+    "name": "Qwen3.6 answer writer",
+    "change": "same pipeline and prompt, answers written by Qwen3.6-35B-A3B (MoE) on llama.cpp instead of qwen2.5:7b",
+    "status": "next default, VRAM check pending"
+  },
+  {
+    "label": "graph-v1",
+    "name": "Citation graph",
+    "change": "full pipeline + citation graph in Neo4j as a third search branch (no-regression check on these sets; measured on its own sets below)",
+    "status": "9.9 · comparison"
+  },
+  {
+    "label": "versions-v1",
+    "name": "Version filter",
+    "change": "full pipeline + only versions in force are searched (on by default; no regression on these sets, measured on its own sets below)",
+    "status": "9.10 · default"
   }
 ]

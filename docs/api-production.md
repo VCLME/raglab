@@ -19,6 +19,9 @@ laboratoire : pas de clé, pas de limite, `POST /api/query` inchangé.
 | Limite de débit | `RAGLAB_API_RATE_LIMIT_REQUESTS` / `RAGLAB_API_RATE_LIMIT_WINDOW_SECONDS` | 0 = désactivée / 60 | 429 + `Retry-After` |
 | OOM Ollama | `RAGLAB_OLLAMA_RETRY_AFTER_SECONDS` | 30 | 503 + `Retry-After` |
 | Sonde `/ready` | `RAGLAB_READY_TIMEOUT_SECONDS` | 3 | délai max pour interroger Ollama |
+| Collecte d'une source officielle | `RAGLAB_SOURCE_FETCH_TIMEOUT_SECONDS` | 3600 | tâche `failed`, erreur 504 avec l'étape (`fetch`, `verify`, `ingest`) |
+| Appel git (Légifrance) | `RAGLAB_LEGIFRANCE_GIT_TIMEOUT_SECONDS` | 600 | tâche `failed`, erreur 504 `stage=fetch` |
+| Requêtes CELLAR (EUR-Lex) | `RAGLAB_EURLEX_REQUEST_DELAY_SECONDS` / `RAGLAB_EURLEX_REQUEST_TIMEOUT_SECONDS` | 1 (min. 0,2) / 60 | espacement et délai de chaque requête |
 
 Un budget à `0` désactive la limite correspondante.
 
@@ -252,6 +255,83 @@ Toutes les erreurs ont la forme `{"detail": "...", "error": "<Type>", "cause": "
 Les exceptions typées héritent de `RuntimeError` : le code existant qui
 attrapait `RuntimeError` pour un modèle manquant continue de fonctionner.
 
+## Collecte des sources officielles : `/api/sources`
+
+Le Code de la consommation ([corpus-legi.md](corpus-legi.md)) et les actes
+européens de conformité ([corpus-eurlex.md](corpus-eurlex.md)) se collectent
+sans la ligne de commande. La collecte est longue (un `git clone --bare` puis
+la lecture de l'historique ; une soixantaine de requêtes CELLAR à une par
+seconde) : elle tourne en **tâche de fond** dans le processus de l'API, et
+l'interface interroge son état.
+
+| Endpoint | Rôle |
+|---|---|
+| `GET /api/sources` | état des deux sources (`legi`, `eurlex`) |
+| `POST /api/sources/{legi\|eurlex}/fetch` | lance la tâche, répond **202** tout de suite ; corps optionnel `{"ingest": false}` pour n'écrire que les fichiers |
+| `GET /api/sources/{legi\|eurlex}/status` | état, étape, progression, dernière erreur, résultat |
+
+Une tâche enchaîne trois étapes :
+
+1. `fetch` : la collecte, celle de `raglab legifrance fetch --code consommation`
+   ou `raglab eurlex fetch`, dans les dossiers du benchmark
+   (`data/legifrance/consommation/`, `data/eurlex/compliance/`). La
+   progression compte les versions d'articles (Légifrance) ou les documents
+   CELLAR (EUR-Lex), en cache compris.
+2. `verify` : comparaison au manifeste figé du benchmark
+   (`benchmarks/<suite>/corpus_manifest.json`). Un écart n'arrête pas la
+   tâche ; il est rapporté (`result.manifest.problems`), car le benchmark
+   refusera ce corpus.
+3. `ingest` : ingestion dans `bench_legi_consommation_fr` ou
+   `bench_eurlex_compliance`, avec la même description que le benchmark, qui
+   retrouve donc les documents sans les réingérer. **Pas d'indexation** :
+   les embeddings sont l'étape Vectorisation de l'Atelier, la collecte ne
+   touche jamais le GPU.
+
+```json
+{
+  "source": "legi",
+  "corpus": "bench_legi_consommation_fr",
+  "state": "running",
+  "stage": "fetch",
+  "progress": {"done": 3000, "total": 5998},
+  "started_at": "2026-11-03T10:12:00Z",
+  "finished_at": null,
+  "error": null,
+  "result": null,
+  "command": "raglab legifrance fetch --code consommation"
+}
+```
+
+`state` vaut `idle`, `running`, `succeeded` ou `failed`. Une seule tâche par
+source à la fois : un second `POST` pendant qu'elle tourne répond **409**
+(`SourceBusyError`). Une source inconnue répond 404.
+
+Les erreurs passent par `describe_error`, comme celles des routes ; le corps
+est rangé dans `error` avec son code HTTP (`status_code`) :
+
+| Situation | `error` | `status_code` |
+|---|---|---|
+| Dépôt git ou CELLAR injoignable, `git` en échec | `SourceFetchError` (`source`, `cause` = message brut ou stderr de git) | 502 |
+| Budget de la tâche dépassé (`RAGLAB_SOURCE_FETCH_TIMEOUT_SECONDS`) | `StageTimeoutError`, `stage` = étape en cours | 504 |
+| Appel git bloqué (`RAGLAB_LEGIFRANCE_GIT_TIMEOUT_SECONDS`) | `StageTimeoutError`, `stage=fetch` | 504 |
+
+Le budget de la tâche est vérifié à chaque pas de progression et entre les
+étapes : une requête CELLAR en cours finit avant l'arrêt (au plus
+`RAGLAB_EURLEX_REQUEST_TIMEOUT_SECONDS`). Les lignes de log
+(`sources.fetch.started`, `.completed`, `.failed`) portent le `request_id` du
+`POST` qui a lancé la tâche.
+
+L'état vit en mémoire : il est perdu au redémarrage de l'API (les fichiers et
+le corpus ingéré restent), et chaque worker uvicorn a le sien, ce qui suppose
+un seul worker, la configuration du lab. En ligne de commande, la même tâche
+s'exécute au premier plan :
+
+```bash
+raglab sources list
+raglab sources fetch legi             # collecte puis ingestion
+raglab sources fetch eurlex --no-ingest
+```
+
 ## Fournisseurs LLM (Ollama, llama.cpp, vLLM)
 
 La génération de la réponse (`/api/query`, `/api/query/stream`,
@@ -304,6 +384,18 @@ courte (`unreachable`, `timeout`, `http 401`...).
 }
 ```
 
+Chaque fournisseur porte aussi `generation`, les réglages avec lesquels une
+réponse est écrite : `temperature` (la seule valeur que raglab envoie,
+`sent_by_raglab: ["temperature"]`), `top_p`, `max_tokens` et `context`
+(fenêtre en tokens). `null` = défaut du serveur, inconnu de raglab
+(`source: "raglab"`) ; pour llama.cpp, ces défauts sont lus dans
+`GET /props` de llama-server quand il répond (`source: "server"`,
+`max_tokens: null` = jusqu'à la fin de la réponse). L'entrée llama.cpp a en
+plus un bloc `llamacpp` : `writer_profile`, `writer_model` (alias attendu
+dans `/v1/models`), `start_command_configured`, `stop_command_configured`
+(booléens, jamais les commandes), `autostart` et `profile_options`
+(`RAGLAB_LLAMACPP_PROFILE_OPTIONS`).
+
 `GET /api/config` expose aussi `llm_providers`, `default_llm_provider` et
 `citation_resolver`.
 
@@ -319,15 +411,29 @@ courte (`unreachable`, `timeout`, `http 401`...).
 | Pas de réponse dans le budget | `LLMProviderTimeoutError` | **504**, `stage: "generation"` |
 | Autre erreur HTTP ou `error` dans le flux | `LLMProviderError` | **502**, message du serveur dans `cause` |
 
+**Rédacteur par défaut et repli.** Sans `llm_provider`, la réponse est
+écrite par Qwen3.6 sur llama.cpp (`RAGLAB_DEFAULT_LLM_PROVIDER=llamacpp`).
+S'il est arrêté, l'API le démarre avec le profil du rédacteur
+(`RAGLAB_LLAMACPP_AUTOSTART` ; la question attend le chargement jusqu'à
+`RAGLAB_LLAMACPP_AUTOSTART_WAIT_SECONDS`) et le laisse tourner. S'il ne peut
+pas servir (pas de commande de démarrage, échec, chargement trop long, autre
+modèle servi), Ollama `qwen2.5:7b` répond et la réponse le dit :
+`llm_provider: "ollama"`, `generator_notice` = `llamacpp_unavailable`,
+`llamacpp_starting` ou `llamacpp_busy` (aussi dans les données de l'étape
+`generation` du flux SSE). Une requête sans fournisseur n'échoue donc jamais
+parce que llama.cpp est arrêté. Un `llm_provider` explicite est servi tel
+quel, sans démarrage ni repli. `/api/llm/models`, `/api/health` et `/ready`
+portent un bloc `generator` (`status`, `notice`, `active_provider`,
+`active_model`), sans jamais démarrer de serveur.
+
 **GPU (8 Go).** Ollama et llama.cpp ne tiennent jamais le GPU en même temps.
-Pour une requête interactive, raglab ne **démarre pas** llama-server (des
-dizaines de secondes de chargement) : il utilise un serveur déjà lancé, sinon
-502. Avant chaque réponse llama.cpp, il demande à Ollama de décharger ses
+Avant chaque réponse llama.cpp, raglab demande à Ollama de décharger ses
 modèles (`keep_alive: 0`, même aide que `LocalLLMServer`) ; une requête
 Ollama suivante rechargera qwen2.5, ce qui peut échouer en 503 tant que
 llama-server occupe la mémoire. vLLM est supposé tourner sur une autre
 machine ou un autre GPU : rien n'est déchargé pour lui. Les benchmarks
-continuent de passer par `LocalLLMServer`, qui démarre et arrête llama-server.
+continuent de passer par `LocalLLMServer`, qui démarre et arrête llama-server
+et vérifie le modèle servi : le juge ne réutilise jamais le rédacteur.
 
 ## Mesures
 

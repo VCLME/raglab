@@ -3965,6 +3965,25 @@ button.icon-only {
   .workshop-scope {
     flex-basis: 100%;
   }
+  .workshop-links {
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .workshop-links a {
+    white-space: nowrap;
+  }
+  /* Label above its value: a label column leaves no room on a phone. */
+  .kv {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .kv dt {
+    padding: 10px 0 2px;
+    border-bottom: none;
+  }
+  .kv dd {
+    padding-top: 0;
+  }
   .workshop-scope .select-trigger {
     min-width: 0;
     flex: 1;
@@ -4013,4 +4032,63 @@ button.icon-only {
 }
 .profile-table {
   margin-top: 16px;
+}
+
+/* Fetch job of an official source (Corpus › Légifrance et EUR-Lex). */
+.source-fetch {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+  justify-items: start;
+}
+.source-progress {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+  font-size: 12.5px;
+}
+.source-progress progress {
+  width: 100%;
+  height: 6px;
+  accent-color: var(--accent);
+}
+.source-done {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.source-done p {
+  margin: 0;
+  flex-basis: 100%;
+  font-size: 12.5px;
+}
+
+/* Bases de données */
+.db-value {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+}
+.db-value code {
+  overflow-wrap: anywhere;
+}
+.db-note {
+  font-size: 12px;
+}
+.db-open {
+  margin-top: 14px;
+}
+.db-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--border-strong);
+}
+.db-dot.ok {
+  background: var(--accent);
+}
+.db-dot.unreachable {
+  background: var(--err);
 }

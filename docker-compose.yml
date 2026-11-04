@@ -80,6 +80,9 @@ services:
       RAGLAB_DATABASE_URL: postgresql+psycopg://raglab:raglab@postgres:5432/raglab
       RAGLAB_OLLAMA_BASE_URL: http://ollama:11434
       RAGLAB_GENERATION_MODEL: qwen2.5:7b
+      # Answers stay on Ollama unless docker-compose.llamacpp.yml is added (docs/run-and-test.md).
+      RAGLAB_LLM_PROVIDERS: ollama
+      RAGLAB_DEFAULT_LLM_PROVIDER: ollama
       RAGLAB_NEO4J_URI: bolt://neo4j:7687
       RAGLAB_NEO4J_USER: neo4j
       RAGLAB_NEO4J_PASSWORD: raglab_neo4j
@@ -105,6 +108,9 @@ services:
       RAGLAB_DATABASE_URL: postgresql+psycopg://raglab:raglab@postgres:5432/raglab
       RAGLAB_OLLAMA_BASE_URL: http://ollama:11434
       RAGLAB_GENERATION_MODEL: qwen2.5:7b
+      # Answers stay on Ollama unless docker-compose.llamacpp.yml is added (docs/run-and-test.md).
+      RAGLAB_LLM_PROVIDERS: ollama
+      RAGLAB_DEFAULT_LLM_PROVIDER: ollama
       # The api image ships CPU-only torch: default re-ranking is skipped
       # there (RAGLAB_RERANK_WITHOUT_GPU=skip) and each response says so;
       # it runs when raglab runs natively with a GPU (see docs/reranking.md).

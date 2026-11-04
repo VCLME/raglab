@@ -79,22 +79,6 @@ export interface LlamaCppServerInfo {
   profile_options: Record<string, { ctx_size?: number; n_cpu_moe?: number }>;
 }
 
-/** State of the default writer when it is llama.cpp. */
-export interface GeneratorStatus {
-  provider: string;
-  model: string;
-  label: string;
-  profile: string;
-  status: "ready" | "stopped" | "starting" | "busy" | "down" | "failed" | string;
-  notice?: string | null;
-  active_provider?: string | null;
-  active_model?: string | null;
-  active_provider_label?: string | null;
-  fallback_provider?: string | null;
-  autostart?: boolean;
-  error?: string | null;
-}
-
 /** One generation backend of GET /api/llm/models. */
 export interface LlmProvider {
   name: string;
@@ -110,11 +94,55 @@ export interface LlmProvider {
   llamacpp?: LlamaCppServerInfo | null;
 }
 
+/** Default answer writer (Qwen3.6 on llama.cpp) and who answers right now. */
+export interface GeneratorStatus {
+  provider: string;
+  model: string;
+  /** Name shown in the LLM picker ("Qwen3.6"). */
+  label: string;
+  profile: string;
+  /** ready, stopped (starts on the next query), starting, busy, down or failed. */
+  status: string;
+  /** Set when the fallback answers: llamacpp_unavailable, llamacpp_starting, llamacpp_busy. */
+  notice: string | null;
+  active_provider: string;
+  active_model: string | null;
+  active_provider_label: string;
+  fallback_provider: string | null;
+  autostart: boolean;
+  error: string | null;
+}
+
 export interface LlmModelsResponse {
   default_provider: string;
   default_model: string;
   providers: LlmProvider[];
+  /** Absent or null when the default provider is not llama.cpp. */
   generator?: GeneratorStatus | null;
+}
+
+/** One store of GET /api/databases. */
+export interface DatabaseConnection {
+  kind: "postgres" | "neo4j" | string;
+  label: string;
+  status: "ok" | "unreachable" | string;
+  host: string;
+  port: number;
+  user: string;
+  /** Only the shipped dev default; null when the server keeps it. */
+  password: string | null;
+  password_is_default: boolean;
+  /** Variable that holds the password. */
+  password_env: string;
+  database: string | null;
+  /** Connection string, password masked. */
+  url: string | null;
+  web_url: string | null;
+  deep_link: string | null;
+}
+
+export interface DatabasesResponse {
+  databases: DatabaseConnection[];
 }
 
 export interface OllamaStatus {
@@ -305,6 +333,10 @@ export interface QueryResponse {
   citation?: CitationInfo | null;
   // "skipped_no_gpu" or "cpu" when re-ranking could not use a GPU.
   rerank_notice?: string | null;
+  // Provider that wrote the answer, and why the fallback did instead of the
+  // default writer: llamacpp_unavailable, llamacpp_starting, llamacpp_busy.
+  llm_provider?: string | null;
+  generator_notice?: string | null;
   // Graph branch: whether it ran, why it was skipped, its counters.
   graph?: boolean;
   graph_notice?: string | null;

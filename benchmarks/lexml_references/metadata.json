@@ -1,0 +1,66 @@
+{
+  "loader": "lexml_references",
+  "language": "pt",
+  "licence": "Public domain (Lei 9.610/1998, art. 8º, IV)",
+  "generator_model": "qwen3.6-35b-a3b",
+  "generator_backend": "llamacpp",
+  "seed": 42,
+  "case_count": 46,
+  "shares": {
+    "via_topic": 0.5,
+    "scenario": 0.3,
+    "via_article": 0.2
+  },
+  "by_type": {
+    "via_topic": 23,
+    "scenario": 14,
+    "via_article": 9
+  },
+  "by_persona": {
+    "citizen": 4,
+    "company": 5,
+    "lawyer": 5
+  },
+  "by_split": {
+    "dev": 14,
+    "heldout": 32
+  },
+  "reference_pairs": 1078,
+  "rejected": {
+    "copies_wording": 69,
+    "quote_not_found": 47,
+    "reference_missing": 88,
+    "answer_too_long": 12,
+    "boilerplate_answer": 2,
+    "answer_in_source": 6,
+    "leaks_reference": 2,
+    "leaks_target": 29,
+    "vague": 9
+  },
+  "rejected_by_type": {
+    "via_topic": {
+      "copies_wording": 55,
+      "quote_not_found": 17,
+      "leaks_reference": 2,
+      "answer_too_long": 7,
+      "answer_in_source": 3,
+      "vague": 5,
+      "boilerplate_answer": 1
+    },
+    "scenario": {
+      "copies_wording": 14,
+      "quote_not_found": 2,
+      "boilerplate_answer": 1,
+      "answer_in_source": 1
+    },
+    "via_article": {
+      "quote_not_found": 28,
+      "reference_missing": 88,
+      "answer_too_long": 5,
+      "answer_in_source": 2,
+      "leaks_target": 29,
+      "vague": 4
+    }
+  },
+  "corpus_dir": "C:\\Users\\lucme\\source\\rag\\.claude\\worktrees\\bench-protocol\\data\\lexml\\fulltext\\corpus"
+}

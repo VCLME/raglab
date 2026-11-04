@@ -39,8 +39,45 @@ class Settings(BaseSettings):
     # comma-separated among KNOWN_LLM_PROVIDERS. Unknown names and a default
     # outside the list are rejected at startup (a typo must not silently
     # fall back to Ollama).
-    llm_providers: str = "ollama"
-    default_llm_provider: str = "ollama"
+    llm_providers: str = "llamacpp,ollama"
+    # Answer writer: Qwen3.6-35B-A3B on llama.cpp (gen-qwen36-v1: answer
+    # correctness PIAF 0.763 -> 0.935, LexML 0.550 -> 0.710 against
+    # qwen2.5:7b). When llama.cpp cannot serve it (down and not startable,
+    # or busy with another model), a query that names no provider is
+    # answered by llm_fallback_provider and the response says why
+    # (`generator_notice`). Empty fallback = the query fails instead.
+    default_llm_provider: str = "llamacpp"
+    llm_fallback_provider: str = "ollama"
+    # The writer shares the 8 GB GPU with the cross-encoder, so it runs its
+    # own profile: 16k context, 34 MoE expert layers in RAM (measured with
+    # 10 queries: 5.41 GB alone, 7.10 GB peak with the reranker, 33.6 tok/s;
+    # the 64k `qwen35b-moe` profile spills to shared memory, 2.9 tok/s).
+    # Same alias as qwen35b-moe; add the profile to Start-LocalLLM.ps1's
+    # profiles.json (docs/run-and-test.md) or pass {ctx_size}/{n_cpu_moe}.
+    writer_model_profile: str = "qwen35b-moe-rag"
+    writer_model: str = "qwen3.6-35b-a3b"
+    # Name the Chat LLM picker shows for the writer.
+    writer_model_label: str = "Qwen3.6"
+    # Start llama-server with RAGLAB_LLAMACPP_START_COMMAND and the writer
+    # profile when a query needs it; the server then keeps running. A query
+    # that finds it loading waits up to llamacpp_autostart_wait_seconds
+    # before falling back; after a failed start, the next attempt waits
+    # llamacpp_autostart_retry_seconds.
+    llamacpp_autostart: bool = True
+    llamacpp_autostart_wait_seconds: float = 120.0
+    llamacpp_autostart_retry_seconds: float = 300.0
+    # Knobs substituted into the start command next to {profile} and
+    # {model}: {ctx_size} and {n_cpu_moe} (MoE expert layers kept in RAM),
+    # per profile. Start-LocalLLM.ps1 keeps its own in profiles.json; these
+    # serve a raw `llama-server ... -c {ctx_size} --n-cpu-moe {n_cpu_moe}`
+    # command. Budget with the reranker: docs/run-and-test.md.
+    llamacpp_profile_options: dict[str, dict[str, int]] = Field(
+        default_factory=lambda: {
+            "qwen35b-moe-rag": {"ctx_size": 16384, "n_cpu_moe": 34},
+            "qwen35b-moe": {"ctx_size": 65536, "n_cpu_moe": 32},
+            "gemma4-moe": {"ctx_size": 32768, "n_cpu_moe": 24},
+        }
+    )
     question_model_profile: str = "qwen35b-moe"
     question_model: str = "qwen3.6-35b-a3b"
     # RAGAS judge served by llama.cpp: a different model family from the
@@ -102,9 +139,11 @@ class Settings(BaseSettings):
     # Article versions retrieval may use (phase 9.10, docs/versions.md):
     # in_force (today, or the date the question asks about), all, or
     # as_of=YYYY-MM-DD. Acts only on corpora with version metadata
-    # (Légifrance) or repeal markers (LexML). Shipped as `all` (every
-    # version, as before 9.10) until the GPU measurement shows in_force helps.
-    versions_default: str = "all"
+    # (Légifrance) or repeal markers (LexML). Measured (versions-full-v1):
+    # versions set Recall@5 0.75 -> 0.93, outdated version above the right
+    # one 30% -> 0%; Code de la consommation 0.660 -> 0.820; PIAF and LexML
+    # unchanged.
+    versions_default: str = "in_force"
     default_language: str = "fr"
     bm25_k1: float = 1.2
     bm25_b: float = 0.75
@@ -137,6 +176,13 @@ class Settings(BaseSettings):
     legifrance_dir: Path = Field(default_factory=lambda: Path("data/legifrance"))
     # EU acts from EUR-Lex / CELLAR (`raglab eurlex fetch`).
     eurlex_dir: Path = Field(default_factory=lambda: Path("data/eurlex"))
+    # Fetch jobs of the official sources (`POST /api/sources/{name}/fetch`,
+    # `raglab sources fetch`): budget of the whole job (0 = no limit), of one
+    # git call, and the pace and timeout of the CELLAR requests.
+    source_fetch_timeout_seconds: float = 3600.0
+    legifrance_git_timeout_seconds: float = 600.0
+    eurlex_request_delay_seconds: float = Field(default=1.0, ge=0.2)
+    eurlex_request_timeout_seconds: float = 60.0
 
     generation_model: str = "qwen2.5:7b"
     generation_temperature: float = 0.1
@@ -215,9 +261,9 @@ class Settings(BaseSettings):
             raise ValueError("RAGLAB_LLM_PROVIDERS doit lister au moins un fournisseur")
         return ",".join(names)
 
-    @field_validator("default_llm_provider")
+    @field_validator("default_llm_provider", "llm_fallback_provider")
     @classmethod
-    def _normalize_default_llm_provider(cls, value: str) -> str:
+    def _normalize_provider_name(cls, value: str) -> str:
         return value.strip().lower()
 
     @model_validator(mode="after")
@@ -225,6 +271,11 @@ class Settings(BaseSettings):
         if self.default_llm_provider not in self.llm_provider_names:
             raise ValueError(
                 f"RAGLAB_DEFAULT_LLM_PROVIDER={self.default_llm_provider!r} n'est pas dans "
+                f"RAGLAB_LLM_PROVIDERS ({self.llm_providers})"
+            )
+        if self.llm_fallback_provider and self.llm_fallback_provider not in self.llm_provider_names:
+            raise ValueError(
+                f"RAGLAB_LLM_FALLBACK_PROVIDER={self.llm_fallback_provider!r} n'est pas dans "
                 f"RAGLAB_LLM_PROVIDERS ({self.llm_providers})"
             )
         return self

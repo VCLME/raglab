@@ -77,8 +77,18 @@ def test_llm_models_lists_enabled_providers_in_order(providers_client):
         "error": None,
         "models": ["qwen2.5:7b", "mistral:7b"],
         "default_model": "qwen2.5:7b",
+        "generation": {
+            "temperature": 0.1,
+            "top_p": None,
+            "max_tokens": None,
+            "context": None,
+            "sent_by_raglab": ["temperature"],
+            "source": "raglab",
+        },
+        "llamacpp": None,
     }
     assert llamacpp["label"] == "llama.cpp" and llamacpp["kind"] == "openai"
+    assert llamacpp["llamacpp"]["writer_profile"] == "qwen35b-moe-rag"
     assert llamacpp["available"] is False and llamacpp["error"] == "unreachable" and llamacpp["models"] == []
     assert vllm["available"] is True and vllm["models"] == ["Qwen/Qwen2.5-7B-Instruct"]
     assert "vllm-secret" not in response.text

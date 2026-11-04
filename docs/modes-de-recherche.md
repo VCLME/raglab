@@ -32,7 +32,7 @@ flowchart LR
    - **graphe** (option `graph`, en plus du mode) : suit dans Neo4j les renvois des meilleurs passages (« nos termos do art. 12 ») et ajoute les articles cités à la fusion ; il n'ajoute que des passages que les deux autres ont manqués.
 3. **Fusion RRF** : chaque passage reçoit `Σ poids / (k + rang)` sur les listes où il apparaît ; `k = 60`, poids BM25 `0,5`, poids graphe `0,5`.
 4. **Re-ranking** : un cross-encoder (`bge-reranker-v2-m3`) relit chaque candidat avec la question et réordonne les 40 premiers. Plus précis que la fusion, mais environ 0,5 s par question sur un GPU portable. Sans GPU, il est **désactivé par défaut** (il prendrait plusieurs secondes sur CPU) ; une demande explicite le lance quand même sur CPU.
-5. **Versions** (corpus de lois seulement, option `versions=in_force`, pas encore le défaut) : la recherche ne voit que les versions d'articles en vigueur à la date de référence, aujourd'hui ou celle que demande la question (« avant 2016 ») ; sur le Code de la consommation, les autres versions sont écartées dans la requête SQL, avant le classement ; sur les lois compilées de LexML, un passage dont toutes les dispositions sont « (Revogado) » passe en fin de liste et les dispositions abrogées sont masquées au modèle. Chaque passage porte son état (en vigueur depuis, ancienne version, abrogé), que le prompt donne au modèle. Voir [versions.md](versions.md).
+5. **Versions** (corpus de lois seulement, `versions=in_force` par défaut) : la recherche ne voit que les versions d'articles en vigueur à la date de référence, aujourd'hui ou celle que demande la question (« avant 2016 ») ; sur le Code de la consommation, les autres versions sont écartées dans la requête SQL, avant le classement ; sur les lois compilées de LexML, un passage dont toutes les dispositions sont « (Revogado) » passe en fin de liste et les dispositions abrogées sont masquées au modèle. Chaque passage porte son état (en vigueur depuis, ancienne version, abrogé), que le prompt donne au modèle. Voir [versions.md](versions.md).
 6. **Génération** : les 5 premiers passages sont donnés au LLM, qui répond en citant ses sources (`[Rank N]`) ou dit que l'information n'est pas dans les documents.
 
 ## Les options
@@ -46,9 +46,9 @@ flowchart LR
 | Candidats relus par le re-ranking | entier | 40 | — | — | `RAGLAB_RERANK_CANDIDATES` (20 = option rapide) |
 | Références d'articles | oui / non | oui | `--citations/--no-citations` | `citations` | `RAGLAB_CITATION_RESOLVER` |
 | Recherche par graphe | oui / non | **non** (en cours de mesure) | `--graph/--no-graph` | `graph` | `RAGLAB_GRAPH_RETRIEVAL`, `RAGLAB_GRAPH_WEIGHT` |
-| Versions des articles | `in_force`, `all`, `as_of=AAAA-MM-JJ` | **`all`** (`in_force` en cours de mesure) | `--versions` | `versions` | `RAGLAB_VERSIONS_DEFAULT` |
+| Versions des articles | `in_force`, `all`, `as_of=AAAA-MM-JJ` | `in_force` | `--versions` | `versions` | `RAGLAB_VERSIONS_DEFAULT` |
 | Passages donnés au LLM | entier | 5 | `--top-k` | `top_k` | `RAGLAB_DEFAULT_TOP_K` |
-| Fournisseur du LLM | `ollama`, `llamacpp`, `vllm` | `ollama` | `--provider` | `llm_provider` (+ `llm_model`) | `RAGLAB_LLM_PROVIDERS`, `RAGLAB_DEFAULT_LLM_PROVIDER` |
+| Fournisseur du LLM | `llamacpp`, `ollama`, `vllm` | `llamacpp` (Qwen3.6-35B-A3B, démarré à la demande), repli `ollama` (`qwen2.5:7b`) si llama.cpp ne peut pas servir | `--provider` | `llm_provider` (+ `llm_model`) ; la réponse porte `llm_provider` et `generator_notice` | `RAGLAB_LLM_PROVIDERS`, `RAGLAB_DEFAULT_LLM_PROVIDER`, `RAGLAB_LLM_FALLBACK_PROVIDER`, `RAGLAB_WRITER_MODEL_PROFILE`, `RAGLAB_LLAMACPP_AUTOSTART` |
 
 Dans l'interface, ces options sont dans « Options » du Chat et sur la page Interrogation de l'Atelier, qui affiche en plus le score de chaque passage à chaque étape : vectoriel, BM25, fusion, graphe, re-ranking.
 
@@ -65,12 +65,13 @@ Mesures appariées sur les jeux figés (PIAF : 500 questions en français ; LexM
 | Vectorielle + références d'articles (`citations-v1`) | 0,878 | 0,697 | 75 % | 26 ms |
 | **Hybride + re-ranking + références (`full-v1`, défaut)** | **0,966** | **0,816** | **72 %** | 537 à 635 ms |
 | + graphe | à mesurer | à mesurer | à mesurer | à mesurer |
-| + versions (`in_force`) | à mesurer | à mesurer | à mesurer | à mesurer |
+| + versions (`versions-v1`, `in_force`, défaut) | 0,966 | 0,816 | 72 % | recherche PIAF 32 → 53 ms, LexML 77 → 97 ms ; Code de la consommation 80 → 320 ms |
 
 ## Quel réglage choisir
 
 - **Par défaut** (hybride, re-ranking, références) : la meilleure qualité mesurée.
 - **Le plus rapide** : `--retrieval-mode dense --no-rerank`, environ 25 ms de recherche au lieu d'environ 0,5 s, au prix d'environ 9 points de Recall@5 sur PIAF et de 12 sur LexML (`citations-v1` contre `full-v1`).
 - **Sans GPU** : le re-ranking est désactivé de lui-même ; tout le reste fonctionne.
+- **Rédacteur** : Qwen3.6 via llama.cpp écrit de meilleures réponses que `qwen2.5:7b` (`gen-qwen36-v1` : correctness PIAF 0,763 → 0,935, LexML 0,550 → 0,710) mais en 7 à 9 s au p50 ; `--provider ollama` (ou `llm_provider: "ollama"`) revient à qwen2.5, plus rapide. Sans llama.cpp, le repli est automatique et signalé ([technical-choices.md](technical-choices.md#3-bis-pourquoi-qwen36-via-llamacpp-pour-rédiger-les-réponses)).
 - **Corpus sans lois** (documentation, Wikipédia) : les options références d'articles, graphe et versions sont masquées dans l'interface et sans effet.
-- **Droit applicable seulement** sur un corpus versionné : `--versions in_force` écarte les versions abrogées ou remplacées (le défaut `all` les garde toutes, comme un RAG classique, tant que la mesure n'est pas faite).
+- **Corpus versionné** (Code de la consommation) : le défaut `in_force` écarte les versions abrogées ou remplacées : Recall@5 0,660 → 0,820 sur 300 questions, 0,750 → 0,930 sur le jeu « versions », version périmée classée au-dessus de la bonne 57 % → 0 % (voir [versions.md](versions.md)) ; `--versions all` les garde toutes, comme un RAG classique.

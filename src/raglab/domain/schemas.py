@@ -172,6 +172,12 @@ class QueryResponse(BaseModel):
     timings_ms: dict[str, float] = Field(default_factory=dict)
     # Generator counters when available (tokens, tokens per second).
     generation_stats: dict[str, float] = Field(default_factory=dict)
+    # Provider that wrote the answer, and why it is not the default writer
+    # when it is its fallback: "llamacpp_unavailable" (down and not
+    # startable), "llamacpp_starting" (still loading) or "llamacpp_busy"
+    # (serving another model, e.g. a benchmark's judge).
+    llm_provider: str | None = None
+    generator_notice: str | None = None
 
 
 class ExperimentCase(BaseModel):
