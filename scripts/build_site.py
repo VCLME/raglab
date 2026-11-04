@@ -32,10 +32,10 @@ import site_charts
 ROOT = Path(__file__).resolve().parent.parent
 SITE_SRC = ROOT / "site"
 RESULTS_DIR = ROOT / "benchmarks" / "results"
-# Router and abstention (9.4): the re-measure on the current pipeline, and the operating point shown
-# on the site: point A, the default (intent margin 0.02, per-corpus thresholds at the 2% quantile).
-ROUTER_RUN = ROOT / "benchmarks" / "routing" / "router-dense-v1.json"
-ROUTER_MARGIN, ROUTER_QUANTILE = 0.02, 0.02
+# Router and abstention (9.4): the current default (logistic intent, per-language thresholds,
+# cross-language routing) measured live on validation set 2, written after the choice was made
+# (four corpora, fr / pt / en; docs/intentions.md).
+ROUTER_RUN = ROOT / "benchmarks" / "routing" / "router-validation2-logistic-v1.json"
 CALIBRATION = ROOT / "benchmarks" / "judge_calibration.json"
 REPORT_PDF = ROOT / "docs" / "rapport" / "raglab-rapport.pdf"
 README = ROOT / "README.md"
@@ -497,15 +497,7 @@ def headline(runs: dict[str, dict[str, Any]]) -> dict[str, str]:
     refs_cases = (suite(refs_full, "lexml_references") or {}).get("total_cases")
     router: dict[str, Any] = {}
     if ROUTER_RUN.exists():
-        curve = json.loads(ROUTER_RUN.read_text(encoding="utf-8"))["summary"]["curve"]
-        router = next(
-            (
-                p
-                for p in curve
-                if p["intent_margin"] == ROUTER_MARGIN and p.get("calibration_quantile") == ROUTER_QUANTILE
-            ),
-            {},
-        )
+        router = json.loads(ROUTER_RUN.read_text(encoding="utf-8"))["summary"]["configured"]
     far = router.get("false_abstention_rate")
     return {
         "router_precision": fmt_ratio(router.get("precision")),
