@@ -300,7 +300,7 @@ export interface RoutingDecision {
     reason: string | null;
     score_source: string;
     best_score: number | null;
-    threshold: number;
+    threshold: number | null;
     // "legal_citation" when the question cites a law: never declined.
     override?: string | null;
   } | null;

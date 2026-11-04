@@ -151,7 +151,7 @@ class QueryRouter:
         abstention = decide_abstention(
             intent=decision.intent.intent,
             score=best_score(retrieved, source),
-            threshold=threshold_for(self.settings, decision.corpus.corpus_name),
+            threshold=threshold_for(self.settings, decision.corpus.corpus_name, source),
             score_source=source,
             legal_citation=decision.legal_citation_found,
         )

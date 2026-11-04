@@ -556,6 +556,7 @@ def test_sweep_and_candidate_points_cover_the_curve():
     assert {p["intent_margin"] for p in curve} >= {None, 0.0}
     candidates = candidate_points(curve)
     assert set(candidates) == {
+        "selected",
         "max_f1",
         "max_recall_false_abstention_le_5pct",
         "max_precision_recall_ge_80pct",
@@ -605,6 +606,40 @@ def test_threshold_for_prefers_the_corpus_threshold():
     assert threshold_for(settings, "piaf") == pytest.approx(0.74)
     assert threshold_for(settings, "lexml") == pytest.approx(0.8)
     assert threshold_for(settings, None) == pytest.approx(0.8)
+
+
+def test_rerank_thresholds_never_borrow_dense_values():
+    settings = Settings(
+        routing_abstention_threshold=0.8,
+        routing_abstention_thresholds={"piaf": 0.74},
+        routing_rerank_abstention_thresholds={"piaf": -5.0},
+    )
+    assert threshold_for(settings, "piaf", "rerank") == pytest.approx(-5.0)
+    # No re-ranker calibration for this corpus: no score threshold at all.
+    assert threshold_for(settings, "lexml", "rerank") is None
+    decision = decide_abstention(intent=Intent.DOCUMENTARY, score=-9.0, threshold=None, score_source="rerank")
+    assert decision.abstain is False
+
+
+def test_selected_point_follows_the_owner_rule():
+    def point(margin, mode, recall, false_abstention, precision=0.9):
+        return {
+            "intent_margin": margin,
+            "threshold_mode": mode,
+            "recall": recall,
+            "precision": precision,
+            "f1": 0.0,
+            "false_abstention_rate": false_abstention,
+        }
+
+    curve = [
+        point(0.02, "per_corpus", 0.70, 0.0125),
+        point(0.02, "per_corpus", 0.85, 0.0375),
+        point(0.02, "per_corpus", 0.90, 0.05),  # not strictly under 5%
+        point(0.0, "per_corpus", 0.95, 0.01),  # other margin
+        point(0.02, "global", 0.95, 0.01),  # global threshold
+    ]
+    assert candidate_points(curve)["selected"]["recall"] == pytest.approx(0.85)
 
 
 def test_router_abstains_against_the_routed_corpus_threshold():

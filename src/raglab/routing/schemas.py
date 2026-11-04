@@ -59,10 +59,11 @@ class CorpusDecision(BaseModel):
 class AbstentionDecision(BaseModel):
     abstain: bool
     reason: str | None = None
-    # Score compared to the threshold: dense cosine now, reranker later.
+    # Score compared to the threshold: dense cosine or cross-encoder score.
     score_source: str
     best_score: float | None = None
-    threshold: float
+    # None: no calibrated threshold for this corpus and score source.
+    threshold: float | None = None
     # "legal_citation" when the question cites a law: never declined.
     override: str | None = None
 

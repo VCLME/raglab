@@ -44,11 +44,21 @@ Pourquoi un seuil par corpus : les scores denses n'ont pas la même échelle d'u
 | Variable | Défaut | Rôle |
 |---|---|---|
 | `RAGLAB_ROUTING_INTENT_MARGIN` | `0.02` | avance qu'une intention non documentaire doit avoir sur `documentary` |
-| `RAGLAB_ROUTING_ABSTENTION_THRESHOLDS` | `{"bench_piaf_fr": 0.7341, "bench_lexml_pt": 0.8666}` | seuils par corpus, en JSON (défaut : point A, voir plus bas) |
-| `RAGLAB_ROUTING_ABSTENTION_THRESHOLD` | `0.0` | seuil des corpus sans seuil propre (0 = pas d'abstention par score) |
+| `RAGLAB_ROUTING_ABSTENTION_THRESHOLDS` | `{"bench_piaf_fr": 0.7929, "bench_lexml_pt": 0.8485}` | seuils par corpus sur le score **dense**, en JSON (défaut : point A, voir plus bas) |
+| `RAGLAB_ROUTING_ABSTENTION_THRESHOLD` | `0.0` | seuil dense des corpus sans seuil propre (0 = pas d'abstention par score) |
+| `RAGLAB_ROUTING_RERANK_ABSTENTION_THRESHOLDS` | `{"bench_piaf_fr": -5.4414, "bench_lexml_pt": -3.9102}` | seuils par corpus sur le score du **reranker**, en JSON (point A) ; un corpus absent n'a pas d'abstention par score |
 | `RAGLAB_ROUTING_SCORE_SOURCE` | `dense` | `dense` ou `rerank` |
 
-**Point de fonctionnement retenu : A (prudent)**, choisi par le propriétaire le 3 novembre 2026 parmi les trois points mesurés plus bas : marge d'intention 0,02, seuils au quantile 2 % de la calibration (PIAF 0,7341, LexML 0,8666). Mesuré : précision 0,984, rappel 0,75, 1,2 % de fausses abstentions. Ces seuils valent pour le score dense de multilingual-e5-small sur les index `traditional` : ils seront recalibrés quand les scores du reranker 9.3 auront été mesurés. Un corpus absent de la liste retombe sur `RAGLAB_ROUTING_ABSTENTION_THRESHOLD` (0 = pas d'abstention par score).
+**Point de fonctionnement retenu : A (prudent)**, choisi par le propriétaire le 3 novembre 2026 et confirmé le 4 novembre après la re-mesure sur le pipeline complet : marge d'intention 0,02, seuils au quantile 2 % de la calibration, **recalibrés pour chaque source de score** sur le pipeline par défaut (hybride + re-ranking + citations). Un seuil dense ne sert jamais pour le score du reranker, et inversement : les deux échelles n'ont rien en commun (cosinus entre 0 et 1, logit du cross-encoder entre −10 et +10 environ).
+
+| Source | Seuils A (PIAF / LexML) | Précision | Rappel | Fausses abstentions |
+|---|---|---|---|---|
+| dense (défaut) | 0,7929 / 0,8485 | 1,000 | 0,625 | 0 % |
+| rerank | −5,4414 / −3,9102 | 0,982 | 0,700 | 1,2 % |
+
+Les anciens seuils denses (0,7341 / 0,8666, calibrés en retrieval dense seul) donnent sur le pipeline actuel 0,966 / 0,700 / 2,5 % : ils ne correspondent plus au quantile 2 %. Rapports : `benchmarks/routing/router-dense-v1.json` et `router-rerank-v1.json`.
+
+**Règle pour les prochaines mesures** (fixée par le propriétaire) : on garde la marge 0,02, on calibre les seuils par corpus sur la source de score mesurée, et le meilleur réglage est celui qui **maximise les refus justifiés (rappel) avec des faux refus strictement sous 5 %**. Objectif : rappel 0,85. Le rapport l'appelle `selected` et dit si l'objectif est atteint. Sur la re-mesure du 4 novembre, ce point est q10 % en dense (rappel 0,850, 3,8 % de faux refus) ; en rerank, q5 % et q10 % tombent pile à 5 %, donc il est à q3 % (rappel 0,775, 1,2 %). Ce n'est pas le défaut : A le reste tant que l'objectif n'est pas confirmé sur un autre tirage.
 
 ## Évaluation
 
@@ -60,7 +70,7 @@ raglab experiment routing --corpus bench_piaf_fr --corpus bench_lexml_pt
 
 Questions in-scope : PIAF et LexML, plus `legi_consommation` et `eurlex_compliance` dès que leurs jeux figés existent (`benchmarks/*/ground_truth.jsonl`, générés sur GPU) ; avec `--corpus`, seuls les jeux des corpus nommés sont évalués, donc `--corpus bench_piaf_fr --corpus bench_lexml_pt` mesure toujours exactement le même échantillon PIAF + LexML. La liste des jeux utilisés est dans `config.in_scope_sets` du rapport.
 
-Sans option, le retrieval évalué est celui de production (hybride, re-ranking, citations) ; le re-ranking par défaut est ignoré sans GPU, donc pour une mesure reproductible on le force (`--rerank`) ou on le coupe (`--no-rerank`). Les résultats ci-dessous ont été mesurés avant la fusion de 9.2 / 9.3, en retrieval dense seul ; la re-mesure sur le pipeline complet reste à faire :
+Sans option, le retrieval évalué est celui de production (hybride, re-ranking, citations) ; le re-ranking par défaut est ignoré sans GPU, donc pour une mesure reproductible on le force (`--rerank`) ou on le coupe (`--no-rerank`). La section « Résultats mesurés (3 novembre 2026) » date d'avant la fusion de 9.2 / 9.3 (retrieval dense seul). La re-mesure sur le pipeline complet a été faite le 4 novembre avec ces deux commandes (mêmes graines, résultats dans « Réglages » plus haut) :
 
 ```bash
 RAGLAB_ROUTING_SCORE_SOURCE=dense  raglab experiment routing --corpus bench_piaf_fr --corpus bench_lexml_pt --retrieval-mode hybrid --rerank --citations

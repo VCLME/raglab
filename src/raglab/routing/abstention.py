@@ -52,13 +52,19 @@ def best_score(chunks: Sequence[Any], source: str) -> float | None:
     return max(values) if values else None
 
 
-def threshold_for(settings: Any, corpus_name: str | None) -> float:
-    """Per-corpus threshold when one is set, the global one otherwise.
+def threshold_for(settings: Any, corpus_name: str | None, source: str = "dense") -> float | None:
+    """Threshold of the queried corpus for this score source.
 
     Dense scores do not share a scale across corpora (short legal passages
     score higher than encyclopedic paragraphs), hence per-corpus values,
-    calibrated by `raglab experiment routing`.
+    calibrated by `raglab experiment routing`. A dense corpus without its own
+    value falls back to the global one. Re-ranker scores are calibrated
+    separately and never borrow a dense value: a corpus without a re-ranker
+    threshold gets None (no abstention on score, only on intent).
     """
+    if source == "rerank":
+        value = settings.routing_rerank_abstention_thresholds.get(corpus_name or "")
+        return float(value) if value is not None else None
     return float(settings.routing_abstention_thresholds.get(corpus_name or "", settings.routing_abstention_threshold))
 
 
@@ -66,7 +72,7 @@ def decide_abstention(
     *,
     intent: Intent,
     score: float | None,
-    threshold: float,
+    threshold: float | None,
     score_source: str,
     legal_citation: bool = False,
 ) -> AbstentionDecision:
@@ -82,7 +88,7 @@ def decide_abstention(
         reason = f"intent:{intent.value}"
     elif score is None:
         reason = "no_passage"
-    elif score < threshold:
+    elif threshold is not None and score < threshold:
         reason = "low_score"
     else:
         reason = None

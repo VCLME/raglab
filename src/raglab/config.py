@@ -186,11 +186,16 @@ class Settings(BaseSettings):
     # 0.02: with 0, a fifth of in-scope questions went out_of_scope (docs/routing.md).
     routing_intent_margin: float = 0.02
     routing_abstention_threshold: float = 0.0
-    # Operating point A chosen by the owner (dense score, e5-small, top-5):
-    # thresholds at the 2% quantile of in-scope calibration questions.
-    # To re-tune once the 9.3 reranker scores are measured.
+    # Operating point A chosen by the owner: thresholds at the 2% quantile of
+    # in-scope calibration questions, calibrated on the default pipeline
+    # (hybrid + re-ranking + citations, top-5; benchmarks/routing/*-v1.json).
+    # Each score source has its own calibration: a dense cosine threshold
+    # means nothing on a cross-encoder score.
     routing_abstention_thresholds: dict[str, float] = Field(
-        default_factory=lambda: {"bench_piaf_fr": 0.7341, "bench_lexml_pt": 0.8666}
+        default_factory=lambda: {"bench_piaf_fr": 0.7929, "bench_lexml_pt": 0.8485}
+    )
+    routing_rerank_abstention_thresholds: dict[str, float] = Field(
+        default_factory=lambda: {"bench_piaf_fr": -5.4414, "bench_lexml_pt": -3.9102}
     )
     # dense (cosine similarity) or rerank (cross-encoder score, phase 9.3).
     routing_score_source: str = "dense"

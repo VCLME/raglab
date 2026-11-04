@@ -90,8 +90,17 @@ INTENT_MARGINS: tuple[float | None, ...] = (None, -0.05, -0.02, 0.0, 0.02, 0.05,
 # calibration questions, so about that share of in-scope questions abstain.
 CALIBRATION_QUANTILES = (0.01, 0.02, 0.03, 0.05, 0.1, 0.15, 0.2)
 
-# A threshold is global (float) or per corpus (corpus name -> float).
-Threshold = float | dict[str, float]
+# A threshold is global (float) or per corpus (corpus name -> float, None =
+# no calibrated threshold, so no abstention on score).
+Threshold = float | dict[str, float | None]
+
+# Selection rule set by the owner: intent margin kept at 0.02, thresholds
+# calibrated per corpus on the score source being measured, and the best
+# point is the one that declines the most out-of-scope questions while
+# false abstentions stay strictly under 5%. Recall target: 0.85.
+SELECTED_INTENT_MARGIN = 0.02
+MAX_FALSE_ABSTENTION = 0.05
+TARGET_RECALL = 0.85
 
 
 @dataclass
@@ -207,13 +216,13 @@ def quantile(values: list[float], fraction: float) -> float:
     return ordered[max(0, min(len(ordered) - 1, int(fraction * len(ordered)) - 1))]
 
 
-def calibrated_thresholds(calibration: dict[str, list[float]], fraction: float) -> dict[str, float]:
+def calibrated_thresholds(calibration: dict[str, list[float]], fraction: float) -> dict[str, float | None]:
     return {corpus: round(quantile(scores, fraction), 4) for corpus, scores in sorted(calibration.items()) if scores}
 
 
-def _threshold_for(threshold: Threshold, record: dict[str, Any]) -> float:
+def _threshold_for(threshold: Threshold, record: dict[str, Any]) -> float | None:
     if isinstance(threshold, dict):
-        return threshold.get(record["corpus_routed"], 0.0)
+        return threshold.get(record["corpus_routed"])
     return threshold
 
 
@@ -224,7 +233,10 @@ def predict_abstain(record: dict[str, Any], *, margin: float | None, threshold: 
     if margin is not None and decide_intent(record["intent_scores"], margin=margin) != Intent.DOCUMENTARY:
         return True
     score = record["best_score"]
-    return score is None or score < _threshold_for(threshold, record)
+    if score is None:
+        return True
+    value = _threshold_for(threshold, record)
+    return value is not None and score < value
 
 
 def abstention_metrics(
@@ -303,7 +315,16 @@ def candidate_points(curve: list[dict[str, Any]], *, max_false_abstention: float
 
     safe = [p for p in curve if p["false_abstention_rate"] <= max_false_abstention]
     covering = [p for p in curve if p["recall"] >= min_recall]
+    selected = [
+        p
+        for p in curve
+        if p["intent_margin"] == SELECTED_INTENT_MARGIN
+        and p["threshold_mode"] == "per_corpus"
+        and p["false_abstention_rate"] < MAX_FALSE_ABSTENTION
+    ]
     return {
+        # The rule the owner set (see SELECTED_INTENT_MARGIN); the others are context.
+        "selected": best(selected, lambda p: (p["recall"], p["precision"])),
         "max_f1": best(curve, lambda p: (p["f1"], p["precision"])),
         "max_recall_false_abstention_le_5pct": best(safe, lambda p: (p["recall"], p["precision"])),
         "max_precision_recall_ge_80pct": best(covering, lambda p: (p["precision"], p["recall"])),
@@ -340,7 +361,7 @@ def summarize(
         by_corpus.setdefault(record["expected_corpus"], []).append(ok)
     curve = sweep(records, calibration)
     configured_thresholds = {
-        corpus: threshold_for(settings, corpus)
+        corpus: threshold_for(settings, corpus, settings.routing_score_source)
         for corpus in sorted({r["corpus_routed"] for r in records if r["corpus_routed"]})
     }
     configured = abstention_metrics(records, margin=settings.routing_intent_margin, threshold=configured_thresholds)
@@ -368,6 +389,7 @@ def summarize(
         "intent_confusion": intent_confusion(records, margin=settings.routing_intent_margin),
         "configured": configured,
         "candidates": candidate_points(curve),
+        "target_recall": TARGET_RECALL,
         "calibration": {
             corpus: {
                 "questions": len(scores),
@@ -491,6 +513,7 @@ class RoutingExperimentService:
                 "intent_margin": self.settings.routing_intent_margin,
                 "abstention_threshold": self.settings.routing_abstention_threshold,
                 "abstention_thresholds": self.settings.routing_abstention_thresholds,
+                "rerank_abstention_thresholds": self.settings.routing_rerank_abstention_thresholds,
                 "embedding_model": self.settings.embedding_model_name,
             },
             "summary": summarize(records, self.settings, calibration),
@@ -524,6 +547,15 @@ def render_markdown(summary: dict[str, Any]) -> str:
         "| Point | Marge intention | Seuil | Précision | Rappel | F1 | Fausses abstentions |",
         "|---|---|---|---|---|---|---|",
     ]
+    selected = summary["candidates"].get("selected")
+    target = summary.get("target_recall", TARGET_RECALL)
+    if selected is not None:
+        verdict = "atteint" if selected["recall"] >= target else "non atteint"
+        lines.insert(
+            -3,
+            f"- Point retenu (marge 0,02, faux refus < 5 %) : rappel {selected['recall']:.3f}, "
+            f"objectif {target:.2f} {verdict}",
+        )
     for name, point in summary["candidates"].items():
         if point is None:
             lines.append(f"| {name} | — | — | — | — | — | — |")
