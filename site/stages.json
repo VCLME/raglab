@@ -87,7 +87,7 @@
     "label": "gen-qwen36-v1",
     "name": "Qwen3.6 answer writer",
     "change": "same pipeline and prompt, answers written by Qwen3.6-35B-A3B (MoE) on llama.cpp instead of qwen2.5:7b",
-    "status": "next default, VRAM check pending"
+    "status": "default writer"
   },
   {
     "label": "graph-v1",
