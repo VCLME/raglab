@@ -28,22 +28,25 @@ Built for teams whose documents cannot go to a cloud API (legal, compliance, ins
 Two frozen question sets: **PIAF** (500 French questions, 761 Wikipedia paragraphs) and **LexML** (277 Portuguese questions on the full text of 252 Brazilian federal laws). Each row adds one component to the previous one; *measuring* means the code exists but no run has been recorded yet.
 
 <!-- results:start -->
-| Stage | What changes | PIAF Recall@5 | LexML Recall@5 | Article-number questions Recall@5 | Search latency p50 | Faithfulness (PIAF / LexML) |
-|---|---|---|---|---|---|---|
-| Baseline v0 | original pipeline: dense search only (multilingual-e5-small, pgvector HNSW) | 0.878 | 0.426 | 6% | 3.7 s | 0.845 / 0.723 † |
-| Embedder cache | + embedding model loaded once instead of per question (retrieval only, not judged; still approximate HNSW search) | 0.878 | 0.451 | 8% | 20 ms | not judged |
-| Baseline v1 | + exact vector search per index (the shared HNSW index made recall depend on what else was in the database); answers generated from the top 5 and judged on full chunks (official baseline) | 0.878 | 0.466 | 9% | 23 ms | 0.930 / 0.903 |
-| Hybrid search (9.2) | + BM25 keyword search in PostgreSQL, fused with dense results (RRF) | 0.900 | 0.498 | 9% | 43 ms | 0.915 / 0.888 |
-| BM25 only (9.2 · comparison) | BM25 keyword search alone, no embedding (comparison point for 9.2, not kept) | 0.838 | 0.477 | 6% | 7 ms | not judged |
-| Re-ranking (9.3) | + cross-encoder bge-reranker-v2-m3 on the fused candidates | 0.966 | 0.596 | 9% | 461 ms | 0.905 / 0.853 |
-| Dense + re-ranking (9.3 · comparison) | cross-encoder on dense candidates only, no BM25 (comparison point for 9.3, retrieval only) | 0.952 | 0.545 | 7% | 409 ms | not judged |
-| Citation resolver (9.3b · comparison) | dense search + legal citations: "art. N da Lei X" is parsed, search is restricted to that law and the cited article is pinned first (comparison point, no BM25 or re-ranking) | 0.878 | 0.697 | 75% | 26 ms | 0.930 / 0.842 |
-| Full pipeline (judged) | hybrid search + re-ranking + citation resolver (current default) | 0.966 | 0.816 | 72% | 635 ms | 0.907 / 0.895 |
-| Sorted re-ranking batches (default) | + re-ranking pairs sorted by length before batching: same scores, less padding (retrieval only, not judged) | 0.966 | 0.816 | 72% | 537 ms | not judged |
-| Fast re-ranking (option) | 20 re-ranking candidates instead of 40 (latency option, retrieval only) | 0.964 | 0.805 | 73% | 453 ms | not judged |
-| 30 candidates (comparison) | 30 re-ranking candidates (latency sweep point, retrieval only) | 0.966 | 0.801 | 72% | 556 ms | not judged |
+| Stage | What changes | PIAF Recall@5 | LexML Recall@5 | Article-number questions Recall@5 | Search latency p50 | Faithfulness (PIAF / LexML) | Answer correctness (PIAF / LexML) |
+|---|---|---|---|---|---|---|---|
+| Baseline v0 | original pipeline: dense search only (multilingual-e5-small, pgvector HNSW) | 0.878 | 0.426 | 6% | 3.7 s | 0.845 / 0.723 † | 0.600 / 0.298 † |
+| Embedder cache | + embedding model loaded once instead of per question (retrieval only, not judged; still approximate HNSW search) | 0.878 | 0.451 | 8% | 20 ms | not judged | not judged |
+| Baseline v1 | + exact vector search per index (the shared HNSW index made recall depend on what else was in the database); answers generated from the top 5 and judged on full chunks (official baseline) | 0.878 | 0.466 | 9% | 23 ms | 0.930 / 0.903 | 0.658 / 0.451 |
+| Hybrid search (9.2) | + BM25 keyword search in PostgreSQL, fused with dense results (RRF) | 0.900 | 0.498 | 9% | 43 ms | 0.915 / 0.888 | 0.642 / 0.435 |
+| BM25 only (9.2 · comparison) | BM25 keyword search alone, no embedding (comparison point for 9.2, not kept) | 0.838 | 0.477 | 6% | 7 ms | not judged | not judged |
+| Re-ranking (9.3) | + cross-encoder bge-reranker-v2-m3 on the fused candidates | 0.966 | 0.596 | 9% | 461 ms | 0.905 / 0.853 | 0.693 / 0.532 |
+| Dense + re-ranking (9.3 · comparison) | cross-encoder on dense candidates only, no BM25 (comparison point for 9.3, retrieval only) | 0.952 | 0.545 | 7% | 409 ms | not judged | not judged |
+| Citation resolver (9.3b · comparison) | dense search + legal citations: "art. N da Lei X" is parsed, search is restricted to that law and the cited article is pinned first (comparison point, no BM25 or re-ranking) | 0.878 | 0.697 | 75% | 26 ms | 0.930 / 0.842 | 0.662 / 0.550 |
+| Full pipeline (judged) | hybrid search + re-ranking + citation resolver (current default) | 0.966 | 0.816 | 72% | 635 ms | 0.907 / 0.895 | 0.738 / 0.598 |
+| Sorted re-ranking batches (retrieval default) | + re-ranking pairs sorted by length before batching: same scores, less padding (retrieval only, not judged) | 0.966 | 0.816 | 72% | 537 ms | not judged | not judged |
+| Fast re-ranking (option) | 20 re-ranking candidates instead of 40 (latency option, retrieval only) | 0.964 | 0.805 | 73% | 453 ms | not judged | not judged |
+| 30 candidates (comparison) | 30 re-ranking candidates (latency sweep point, retrieval only) | 0.966 | 0.801 | 72% | 556 ms | not judged | not judged |
+| Multilingual fallback prompt (rejected) | answer prompt with a fallback sentence in three languages and "answer partially" (rejected: refusals doubled) | 0.966 | 0.816 | 72% | 530 ms | 0.828 / 0.818 | 0.553 / 0.478 |
+| Grounded prompt (default) | + answer prompt in the question's language, quote the answering sentence before answering (fewer unjustified refusals, no wrong-language answers) | 0.966 | 0.816 | 72% | 986 ms | 0.970 / 0.895 | 0.763 / 0.550 |
+| Qwen3.6 answer writer (next default, VRAM check pending) | same pipeline and prompt, answers written by Qwen3.6-35B-A3B (MoE) on llama.cpp instead of qwen2.5:7b | 0.966 | 0.816 | 72% | 595 ms | 0.995 / 0.980 | 0.935 / 0.710 |
 
-*Generated by `python scripts/build_site.py --readme` from [`benchmarks/results/`](benchmarks/results/). Search latency is embedding + vector search for one question, generation excluded. Faithfulness is scored on 100 answers per corpus by an independent judge (Gemma 4 26B-A4B). † Earlier judging protocol (answers from 10 chunks, judge reading truncated chunks), fixed before baseline-v1: not comparable.*
+*Generated by `python scripts/build_site.py --readme` from [`benchmarks/results/`](benchmarks/results/). Search latency is embedding + vector search for one question, generation excluded. Faithfulness and answer correctness are scored on 100 answers per corpus by an independent judge (Gemma 4 26B-A4B). † Earlier judging protocol (answers from 10 chunks, judge reading truncated chunks), fixed before baseline-v1: not comparable.*
 <!-- results:end -->
 
 ### The article-number problem

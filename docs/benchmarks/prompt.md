@@ -54,3 +54,17 @@ Ce qu'il faut en retenir :
 `src/raglab/generation/prompts.py` : la langue est déduite de la question (mots fréquents ; 799 questions sur 800 des jeux figés bien classées), les consignes V4 sont écrites dans cette langue, la phrase de refus aussi (le français vient de `RAGLAB_GENERATION_NO_CONTEXT_ANSWER`). Le format du contexte (libellés « Fichier », « Extrait ») est resté celui qui a été mesuré. Une ligne a été ajoutée par rapport à V4 : citer chaque fait avec `[Rank X]` dans la réponse, dont l'interface a besoin pour ses pastilles de citation ; le benchmark complet `prompt-v4` vérifie l'ensemble.
 
 Limites : mesure sur 100 questions par jeu, un seul modèle générateur ; la ligne ajoutée sur les citations n'était pas dans la variante mesurée.
+
+## Mesure complète (`prompt-v4`) et générateur Qwen3.6 (`gen-qwen36-v1`)
+
+Benchmark complet après la fusion (même recherche que `full-v1`, juge Gemma 4 sur 100 questions par jeu) :
+
+| | `full-v1` (ancien prompt) | `prompt-v4` (prompt actuel, qwen2.5:7b) | `gen-qwen36-v1` (prompt actuel, Qwen3.6-35B-A3B) |
+|---|---|---|---|
+| Fidélité PIAF / LexML | 0,907 / 0,895 | 0,970 / 0,895 | 0,995 / 0,980 |
+| Pertinence PIAF / LexML | 0,930 / 0,865 | 0,890 / 0,875 | 0,975 / 0,965 |
+| Justesse PIAF / LexML | 0,738 / 0,598 | 0,763 / 0,550 | 0,935 / 0,710 |
+
+- En mesure complète, le nouveau prompt confirme son gain sur PIAF (fidélité +0,06, justesse +0,03) ; sur LexML, la justesse recule de 0,05, ce qui n'apparaissait pas dans la mesure par variantes (0,587). Sur 100 questions, l'écart est proche du bruit ; la ligne ajoutée pour les citations `[Rank X]` est une différence possible.
+- Le vrai saut vient du générateur : avec le même prompt et les mêmes passages, Qwen3.6 (MoE, 3 milliards de paramètres actifs, via llama.cpp) porte la justesse sur les lois de 0,55 à 0,71 et la fidélité à 0,98. La limite était le modèle, pas le prompt.
+- Les latences de génération de ces deux runs ne sont pas comparables entre elles ni avec `full-v1` : la carte chauffait (89 °C) et ralentissait.
