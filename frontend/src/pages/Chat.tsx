@@ -30,6 +30,7 @@ import { RoutingPanel } from "../components/RoutingPanel";
 import { SourceList } from "../components/SourcePill";
 import { Spinner } from "../components/Spinner";
 import { SuggestionChips } from "../components/SuggestionChips";
+import { exampleQuestions } from "../data/exampleQuestions";
 import {
   StageScheduler,
   applyPlan,
@@ -119,7 +120,7 @@ function parseLlm(value: string): { provider: string; model: string } | null {
 }
 
 export function Chat() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const config = useConfig();
   const corpora = useApiLoad<CorpusSummary[]>(() => get("/api/corpora"), [], { retryMs: RETRY_MS });
   const llms = useApiLoad<LlmModelsResponse>(() => get("/api/llm/models"), [], { retryMs: RETRY_MS });
@@ -167,14 +168,17 @@ export function Chat() {
 
   const action = useApiAction(queryWithStreaming);
 
+  // Hand-written examples first; other corpora fall back to questions of
+  // the validation set pinned to them.
+  const curated = corpus ? exampleQuestions(corpus, i18n.language) : null;
   const suggestionsLoad = useApiLoad<string[]>(
     () =>
-      corpus
+      corpus && !curated
         ? get(`/api/bench/suggestions?corpus=${encodeURIComponent(corpus)}&limit=4`)
         : Promise.resolve([]),
-    [corpus]
+    [corpus, !!curated]
   );
-  const suggestions = suggestionsLoad.data ?? [];
+  const suggestions = curated ?? suggestionsLoad.data ?? [];
 
   const send = async (overrideQuestion?: string) => {
     const q = (overrideQuestion ?? question).trim();
@@ -420,9 +424,6 @@ export function Chat() {
               {suggestions.length > 0 ? ` ${t("chat.welcome_pick")}` : ""}
             </p>
           </div>
-          {suggestions.length > 0 ? (
-            <SuggestionChips suggestions={suggestions} onPick={(s) => send(s)} />
-          ) : null}
         </div>
       ) : (
         <div className="chat-stream" ref={streamRef}>
@@ -504,6 +505,14 @@ export function Chat() {
           )}
         </div>
       </div>
+
+      {/* Below the composer, until the first question or the first keystroke. */}
+      {empty && suggestions.length > 0 && !question.trim() ? (
+        <div className="examples">
+          <p className="examples-label">{t("chat.examples_label")}</p>
+          <SuggestionChips suggestions={suggestions} onPick={(s) => send(s)} />
+        </div>
+      ) : null}
     </div>
   );
 

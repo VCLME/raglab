@@ -166,6 +166,21 @@ test("Welcome text only mentions suggestions when there are some", async ({ page
   await expect(page.getByText(/Choisis une suggestion/)).toHaveCount(0);
 });
 
+test("Chat examples sit under the composer and hide once you type", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("combobox", { name: /^Corpus/ })).toContainText(data.CORPUS);
+  const examples = page.locator(".examples");
+  await expect(examples.getByText("Exemples")).toBeVisible();
+  const chip = examples.getByRole("button", { name: data.suggestions[0] });
+  await expect(chip).toBeVisible();
+  // Below the composer, not above it.
+  const composer = await page.locator(".composer").boundingBox();
+  const chipBox = await chip.boundingBox();
+  expect(chipBox!.y).toBeGreaterThan(composer!.y + composer!.height);
+  await page.getByPlaceholder(/Pose ta question/).fill("Une autre question");
+  await expect(examples).toHaveCount(0);
+});
+
 test("Top bar: no API key control; the key lives in the Atelier with its explanation", async ({ page, api }) => {
   let header: string | undefined;
   api.set("GET /api/index-runs", async (route) => {
