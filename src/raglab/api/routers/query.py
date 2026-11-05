@@ -65,6 +65,7 @@ def run_query(
         graph=body.graph,
         versions=body.versions,
         query_translation=body.query_translation,
+        dedup=body.dedup,
     )
 
 
@@ -122,6 +123,7 @@ def stream_query(
         graph=body.graph,
         versions=body.versions,
         query_translation=body.query_translation,
+        dedup=body.dedup,
     )
     retrieval = outcome.response().model_dump(mode="json")
 

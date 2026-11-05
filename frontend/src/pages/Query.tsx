@@ -75,6 +75,7 @@ export function Query() {
   const [graph, setGraph] = useState(false);
   // Query translation: "" = server default (RAGLAB_QUERY_TRANSLATION, off).
   const [queryTranslation, setQueryTranslation] = useState<"" | "on" | "off">("");
+  const [dedup, setDedup] = useState<"" | "on" | "off">("");
   // Versions option: "" = server default (RAGLAB_VERSIONS_DEFAULT).
   const [versions, setVersions] = useState("");
   const [question, setQuestion] = useState("");
@@ -131,6 +132,7 @@ export function Query() {
       graph,
       versions: versions || null,
       query_translation: queryTranslation === "" ? null : queryTranslation === "on",
+      dedup: dedup === "" ? null : dedup === "on",
       filters: {
         document_ids: documentIdsRaw.split(",").map((s) => s.trim()).filter(Boolean),
         file_names: fileNamesRaw.split(",").map((s) => s.trim()).filter(Boolean),
@@ -275,6 +277,18 @@ export function Query() {
                   {t("retrieval.mode_default")}
                   {config?.query_translation != null
                     ? ` (${config.query_translation ? t("retrieval.rerank_on") : t("retrieval.rerank_off")})`
+                    : ""}
+                </option>
+                <option value="on">{t("retrieval.rerank_on")}</option>
+                <option value="off">{t("retrieval.rerank_off")}</option>
+              </Select>
+            </FieldRow>
+            <FieldRow label={t("retrieval.dedup_label")} hint={t("retrieval.dedup_hint")}>
+              <Select value={dedup} onChange={(e) => setDedup(e.target.value as "" | "on" | "off")}>
+                <option value="">
+                  {t("retrieval.mode_default")}
+                  {config?.retrieval_dedup != null
+                    ? ` (${config.retrieval_dedup ? t("retrieval.rerank_on") : t("retrieval.rerank_off")})`
                     : ""}
                 </option>
                 <option value="on">{t("retrieval.rerank_on")}</option>
@@ -512,6 +526,15 @@ export function Query() {
                   >
                     {t(citationMessage(action.data.citation), { label: action.data.citation.label })}
                     {action.data.citation.version === "historical" ? ` ${t("retrieval.citation_historical")}` : ""}
+                  </div>
+                ) : null}
+                {action.data.dedup_stats ? (
+                  <div className="muted" style={{ marginBottom: 8, fontSize: 12 }}>
+                    {t("retrieval.dedup_done", {
+                      dropped: action.data.dedup_stats.dropped.length,
+                      refilled: action.data.dedup_stats.refilled,
+                      pool: action.data.dedup_stats.pool,
+                    })}
                   </div>
                 ) : null}
                 {action.data.query_translation?.translated ? (

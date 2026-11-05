@@ -196,6 +196,7 @@ def config(settings: Settings = Depends(get_current_settings)) -> ConfigResponse
         citation_resolver=settings.citation_resolver,
         versions_default=settings.versions_default,
         query_translation=settings.query_translation,
+        retrieval_dedup=settings.retrieval_dedup,
         llm_providers=settings.llm_provider_names,
         default_llm_provider=settings.default_llm_provider,
     )

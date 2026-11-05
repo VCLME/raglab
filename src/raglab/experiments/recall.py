@@ -149,6 +149,7 @@ class RecallBenchmarkService:
         graph: bool | None = None,
         versions: str | None = None,
         query_translation: bool | None = None,
+        dedup: bool | None = None,
     ) -> dict[str, Any]:
         """Resolved retrieval parameters, recorded with the run and passed to each query."""
         mode = RetrievalMode(retrieval_mode or self.settings.default_retrieval_mode)
@@ -171,6 +172,8 @@ class RecallBenchmarkService:
             config["versions"] = versions
         if query_translation is not None:
             config["query_translation"] = query_translation
+        if dedup is not None:
+            config["dedup"] = dedup
         return config
 
     def _rerank_record(self, retrieval: dict[str, Any]) -> dict[str, Any]:
@@ -330,6 +333,7 @@ class RecallBenchmarkService:
         versions: str | None = None,
         generator: GeneratorConfig | None = None,
         query_translation: bool | None = None,
+        dedup: bool | None = None,
     ) -> dict[str, Any]:
         """Run retrieval on every case, then (optionally) grade answers.
 
@@ -360,6 +364,7 @@ class RecallBenchmarkService:
             graph=graph,
             versions=versions,
             query_translation=query_translation,
+            dedup=dedup,
         )
         rerank_record = self._rerank_record(retrieval)
         benchmark_label = benchmark_name or _infer_benchmark_name(dataset_path)
@@ -516,6 +521,7 @@ class RecallBenchmarkService:
                         "graph_notice": getattr(response, "graph_notice", None),
                         "graph_stats": dict(getattr(response, "graph_stats", {}) or {}),
                         "query_translation": getattr(response, "query_translation", None),
+                        "dedup_stats": getattr(response, "dedup_stats", None),
                         "generation_stats": dict(getattr(response, "generation_stats", {}) or {}),
                         "metrics": metrics_for_case,
                     }

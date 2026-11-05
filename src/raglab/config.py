@@ -145,6 +145,11 @@ class Settings(BaseSettings):
     # translated question; on by default since.
     query_translation: bool = True
     query_translation_timeout_seconds: float = 20.0
+    # Conservative de-duplication of the final passages, refilled from a
+    # pool of `dedup_pool` ranked candidates (audit 2026-11-04, lot 3;
+    # raglab.retrieval.dedup). Experimental: off until measured.
+    retrieval_dedup: bool = False
+    dedup_pool: int = 40
     # Article versions retrieval may use (phase 9.10, docs/versions.md):
     # in_force (today, or the date the question asks about), all, or
     # as_of=YYYY-MM-DD. Acts only on corpora with version metadata

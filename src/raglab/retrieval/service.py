@@ -39,6 +39,7 @@ from raglab.retrieval.citations import (
     merge_with_citation,
     parse_citation,
 )
+from raglab.retrieval.dedup import select_distinct
 from raglab.retrieval.fusion import reciprocal_rank_fusion
 from raglab.retrieval.graph_branch import (
     GraphBranchResult,
@@ -107,6 +108,8 @@ class RetrievalOutcome:
     versions: dict[str, Any] | None = None
     # Question translated for BM25 (query_translation option); see QueryResponse.
     query_translation: dict[str, Any] | None = None
+    # De-duplication (dedup option): pool size, dropped passages, refilled places.
+    dedup_stats: dict[str, Any] | None = None
 
     @property
     def answers_from_documents(self) -> bool:
@@ -132,6 +135,7 @@ class RetrievalOutcome:
             graph_stats=dict(self.graph_stats),
             versions=dict(self.versions) if self.versions is not None else None,
             query_translation=dict(self.query_translation) if self.query_translation is not None else None,
+            dedup_stats=dict(self.dedup_stats) if self.dedup_stats is not None else None,
             **extra,
         )
 
@@ -294,6 +298,7 @@ class QueryService:
         graph: bool | None = None,
         versions: str | None = None,
         query_translation: bool | None = None,
+        dedup: bool | None = None,
     ) -> RetrievalOutcome:
         """Search the index for the question, each stage under its budget.
 
@@ -347,6 +352,7 @@ class QueryService:
                 graph=graph,
                 versions=versions,
                 query_translation=query_translation,
+                dedup=dedup,
             )
         mode = RetrievalMode(retrieval_mode or self.settings.default_retrieval_mode)
         index_run = self._resolve_index_run(
@@ -369,6 +375,13 @@ class QueryService:
         # The first stage returns more than top_k when the cross-encoder
         # picks among its candidates.
         stage_top_k = max(effective_top_k, self.settings.rerank_candidates) if do_rerank else effective_top_k
+        # De-duplication refills freed places from a deeper ranked pool.
+        use_dedup = self.settings.retrieval_dedup if dedup is None else dedup
+        if use_dedup:
+            stage_top_k = max(stage_top_k, self.settings.dedup_pool)
+        # Where the ranked list is cut: after the re-ranker, or after
+        # de-duplication when it runs (then the re-ranker keeps the pool).
+        final_cut = stage_top_k if use_dedup else effective_top_k
         # Hybrid fuses deeper lists than it returns: a chunk ranked 30th by
         # one retriever and 3rd by the other must still be seen by RRF.
         candidate_k = max(stage_top_k, self.settings.hybrid_candidates) if mode == RetrievalMode.HYBRID else stage_top_k
@@ -546,7 +559,7 @@ class QueryService:
             if pinned:
                 # Keep every candidate when the cross-encoder still has to
                 # choose among them; the article is pinned again after it.
-                retrieved = merge_with_citation(pinned, retrieved, stage_top_k if do_rerank else effective_top_k)
+                retrieved = merge_with_citation(pinned, retrieved, stage_top_k if do_rerank else final_cut)
             searched = perf_counter()
 
         # `embed` + `retrieval` (+ `rerank` when on) are the stages the recall
@@ -579,13 +592,23 @@ class QueryService:
             retrieved, rerank_stats = run_with_timeout(
                 "rerank",
                 self.settings.rerank_timeout_seconds,
-                lambda: self.reranker.rerank(question, first_stage, top_k=effective_top_k),
+                lambda: self.reranker.rerank(question, first_stage, top_k=final_cut),
             )
             timings_ms["rerank"] = round((perf_counter() - rerank_started) * 1000, 3)
             if pinned:
                 # A cited article is the answer by construction: the
                 # cross-encoder orders the rest, it does not demote the pin.
-                retrieved = merge_with_citation(pinned, retrieved, effective_top_k)
+                retrieved = merge_with_citation(pinned, retrieved, final_cut)
+        dedup_stats: dict[str, Any] = {}
+        if use_dedup:
+            dedup_started = perf_counter()
+            # Version state first: two cuts of different versions never merge.
+            annotated_pool = annotate(
+                retrieved, policy, self.version_lookup.metadata(sorted({chunk.document_id for chunk in retrieved}))
+            )
+            retrieved, dedup_stats = select_distinct(annotated_pool, effective_top_k)
+            timings_ms["dedup"] = round((perf_counter() - dedup_started) * 1000, 3)
+            timings_ms["retrieval"] = round(timings_ms["retrieval"] + timings_ms["dedup"], 3)
         if branch.hits:
             # A passage found through a reference stays next to the one
             # citing it, whatever the cross-encoder made of it.
@@ -663,6 +686,7 @@ class QueryService:
             graph_chunks=list(branch.chunks),
             versions=versions_info,
             query_translation=translation.as_dict() if translation else None,
+            dedup_stats=dedup_stats if use_dedup else None,
         )
 
     def query(
@@ -687,6 +711,7 @@ class QueryService:
         versions: str | None = None,
         llm_provider: str | None = None,
         query_translation: bool | None = None,
+        dedup: bool | None = None,
     ) -> QueryResponse:
         """`generation_top_k` sends only the first N retrieved chunks to the
         LLM; the benchmark retrieves 10 (for Recall@10) but must generate from
@@ -711,6 +736,7 @@ class QueryService:
             graph=graph,
             versions=versions,
             query_translation=query_translation,
+            dedup=dedup,
         )
         answer = None
         stats: dict[str, float] = {}
