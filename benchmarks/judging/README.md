@@ -25,10 +25,37 @@ Les deux runs :
 ## Ce qu'on peut en dire
 
 - **Sur les réponses à contexte annoté, la notation v2 relève la fidélité de façon significative** (+0,043, 7 réponses notées 1,0 en v2 seulement, aucune dans l'autre sens). Sur le témoin, sans annotation, les en-têtes seuls ne changent rien de mesurable.
-- **Sous v2, les deux runs sont à 0,928 et 0,930.** L'écart publié (0,935 contre 0,895) n'est donc plus observé avec le protocole v2. Il venait en grande partie de ce que le juge ne voyait pas les lignes de version.
-- **Ce n'est pas une démonstration de causalité complète :**
-  - les deux runs n'ont pas les mêmes réponses, donc la comparaison entre runs n'est pas appariée ;
-  - un juge reste un modèle, et 100 réponses par run, c'est peu ;
-  - une part de l'écart d'origine peut tenir aux réponses elles-mêmes.
+- **Les deux runs se comparent question par question.** Ils portent sur les mêmes 100 questions (identifiants vérifiés : 100 en commun, aucun d'un seul côté), même si leurs réponses diffèrent. Une première version de ce document les disait non appariables ; c'était faux (corrigé après la contre-relecture des PR #83 à #85).
+
+  Écart de fidélité, run filtré (`versions-full-v1`) moins run sans filtre (`versions-full-all-v1`), sur les mêmes questions. Intervalle à 95 % par bootstrap apparié ; McNemar exact sur les réponses notées 1,0 d'un seul côté :
+
+  | Notation | Sans filtre | Filtre `in_force` | Écart (IC 95 %) | Notées 1,0 seulement sans filtre / seulement avec filtre | p |
+  |---|---|---|---|---|---|
+  | publiée (v1) | 0,935 | 0,895 | −0,040 [−0,090 ; +0,015] | 13 / 6 | 0,17 |
+  | v1 refaite | 0,930 | 0,885 | −0,045 [−0,105 ; +0,020] | 14 / 6 | 0,12 |
+  | v2 | 0,930 | 0,928 | −0,002 [−0,055 ; +0,050] | 8 / 9 | 1,0 |
+
+- **Ce qu'on en conclut :**
+  - la baisse publiée (0,935 → 0,895) n'était **pas significative**, même dans le protocole v1 ;
+  - en v2, l'écart moyen tombe à −0,002 ;
+  - **une différence non significative ne démontre pas l'équivalence** : avec 100 questions, l'intervalle laisse encore la place à un écart de ±5 points ;
+  - ce qui est établi, c'est l'effet du protocole sur les mêmes réponses (tableau précédent).
+- **Limites :** un juge reste un modèle, et 100 réponses par run, c'est peu. Une part de l'écart d'origine peut tenir aux réponses elles-mêmes, qui diffèrent d'un run à l'autre.
 - **Les résultats publiés en v1 restent tels quels.** Les nouveaux runs notés porteront `judge_protocol: faithfulness-presented-context-v2`.
 - **L'exactitude des réponses (`answer_correctness`) n'est pas concernée** par ce changement : le juge la note contre la réponse attendue, sans contexte. Sa calibration sur des cas juridiques multilingues reste à faire (audit, hors lot 2).
+
+## Artefact de preuve
+
+`proof-<rapport>-v2.jsonl`, un par run, permet de vérifier la re-notation sans relancer le juge. Le corpus est public : codes consolidés de Légifrance. La première ligne décrit le run : rapport source et son empreinte, juge, horloge, protocoles, commit. Chaque ligne suivante contient, pour une réponse :
+- la question et la réponse enregistrée ;
+- le contexte du rédacteur dans les deux protocoles (texte brut v1, passages présentés v2) ;
+- les notes du juge (publiée v1, v1 refaite, v2) et leurs raisons ;
+- les empreintes sha256 de la réponse et de chaque passage.
+
+```bash
+python scripts/judging_proof.py benchmarks/judging/<re-notation>.json <rapport>.json benchmarks/judging/proof-<rapport>-v2.jsonl
+python scripts/judging_proof.py --verify benchmarks/judging/proof-<rapport>-v2.jsonl <rapport>.json
+```
+
+`--verify` reconstruit les contextes à partir du rapport détaillé et contrôle chaque empreinte. Pour les deux runs « versions », il est passé sans écart. Les rapports détaillés eux-mêmes ne sont pas versionnés (ils pèsent 3 Mo chacun). L'artefact contient déjà les contextes, ce qui suffit à refaire la notation.
+
