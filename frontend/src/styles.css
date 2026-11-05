@@ -4414,3 +4414,17 @@ button.history-open:hover {
 .archived-bar span {
   flex: 1 1 220px;
 }
+
+/* Atelier › Bases de données: the server history switch. */
+.card.history-setting {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.card.history-setting h3 {
+  margin: 0;
+}
+.history-setting .history-reset {
+  margin-left: 8px;
+}

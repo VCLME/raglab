@@ -139,7 +139,7 @@ Ecran par defaut. Trois elements verticaux :
 
 Chaque envoi declenche un appel `/api/query/stream` independant (SSE ; repli sur `/api/query` si le flux est indisponible) : chaque question est cherchee seule (pas de multi-tour cote backend : le banc d'essai de la page Modèles couvre ce cas sans RAG).
 
-**Historique** (bouton dans la barre de parametres) : les conversations sont gardees dans le navigateur (IndexedDB, survivent au rechargement et a l'API arretee) et, avec `RAGLAB_CONVERSATION_HISTORY=true`, sur le serveur. Le panneau liste les conversations (titre = premiere question, date, corpus), cherche dans les questions et les reponses, rouvre une conversation en lecture seule (« Continuer cette conversation » pour la reprendre), renomme et supprime ; un bandeau dit ou vit l'historique. Voir [historique.md](historique.md).
+**Historique** (bouton dans la barre de parametres) : les conversations sont gardees dans le navigateur (IndexedDB, survivent au rechargement et a l'API arretee) et, quand l'historique serveur est actif (interrupteur dans **Atelier › Bases de données**, défaut `RAGLAB_CONVERSATION_HISTORY`), sur le serveur. Le panneau liste les conversations (titre = premiere question, date, corpus), cherche dans les questions et les reponses, rouvre une conversation en lecture seule (« Continuer cette conversation » pour la reprendre), renomme et supprime ; un bandeau dit ou vit l'historique. Voir [historique.md](historique.md).
 
 ## Mode pédagogique (schéma du pipeline en direct)
 

@@ -295,6 +295,18 @@ class Message(Base):
     conversation: Mapped[Conversation] = relationship(back_populates="messages")
 
 
+class RuntimeSetting(Base):
+    """A setting changed at runtime (Atelier, API, CLI), overriding its
+    RAGLAB_* default until reset. One row per key; `value` is JSON."""
+
+    __tablename__ = "runtime_settings"
+
+    key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    value: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    updated_by: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+
 Index("ix_documents_corpus_id", Document.corpus_id)
 Index("ix_chunks_index_run_id", Chunk.index_run_id)
 Index("ix_chunks_document_id", Chunk.document_id)

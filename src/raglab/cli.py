@@ -12,6 +12,7 @@ from raglab.benchmarks import AVAILABLE_LOADERS, get_loader
 from raglab.benchmarks.lexml_questions import generate_questions, review_question_set
 from raglab.config import get_settings
 from raglab.conversations import ConversationStore, TurnRecorder
+from raglab.conversations.settings import history_enabled, history_setting, set_history_enabled
 from raglab.conversations.store import HIGHLIGHT_START, HIGHLIGHT_STOP
 from raglab.db import initialize_database, session_scope
 from raglab.db.lexical import refresh_lexical_index
@@ -1237,12 +1238,12 @@ def _conversation_recorder(
     if not conversation:
         return None
     settings = get_settings()
-    if not settings.conversation_history:
-        raise typer.BadParameter(
-            "l'historique serveur est desactive (RAGLAB_CONVERSATION_HISTORY=false).",
-            param_hint="--conversation",
-        )
     with session_scope() as session:
+        if not history_enabled(session, settings):
+            raise typer.BadParameter(
+                "l'historique serveur est desactive (raglab history enable, ou RAGLAB_CONVERSATION_HISTORY=true).",
+                param_hint="--conversation",
+            )
         store = ConversationStore(session, settings)
         if conversation == "new":
             conversation = store.create(corpus_name=corpus, actor=_os_user(), channel="cli").id
@@ -1360,9 +1361,10 @@ def _run_query(
 
 def _history_store(session) -> ConversationStore:
     settings = get_settings()
-    if not settings.conversation_history:
+    if not history_enabled(session, settings):
         typer.echo(
-            "Historique serveur desactive (RAGLAB_CONVERSATION_HISTORY=false) : rien n'est enregistre cote serveur.",
+            "Historique serveur desactive (raglab history enable, ou RAGLAB_CONVERSATION_HISTORY=true) : "
+            "rien n'est enregistre cote serveur.",
             err=True,
         )
         raise typer.Exit(code=1)
@@ -1371,6 +1373,61 @@ def _history_store(session) -> ConversationStore:
 
 def _highlight(snippet: str) -> str:
     return snippet.replace(HIGHLIGHT_START, "[").replace(HIGHLIGHT_STOP, "]").replace("\n", " / ")
+
+
+def _echo_history_setting(setting) -> None:
+    state = "active" if setting.enabled else "desactive"
+    origin = (
+        f"interrupteur ({setting.updated_by or 'inconnu'}, {setting.updated_at:%Y-%m-%d %H:%M})"
+        if setting.source == "runtime"
+        else "RAGLAB_CONVERSATION_HISTORY"
+    )
+    retention = (
+        f"{setting.retention_days} jours apres la derniere activite"
+        if setting.retention_days
+        else "jusqu'a suppression (RAGLAB_CONVERSATION_RETENTION_DAYS=0)"
+    )
+    typer.echo(f"Historique serveur : {state} (source : {origin})")
+    typer.echo(f"Defaut RAGLAB_CONVERSATION_HISTORY : {'true' if setting.env_default else 'false'}")
+    typer.echo(f"Conservation : {retention}")
+
+
+@history_app.command("status")
+def history_status(as_json: bool = typer.Option(False, "--json")) -> None:
+    """Etat de l'historique serveur : actif ou non, et d'ou vient ce reglage."""
+    with session_scope() as session:
+        setting = history_setting(session, get_settings())
+    if as_json:
+        typer.echo(json.dumps(setting.__dict__, indent=2, ensure_ascii=False, default=str))
+        return
+    _echo_history_setting(setting)
+
+
+def _switch_history(enabled: bool | None) -> None:
+    with session_scope() as session:
+        setting = set_history_enabled(session, get_settings(), enabled, actor=_os_user())
+    _echo_history_setting(setting)
+
+
+@history_app.command("enable")
+def history_enable() -> None:
+    """Activer l'historique serveur sans redemarrer l'API (garde en base, partage avec l'API)."""
+    _switch_history(True)
+
+
+@history_app.command("disable")
+def history_disable() -> None:
+    """Desactiver l'historique serveur : plus rien n'est enregistre ; ce qui est stocke reste (raglab history purge / delete)."""
+    _switch_history(False)
+    typer.echo(
+        "Les conversations deja enregistrees sont conservees : raglab history delete / purge pour les supprimer."
+    )
+
+
+@history_app.command("reset")
+def history_reset() -> None:
+    """Revenir au defaut RAGLAB_CONVERSATION_HISTORY."""
+    _switch_history(None)
 
 
 @history_app.command("list")

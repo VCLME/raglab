@@ -4,6 +4,7 @@
  * with the frontend's own API types so a drift fails `tsc` on the e2e project.
  */
 import type {
+  ConversationHistorySetting,
   DatabasesResponse,
   GraphStatus,
   OllamaStatus,
@@ -359,3 +360,13 @@ export const sourceStatus = (source: "legi" | "eurlex", extra: Record<string, un
 });
 
 export const sources = [sourceStatus("legi"), sourceStatus("eurlex")];
+
+/** GET /api/settings/conversation-history: off, from RAGLAB_CONVERSATION_HISTORY. */
+export const historySetting: ConversationHistorySetting = {
+  enabled: false,
+  source: "env",
+  env_default: false,
+  retention_days: 0,
+  updated_at: null,
+  updated_by: null,
+};

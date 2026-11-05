@@ -205,7 +205,7 @@ périmètre.
 
 ## Historique des conversations : `/api/conversations`
 
-Avec `RAGLAB_CONVERSATION_HISTORY=true` (désactivé par défaut), `POST /api/query` et `POST /api/query/stream` acceptent `conversation_id` et `message_id` et enregistrent l'échange (question, réponse, sources avec offsets, contexte présenté, options résolues, modèle, durées, `request_id`) ; `/api/conversations` liste, lit, cherche (plein texte PostgreSQL), renomme et supprime. Sans `conversation_id`, `POST /api/query` est inchangé. Détails, conservation et suppression : [historique.md](historique.md).
+Quand l'historique serveur est actif (défaut `RAGLAB_CONVERSATION_HISTORY=false`, bascule à l'exécution par `PUT /api/settings/conversation-history`, l'Atelier ou `raglab history enable`), `POST /api/query` et `POST /api/query/stream` acceptent `conversation_id` et `message_id` et enregistrent l'échange (question, réponse, sources avec offsets, contexte présenté, options résolues, modèle, durées, `request_id`) ; `/api/conversations` liste, lit, cherche (plein texte PostgreSQL), renomme et supprime. Sans `conversation_id`, `POST /api/query` est inchangé. Détails, conservation et suppression : [historique.md](historique.md).
 
 ## Santé : `/health`, `/ready`, `/api/health`
 

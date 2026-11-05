@@ -27,6 +27,14 @@ async function load(): Promise<ConfigResponse> {
   return pending;
 }
 
+/** Update the cached config after a runtime switch, so every page sees it without a reload. */
+export function patchConfig(update: Partial<ConfigResponse>): void {
+  if (!cache) return;
+  cache = { ...cache, ...update };
+  const next = cache;
+  listeners.forEach((l) => l(next));
+}
+
 export function useConfig(): ConfigResponse | null {
   const [config, setConfig] = useState<ConfigResponse | null>(cache);
   useEffect(() => {

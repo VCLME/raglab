@@ -383,3 +383,120 @@ def test_cli_history_and_query_conversation(connection, settings, monkeypatch):
     off = runner.invoke(cli.app, ["history", "list"])
     assert off.exit_code == 1
     assert "RAGLAB_CONVERSATION_HISTORY" in off.stderr
+
+
+# -- runtime switch ------------------------------------------------------------
+
+
+def test_runtime_switch_overrides_the_env_default_and_deletes_nothing(connection):
+    from raglab.conversations.settings import history_setting, set_history_enabled
+
+    off_by_env = Settings(conversation_history=False, conversation_retention_days=30)
+    session = _sessions(connection)()
+    assert (history_setting(session, off_by_env).enabled, history_setting(session, off_by_env).source) == (False, "env")
+
+    on = set_history_enabled(session, off_by_env, True, actor="alice")
+    assert (on.enabled, on.source, on.env_default, on.retention_days, on.updated_by) == (
+        True,
+        "runtime",
+        False,
+        30,
+        "alice",
+    )
+    store = ConversationStore(session, off_by_env)
+    kept = store.create()
+    store.append(kept.id, _turn("Q", "R"))
+
+    off = set_history_enabled(session, off_by_env, False)
+    assert (off.enabled, off.source) == (False, "runtime")
+    # Off stops recording; what is stored stays.
+    assert store.exists(kept.id)
+
+    reset = set_history_enabled(session, Settings(conversation_history=True), None)
+    assert (reset.enabled, reset.source) == (True, "env")
+    session.close()
+
+
+def test_api_switch_turns_recording_on_and_off_without_restart(connection):
+    settings = Settings(conversation_history=False)
+    app = create_app(settings)
+    factory = _sessions(connection)
+
+    def override_get_db():
+        session = factory()
+        try:
+            yield session
+            session.commit()
+        finally:
+            session.close()
+
+    app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_session_maker] = lambda: factory
+    app.dependency_overrides[get_current_settings] = lambda: settings
+    with TestClient(app) as client:
+        state = client.get("/api/settings/conversation-history").json()
+        assert (state["enabled"], state["source"], state["env_default"]) == (False, "env", False)
+        assert client.get("/api/conversations").status_code == 404
+        assert client.get("/api/config").json()["conversation_history"] is False
+
+        switched = client.put(
+            "/api/settings/conversation-history", json={"enabled": True}, headers={"X-Raglab-User": "admin"}
+        ).json()
+        assert (switched["enabled"], switched["source"], switched["updated_by"]) == (True, "runtime", "admin")
+        assert client.get("/api/config").json()["conversation_history"] is True
+        conversation_id = client.post("/api/conversations", json={}).json()["id"]
+        fake = QueryResponse(
+            question="Q ?",
+            index_run_id="11111111-1111-1111-1111-111111111111",
+            strategy=ChunkingStrategy.TRADITIONAL,
+            retrieved_chunks=[],
+            answer="R.",
+        )
+        with patch("raglab.api.routers.query.QueryService") as service:
+            service.return_value.query.return_value = fake
+            recorded = client.post("/api/query", json={"question": "Q ?", "conversation_id": conversation_id}).json()
+        assert recorded["conversation_id"] == conversation_id
+
+        client.put("/api/settings/conversation-history", json={"enabled": False})
+        assert client.get("/api/conversations").status_code == 404
+        with patch("raglab.api.routers.query.QueryService") as service:
+            service.return_value.query.return_value = fake
+            ignored = client.post("/api/query", json={"question": "Q ?", "conversation_id": conversation_id}).json()
+        assert ignored["conversation_id"] is None
+
+        # Back on: the conversation recorded before is still there, with one turn.
+        client.put("/api/settings/conversation-history", json={"enabled": True})
+        assert client.get(f"/api/conversations/{conversation_id}").json()["message_count"] == 1
+        reset = client.put("/api/settings/conversation-history", json={"enabled": None}).json()
+        assert (reset["enabled"], reset["source"]) == (False, "env")
+
+
+def test_cli_history_enable_disable_status(connection, monkeypatch):
+    from raglab import cli
+
+    factory = _sessions(connection)
+
+    @contextmanager
+    def scope():
+        session = factory()
+        try:
+            yield session
+            session.commit()
+        finally:
+            session.close()
+
+    monkeypatch.setattr(cli, "session_scope", scope)
+    monkeypatch.setattr(cli, "get_settings", lambda: Settings(conversation_history=False))
+    runner = CliRunner()
+
+    assert "desactive (source : RAGLAB_CONVERSATION_HISTORY)" in runner.invoke(cli.app, ["history", "status"]).stdout
+    assert runner.invoke(cli.app, ["history", "list"]).exit_code == 1
+    enabled = runner.invoke(cli.app, ["history", "enable"])
+    assert enabled.exit_code == 0 and "Historique serveur : active (source : interrupteur" in enabled.stdout
+    assert runner.invoke(cli.app, ["history", "list"]).exit_code == 0
+    disabled = runner.invoke(cli.app, ["history", "disable"])
+    assert "deja enregistrees sont conservees" in disabled.stdout
+    status = json.loads(runner.invoke(cli.app, ["history", "status", "--json"]).stdout)
+    assert (status["enabled"], status["source"]) == (False, "runtime")
+    reset = runner.invoke(cli.app, ["history", "reset"])
+    assert "source : RAGLAB_CONVERSATION_HISTORY" in reset.stdout

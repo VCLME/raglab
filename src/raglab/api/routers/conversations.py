@@ -14,6 +14,8 @@ from raglab.api.deps import get_current_settings, get_db
 from raglab.api.schemas import (
     ConversationCreate,
     ConversationDetail,
+    ConversationHistorySettingOut,
+    ConversationHistorySettingUpdate,
     ConversationRename,
     ConversationSearchHit,
     ConversationSummaryOut,
@@ -22,6 +24,7 @@ from raglab.api.schemas import (
 )
 from raglab.config import Settings
 from raglab.conversations import ConversationHistoryDisabledError, ConversationStore
+from raglab.conversations.settings import HistorySetting, history_enabled, history_setting, set_history_enabled
 from raglab.db.models import Conversation, Message
 from raglab.logging_utils import log_event
 
@@ -34,7 +37,7 @@ def history_store(
     session: Session = Depends(get_db),
     settings: Settings = Depends(get_current_settings),
 ) -> ConversationStore:
-    if not settings.conversation_history:
+    if not history_enabled(session, settings):
         raise ConversationHistoryDisabledError()
     return ConversationStore(session, settings)
 
@@ -84,6 +87,42 @@ def detail(conversation: Conversation) -> ConversationDetail:
         **summary(conversation, len(conversation.messages)).model_dump(),
         messages=[message_out(message) for message in conversation.messages],
     )
+
+
+def setting_out(setting: HistorySetting) -> ConversationHistorySettingOut:
+    return ConversationHistorySettingOut(**setting.__dict__)
+
+
+@router.get("/api/settings/conversation-history", response_model=ConversationHistorySettingOut)
+def get_history_setting(
+    session: Session = Depends(get_db),
+    settings: Settings = Depends(get_current_settings),
+) -> ConversationHistorySettingOut:
+    """Whether the server records conversations, and where that comes from
+    (RAGLAB_CONVERSATION_HISTORY, or a runtime switch)."""
+    return setting_out(history_setting(session, settings))
+
+
+@router.put("/api/settings/conversation-history", response_model=ConversationHistorySettingOut)
+def put_history_setting(
+    body: ConversationHistorySettingUpdate,
+    x_raglab_user: str | None = Header(None),
+    session: Session = Depends(get_db),
+    settings: Settings = Depends(get_current_settings),
+) -> ConversationHistorySettingOut:
+    """Switch the server history on or off without a restart (`enabled:
+    null` goes back to RAGLAB_CONVERSATION_HISTORY). Off stops recording;
+    stored conversations stay until deleted or purged."""
+    setting = set_history_enabled(session, settings, body.enabled, actor=x_raglab_user)
+    log_event(
+        LOGGER,
+        logging.INFO,
+        "conversation.history_switched",
+        enabled=setting.enabled,
+        source=setting.source,
+        actor=x_raglab_user,
+    )
+    return setting_out(setting)
 
 
 @router.get("/api/conversations", response_model=list[ConversationSummaryOut])

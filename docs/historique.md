@@ -5,7 +5,7 @@ Le Chat garde ses conversations en deux couches :
 | Couche | Où | Pour quoi | Actif |
 |---|---|---|---|
 | **Navigateur** | IndexedDB (`raglab-history`) | usage hors ligne et mono-utilisateur, rechargement de la page | toujours |
-| **Serveur** | PostgreSQL (`conversations`, `messages`) | piste d'audit : qui a demandé quoi, avec quelles sources, quel modèle, quelles options | `RAGLAB_CONVERSATION_HISTORY=true` |
+| **Serveur** | PostgreSQL (`conversations`, `messages`) | piste d'audit : qui a demandé quoi, avec quelles sources, quel modèle, quelles options | interrupteur de l'Atelier (ou API, CLI) ; défaut `RAGLAB_CONVERSATION_HISTORY` |
 
 Les deux couches partagent **un seul identifiant par conversation et par échange** : il n'y a jamais deux copies d'une même conversation.
 
@@ -15,15 +15,29 @@ Les deux couches partagent **un seul identifiant par conversation et par échang
 
 | Variable | Défaut | Effet |
 |---|---|---|
-| `RAGLAB_CONVERSATION_HISTORY` | `false` | enregistre chaque échange du Chat et de `raglab query --conversation` dans PostgreSQL ; expose `/api/conversations` |
+| `RAGLAB_CONVERSATION_HISTORY` | `false` | valeur par défaut de l'historique serveur (enregistre chaque échange du Chat et de `raglab query --conversation` dans PostgreSQL ; expose `/api/conversations`), tant que personne ne l'a basculé à l'exécution |
 | `RAGLAB_CONVERSATION_RETENTION_DAYS` | `0` | supprime les conversations inactives depuis plus de N jours (à chaque échange enregistré et par `raglab history purge`) ; `0` = conservées jusqu'à suppression manuelle |
+
+### Activer ou désactiver sans redémarrer
+
+L'historique serveur se bascule **à l'exécution**, sans toucher aux variables ni redémarrer l'API :
+
+- **Atelier** › **Bases de données** › onglet PostgreSQL, carte « Historique des conversations (serveur) » : interrupteur, état, origine du réglage (défaut de l'installation, ou interrupteur avec qui et quand), valeur de `RAGLAB_CONVERSATION_HISTORY`, durée de conservation, et bouton « Revenir au défaut » ;
+- **API** : `GET /api/settings/conversation-history` ; `PUT /api/settings/conversation-history` avec `{"enabled": true}`, `{"enabled": false}` ou `{"enabled": null}` (retour au défaut) ; l'en-tête `X-Raglab-User` est noté comme auteur ;
+- **CLI** : `raglab history status`, `raglab history enable`, `raglab history disable`, `raglab history reset`.
+
+La valeur choisie est gardée **en base**, dans la table `runtime_settings` (créée par la même migration `0003_conversations`) : elle survit au redémarrage de l'API, vaut pour tous ses workers et pour la CLI, qui lisent la même base. Un fichier sous `data/` aurait été propre à une machine (l'API en Docker et la CLI sur l'hôte ne le partageraient pas). `/api/config` renvoie la valeur effective, et le Chat bascule tout de suite entre serveur et navigateur.
+
+**Désactiver arrête l'enregistrement, sans rien supprimer** : les conversations déjà stockées restent en base (et redeviennent visibles si on réactive) jusqu'à leur suppression (`raglab history delete`, `raglab history purge`, `DELETE /api/conversations/{id}`) ou leur expiration. Pendant que l'historique est désactivé, `/api/conversations*` répond `404` et le Chat garde l'historique dans le navigateur.
+
+![Interrupteur de l'historique serveur dans l'Atelier](images/history-setting.png)
 
 ### Pourquoi l'historique serveur est désactivé par défaut
 
 L'historique serveur conserve **ce que les utilisateurs demandent**, mot pour mot, avec les réponses et les passages cités. C'est exactement ce qu'une piste d'audit doit garder, mais c'est aussi un traitement de données qui peuvent être personnelles (une question peut nommer une personne, un dossier, une situation). L'activer est donc une décision explicite de l'exploitant, prise avec sa durée de conservation, et non un effet de bord de l'installation :
 
 - en local, mono-utilisateur, l'historique du navigateur suffit et ne quitte pas le poste ;
-- en entreprise, on active `RAGLAB_CONVERSATION_HISTORY=true` **et** on fixe `RAGLAB_CONVERSATION_RETENTION_DAYS` selon la politique de conservation (par exemple 90 ou 365 jours), puis on documente la finalité auprès des utilisateurs.
+- en entreprise, on active l'historique (interrupteur de l'Atelier, ou `RAGLAB_CONVERSATION_HISTORY=true` pour en faire le défaut) **et** on fixe `RAGLAB_CONVERSATION_RETENTION_DAYS` selon la politique de conservation (par exemple 90 ou 365 jours), puis on documente la finalité auprès des utilisateurs.
 
 Le Chat affiche toujours où vit l'historique (bandeau en tête du panneau), y compris la durée de conservation quand elle est fixée.
 
@@ -85,6 +99,7 @@ Exemples mesurés dans les tests : `durees` trouve « durée », `presidents elu
 | `POST` | `/api/conversations` | crée une conversation (`{id?, title?, corpus?, channel?}`) ; un `id` proposé par le client est gardé, et le recréer renvoie l'existante |
 | `PATCH` | `/api/conversations/{id}` | renomme (`{title}`) |
 | `DELETE` | `/api/conversations/{id}` | supprime la conversation et ses messages (définitif, pas de corbeille) |
+| `GET` / `PUT` | `/api/settings/conversation-history` | état de l'historique serveur et bascule à l'exécution (voir plus haut) ; répond aussi quand l'historique est désactivé |
 
 `POST /api/query` et `POST /api/query/stream` acceptent deux champs optionnels : `conversation_id` (l'échange est ajouté à cette conversation) et `message_id` (UUID de l'échange choisi par le client, pour que sa copie locale et la ligne serveur partagent l'identifiant). La réponse (ou l'événement SSE `done`) porte en retour `conversation_id` et `message_id`, `null` quand l'échange n'a pas été enregistré. Sans `conversation_id`, rien ne change : `POST /api/query` reste compatible.
 
@@ -100,16 +115,17 @@ raglab history show <id> [--json]
 raglab history search "mandat president" [--corpus X] [--json]
 raglab history delete <id> [--yes]
 raglab history purge [--older-than-days 90] [--yes]
+raglab history status | enable | disable | reset
 ```
 
-`--conversation new` ouvre une conversation (canal `cli`, acteur = utilisateur système) et affiche son `conversation_id` dans le JSON. Historique désactivé : ces commandes sortent en erreur avec un message explicite.
+`--conversation new` ouvre une conversation (canal `cli`, acteur = utilisateur système) et affiche son `conversation_id` dans le JSON. Historique désactivé : ces commandes sortent en erreur avec un message explicite (sauf `status`, `enable`, `disable`, `reset`).
 
 ## Synchronisation des deux couches
 
 | Situation | Comportement du Chat |
 |---|---|
 | Historique serveur actif, API joignable | la première question crée la conversation sur le serveur (`POST /api/conversations`), qui donne son id ; chaque échange est envoyé avec `conversation_id` et `message_id` ; la liste, la recherche, le renommage et la suppression passent par le serveur ; IndexedDB garde une copie hors ligne |
-| Historique serveur désactivé | IndexedDB seul ; le panneau l'indique |
+| Historique serveur désactivé (par défaut ou depuis l'Atelier) | IndexedDB seul ; le panneau l'indique ; une bascule dans l'Atelier s'applique au Chat sans recharger la page |
 | API injoignable | IndexedDB seul « en attendant » ; le panneau l'indique et propose de réessayer |
 | Conversation commencée hors ligne, continuée serveur revenu | adoptée par le serveur sous **son propre id** (`POST /api/conversations` avec `id`) ; les échanges posés hors ligne restent dans le navigateur, les suivants sont enregistrés |
 | Conversation supprimée ailleurs (CLI, autre navigateur) | sa copie locale disparaît à la prochaine ouverture du panneau |
@@ -126,5 +142,5 @@ Une suppression faite API injoignable n'efface que la copie locale : la conversa
 ## Tests
 
 - unitaires : `tests/test_conversation_record.py` (ce qu'un échange enregistre), `tests/api/test_api_conversations.py` (historique désactivé, conversation inconnue, identifiants renvoyés) ;
-- intégration PostgreSQL : `tests/test_conversations_postgres.py` (positions, ids proposés par le client, recherche par langue et sans accents, filtres, renommage, suppression en cascade, conservation, API de bout en bout avec le flux SSE, CLI), sur une base `*_test` via `RAGLAB_TEST_DATABASE_URL` ;
-- bout en bout : `frontend/e2e/history.spec.ts` (navigateur seul avec rechargement, recherche, réouverture, reprise, renommage, suppression ; historique serveur avec un id unique ; API arrêtée).
+- intégration PostgreSQL : `tests/test_conversations_postgres.py` (interrupteur à l'exécution par l'API et la CLI, désactivation sans suppression, positions, ids proposés par le client, recherche par langue et sans accents, filtres, renommage, suppression en cascade, conservation, API de bout en bout avec le flux SSE, CLI), sur une base `*_test` via `RAGLAB_TEST_DATABASE_URL` ;
+- bout en bout : `frontend/e2e/history.spec.ts` (navigateur seul avec rechargement, recherche, réouverture, reprise, renommage, suppression ; historique serveur avec un id unique ; API arrêtée) et `frontend/e2e/history-setting.spec.ts` (interrupteur de l'Atelier : activé, désactivé, état après rechargement, retour au défaut, effet sur le Chat).

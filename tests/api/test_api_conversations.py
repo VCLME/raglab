@@ -125,3 +125,19 @@ def test_a_failed_query_is_recorded_as_failed(make_client):
 
     assert response.status_code == 400
     recorder.return_value.failed.assert_called_once_with("Aucun index pour ce corpus.")
+
+
+def test_history_setting_without_a_runtime_switch_is_the_env_default(make_client):
+    body = (
+        make_client(conversation_history=True, conversation_retention_days=90)
+        .get("/api/settings/conversation-history")
+        .json()
+    )
+    assert body == {
+        "enabled": True,
+        "source": "env",
+        "env_default": True,
+        "retention_days": 90,
+        "updated_at": None,
+        "updated_by": None,
+    }

@@ -15,6 +15,7 @@ from raglab.api.schemas import QueryRequest
 from raglab.config import Settings
 from raglab.conversations import ConversationNotFoundError, ConversationStore, TurnRecorder
 from raglab.conversations.record import OPTION_FIELDS
+from raglab.conversations.settings import history_enabled
 from raglab.domain.schemas import QueryResponse, RetrievalFilters
 from raglab.llm.providers import resolve_llm_provider
 from raglab.logging_utils import log_event
@@ -50,7 +51,7 @@ def _recorder(
     """Recorder of this turn when it belongs to a conversation. With the
     history off, `conversation_id` is ignored and the response says so
     (`conversation_id` null): the Chat then keeps the turn in the browser."""
-    if not body.conversation_id or not settings.conversation_history:
+    if not body.conversation_id or not history_enabled(session, settings):
         return None
     if not ConversationStore(session, settings).exists(body.conversation_id):
         raise ConversationNotFoundError(body.conversation_id)

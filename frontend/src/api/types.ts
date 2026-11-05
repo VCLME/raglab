@@ -61,6 +61,18 @@ export interface ConfigResponse {
   conversation_retention_days?: number;
 }
 
+/** GET / PUT /api/settings/conversation-history. */
+export interface ConversationHistorySetting {
+  enabled: boolean;
+  /** "runtime" when switched in the Atelier / API / CLI, else "env". */
+  source: "runtime" | "env";
+  /** RAGLAB_CONVERSATION_HISTORY, used again after a reset. */
+  env_default: boolean;
+  retention_days: number;
+  updated_at: string | null;
+  updated_by: string | null;
+}
+
 /** GET /api/conversations item. */
 export interface ConversationSummary {
   id: string;

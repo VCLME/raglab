@@ -4,7 +4,10 @@ Revision ID: 0003_conversations
 Revises: 0002_hybrid_lexical
 Create Date: 2026-11-05
 
-Rows are written only when RAGLAB_CONVERSATION_HISTORY is on. Each message
+Also `runtime_settings`, where the Atelier / API / CLI switch the history
+on or off over the RAGLAB_CONVERSATION_HISTORY default.
+
+Rows are written only when the history is on. Each message
 carries a `tsvector` of its question and answer, built with the same
 unaccent-aware text-search configs as the BM25 index (0002).
 """
@@ -77,8 +80,19 @@ def upgrade() -> None:
     op.create_index("ix_messages_conversation_id", "messages", ["conversation_id"])
     op.create_index("ix_messages_search_tsv", "messages", ["search_tsv"], postgresql_using="gin")
 
+    # Settings switched at runtime (the history on / off from the Atelier),
+    # shared by the API and the CLI and kept across restarts.
+    op.create_table(
+        "runtime_settings",
+        sa.Column("key", sa.String(64), primary_key=True),
+        sa.Column("value", JSONB(), nullable=False, server_default="{}"),
+        sa.Column("updated_by", sa.String(255), nullable=True),
+        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+    )
+
 
 def downgrade() -> None:
+    op.drop_table("runtime_settings")
     op.drop_index("ix_messages_search_tsv", table_name="messages")
     op.drop_index("ix_messages_conversation_id", table_name="messages")
     op.drop_table("messages")

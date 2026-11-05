@@ -693,6 +693,22 @@ class ConversationCreate(BaseModel):
     channel: Literal["ui", "api", "cli"] = "api"
 
 
+class ConversationHistorySettingOut(BaseModel):
+    enabled: bool
+    # "runtime" when switched in the Atelier / API / CLI, else "env".
+    source: str
+    # RAGLAB_CONVERSATION_HISTORY, used again after a reset.
+    env_default: bool
+    retention_days: int
+    updated_at: datetime | None = None
+    updated_by: str | None = None
+
+
+class ConversationHistorySettingUpdate(BaseModel):
+    # None: back to RAGLAB_CONVERSATION_HISTORY.
+    enabled: bool | None
+
+
 class ConversationRename(BaseModel):
     title: str = Field(..., min_length=1, max_length=500)
 
