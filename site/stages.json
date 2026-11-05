@@ -148,5 +148,17 @@
     "name": "De-duplication v3 (option)",
     "change": "+ drop passages entirely contained in a kept one, refill from 40 re-ranked candidates; a cited article is ordered from the top-k alone, so questions with nothing dropped are unchanged (retrieval only, off by default)",
     "status": "review lot 4 · option"
+  },
+  {
+    "label": "pipeline-2026-11-dedup-off",
+    "name": "Merged pipeline, production settings",
+    "change": "after the review fixes (#86–#88): production settings with query translation and Qwen3.6-35B-A3B answers, judged with the presented-context protocol (v2); dedup off",
+    "status": "review lot 4 · reference"
+  },
+  {
+    "label": "pipeline-2026-11-dedup-on",
+    "name": "Merged pipeline, de-duplication on",
+    "change": "same run with de-duplication on, before the pinned-order fix (#92): answer changes within the writer and judge noise",
+    "status": "review lot 4 · comparison"
   }
 ]
