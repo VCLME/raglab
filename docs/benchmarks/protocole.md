@@ -156,7 +156,11 @@ Audit du 4 novembre 2026, lot 2. Le rédacteur ne lit pas le texte brut des pass
 - un test de McNemar sur les réponses notées 1,0 ;
 - le nombre de réponses dont le contexte présenté porte une annotation de version.
 
-Résultats : `benchmarks/judging/`.
+Résultats ([benchmarks/judging](../../benchmarks/judging/README.md)), sur les mêmes 100 réponses par run, appariées :
+- **jeu « versions » avec filtre** (100 contextes annotés) : 0,885 en v1, 0,928 en v2 (+0,043, IC 95 % [+0,008 ; +0,082], 7 réponses notées 1,0 en v2 seulement, aucune dans l'autre sens, p = 0,016) ;
+- **même jeu sans filtre** (aucune annotation, témoin) : 0,930 dans les deux protocoles.
+
+L'écart de fidélité publié entre ces deux runs (0,935 contre 0,895) n'est plus observé en v2 (0,930 et 0,928). Les deux runs n'ayant pas les mêmes réponses, ce n'est pas une preuve causale complète.
 
 ## Limites connues
 

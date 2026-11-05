@@ -1,0 +1,934 @@
+{
+ "kind": "rejudge",
+ "created_at": "2026-11-05T04:19:12.040723+00:00",
+ "report": "C:/Users/lucme/source/rag/.claude/worktrees/bench-protocol/data/reports/recall-legi_versions-20261104-041726.json",
+ "report_judge": "llamacpp:gemma4-26b-a4b",
+ "judge": "llamacpp:gemma4-26b-a4b",
+ "clock": "2026-11-04",
+ "protocols": [
+  "raw",
+  "presented"
+ ],
+ "summary": {
+  "answers": 100,
+  "annotated": 0,
+  "original": 0.935,
+  "raw": 0.93,
+  "presented": 0.93,
+  "paired": {
+   "answers": 100,
+   "delta": 0.0,
+   "ci95": [
+    -0.045,
+    0.04
+   ],
+   "fully_faithful_only_raw": 5,
+   "fully_faithful_only_presented": 3,
+   "p_mcnemar_fully_faithful": 0.7266,
+   "changed": 12
+  },
+  "raw_vs_original_changed": 5
+ },
+ "rows": [
+  {
+   "id": "legi-versions-0001",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer correctly identifies the tribunal (tribunal d'instance) and the limitation period (two years from the triggering event) as explicitly stated in multiple provided articles.",
+   "presented": 1.0,
+   "presented_reason": "The answer correctly identifies the tribunal (tribunal d'instance) and the limitation period (two years from the triggering event) based on the provided text in Source 1."
+  },
+  {
+   "id": "legi-versions-0002",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer accurately reflects the context, stating that manufacturers provide information to authorities, and that those authorities (not the manufacturers themselves) make the information available to consumers, subject to confidentiality exceptions, while also noting these obligations apply to importers and distributors.",
+   "presented": 1.0,
+   "presented_reason": "The answer accurately reflects the context, stating that manufacturers provide information to authorities, and that those authorities (not the manufacturers directly) make the information available to consumers, subject to confidentiality exceptions."
+  },
+  {
+   "id": "legi-versions-0003",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer directly quotes the provided context and correctly interprets the legal requirement stated in Article L313-27.",
+   "presented": 1.0,
+   "presented_reason": "The answer directly quotes the provided context and correctly interprets the legal requirement stated in the text."
+  },
+  {
+   "id": "legi-versions-0004",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer correctly interprets the phrase 'peuvent être fournies' (can be provided) from the context to conclude that using the standard information notice is an option rather than a strict obligation.",
+   "presented": 1.0,
+   "presented_reason": "The answer correctly interprets the phrase 'peuvent être fournies' (can be provided) from the context to conclude that using the standard information notice is an option rather than a strict obligation."
+  },
+  {
+   "id": "legi-versions-0005",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer accurately reflects the context, which states that a level III diploma in management (gestion) is one of the conditions for professional competence.",
+   "presented": 1.0,
+   "presented_reason": "The answer correctly identifies that a level III diploma in management is listed as a condition for professional competence according to the provided text."
+  },
+  {
+   "id": "legi-versions-0006",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer accurately reflects the context, stating that the account statement can be sent on paper or another durable medium, thereby correctly answering the question's implication about mandatory paper support.",
+   "presented": 1.0,
+   "presented_reason": "The answer accurately reflects the information provided in the context, stating that the account statement can be sent on paper or another durable medium."
+  },
+  {
+   "id": "legi-versions-0007",
+   "annotated": false,
+   "original": 0.5,
+   "raw": 0.5,
+   "raw_reason": "The answer claims the dossier must be sent to the 'tribunal d'instance', which is supported by some conflicting snippets in the context, but other snippets specify the 'tribunal judiciaire' or 'juge de l'exécution' depending on the specific article being contested.",
+   "presented": 1.0,
+   "presented_reason": "The answer is directly supported by the first source provided, which states that the secretariat transmits the file to the greffe du tribunal d'instance when contesting measures under article L. 733-1."
+  },
+  {
+   "id": "legi-versions-0008",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer accurately reflects the text provided in the context, stating that the change of provider cannot exceed twenty-one days from the request.",
+   "presented": 1.0,
+   "presented_reason": "The answer accurately reflects the information provided in the context regarding the maximum 21-day period for changing a supplier."
+  },
+  {
+   "id": "legi-versions-0009",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "All claims in the answer are explicitly supported by the provided context regarding the jurisdiction (tribunal judiciaire) and the specific timeframes for different categories of persons.",
+   "presented": 1.0,
+   "presented_reason": "All claims in the answer are explicitly supported by the text in Source rank 1 regarding the jurisdiction (tribunal judiciaire), the primary deadline (ten days from receipt of the report), and the specific deadline for persons not subject to the search but implicated (notification of the report and inventory)."
+  },
+  {
+   "id": "legi-versions-0010",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer accurately interprets the provided text, stating that if laboratories cannot meet deadlines or lack technical capacity, the state laboratory can use a laboratory in another EU member state under its control.",
+   "presented": 1.0,
+   "presented_reason": "The answer directly quotes the relevant article and correctly interprets that the state laboratory can use a laboratory in another EU member state if the original laboratories cannot meet deadlines or lack technical capacity."
+  },
+  {
+   "id": "legi-versions-0011",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer correctly identifies that agents have powers to control regulations, specifically citing the law regarding commercial influence and social media influencers mentioned in the context.",
+   "presented": 1.0,
+   "presented_reason": "The answer correctly links the authority of the agents mentioned in Source 3 with the specific law regarding influencers mentioned in Sources 1, 2, 4, and 5."
+  },
+  {
+   "id": "legi-versions-0012",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer correctly identifies the maximum fine for a legal entity (personne morale) as 75,000 euros based on the first provided version of Article L242-11 in the context.",
+   "presented": 1.0,
+   "presented_reason": "The answer correctly identifies the maximum fine for a legal entity (personne morale) as 75,000 euros based on the provided Article L242-11 in Source 1."
+  },
+  {
+   "id": "legi-versions-0013",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 0.5,
+   "raw_reason": "The answer correctly identifies the monthly frequency and timing, but it claims the statement must specify the 'capital restant dû' (remaining capital due), which is not explicitly listed as a required element in the provided sections 311-9 or 311-16, although it is mentioned in the context of a table/amortization schedule.",
+   "presented": 1.0,
+   "presented_reason": "The answer correctly identifies that the lender must provide an updated statement monthly (rather than annually) and includes the specific details required by the context, such as the ability to pay off the remaining balance early."
+  },
+  {
+   "id": "legi-versions-0014",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer directly quotes the provided legal articles and correctly concludes that the contract must mention the waiver of the right of withdrawal if the digital content is provided without a physical medium, as specified in the context.",
+   "presented": 1.0,
+   "presented_reason": "The answer accurately reflects the legal requirement stated in the provided context regarding the mention of the consumer's express agreement and waiver of the right of withdrawal for digital content provided without a physical medium."
+  },
+  {
+   "id": "legi-versions-0015",
+   "annotated": false,
+   "original": 0.5,
+   "raw": 1.0,
+   "raw_reason": "The answer is explicitly supported by the first and third provided context snippets (Article R334-65 and Article R742-46), which state the liquidator transmits the minutes to the 'juge du tribunal d'instance'.",
+   "presented": 1.0,
+   "presented_reason": "The answer is directly supported by the text in Source 1, which explicitly states that the liquidator transmits the minutes of the agreement to the judge of the tribunal d'instance for homologation."
+  },
+  {
+   "id": "legi-versions-0016",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer correctly uses the provided context to refute the client's claim, noting that price reductions and comparisons can be deceptive if they are false or misleading.",
+   "presented": 1.0,
+   "presented_reason": "The answer correctly uses the provided context to refute the client's claim, noting that price reductions and comparisons can be deceptive if they are false or misleading."
+  },
+  {
+   "id": "legi-versions-0017",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer correctly applies the ten-day deadline mentioned in the provided legal text to the user's specific situation of twelve days.",
+   "presented": 1.0,
+   "presented_reason": "The answer correctly identifies the ten-day deadline for claims based on the provided legal text and accurately applies it to the user's situation of twelve days."
+  },
+  {
+   "id": "legi-versions-0018",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer is a verbatim quote from the provided context that directly addresses the conditions under which a standardized information sheet must be provided for a loan exceeding 75,000 euros.",
+   "presented": 1.0,
+   "presented_reason": "The answer is a direct quote from the provided context (Source rank 1) and accurately addresses the conditions under which a standardized information sheet must be provided."
+  },
+  {
+   "id": "legi-versions-0019",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer is faithful because the provided context contains contradictory information regarding the maximum fine for a legal entity (375,000 € vs 15,000 €), making a single reliable answer impossible.",
+   "presented": 0.0,
+   "presented_reason": "The answer claims it cannot answer, but the context actually contains conflicting information that could have been addressed or noted, making the refusal unfaithful to the provided data."
+  },
+  {
+   "id": "legi-versions-0020",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer accurately reflects the conflicting versions of Article L314-22 provided in the context, noting that one version mentions consumers and the other mentions borrowers.",
+   "presented": 1.0,
+   "presented_reason": "The answer accurately reflects the conflicting information provided in Source 1 and Source 2 of the context."
+  },
+  {
+   "id": "legi-versions-0021",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer correctly identifies the maximum fine for a legal entity (personne morale) as 15,000 € based on the provided text.",
+   "presented": 1.0,
+   "presented_reason": "The answer correctly identifies the maximum fine for a legal entity (personne morale) as 15,000 € based on the provided text in Source 2."
+  },
+  {
+   "id": "legi-versions-0022",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer directly quotes the provided context to answer the question, and all claims made are explicitly supported by the text.",
+   "presented": 1.0,
+   "presented_reason": "The answer consists of direct quotes from the provided context that explicitly answer the question regarding the lender's ability to claim a capped indemnity."
+  },
+  {
+   "id": "legi-versions-0023",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer accurately reflects the text of Article L121-9, stating that comparative advertising cannot unduly take advantage of the reputation of a trademark of manufacture, commerce, or service.",
+   "presented": 1.0,
+   "presented_reason": "The answer accurately reflects the text of the provided articles, specifically noting that the prohibition applies to taking 'undue' profit from the reputation of a service brand."
+  },
+  {
+   "id": "legi-versions-0024",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer accurately reflects the context by stating that the Banque de France is authorized to diffuse information only to credit institutions and financial services, and correctly notes that companies registered in the file are not mentioned as authorized recipients.",
+   "presented": 1.0,
+   "presented_reason": "The answer correctly interprets the context, noting that the Banque de France is authorized to share information with credit institutions and financial services, and correctly observes that 'entreprises inscrites au fichier' (companies registered in the file) are not listed as authorized recipients."
+  },
+  {
+   "id": "legi-versions-0025",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer correctly states that it cannot provide a reliable answer based on the provided context, as the context mentions the 'conseil départemental' designating a correspondent for the 'commission de coordination des actions de prévention des expulsions locatives', but does not explicitly link the 'conseil départemental' to the 'commission de surendettement' in that specific capacity.",
+   "presented": 1.0,
+   "presented_reason": "The answer correctly states that it cannot provide a reliable answer based on the provided context, as the context mentions the 'conseil général' (Source 1) and 'conseil départemental' (Source 2) in different contexts, but does not explicitly link the 'conseil départemental' to the 'commission de surendettement' regarding the designation of a correspondent."
+  },
+  {
+   "id": "legi-versions-0026",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer correctly states that it cannot provide a reliable response based on the provided context, as the context contains conflicting information regarding the duration of the right of withdrawal (48 hours, 24 hours, 7 days, or 3 months) and does not explicitly mention a 10% penalty.",
+   "presented": 1.0,
+   "presented_reason": "The answer correctly states that the provided context is insufficient to answer the specific question regarding a 10% penalty."
+  },
+  {
+   "id": "legi-versions-0027",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer directly quotes the provided legal text and correctly interprets the definition provided in the context to address the client's specific question.",
+   "presented": 1.0,
+   "presented_reason": "The answer directly quotes the provided legal text and correctly interprets the definition provided in the context to address the user's specific question."
+  },
+  {
+   "id": "legi-versions-0028",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer accurately reflects the information provided in the context regarding the lender's ability to charge an indemnity in addition to late interest, subject to a decree-determined scale.",
+   "presented": 1.0,
+   "presented_reason": "The answer accurately reflects the information provided in the context regarding the lender's ability to charge an indemnity in addition to late interest, including the limitation based on a decree-determined scale."
+  },
+  {
+   "id": "legi-versions-0029",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer is faithful because the provided context contains contradictory information (two different versions of Article L242-12 with different amounts), making a single reliable answer impossible.",
+   "presented": 0.0,
+   "presented_reason": "The answer claims it cannot respond, but the context actually contains multiple conflicting amounts for the requested information, making a definitive answer impossible, which justifies the refusal."
+  },
+  {
+   "id": "legi-versions-0030",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer correctly identifies that products presented under a counterfeit collective certification mark are listed as a basis for seizure according to the provided text.",
+   "presented": 1.0,
+   "presented_reason": "The answer directly cites the relevant legal provision from the context which explicitly lists products presented under a counterfeit collective certification mark as a basis for seizure."
+  },
+  {
+   "id": "legi-versions-0031",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer correctly states that the provided context does not contain the information necessary to answer the specific question regarding where creditors must send their claims in the case of personal recovery with judicial liquidation.",
+   "presented": 1.0,
+   "presented_reason": "The answer correctly identifies that the provided context does not contain the specific information required to answer the question regarding where creditors must send their declarations of claim in the case of personal recovery with judicial liquidation."
+  },
+  {
+   "id": "legi-versions-0032",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer correctly identifies and quotes the relevant parts of the context to confirm that deliberations are notified to the members and the Government Commissioner within two weeks.",
+   "presented": 1.0,
+   "presented_reason": "The answer correctly uses direct quotes from the provided context to confirm that deliberations are either made available or notified to the members and the Government Commissioner within two weeks."
+  },
+  {
+   "id": "legi-versions-0033",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer directly quotes and paraphrases the provided context from Article L312-87, which explicitly states that the contract can be on paper or another durable medium.",
+   "presented": 1.0,
+   "presented_reason": "The answer directly quotes and paraphrases the provided context from Article L312-87, which explicitly states the contract can be on paper or another durable medium."
+  },
+  {
+   "id": "legi-versions-0034",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer accurately reflects the conflicting information provided in the context, noting both the 30-day period mentioned in the first sections and the 15-day period mentioned in the subsequent sections and legal articles.",
+   "presented": 1.0,
+   "presented_reason": "The answer accurately reflects the information provided in the context, including the conflicting deadlines (30 days vs 15 days) found across the different sources."
+  },
+  {
+   "id": "legi-versions-0035",
+   "annotated": false,
+   "original": 0.0,
+   "raw": 0.0,
+   "raw_reason": "The answer claims that Article L152-5 is the specific legal reference for consumer credit mediation, but the provided context does not state that this article applies specifically to consumer credit contracts.",
+   "presented": 0.5,
+   "presented_reason": "While the answer provides an article from the Code de la consommation, the provided context does not explicitly state that Article L152-5 is the specific legal reference for 'crédit à la consommation' (consumer credit), only for 'litige de consommation' (consumer disputes) in general."
+  },
+  {
+   "id": "legi-versions-0036",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer directly reflects the information provided in the first and second sections of the context regarding the ability to file a recourse in retraction within fifteen days at the tribunal d'instance.",
+   "presented": 1.0,
+   "presented_reason": "The answer accurately reflects the conditions stated in the context (Source 1 and 2) regarding the ability to file a motion for retraction within fifteen days at the tribunal d'instance for orders rendered in last resort, provided the party was not able to oppose the request."
+  },
+  {
+   "id": "legi-versions-0037",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 0.5,
+   "raw_reason": "While the answer correctly identifies that seizures can occur via on-site findings or laboratory analysis, it fails to address the restriction in Article L215-6 which states that seizures (outside of a judge's order) are limited to flagrant falsification or toxic/corrupt products, potentially making the seizure of counterfeit marks illegal if those conditions aren't met.",
+   "presented": 1.0,
+   "presented_reason": "The answer correctly identifies that products with counterfeit collective certification marks can be seized and that such seizures can follow on-site findings or laboratory analysis, as stated in the context."
+  },
+  {
+   "id": "legi-versions-0038",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer accurately reflects the context, stating that services are accessible directly or, failing that, via an online platform.",
+   "presented": 1.0,
+   "presented_reason": "The answer accurately reflects the context, stating that telephone services are accessible directly or, failing that, via a dedicated online platform."
+  },
+  {
+   "id": "legi-versions-0039",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer correctly identifies the maximum administrative fine for a legal entity (personne morale) regarding the specific violation mentioned in Article L241-3-1 of the provided context.",
+   "presented": 1.0,
+   "presented_reason": "The answer accurately extracts the specific fine amount for a legal entity (personne morale) regarding the violation of article L. 215-1-1 as stated in the provided context."
+  },
+  {
+   "id": "legi-versions-0040",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "All claims in the answer are directly supported by the provided text, including the specific articles referenced and the conditions regarding real estate loans and the plan's duration.",
+   "presented": 1.0,
+   "presented_reason": "All claims in the answer are directly supported by the provided context, specifically referencing the articles and conditions mentioned in the source texts."
+  },
+  {
+   "id": "legi-versions-0041",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer accurately quotes the provided text of Article L. 217-4 and correctly interprets the application to the user's scenario based on the criteria mentioned in the context.",
+   "presented": 1.0,
+   "presented_reason": "All claims made in the answer are directly supported by the text of Article L. 217-4 provided in the context."
+  },
+  {
+   "id": "legi-versions-0042",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer accurately reflects the content of the provided context, specifically the second version of Article L. 422-1, and correctly interprets 'interdits ou réglementés' as being prohibited or subject to specific rules.",
+   "presented": 0.5,
+   "presented_reason": "The first part of the answer is directly supported by Source 2, but the second part's claim that they are regulated 'for their marketing' is an interpretation not explicitly stated in the text, which only mentions they are 'regulated' under certain conditions."
+  },
+  {
+   "id": "legi-versions-0043",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer accurately reflects the definition of an abusive clause provided in Article L. 212-1 of the context.",
+   "presented": 1.0,
+   "presented_reason": "The answer accurately reflects the definition of an abusive clause provided in the context of Article L. 212-1."
+  },
+  {
+   "id": "legi-versions-0044",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer is a verbatim transcription of the definition provided in the first context block for Article L421-1.",
+   "presented": 1.0,
+   "presented_reason": "The answer is a verbatim transcription of the definition provided in Article L421-1 of the first context source."
+  },
+  {
+   "id": "legi-versions-0045",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer directly quotes the relevant part of Article L. 217-2 which explicitly lists 'ventes d'animaux domestiques' as an exclusion from the chapter's provisions.",
+   "presented": 1.0,
+   "presented_reason": "The answer correctly identifies that Article L. 217-2 excludes sales of domestic animals from the application of the chapter's provisions, as explicitly stated in the provided text."
+  },
+  {
+   "id": "legi-versions-0046",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer is a direct and faithful transcription of the provided Article L411-1, with the subsequent summary also being fully supported by the text.",
+   "presented": 1.0,
+   "presented_reason": "The answer is entirely grounded in the provided context, specifically quoting and summarizing Article L411-1 from Source 1."
+  },
+  {
+   "id": "legi-versions-0047",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer accurately lists the first four points of Article R. 313-3 as provided in the context.",
+   "presented": 1.0,
+   "presented_reason": "The answer accurately and exclusively lists the first four points of Article R. 313-3 as provided in the context."
+  },
+  {
+   "id": "legi-versions-0048",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer accurately reflects the information provided in Article R. 112-2 of the context, stating that the list of supporting documents is fixed by the same decree without inventing specific documents.",
+   "presented": 1.0,
+   "presented_reason": "The answer accurately reflects the information provided in the context, stating that the list of supporting documents is fixed by the same decree without attempting to invent specific documents not mentioned in the text."
+  },
+  {
+   "id": "legi-versions-0049",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer directly quotes the relevant portion of Article L. 216-7 from the context to answer the question regarding the specific reimbursement deadline.",
+   "presented": 1.0,
+   "presented_reason": "The answer directly quotes the relevant article from the context to answer the question regarding the specific deadline."
+  },
+  {
+   "id": "legi-versions-0050",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer is a direct quote and a summary of the first version of Article L. 211-2 provided in the context, with all claims explicitly grounded in the text.",
+   "presented": 1.0,
+   "presented_reason": "The answer is a direct quote from the provided context (Source 1) and a correct summary of that same source."
+  },
+  {
+   "id": "legi-versions-0051",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer is a direct quote from the provided context (Article R314-1/R313-1) and accurately describes the calculation method for variable rate loans as specified in the text.",
+   "presented": 1.0,
+   "presented_reason": "The answer is a direct quote from the provided context (Source rank 1) which specifically addresses the calculation of the TEG for contracts with variable interest rate clauses."
+  },
+  {
+   "id": "legi-versions-0052",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer accurately extracts the specific requirements for the representative example as defined in Article R. 313-2 of the provided context.",
+   "presented": 1.0,
+   "presented_reason": "The answer accurately and exclusively extracts the specific requirements for the representative example as defined in Article R. 313-2 provided in the context."
+  },
+  {
+   "id": "legi-versions-0053",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer is a verbatim transcription of the first paragraph of Article L. 217-21 provided in the context.",
+   "presented": 1.0,
+   "presented_reason": "The answer is a verbatim transcription of the provided text in Source rank 1, which directly answers the question regarding Article L. 217-21."
+  },
+  {
+   "id": "legi-versions-0054",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer accurately reflects the text of Article L. 111-3, which states that the provisions of Article L. 111-2 do not apply to financial services (monetary and financial code) or insurance operations.",
+   "presented": 1.0,
+   "presented_reason": "The answer accurately reflects the content of the provided context, specifically noting that article L. 111-2 (referenced within L. 111-3) does not apply to the specified financial and insurance services."
+  },
+  {
+   "id": "legi-versions-0055",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer accurately paraphrases and quotes the provided text from Article L. 421-3, making only claims supported by the context.",
+   "presented": 1.0,
+   "presented_reason": "The answer accurately reflects the requirements stated in Article L. 421-3 of the provided context, both in the direct quote and the summary."
+  },
+  {
+   "id": "legi-versions-0056",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer directly quotes the provided text of Article R. 217-6 to identify the sector, making it fully grounded in the context.",
+   "presented": 1.0,
+   "presented_reason": "The answer directly quotes the provided context from Article R217-6 to identify the sector and correctly summarizes it."
+  },
+  {
+   "id": "legi-versions-0057",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer directly quotes the definition provided in Article L. 122-12 of the context.",
+   "presented": 1.0,
+   "presented_reason": "The answer is a direct quote from Article L. 122-12 provided in the context, accurately answering the question."
+  },
+  {
+   "id": "legi-versions-0058",
+   "annotated": false,
+   "original": 0.5,
+   "raw": 0.5,
+   "raw_reason": "The first part of the answer correctly quotes the article regarding samples, but the second part incorrectly claims the customer cannot contest conformity, which contradicts the article's implication that a sample defines conformity.",
+   "presented": 0.5,
+   "presented_reason": "The first part of the answer correctly cites the article regarding samples, but the second part incorrectly claims that a consumer cannot contest conformity if the item differs from the sample, whereas the context actually states the opposite (the item is deemed conforming if it possesses the qualities of the sample)."
+  },
+  {
+   "id": "legi-versions-0059",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer is a direct and faithful transcription of the elements specified in Article R. 313-14 of the provided context.",
+   "presented": 1.0,
+   "presented_reason": "The answer is a verbatim transcription of the relevant sections of Article R. 313-14 provided in the context."
+  },
+  {
+   "id": "legi-versions-0060",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer accurately summarizes the conditions set forth in Article L122-1 of the provided context.",
+   "presented": 1.0,
+   "presented_reason": "The answer accurately summarizes the conditions set forth in Article L. 122-1 as provided in the context."
+  },
+  {
+   "id": "legi-versions-0061",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer correctly identifies the maximum indemnity cap mentioned in the context for certain types of loans (Article R313-25 and R312-2), although it does not explicitly address the 'viager hypothécaire' distinction, it remains a faithful claim based on the provided text.",
+   "presented": 1.0,
+   "presented_reason": "The answer correctly identifies the maximum cap of 3% of the remaining capital as stated in the provided context (Source 1)."
+  },
+  {
+   "id": "legi-versions-0062",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer accurately reflects the prohibitions and requirements stated in Article L121-34-2 of the provided context.",
+   "presented": 1.0,
+   "presented_reason": "The answer accurately reflects the information provided in the context regarding the prohibition of masked numbers and the requirement for the displayed number to be assigned to the professional making the call."
+  },
+  {
+   "id": "legi-versions-0063",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer directly quotes the provided context to answer both parts of the question accurately.",
+   "presented": 1.0,
+   "presented_reason": "The answer directly quotes the provided context to answer both parts of the question accurately."
+  },
+  {
+   "id": "legi-versions-0064",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer directly quotes the provided context regarding the form (paper or other durable medium with consent) and the requirement for the information to be legible and understandable.",
+   "presented": 1.0,
+   "presented_reason": "The answer directly quotes the provided context from Source 1 to answer the question regarding the form of information delivery and its required clarity."
+  },
+  {
+   "id": "legi-versions-0065",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer accurately reflects the restrictions set forth in the provided articles regarding credit operations involving the coverage of fees.",
+   "presented": 1.0,
+   "presented_reason": "The answer accurately reflects the legal restriction provided in the context regarding the maximum price a seller can charge when a financing operation involves the coverage of fees."
+  },
+  {
+   "id": "legi-versions-0066",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer directly quotes the provided context to answer the question, and both claims are explicitly supported by the text.",
+   "presented": 1.0,
+   "presented_reason": "The answer directly quotes the provided context to confirm that the commission can seek the opinion of independent public and administrative authorities."
+  },
+  {
+   "id": "legi-versions-0067",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer directly quotes the provided legal text and accurately summarizes the conditions for validating credit use as stated in the context.",
+   "presented": 1.0,
+   "presented_reason": "The answer directly quotes the provided context and correctly interprets the legal text regarding how credit usage must be validated."
+  },
+  {
+   "id": "legi-versions-0068",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer is a direct paraphrase of the provided text in Article L121-21-7, which explicitly states that exercising the right of withdrawal for a main contract at a distance or off-premises automatically ends any accessory contract without fees other than those specified in the mentioned articles.",
+   "presented": 1.0,
+   "presented_reason": "The answer is a direct and faithful paraphrase of the information provided in Source 1 regarding the automatic termination of accessory contracts and the specific exceptions for fees."
+  },
+  {
+   "id": "legi-versions-0069",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer accurately interprets the provided text, stating that comparison is only allowed between products sharing the same protected designation/appellation.",
+   "presented": 1.0,
+   "presented_reason": "The answer correctly interprets the provided text, stating that comparison is only allowed between products sharing the same protected designation/appellation."
+  },
+  {
+   "id": "legi-versions-0070",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer accurately reflects the information provided in the context regarding the professional secrecy obligations of commission members and agents.",
+   "presented": 1.0,
+   "presented_reason": "The answer accurately reflects the information provided in Source 2 and Source 5 regarding the professional secrecy obligations of commission members and agents."
+  },
+  {
+   "id": "legi-versions-0071",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer correctly identifies the indemnity amount (4% of deferred installments) based on the specific condition mentioned in the context (acceptance of deferred installments) and cites the relevant articles provided.",
+   "presented": 1.0,
+   "presented_reason": "The answer accurately reflects the information provided in the context regarding the reduction of the indemnity to 4% of the deferred installments when the lender accepts such deferrals."
+  },
+  {
+   "id": "legi-versions-0072",
+   "annotated": false,
+   "original": 0.5,
+   "raw": 0.0,
+   "raw_reason": "The answer incorrectly identifies the three-month period for issuing an opinion as a 'waiting period' (délai de carence) for contesting it, whereas the context states that a recommendation can be contested within fifteen days of notification.",
+   "presented": 0.5,
+   "presented_reason": "The answer correctly identifies the three-month period for the commission to issue an opinion, but it incorrectly conflates this with a 'waiting period' (délai de carence) for contesting an opinion, which the context does not mention; the only contestation period mentioned in the context refers to a recommendation for personal recovery, not an opinion on unfair clauses."
+  },
+  {
+   "id": "legi-versions-0073",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "All claims in the answer are explicitly supported by the provided context (specifically Article R334-33 and Article R332-14).",
+   "presented": 1.0,
+   "presented_reason": "All claims in the answer are explicitly supported by the provided context in Source 1."
+  },
+  {
+   "id": "legi-versions-0074",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer accurately extracts the penalties and conditions described in Article L452-1 of the provided context regarding exports to third countries outside the EU.",
+   "presented": 1.0,
+   "presented_reason": "The answer accurately quotes the relevant legal text from Source 1 and correctly summarizes the conditions and penalties described in the context."
+  },
+  {
+   "id": "legi-versions-0075",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer accurately identifies the required documents (income statement, asset/liability statement, list of enforcement procedures, and the eviction order/command) based on the provided text of Article R722-9.",
+   "presented": 1.0,
+   "presented_reason": "The answer accurately summarizes the requirements for the letter and its attachments as explicitly stated in the provided context (Source 1)."
+  },
+  {
+   "id": "legi-versions-0076",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "All claims in the answer are directly supported by the provided text, specifically regarding the conditions for a perfect contract and the validity of approval after the seven-day period.",
+   "presented": 1.0,
+   "presented_reason": "The answer accurately reflects the legal provisions in the context regarding the seven-day deadline and the validity of the agreement if the borrower still wishes to proceed."
+  },
+  {
+   "id": "legi-versions-0077",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer accurately interprets the provided legal text, stating that the supplier can only charge fees that have been imputed to them by the network manager for a service.",
+   "presented": 1.0,
+   "presented_reason": "The answer accurately reflects the text provided in the context, stating that the supplier can only charge fees that have been imputed to them by the network manager for a service."
+  },
+  {
+   "id": "legi-versions-0078",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer directly quotes Article L441-1 and correctly interprets that deception regarding product risks is prohibited even through a third party, as stated in the context.",
+   "presented": 1.0,
+   "presented_reason": "The answer directly quotes the relevant article from the context and correctly interprets that deception regarding product risks is prohibited even through a third party."
+  },
+  {
+   "id": "legi-versions-0079",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer accurately reflects the requirements stated in the provided articles L311-27 and L311-6 regarding the mandatory information for free credit advertisements longer than three months.",
+   "presented": 1.0,
+   "presented_reason": "The answer accurately reflects the information provided in the context regarding the mandatory disclosures for free credit advertisements lasting more than three months."
+  },
+  {
+   "id": "legi-versions-0080",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer correctly identifies that a professional can face restrictions on their activity and that these restrictions cannot exceed five years, as explicitly stated in the provided text.",
+   "presented": 1.0,
+   "presented_reason": "The answer correctly identifies that a professional can face restrictions on their activity and that such restrictions cannot exceed five years, which is explicitly stated in the provided context."
+  },
+  {
+   "id": "legi-versions-0081",
+   "annotated": false,
+   "original": 0.5,
+   "raw": 0.5,
+   "raw_reason": "While the answer correctly identifies the required supports from the context, the context does not mention the year 2017, making that specific claim ungrounded.",
+   "presented": 0.5,
+   "presented_reason": "While the answer correctly identifies the required supports from the context, the context does not provide any information regarding the year 2017."
+  },
+  {
+   "id": "legi-versions-0082",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer correctly identifies the definition of 'support durable' provided in the context (referencing the 8th of the preliminary article of the code) and stays within the bounds of the provided text.",
+   "presented": 1.0,
+   "presented_reason": "The answer correctly identifies the definition of 'support durable' provided in the context (Source 4 and Source 5) and links it to the relevant article of the consumer code."
+  },
+  {
+   "id": "legi-versions-0083",
+   "annotated": false,
+   "original": 0.0,
+   "raw": 0.0,
+   "raw_reason": "The answer claims the user should address a letter to the 'greffier en chef' to declare claims, but the context only discusses notification procedures for recommendations or saisines, and never mentions the process or recipient for declaring claims.",
+   "presented": 0.5,
+   "presented_reason": "The answer claims the letter should be addressed to the 'greffier en chef' to declare claims, but the context only mentions the 'greffier en chef' as a recipient of a notification regarding the referral of the judge, not as the recipient for declaring claims."
+  },
+  {
+   "id": "legi-versions-0084",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer correctly states that the provided context does not contain information regarding the funding sources of the laboratory.",
+   "presented": 1.0,
+   "presented_reason": "The answer correctly states that the provided context does not contain the information needed to answer the question."
+  },
+  {
+   "id": "legi-versions-0085",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer accurately reflects the information provided in the context regarding the timeframe for transmitting the request to the clerk's office.",
+   "presented": 1.0,
+   "presented_reason": "The answer correctly identifies the required timeframe (at least fifteen days) as stated in the provided legal articles."
+  },
+  {
+   "id": "legi-versions-0086",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer accurately reflects the information provided in the context regarding the professional's obligation to inform the consumer about the right of withdrawal and advance payments before signing the contract.",
+   "presented": 1.0,
+   "presented_reason": "The answer accurately reflects the information provided in the context regarding the professional's obligation to inform the consumer about the right of withdrawal and the prohibition of advance payments before signing the contract."
+  },
+  {
+   "id": "legi-versions-0087",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer correctly identifies the judge mentioned in the provided context (Article R742-45 and Article R334-64) for the homologation process in the absence of contestation.",
+   "presented": 1.0,
+   "presented_reason": "The answer accurately reflects the information provided in Source 1 regarding the judge to whom the distribution project is submitted in the absence of contestation."
+  },
+  {
+   "id": "legi-versions-0088",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer correctly identifies the type of provider (fournisseur d'un service de communications vocales / service téléphonique au public) and their ability to suspend access as described in the provided legal articles.",
+   "presented": 1.0,
+   "presented_reason": "The answer correctly identifies the type of provider (fournisseur d'un service de communications vocales / service téléphonique au public) and the conditions for suspension as explicitly stated in the provided legal texts."
+  },
+  {
+   "id": "legi-versions-0089",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer correctly identifies the maximum fine for a natural person (15,000 €) based on the provided text regarding electronic contract termination rules.",
+   "presented": 0.5,
+   "presented_reason": "The answer correctly identifies the fine amount from the context for the specific article mentioned, but the context does not provide information confirming that this law was in effect in 2019."
+  },
+  {
+   "id": "legi-versions-0090",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer accurately reflects the information provided in the context regarding the exception for newspaper, periodical, or magazine prospecting.",
+   "presented": 1.0,
+   "presented_reason": "The answer accurately reflects the information provided in the context regarding the exception for newspaper, periodical, or magazine prospecting."
+  },
+  {
+   "id": "legi-versions-0091",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer correctly identifies that the provided context does not contain the specific information required to answer the question regarding the year 2022.",
+   "presented": 1.0,
+   "presented_reason": "The answer correctly states that it cannot provide a reliable response based on the provided context, as the context does not explicitly link the year 2022 to the specific registration number requirements for an artisanal company."
+  },
+  {
+   "id": "legi-versions-0092",
+   "annotated": false,
+   "original": 0.0,
+   "raw": 0.0,
+   "raw_reason": "The answer fails to address the specific question regarding the maximum sanction for medical equipment rules in 2022 and instead provides fragmented excerpts from the text that do not define a single maximum sanction for that specific context.",
+   "presented": 0.5,
+   "presented_reason": "The answer provides specific fine amounts for injunctions found in the text, but it fails to answer the specific question regarding 'medical equipment' rules and the year '2022', as that information is not present in the context."
+  },
+  {
+   "id": "legi-versions-0093",
+   "annotated": false,
+   "original": 0.5,
+   "raw": 0.5,
+   "raw_reason": "While the answer correctly identifies who can be represented, it claims the context specifies the year 2020, which is not mentioned anywhere in the provided text.",
+   "presented": 0.5,
+   "presented_reason": "While the answer correctly identifies who can represent the administrative authority (category A officials), it incorrectly identifies the 'directeur régional' as the representative rather than the authority being represented, and the context does not mention the year 2020."
+  },
+  {
+   "id": "legi-versions-0094",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer accurately reflects the requirements stated in Article R115-10 of the provided context regarding the information to be provided about the certifying body.",
+   "presented": 1.0,
+   "presented_reason": "The answer accurately reflects the requirements stated in Article R115-10 of the provided context regarding the information to be provided about the certifying body."
+  },
+  {
+   "id": "legi-versions-0095",
+   "annotated": false,
+   "original": 0.5,
+   "raw": 1.0,
+   "raw_reason": "The answer correctly identifies the maximum fine for a natural person as stated in the first paragraph of the provided context, although it does not explicitly incorporate the specific reduction for minor infractions mentioned in the subsequent sections.",
+   "presented": 1.0,
+   "presented_reason": "The answer correctly identifies the maximum fine for a natural person as stated in the provided text, although it uses the general maximum from Article L532-1 rather than the specific tiered amounts for minor infractions mentioned in other sources."
+  },
+  {
+   "id": "legi-versions-0096",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer correctly identifies the reference article (L221-10) and the required agencies mentioned in the provided context for decrees established in application of article L. 221-3.",
+   "presented": 0.5,
+   "presented_reason": "While the answer correctly identifies the reference article (L. 221-3) mentioned in the context for decrees, the context does not provide information regarding the specific year 2021."
+  },
+  {
+   "id": "legi-versions-0097",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer correctly identifies that the provided context does not contain information regarding the year 2019 to resolve the contradiction between the different articles provided.",
+   "presented": 1.0,
+   "presented_reason": "The answer correctly identifies that the provided context does not contain information regarding the specific year 2019 to resolve the ambiguity between the different court types mentioned in the sources."
+  },
+  {
+   "id": "legi-versions-0098",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer is a direct and faithful transcription of the provided context from Article R512-33 of the Code de la consommation.",
+   "presented": 1.0,
+   "presented_reason": "The answer is a direct and faithful quote from the provided context (Source 1) that accurately addresses the question."
+  },
+  {
+   "id": "legi-versions-0099",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer accurately reflects the context, stating that importers provide documents in an easily understandable language to authorities, and that authorities make them available to consumers in an accessible format.",
+   "presented": 1.0,
+   "presented_reason": "The answer accurately reflects the information provided in the context, specifically noting that the importer provides documents in an easily understandable language to the authorities, who then make them available to consumers in an accessible format."
+  },
+  {
+   "id": "legi-versions-0100",
+   "annotated": false,
+   "original": 1.0,
+   "raw": 1.0,
+   "raw_reason": "The answer directly quotes the relevant portion of the provided context (Articles L241-7, L242-18-3, and L241-4) to answer the specific condition regarding a fourteen-day delay.",
+   "presented": 1.0,
+   "presented_reason": "The answer directly quotes the relevant portion of the context (Source 1) to answer the specific condition regarding a fourteen-day delay."
+  }
+ ]
+}
