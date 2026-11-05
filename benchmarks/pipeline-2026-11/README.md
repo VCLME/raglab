@@ -119,9 +119,16 @@ Aucune de ces questions ne change de recall@5. Une seule change de note : lexml-
 - **Ce qu'elle coûte.**
   - 4 ms et aucune mémoire GPU.
   - Elle n'a fait perdre aucune question sur les 715 des quatre jeux, alors que la v1 en perdait 6.
-- **Ce qui empêche de l'activer par défaut.** L'effet de bord sur l'ordre des passages épinglés : activer l'option change le top 5 de 16 questions qu'elle ne touche pas. Une option censée seulement retirer des doublons ne devrait rien changer quand elle ne retire rien.
+- **Ce qui empêchait de l'activer par défaut au moment de la mesure.** L'effet de bord sur l'ordre des passages épinglés : activer l'option change le top 5 de 16 questions qu'elle ne touche pas. Une option censée seulement retirer des doublons ne devrait rien changer quand elle ne retire rien.
 
-Correction proposée, à faire dans sa propre PR et à remesurer : ordonner les tranches épinglées à partir des `top_k` premiers passages du reranker dans les deux modes, et ne puiser dans la réserve de 40 que pour remplacer des passages retirés.
+**Corrigé depuis, dans #92.** Les tranches épinglées sont maintenant ordonnées à partir des `top_k` premiers passages du reranker, dans les deux modes. La réserve de 40 ne sert plus qu'à remplacer des passages retirés.
+
+La recherche a été remesurée avec le correctif (runs `pinned-order-dedup-{off,on}`, voir [docs/deduplication.md](../../docs/deduplication.md)) :
+- plus aucune question non touchée ne change de top 10 ;
+- sans déduplication, les passages sont identiques à ceux de ce run sur les 715 questions ;
+- les deux gains LexML restent.
+
+Les réponses n'ont pas été rejugées après le correctif. La recommandation ne change pas : l'option reste désactivée par défaut, puisque son seul gain mesuré tient en deux questions.
 
 Avant de pouvoir conclure sur les réponses, il faudrait aussi réduire le bruit de mesure, par exemple en fixant la graine du rédacteur ou en notant plusieurs tirages par question.
 
