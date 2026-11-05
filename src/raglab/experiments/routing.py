@@ -30,10 +30,11 @@ from raglab.db.models import Corpus
 from raglab.domain.enums import ChunkingStrategy, RetrievalMode
 from raglab.experiments.recall import _chunk_covers_span, _percentile
 from raglab.llm.local_server import LocalLLMServer
+from raglab.retrieval.citations import EXEMPT_STATUSES
 from raglab.retrieval.service import QueryService
 from raglab.retrieval.translation import needs_translation
 from raglab.routing.abstention import best_score, threshold_for
-from raglab.routing.citation import cited_text_in_run
+from raglab.routing.citation import resolve_cited_text
 from raglab.routing.intent import decide_intent
 from raglab.routing.router import QueryRouter
 from raglab.routing.schemas import Intent
@@ -330,9 +331,12 @@ def _threshold_for(threshold: Threshold, record: dict[str, Any]) -> float | None
 
 
 def predict_abstain(record: dict[str, Any], *, margin: float | None, threshold: Threshold) -> bool:
-    # Same rule as the router: a question citing a law is never declined.
+    # Same rule as the router: a question citing an indexed unit is never
+    # declined, one citing an absent unit of an indexed act always is.
     if record.get("legal_citation"):
         return False
+    if record.get("cited_unit_missing"):
+        return True
     if margin is not None and decide_intent(record["intent_scores"], margin=margin) != Intent.DOCUMENTARY:
         return True
     score = record["best_score"]
@@ -627,12 +631,17 @@ class RoutingExperimentService:
                     )
                     else None
                 )
-                legal_citation = decision.citation is not None and cited_text_in_run(
-                    self.session, outcome.index_run, decision.citation
+                citation_status = (
+                    resolve_cited_text(self.session, outcome.index_run, decision.citation).status
+                    if decision.citation is not None
+                    else None
                 )
+                legal_citation = citation_status in EXEMPT_STATUSES
                 # The router's own decision, as `route_and_retrieve` takes it.
                 finished = router.finish(
-                    decision.model_copy(update={"legal_citation_found": legal_citation}),
+                    decision.model_copy(
+                        update={"legal_citation_found": legal_citation, "legal_citation_status": citation_status}
+                    ),
                     outcome.retrieved,
                     translated_score=translated,
                 )
@@ -651,8 +660,11 @@ class RoutingExperimentService:
                         "corpus_routed": decision.corpus.corpus_name,
                         "corpus_margin": decision.corpus.margin,
                         "corpus_scores": {c.corpus_name: c.score for c in decision.corpus.candidates},
-                        # Same rule as the router: a cited text the index holds.
+                        # Same rule as the router: a cited unit the index holds
+                        # (or a named act), or an absent unit of an indexed act.
                         "legal_citation": legal_citation,
+                        "citation_status": citation_status,
+                        "cited_unit_missing": citation_status == "unit_not_found",
                         # The score the router compares to the threshold: with
                         # cross-language routing, the better of the original and
                         # the translated question (as in `QueryRouter.finish`).

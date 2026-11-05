@@ -27,6 +27,7 @@ from raglab.experiments.routing import (
     summarize,
     sweep,
 )
+from raglab.retrieval.citations import CitationResolution
 from raglab.retrieval.service import QueryService
 from raglab.routing import corpus as corpus_module
 from raglab.routing.abstention import best_score, chunk_score, decide_abstention, fallback_answer, threshold_for
@@ -397,6 +398,11 @@ def test_query_with_routing_never_abstains_on_a_cited_law_article(routed_env):
     service.reranker.rerank.assert_called_once()
 
 
+_UNIT_FOUND = CitationResolution(act_found=True, unit_requested=True, unit_found=True, version="in_force")
+_UNIT_MISSING = CitationResolution(act_found=True, unit_requested=True, unit_found=False)
+_ACT_NOT_FOUND = CitationResolution(act_found=False, unit_requested=True, unit_found=False)
+
+
 def _cited_in(run_id):
     return lambda _session, run, _citation: run.id == run_id
 
@@ -408,7 +414,7 @@ def test_a_cited_french_code_article_routes_to_the_corpus_holding_it_and_is_answ
     service = _service([_chunk(0.2)], routing_abstention_threshold=0.8)
     with (
         patch("raglab.routing.router.cited_text_in_run", side_effect=_cited_in("run-piaf")),
-        patch("raglab.routing.step.cited_text_in_run", return_value=True),
+        patch("raglab.routing.step.resolve_cited_text", return_value=_UNIT_FOUND),
     ):
         response = service.query(question=question, routing=True, citations=False)
     routing = response.routing
@@ -425,7 +431,7 @@ def test_a_cited_eu_article_in_english_is_never_declined(routed_env):
     service = _service([_chunk(0.1)], routing_abstention_threshold=0.8)
     with (
         patch("raglab.routing.router.cited_text_in_run", return_value=True),
-        patch("raglab.routing.step.cited_text_in_run", return_value=True),
+        patch("raglab.routing.step.resolve_cited_text", return_value=_UNIT_FOUND),
     ):
         response = service.query(question="What does Article 33 GDPR require?", routing=True, citations=False)
     assert response.routing.language.language == "en"
@@ -439,7 +445,7 @@ def test_a_citation_of_a_text_the_index_does_not_hold_follows_the_normal_rule(ro
     service = _service([_chunk(0.3)], routing_abstention_threshold=0.8)
     with (
         patch("raglab.routing.router.cited_text_in_run", return_value=False),
-        patch("raglab.routing.step.cited_text_in_run", return_value=False),
+        patch("raglab.routing.step.resolve_cited_text", return_value=_ACT_NOT_FOUND),
     ):
         response = service.query(question="O que dispõe o art. 7º da Lei nº 99.871, de 2031?", routing=True)
     routing = response.routing
@@ -450,6 +456,91 @@ def test_a_citation_of_a_text_the_index_does_not_hold_follows_the_normal_rule(ro
     assert routing.abstention.reason == "low_score"
     assert routing.abstention.override is None
     assert response.answer == "Não encontrei isso nos documentos."
+
+
+def test_an_absent_article_of_an_indexed_eu_act_is_declined_explicitly(routed_env):
+    """Audit 2026-11-04: the GDPR being indexed does not vouch for its
+    article 412. High score, documentary intent: still declined, by name."""
+    service = _service([_chunk(0.95)], routing_abstention_threshold=0.8)
+    with (
+        patch("raglab.routing.router.cited_text_in_run", return_value=True),
+        patch("raglab.routing.step.resolve_cited_text", return_value=_UNIT_MISSING),
+    ):
+        response = service.query(question="Que dit l'article 412 du RGPD ?", routing=True, citations=False)
+    routing = response.routing
+    assert routing.legal_citation_status == "unit_not_found"
+    assert routing.legal_citation_found is False
+    assert routing.abstention.abstain is True
+    assert routing.abstention.reason == "cited_unit_missing"
+    assert routing.abstention.override is None
+    assert response.answer == "Je ne trouve pas Article 412 — RGPD dans les documents."
+    service.generator.generate_answer.assert_not_called()
+
+
+def test_an_indexed_act_named_without_a_unit_keeps_its_exemption(routed_env):
+    service = _service([_chunk(0.1)], routing_abstention_threshold=0.8)
+    act_only = CitationResolution(act_found=True, unit_requested=False, unit_found=False)
+    with (
+        patch("raglab.routing.router.cited_text_in_run", return_value=True),
+        patch("raglab.routing.step.resolve_cited_text", return_value=act_only),
+    ):
+        response = service.query(
+            question="Que prévoit le RGPD pour les sous-traitants ?", routing=True, citations=False
+        )
+    assert response.routing.legal_citation_status == "act_only"
+    assert response.routing.abstention.abstain is False
+    assert response.routing.abstention.override == "legal_citation"
+
+
+def test_a_historical_code_article_keeps_its_exemption(routed_env):
+    """A repealed article is still a document: asking about it is answerable."""
+    service = _service([_chunk(0.1)], routing_abstention_threshold=0.8)
+    repealed = CitationResolution(act_found=True, unit_requested=True, unit_found=True, version="historical")
+    with (
+        patch("raglab.routing.router.cited_text_in_run", return_value=True),
+        patch("raglab.routing.step.resolve_cited_text", return_value=repealed),
+    ):
+        response = service.query(
+            question="Que disait l'article L. 121-21 du code de la consommation ?", routing=True, citations=False
+        )
+    assert response.routing.legal_citation_status == "found"
+    assert response.routing.abstention.abstain is False
+
+
+def test_the_resolver_status_drives_the_router_when_citations_run(routed_env):
+    """Citations on: the router reads the resolver's status (no second lookup);
+    an absent article of an indexed law is declined."""
+    question = "O que diz o art. 999 da Lei nº 13.445?"
+    service = _service([_chunk(0.95)], routing_abstention_threshold=0.8)
+    with (
+        patch("raglab.retrieval.service.find_law_document", return_value="lei-13445"),
+        patch("raglab.retrieval.service.article_chunks", return_value=[]),
+        patch("raglab.routing.router.cited_text_in_run", return_value=True),
+        patch("raglab.routing.step.resolve_cited_text") as resolve,
+    ):
+        response = service.query(question=question, routing=True, citations=True)
+    resolve.assert_not_called()
+    assert response.citation["status"] == "unit_not_found"
+    assert response.citation["law_found"] is True and response.citation["unit_found"] is False
+    assert response.routing.abstention.reason == "cited_unit_missing"
+    assert response.answer == "Não encontrei art. 999 — Lei nº 13445 nos documentos."
+
+
+def test_without_routing_an_absent_eu_article_is_reported_not_declined():
+    """No router: retrieval still restricts to the act, and the response says
+    the cited unit is absent (the UI shows it); nothing is refused."""
+    service = _service([_chunk(0.9)])
+    with (
+        patch("raglab.retrieval.service.find_eu_unit", return_value=None),
+        patch("raglab.retrieval.service.has_eu_act", return_value=True),
+        patch("raglab.retrieval.service.build_embedding_provider", return_value=FakeEmbedder()),
+    ):
+        response = service.query(question="What does Article 140 of DORA require?", routing=False, citations=True)
+    assert response.routing is None
+    assert response.citation["status"] == "unit_not_found"
+    assert response.citation["law_found"] is True
+    assert response.citation["unit_requested"] is True and response.citation["unit_found"] is False
+    assert response.answer == "Réponse générée"
 
 
 def test_query_with_routing_uses_hybrid_and_rerank_when_it_answers(routed_env):
@@ -575,6 +666,13 @@ def test_offline_evaluation_never_abstains_on_a_legal_citation():
     record = {**_record("in_scope", 0.2, corpus="lexml"), "legal_citation": True}
     assert predict_abstain(record, margin=0.0, threshold=0.8) is False
     assert predict_abstain({**record, "legal_citation": False}, margin=0.0, threshold=0.8) is True
+
+
+def test_offline_evaluation_declines_an_absent_unit_of_an_indexed_act():
+    record = {**_record("in_scope", 0.95, corpus="lexml"), "legal_citation": False, "cited_unit_missing": True}
+    assert predict_abstain(record, margin=0.0, threshold=0.8) is True
+    # Reports recorded before the field existed replay as before.
+    assert predict_abstain({**record, "cited_unit_missing": None}, margin=0.0, threshold=0.8) is False
 
 
 def test_sweep_and_candidate_points_cover_the_curve():

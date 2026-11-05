@@ -506,10 +506,12 @@ export function Query() {
                 ) : null}
                 <VersionsSummary info={action.data.versions} />
                 {action.data.citation ? (
-                  <div className={`badge ${action.data.citation.law_found ? "ok" : "warn"}`} style={{ marginBottom: 8 }}>
-                    {action.data.citation.law_found
-                      ? t("retrieval.citation_resolved", { label: action.data.citation.label })
-                      : t("retrieval.citation_unresolved", { label: action.data.citation.label })}
+                  <div
+                    className={`badge ${citationOk(action.data.citation) ? "ok" : "warn"}`}
+                    style={{ marginBottom: 8 }}
+                  >
+                    {t(citationMessage(action.data.citation), { label: action.data.citation.label })}
+                    {action.data.citation.version === "historical" ? ` ${t("retrieval.citation_historical")}` : ""}
                   </div>
                 ) : null}
                 {action.data.query_translation?.translated ? (
@@ -567,4 +569,14 @@ export function Query() {
       </div>
     </div>
   );
+}
+
+/** The cited act alone does not vouch for the cited unit (audit 2026-11-04). */
+function citationOk(citation: NonNullable<QueryResponse["citation"]>): boolean {
+  return citation.status ? citation.status === "found" || citation.status === "act_only" : citation.law_found;
+}
+
+function citationMessage(citation: NonNullable<QueryResponse["citation"]>): string {
+  if (citation.status === "unit_not_found") return "retrieval.citation_unit_missing";
+  return citation.law_found ? "retrieval.citation_resolved" : "retrieval.citation_unresolved";
 }

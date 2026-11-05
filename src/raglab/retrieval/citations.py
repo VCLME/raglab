@@ -39,6 +39,7 @@ unchanged. Chunking is untouched: this only reads chunk text and order.
 from __future__ import annotations
 
 import re
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date
 from typing import Any
@@ -60,7 +61,11 @@ _LAW_RE = re.compile(
     r"\blei(?:\s+complementar)?\s*(?:n(?:[º°o.]|úmero)?\s*)?(\d{1,2}\.?\d{3}|\d{2,3})\b(?:\s*/\s*(\d{2,4}))?",
     re.IGNORECASE,
 )
-_ARTICLE_RE = re.compile(r"\bart(?:igo|\.)?\s*(\d{1,4})\s*(?:[º°o]\b|[º°])?(?:\s*-\s*([A-Z])\b)?", re.IGNORECASE)
+# "art. 1.723" (Código Civil) carries a thousands dot: article 1723, not 1.
+# "l'article 13 de la Lei 13.445": a French question on a Brazilian law.
+_ARTICLE_RE = re.compile(
+    r"\bart(?:igo|icle|\.)?\s*(\d{1,3}(?:\.\d{3})+|\d{1,4})\s*(?:[º°o]\b|[º°])?(?:\s*-\s*([A-Z])\b)?", re.IGNORECASE
+)
 _YEAR_RE = re.compile(r"\b(?:de\s+)?(?:\d{1,2}/\d{1,2}/)?((?:19|20)\d{2})\b")
 
 # Longest article span pinned (amending articles that quote other laws can
@@ -105,6 +110,41 @@ class Citation:
         return " — ".join(parts)
 
 
+# What the queried index holds of a citation. The act (law, code, EU act)
+# and the cited unit (article, recital, annex) are checked separately: an
+# indexed act says nothing about "article 412 of the GDPR".
+#   found           the cited unit is indexed
+#   act_only        the act is indexed and the question names no unit
+#   unit_not_found  the act is indexed, the cited unit is not
+#   act_not_found   the act is not indexed
+CITATION_STATUSES = ("found", "act_only", "unit_not_found", "act_not_found")
+# A question citing these is documentary by construction (never declined).
+EXEMPT_STATUSES = ("found", "act_only")
+
+
+@dataclass(slots=True, frozen=True)
+class CitationResolution:
+    act_found: bool
+    unit_requested: bool
+    unit_found: bool
+    #: Version of the cited unit: "in_force", "historical" (repealed or
+    #: replaced, still answerable about the past), "not_yet_in_force", or
+    #: None when unknown or not found.
+    version: str | None = None
+
+    @property
+    def status(self) -> str:
+        if not self.act_found:
+            return "act_not_found"
+        if not self.unit_requested:
+            return "act_only"
+        return "found" if self.unit_found else "unit_not_found"
+
+    @property
+    def exempt(self) -> bool:
+        return self.status in EXEMPT_STATUSES
+
+
 def parse_citation(question: str) -> Citation | None:
     law = _LAW_RE.search(question)
     if law is None:
@@ -121,9 +161,10 @@ def parse_citation(question: str) -> Citation | None:
     article = None
     article_match = _ARTICLE_RE.search(question)
     if article_match and article_match.start() < law.start():
-        article = article_match.group(1) + (f"-{article_match.group(2).upper()}" if article_match.group(2) else "")
+        digits = article_match.group(1).replace(".", "")
+        article = digits + (f"-{article_match.group(2).upper()}" if article_match.group(2) else "")
     elif article_match:
-        article = article_match.group(1)
+        article = article_match.group(1).replace(".", "")
     return Citation(law_number=number, article=article, year=year)
 
 
@@ -167,6 +208,16 @@ _LANGUAGE_WORDS = {
     },
 }
 _EU_RECITAL_RE = re.compile(r"\b(?:recitals?|consid[ée]rants?|considerandos?)\s+\(?\d", re.IGNORECASE)
+# Unit words a question may abbreviate ("art 32", "art.32", "annexe IV").
+_LOOSE_UNIT_WORDS = {
+    "article": r"art(?:icles?|igos?|s)?\.?",
+    "recital": r"recitals?|consid[ée]rants?|considerandos?",
+    "annex": r"annex(?:es?)?|anexos?",
+}
+_LOOSE_EU_UNIT_RE = re.compile(
+    rf"\b({'|'.join(f'(?:{word})' for word in _LOOSE_UNIT_WORDS.values())})\s*(\d{{1,4}}|[IVXLC]+)\b",
+    re.IGNORECASE,
+)
 
 
 def guess_language(question: str) -> str:
@@ -199,6 +250,14 @@ def parse_eu_citation(question: str) -> Citation | None:
     if not references:
         if default is None:
             return None
+        # "l'art 999 du RGPD": an abbreviation the reference grammar does not
+        # read must not turn the citation into a bare act (never declined).
+        loose = _LOOSE_EU_UNIT_RE.search(question)
+        if loose is not None:
+            unit = next(name for name, word in _LOOSE_UNIT_WORDS.items() if re.fullmatch(word, loose.group(1), re.I))
+            return Citation(
+                law_number=None, article=loose.group(2).upper(), celex=default, unit=unit, language=language
+            )
         return Citation(law_number=None, celex=default, language=language)
     reference = references[0]
     celex = reference.celex or None
@@ -325,6 +384,42 @@ def find_code_article(
     return CodeArticle(document_id=str(document_id), code=metadata.get("code"), etat=metadata.get("etat"))
 
 
+def code_version(etat: str | None) -> str | None:
+    """Version of a French code article from its Légifrance state."""
+    if etat in _IN_FORCE_STATES:
+        return "in_force"
+    if etat == "VIGUEUR_DIFF":
+        return "not_yet_in_force"
+    return "historical" if etat else None
+
+
+def has_code(session: Session, index_run: IndexRun, code: str | None) -> bool:
+    """Whether this index run's corpus holds articles of the code (of any
+    code when the question names none)."""
+    stmt = select(Document.id).where(Document.corpus_id == index_run.corpus_id)
+    if code is not None:
+        stmt = stmt.where(Document.metadata_json["code"].astext == code)
+    else:
+        stmt = stmt.where(Document.metadata_json["article_number"].astext.is_not(None))
+    return session.execute(stmt.limit(1)).first() is not None
+
+
+_REPEALED_RE = re.compile(r"\(\s*revogad[oa]s?\b", re.IGNORECASE)
+
+
+def law_article_version(chunks: list[RetrievedChunk], article: str) -> str | None:
+    """ "historical" when the compiled text marks the article "(Revogado)" on
+    its opening line, "in_force" otherwise; None when it was not found."""
+    if not chunks:
+        return None
+    match = article_start_pattern(article).search(chunks[0].chunk_text)
+    if match is not None:
+        line = chunks[0].chunk_text[match.end() :].split("\n", 1)[0]
+        if _REPEALED_RE.search(line[:120]):
+            return "historical"
+    return "in_force"
+
+
 def document_chunks(session: Session, index_run: IndexRun, document_id: str) -> list[RetrievedChunk]:
     """Every chunk of a one-article document, in reading order."""
     rows = session.execute(
@@ -352,8 +447,11 @@ def _pinned(row: Any, document_id: str, position: int) -> RetrievedChunk:
 
 
 def article_start_pattern(article: str) -> re.Pattern[str]:
-    """Matches the line opening the article: "Art. 49.", "Art. 2º", "Art. 3o"."""
+    """Matches the line opening the article: "Art. 49.", "Art. 2º", "Art. 3o",
+    "Art. 1.723." (thousands dot)."""
     number, _, letter = article.partition("-")
+    if len(number) > 3:
+        number = rf"{number[:-3]}\.?{number[-3:]}"
     suffix = rf"\s*-\s*{letter}" if letter else ""
     return re.compile(rf"(?:^|\n)\s*Art\.\s*{number}{suffix}\s*(?:[º°o]|\.|\s)(?!\d)", re.IGNORECASE)
 
@@ -374,6 +472,20 @@ def find_law_document(session: Session, index_run: IndexRun, citation: Citation)
     return str(rows[0][0])
 
 
+_TRAILING_ART_RE = re.compile(r"(?:^|\n)\s*Art\.?\s*$", re.IGNORECASE)
+
+
+def _split_article_start(rows: Sequence[Any], article: str) -> int | None:
+    """The chunk boundary can fall between "Art." and the number (one chunk
+    ends with "Art.", the next opens with "5º A lei…"): the article starts
+    in the second one."""
+    opening = article_start_pattern(article)
+    for index in range(1, len(rows)):
+        if _TRAILING_ART_RE.search(rows[index - 1].text) and opening.match("\nArt. " + rows[index].text.lstrip()):
+            return index
+    return None
+
+
 def article_chunks(session: Session, index_run: IndexRun, document_id: str, article: str) -> list[RetrievedChunk]:
     """The chunks of the cited article: from the chunk where it starts to
     the chunk before the next article starts (at most MAX_ARTICLE_CHUNKS)."""
@@ -385,6 +497,8 @@ def article_chunks(session: Session, index_run: IndexRun, document_id: str, arti
     ).all()
     pattern = article_start_pattern(article)
     start = next((index for index, row in enumerate(rows) if pattern.search(row.text)), None)
+    if start is None:
+        start = _split_article_start(rows, article)
     if start is None:
         return []
     end = start + 1

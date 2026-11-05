@@ -50,10 +50,11 @@ from raglab.experiments.routing import (
     quantile,
 )
 from raglab.llm.local_server import LocalLLMServer
+from raglab.retrieval.citations import EXEMPT_STATUSES, CitationResolution
 from raglab.retrieval.service import QueryService
 from raglab.retrieval.translation import LANGUAGE_NAMES
 from raglab.routing.abstention import best_score
-from raglab.routing.citation import cited_text_in_run
+from raglab.routing.citation import resolve_cited_text
 from raglab.routing.corpus import index_run_centroid, list_candidate_runs
 from raglab.routing.corpus_examples import example_centroids, load_corpus_examples
 from raglab.routing.examples import iter_examples
@@ -150,6 +151,15 @@ def write_examples(cases: Iterable[RoutingCase], path: Path) -> None:
             )
 
 
+def _citation_fields(resolution: CitationResolution | None) -> dict[str, Any]:
+    status = resolution.status if resolution is not None else None
+    return {
+        "legal_citation_found": status in EXEMPT_STATUSES,
+        "citation_status": status,
+        "cited_unit_missing": status == "unit_not_found",
+    }
+
+
 def _example_scores(centroids: dict[str, dict[str, np.ndarray]], vector: np.ndarray) -> dict[str, dict[str, float]]:
     return {
         corpus: {language: round(float(centroid @ vector), 4) for language, centroid in by_language.items()}
@@ -207,8 +217,9 @@ class MultilingualRoutingStudy:
                 "timings_ms": dict(outcome.timings_ms),
                 "translated": bool(translation.get("translated")),
                 "translation_ms": float(translation.get("elapsed_ms") or 0.0),
-                # Same rule as the router: a cited text this index holds is never declined.
-                "legal_citation_found": citation is not None and cited_text_in_run(self.session, run, citation),
+                # Same rule as the router: a cited unit this index holds (or a
+                # named act) is never declined; an absent unit of an indexed act is.
+                **_citation_fields(resolve_cited_text(self.session, run, citation) if citation is not None else None),
             }
             if translation.get("translated"):
                 started = datetime.now(UTC)
@@ -480,6 +491,8 @@ def replay(
         )
         if entry.get("legal_citation_found"):
             refused = False
+        elif entry.get("cited_unit_missing"):
+            refused = True
         elif declined_on_intent or score is None:
             refused = True
         elif joint is not None:
