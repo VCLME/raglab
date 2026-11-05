@@ -20,11 +20,11 @@ const DPR = 2;
 // take on screen, the shortest a loader stage shows.
 const CHAR_MS = 42;
 // Later questions: the viewer already knows the gesture.
-const FAST_CHAR_MS = 26;
-const ANSWER_BUDGET_MS = 2200;
+const FAST_CHAR_MS = 22;
+const ANSWER_BUDGET_MS = 1900;
 // Learning mode: the camera is on the pipeline, the answer runs faster.
-const STRIP_ANSWER_BUDGET_MS = 1400;
-const STAGE_MS = 380;
+const STRIP_ANSWER_BUDGET_MS = 1100;
+const STAGE_MS = 300;
 const STRIP_STAGE_MS = 260;
 const TOKEN_STATES = 24;
 const CURSOR_MS = 480;

@@ -17,7 +17,7 @@ const README_DEMO = `[![raglab in action: a question citing a Brazilian law, the
 
 const SITE_DEMO = `  <figure>
     <video class="shot-media" width="1920" height="1080" autoplay muted loop playsinline preload="metadata" poster="assets/chat-welcome.png"
-      aria-label="raglab in use: a question citing a Brazilian law and its sources, an EU act in force, learning mode, then the Workshop's intermediate scores.">
+      aria-label="raglab in use: a question citing a Brazilian law and its sources, a French consumer-code article in force, learning mode, then the Workshop's intermediate scores.">
       <source src="assets/demo.webm" type="video/webm">
       <source src="assets/demo.mp4" type="video/mp4">
     </video>

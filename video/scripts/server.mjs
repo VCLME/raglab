@@ -3,7 +3,8 @@
  * from a live raglab API or replayed from a fixture.
  *
  * - record: every /api call is forwarded to the live API and kept (JSON
- *   bodies as they are, Server-Sent Events with their arrival time).
+ *   bodies, Server-Sent Events with their arrival time). Only local file
+ *   paths are shortened (`scrub`): they would show the machine's user name.
  * - replay: /api calls are answered from the fixture. With `step`, a stream
  *   sends its events only when the driver releases them (`release(n)`), so
  *   each screenshot shows a known state.
@@ -36,6 +37,23 @@ function parseBlock(block) {
 }
 
 const sseBlock = (event, data) => `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+
+/**
+ * Local paths in API payloads (C:\Users\me\...\data\lexml\x.txt) as
+ * repository paths (data\lexml\x.txt); any other home directory as "~".
+ */
+export function scrub(value) {
+  if (typeof value === "string") {
+    return value
+      .replace(/[A-Za-z]:[\\/](?:[^"\\/]+[\\/])*?(?=(?:data|benchmarks)[\\/])/g, "")
+      .replace(/[A-Za-z]:[\\/]Users[\\/][^"\\/]+/g, "~");
+  }
+  if (Array.isArray(value)) return value.map(scrub);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, scrub(v)]));
+  }
+  return value;
+}
 
 async function readBody(req) {
   const chunks = [];
@@ -104,8 +122,9 @@ export async function startServer({ mode, dist, fixture, apiUrl, apiKey, port = 
           const parsed = parseBlock(buffer.slice(0, sep));
           buffer = buffer.slice(sep + 2);
           if (!parsed) continue;
-          entry.events.push({ event: parsed[0], data: parsed[1], t: Math.round(performance.now() - started) });
-          res.write(sseBlock(...parsed));
+          const [event, data] = [parsed[0], scrub(parsed[1])];
+          entry.events.push({ event, data, t: Math.round(performance.now() - started) });
+          res.write(sseBlock(event, data));
         }
       }
       entry.ended = true;
@@ -114,7 +133,7 @@ export async function startServer({ mode, dist, fixture, apiUrl, apiKey, port = 
     const text = await upstream.text();
     let json = null;
     try {
-      json = JSON.parse(text);
+      json = scrub(JSON.parse(text));
     } catch {
       entry.text = text;
     }

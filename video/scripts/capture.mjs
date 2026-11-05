@@ -8,7 +8,7 @@
  */
 import { writeFile } from "node:fs/promises";
 import { chromium } from "playwright";
-import { VIEWPORT } from "../scenario.mjs";
+import { NO_ANSWER, VIEWPORT } from "../scenario.mjs";
 import { CAPTURED, DIST, arg, buildFrontend, gitCommit } from "./common.mjs";
 import { journey } from "./journey.mjs";
 import { startServer } from "./server.mjs";
@@ -55,6 +55,11 @@ const director = {
     const last = streams.at(-1);
     const end = last?.events.at(-1);
     if (!end || end.event !== "done") throw new Error(`the answer did not complete: ${JSON.stringify(end?.data ?? null)}`);
+    // A small local model sometimes declines a question it answers on the next
+    // try: such a take is not kept (run the capture again), the answer is never edited.
+    if (NO_ANSWER.test(String(end.data.answer ?? ""))) {
+      throw new Error(`the model declined "${last.body.question}": run the capture again`);
+    }
     console.log(`answer: ${last.events.filter((e) => e.event === "token").length} tokens in ${end.t} ms`);
     await page.waitForTimeout(1200);
   },

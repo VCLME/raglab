@@ -80,26 +80,26 @@ export async function journey(page, d) {
   await d.click(citation, "citation");
   await page.waitForTimeout(700);
   await d.rect("details", answer());
-  await d.state(2200);
+  await d.state(2000);
 
-  // Another corpus: EU law, in force today.
+  // Another corpus: a versioned code, and the version in force.
   await d.mark("corpus");
   await d.rect("corpus", corpus);
-  await pickOption(page, d, corpus, SCENARIO.eurlex.corpus, "corpus");
+  await pickOption(page, d, corpus, SCENARIO.versions.corpus, "corpus");
   // After an answer the composer sits at the bottom of the page.
   await d.rect("composer-2", page.locator(".composer"));
   await d.mark("typing-2");
   await d.state(300);
-  await d.type(composer, SCENARIO.eurlex.question, { fast: true });
+  await d.type(composer, SCENARIO.versions.question, { fast: true });
   await d.state(200);
   await d.click(send, "send-2");
   await d.answer();
   await d.rect("answer-2", answer());
   const stamp = answer().locator(".source-stamp").first();
   if (await stamp.count()) await d.rect("stamp", stamp);
-  else if (!d.placeholder) throw new Error("the EU answer shows no version stamp (\"in force\")");
+  else if (!d.placeholder) throw new Error("the answer shows no version stamp (\"in force\")");
   await d.mark("answered-2");
-  await d.state(2000);
+  await d.state(1800);
 
   // Learning mode, on a fresh conversation: the pipeline starts idle, then
   // lights up stage by stage.
@@ -132,7 +132,7 @@ export async function journey(page, d) {
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.waitForTimeout(200);
   await d.rect("lesson", page.locator(".edu-lesson"));
-  await d.state(2600);
+  await d.state(2400);
 
   // ---- Workshop: Retrieval with every intermediate score -------------------
   await d.segment("workshop");
@@ -151,14 +151,14 @@ export async function journey(page, d) {
   await page.getByRole("option", { name: /^hybrid/ }).click();
   await row(page, /^Cross-encoder re-ranking$/).getByRole("combobox").click();
   await page.getByRole("option", { name: "on", exact: true }).click();
-  await row(page, /^Law article references$/).getByRole("checkbox").check();
+  await row(page, /^Law article references$/).getByRole("checkbox").uncheck();
   await row(page, /^Generation$/).getByRole("checkbox").uncheck();
   // The settings first: question, corpus, hybrid search, re-ranking.
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.waitForTimeout(300);
   await d.rect("settings", page.locator(".card").filter({ has: question }).first());
   await d.mark("workshop");
-  await d.state(1500);
+  await d.state(1300);
   const run = page.getByRole("button", { name: "Run", exact: true });
   await d.click(run, "run");
   await page.locator(".chunk").first().waitFor({ timeout: 120_000 });
@@ -171,5 +171,5 @@ export async function journey(page, d) {
   await d.rect("scores", page.locator(".chunk").first());
   await d.rect("chunks", results);
   await d.mark("scores");
-  await d.state(3800);
+  await d.state(3500);
 }
