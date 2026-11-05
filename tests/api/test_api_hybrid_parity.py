@@ -152,6 +152,7 @@ def test_api_and_cli_send_the_same_retrieval_parameters(client):
         "graph": None,
         "versions": "as_of=2015-06-01",
         "query_translation": None,
+        "dedup": None,
     }
 
     with patch("raglab.api.routers.query.QueryService") as api_cls:

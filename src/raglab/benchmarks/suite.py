@@ -341,6 +341,7 @@ def run_suite(
     versions: str | None = None,
     generator: GeneratorConfig | None = None,
     query_translation: bool | None = None,
+    dedup: bool | None = None,
 ) -> dict[str, Any]:
     from raglab.db import session_scope
     from raglab.experiments.recall import RecallBenchmarkService
@@ -416,6 +417,7 @@ def run_suite(
                 versions=versions,
                 generator=generator,
                 query_translation=query_translation,
+                dedup=dedup,
             )
         finally:
             service.close()
@@ -473,6 +475,7 @@ def run_all(
     versions: str | None = None,
     generator: GeneratorConfig | None = None,
     query_translation: bool | None = None,
+    dedup: bool | None = None,
 ) -> dict[str, Any]:
     from raglab.db import initialize_database, session_scope
 
@@ -506,6 +509,7 @@ def run_all(
             versions=versions,
             generator=generator,
             query_translation=query_translation,
+            dedup=dedup,
         )
         for suite in selected
     ]
@@ -517,6 +521,7 @@ def run_all(
         "graph": settings.graph_retrieval if graph is None else graph,
         "versions": settings.versions_default if versions is None else versions,
         "query_translation": settings.query_translation if query_translation is None else query_translation,
+        **({"dedup": True} if (settings.retrieval_dedup if dedup is None else dedup) else {}),
         **({"generator": generator.label(settings)} if generator and generator.deferred else {}),
         **(
             {"rerank_model": settings.rerank_model_name, "rerank_candidates": settings.rerank_candidates}

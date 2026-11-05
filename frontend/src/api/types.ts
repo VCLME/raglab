@@ -51,6 +51,8 @@ export interface ConfigResponse {
   versions_default?: string;
   /** Default of the query-translation option (RAGLAB_QUERY_TRANSLATION). */
   query_translation?: boolean;
+  /** Default of the experimental de-duplication option (RAGLAB_RETRIEVAL_DEDUP). */
+  retrieval_dedup?: boolean;
   llm_providers?: string[];
   default_llm_provider?: string;
 }
@@ -346,6 +348,12 @@ export interface QueryResponse {
   versions?: VersionsInfo | null;
   // Question translated into the corpus language for BM25 (query_translation option).
   query_translation?: QueryTranslationInfo | null;
+  // De-duplication (dedup option): candidate pool, dropped passages, refilled places.
+  dedup_stats?: {
+    pool: number;
+    dropped: { chunk_id: string; duplicate_of: string; position: string }[];
+    refilled: number;
+  } | null;
   answer: string | null;
   elapsed_ms: number;
   filters: unknown;

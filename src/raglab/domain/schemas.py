@@ -170,6 +170,9 @@ class QueryResponse(BaseModel):
     # option): text, source / target language, translated, elapsed_ms and,
     # when it was not translated, why (same_language, writer_unavailable...).
     query_translation: dict[str, Any] | None = None
+    # De-duplication (dedup option, experimental): candidate pool, dropped
+    # passages with the passage they repeat, places refilled from the pool.
+    dedup_stats: dict[str, Any] | None = None
     filters: RetrievalFilters | None = None
     answer: str | None = None
     elapsed_ms: float = 0.0

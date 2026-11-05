@@ -212,6 +212,11 @@ def bench_all(
         "--query-translation/--no-query-translation",
         help="Traduire la question dans la langue du corpus (redacteur llama.cpp) pour le BM25 seulement. Defaut: RAGLAB_QUERY_TRANSLATION.",
     ),
+    dedup: bool | None = typer.Option(
+        None,
+        "--dedup/--no-dedup",
+        help="Experimental : ecarter les passages qui repetent un passage garde (meme document, spans chevauchants) et remplir depuis une reserve plus profonde. Defaut: RAGLAB_RETRIEVAL_DEDUP.",
+    ),
 ) -> None:
     """Regenerer les chiffres de benchmark (PIAF + LexML, Code de la consommation sur demande) dans benchmarks/results/."""
     from raglab.benchmarks.suite import render_markdown, run_all
@@ -231,6 +236,7 @@ def bench_all(
         versions=versions,
         generator=GeneratorConfig(provider=generator_provider, model=generator_model, profile=generator_profile),
         query_translation=query_translation,
+        dedup=dedup,
     )
     output = Path("benchmarks/results") / f"{label}.json"
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -1113,6 +1119,12 @@ def query(
         help="Question dans une autre langue que le corpus : la traduire (redacteur llama.cpp) pour le BM25 seulement. "
         "Defaut: RAGLAB_QUERY_TRANSLATION.",
     ),
+    dedup: bool | None = typer.Option(
+        None,
+        "--dedup/--no-dedup",
+        help="Experimental : ecarter les passages qui repetent un passage garde (meme document, spans chevauchants) "
+        "et remplir depuis une reserve plus profonde. Defaut: RAGLAB_RETRIEVAL_DEDUP.",
+    ),
 ) -> None:
     filters = build_retrieval_filters(
         document_ids=document_ids,
@@ -1140,6 +1152,7 @@ def query(
                 graph=graph,
                 versions=versions,
                 query_translation=query_translation,
+                dedup=dedup,
             )
             final: dict = {}
             for event, data in service.stream_answer(outcome, llm_model=llm_model, llm_provider=provider):
@@ -1169,6 +1182,7 @@ def query(
             routing=routing,
             llm_provider=provider,
             query_translation=query_translation,
+            dedup=dedup,
         )
     typer.echo(response.model_dump_json(indent=2))
 
