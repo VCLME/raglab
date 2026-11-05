@@ -162,6 +162,38 @@ Résultats ([benchmarks/judging](../../benchmarks/judging/README.md)), sur les m
 
 L'écart de fidélité publié entre ces deux runs (0,935 contre 0,895) n'est plus observé en v2 (0,930 et 0,928). Les deux runs n'ayant pas les mêmes réponses, ce n'est pas une preuve causale complète.
 
+## Intégrité de l'index mesuré
+
+Ce contrôle répond au lot 1 de la contre-relecture des PR #83 à #85. Le manifeste figé contrôle les fichiers sur disque. Or la recherche lit la base : un document écrit par un test, ou laissé par une ingestion plus ancienne, serait cherché sans que personne ne le voie.
+
+**L'incident.** Le 4 novembre 2026 à 00:04 UTC, une ancienne version du test `test_one_job_per_source_at_a_time` a laissé un thread survivre à ses doublures. Ce thread a ingéré `…/pytest-of-lucme/pytest-478/…/a.txt` (document `ea9b4de6`) dans `bench_legi_consommation_fr`. L'index `90605ae2` (5 999 documents, empreinte `cb66c80b4e7c`), construit à 03:00 UTC, l'a indexé : 1 chunk.
+
+Tous les runs publiés sur Consommation et « versions » ont utilisé cet index. Vérification faite sur leurs rapports détaillés, `a.txt` n'apparaît dans les 10 passages d'**aucune** question de ces 14 runs. Son influence possible passait seulement par les statistiques BM25 du corpus.
+
+**La reconstruction**, le 5 novembre 2026 :
+1. Suppression du document en base. Elle retire aussi son chunk de l'ancien index, qui contient depuis 5 998 documents, empreinte `7ddeda0e4e94`.
+2. Réindexation complète (`raglab index --corpus bench_legi_consommation_fr --strategy traditional --full --run-name legi-clean-20261105`) : nouvel index `e6521653`, 5 998 documents, même empreinte, statistiques BM25 recalculées.
+
+Les fichiers de résultats publiés ne sont pas modifiés.
+
+**Effet mesuré** : même pipeline, traduction coupée (`audit-lot3-dedup-off` sur l'ancien index, `clean-legi-v1` sur le nouveau), comparaison appariée :
+
+| Jeu | Recall@5 | Gagnées / perdues | MRR |
+|---|---|---|---|
+| Consommation (300) | 0,820 → 0,820 | 0 / 0 | 0,707 → 0,708, IC 95 % [+0,000 ; +0,001] |
+| Versions (100) | 0,930 → 0,930 | 0 / 0 | 0,810 → 0,810 |
+
+Les scores publiés ne sont pas faussés de façon mesurable, sur ces jeux et ce pipeline.
+
+**Garde-fous.**
+- **Tests :** la suite de tests ne peut plus atteindre la base de travail. `tests/conftest.py` pointe `RAGLAB_DATABASE_URL` vers `RAGLAB_TEST_DATABASE_URL`, ou à défaut vers une adresse où rien n'écoute. `RAGLAB_REQUIRE_TEST_DATABASE=true` fait refuser au moteur toute base dont le nom ne finit pas par `_test`.
+- **Benchmarks :** avant chaque suite, `raglab bench all` compare les documents qui ont des chunks dans l'index utilisé au manifeste figé, via les fichiers sur disque (`src/raglab/benchmarks/integrity.py`). Il vérifie :
+  - aucun document en trop, en double ou manquant ;
+  - pour chaque document, l'empreinte des octets en base égale à celle du fichier figé, lui-même contrôlé contre le manifeste ;
+  - l'URN identique quand les deux en portent un.
+
+  Tout écart arrête la mesure. L'empreinte de l'index est enregistrée dans les résultats (`corpus_check`). PIAF n'a pas de manifeste figé et n'est pas contrôlé ainsi.
+
 ## Limites connues
 
 - Les questions LexML sont écrites par un modèle (Qwen3.6 MoE). Elles servent à évaluer le retrieval, pas les réponses : elles ne favorisent pas un générateur, mais elles héritent des tournures du rédacteur. Le juge RAGAS (phase 9.1b) sera un modèle d'une autre famille, Gemma 4, pour éviter qu'un modèle note ses propres réponses.
