@@ -12,6 +12,12 @@ ABSTENTION_ANSWERS = {
     "pt": "Não encontrei isso nos documentos.",
     "en": "I cannot find this in the documents.",
 }
+# The act is indexed, the cited unit is not ("l'article 412 du RGPD").
+MISSING_UNIT_ANSWERS = {
+    "fr": "Je ne trouve pas {label} dans les documents.",
+    "pt": "Não encontrei {label} nos documentos.",
+    "en": "I cannot find {label} in the documents.",
+}
 CONVERSATIONAL_ANSWERS = {
     "fr": "Je réponds aux questions sur les documents indexés. Posez-moi une question sur leur contenu.",
     "pt": "Respondo a perguntas sobre os documentos indexados. Faça uma pergunta sobre o conteúdo deles.",
@@ -103,20 +109,28 @@ def decide_abstention(
     threshold: float | None,
     score_source: str,
     legal_citation: bool = False,
+    cited_unit_missing: bool = False,
     joint: tuple[float, float] | None = None,
 ) -> AbstentionDecision:
-    """`legal_citation`: the question cites a text the queried index holds
+    """`legal_citation`: the question cites a unit the queried index holds
     ("art. 49 da Lei nº 8.078", "article L. 221-18 du code de la
-    consommation", "Article 32 GDPR"). It is never declined: it names a
-    document, so it is documentary by construction, and its passages come
-    from the citation resolver rather than from similarity (identifiers
-    embed poorly, so the dense score is low on exactly these questions).
+    consommation", "Article 32 GDPR"), or names an indexed act without a
+    unit. It is never declined: it names a document, so it is documentary by
+    construction, and its passages come from the citation resolver rather
+    than from similarity (identifiers embed poorly, so the dense score is
+    low on exactly these questions).
+
+    `cited_unit_missing`: the act is indexed but not the cited unit
+    ("l'article 412 du RGPD"): declined, whatever the score, since the
+    passages of the act cannot answer for a unit it does not hold.
 
     `joint` (kNN intent, docs/intentions.md): (joint score, threshold) of
     the intent margin and dense score read together; when given, it replaces
     the plain score threshold."""
     if legal_citation:
         reason: str | None = None
+    elif cited_unit_missing:
+        reason = "cited_unit_missing"
     elif intent != Intent.DOCUMENTARY:
         reason = f"intent:{intent.value}"
     elif score is None:
@@ -139,6 +153,8 @@ def decide_abstention(
     )
 
 
-def fallback_answer(intent: Intent, language: str) -> str:
+def fallback_answer(intent: Intent, language: str, *, missing_citation: str | None = None) -> str:
+    if missing_citation is not None:
+        return MISSING_UNIT_ANSWERS.get(language, MISSING_UNIT_ANSWERS["fr"]).format(label=missing_citation)
     answers = CONVERSATIONAL_ANSWERS if intent == Intent.CONVERSATIONAL else ABSTENTION_ANSWERS
     return answers.get(language, answers["fr"])

@@ -144,6 +144,24 @@ raglab bench all --label gen-qwen36-v1 --generator-provider llamacpp --generator
 
 Avec un autre fournisseur qu'Ollama, la génération devient une passe à part : la recherche tourne d'abord sur toutes les questions, le cross-encoder est libéré, llama-server démarre avec le profil demandé, écrit les réponses (même prompt, mêmes 5 passages qu'en production), puis s'arrête avant que le juge démarre le sien. Les deux modèles ne sont jamais chargés ensemble. `LocalLLMServer` vérifie le modèle servi (`/v1/models`) : un rédacteur laissé chargé par l'API est arrêté avant la passe du juge, qui ne note donc jamais avec lui. Le fichier de résultat note le générateur (`generator`) ; le juge reste Gemma 4, d'une autre famille.
 
+## Contexte lu par le juge de fidélité (protocole v2)
+
+Audit du 4 novembre 2026, lot 2. Le rédacteur ne lit pas le texte brut des passages. Chaque passage est précédé de son rang, de son fichier, de son score et, avec l'option `versions`, d'une ligne de statut (« Statut : version de l'article R312-35 en vigueur depuis le 1er janvier 2020. »). Dans un texte brésilien compilé, les dispositions abrogées sont aussi remplacées par une note. Jusqu'au commit `8711e3c`, le juge de fidélité lisait le texte brut des chunks (protocole v1). Une réponse qui reprend la ligne de statut pouvait donc être jugée non fondée.
+
+**Protocole v2.** Chaque réponse est enregistrée avec ses passages tels que le rédacteur les a lus (`generation_context` dans le rapport détaillé). Le juge lit ces passages-là. Le fichier de résultat porte `judge_protocol: faithfulness-presented-context-v2`. Les résultats notés en v1 restent tels quels ; ils ne portent pas ce champ.
+
+**Re-noter les mêmes réponses.** `raglab bench rejudge <rapport> --clock AAAA-MM-JJ --out <fichier>` reprend les réponses d'un rapport détaillé, sans les régénérer. Il les note deux fois, sur le texte brut (v1) puis sur les passages présentés (v2). Ces passages sont reconstruits à partir des chunks et des versions enregistrés. L'horloge est figée au jour du run, car la ligne de statut ne cite la date de référence que si elle diffère du jour même. Le rapport donne :
+- la moyenne par protocole ;
+- l'écart apparié, avec un intervalle de confiance bootstrap à 95 % ;
+- un test de McNemar sur les réponses notées 1,0 ;
+- le nombre de réponses dont le contexte présenté porte une annotation de version.
+
+Résultats ([benchmarks/judging](../../benchmarks/judging/README.md)), sur les mêmes 100 réponses par run, appariées :
+- **jeu « versions » avec filtre** (100 contextes annotés) : 0,885 en v1, 0,928 en v2 (+0,043, IC 95 % [+0,008 ; +0,082], 7 réponses notées 1,0 en v2 seulement, aucune dans l'autre sens, p = 0,016) ;
+- **même jeu sans filtre** (aucune annotation, témoin) : 0,930 dans les deux protocoles.
+
+L'écart de fidélité publié entre ces deux runs (0,935 contre 0,895) n'est plus observé en v2 (0,930 et 0,928). Les deux runs n'ayant pas les mêmes réponses, ce n'est pas une preuve causale complète.
+
 ## Limites connues
 
 - Les questions LexML sont écrites par un modèle (Qwen3.6 MoE). Elles servent à évaluer le retrieval, pas les réponses : elles ne favorisent pas un générateur, mais elles héritent des tournures du rédacteur. Le juge RAGAS (phase 9.1b) sera un modèle d'une autre famille, Gemma 4, pour éviter qu'un modèle note ses propres réponses.

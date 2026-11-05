@@ -100,9 +100,13 @@ class RoutingDecision(BaseModel):
     # Label of the text cited by the question ("art. 49 — Lei nº 8078",
     # "art. L. 221-18 — Code de la consommation", "Article 32 — GDPR").
     legal_citation: str | None = None
-    # Whether the queried index holds the cited text: only then is the
-    # question never declined.
+    # Whether the queried index holds the cited unit (or the cited act, when
+    # the question names no unit): only then is the question never declined.
     legal_citation_found: bool = False
+    # found, act_only, unit_not_found (declined: the act is indexed, the
+    # cited unit is not) or act_not_found (normal rule); see
+    # raglab.retrieval.citations.CitationResolution.
+    legal_citation_status: str | None = None
     abstention: AbstentionDecision | None = None
     # True when the answer comes from the documents (generation runs).
     answer_from_documents: bool = True

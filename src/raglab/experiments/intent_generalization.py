@@ -284,6 +284,8 @@ def decide(model: Model, record: dict[str, Any], vector: np.ndarray) -> bool:
     """Abstention of one live record under a variant (same order as the router)."""
     if record.get("legal_citation"):
         return False
+    if record.get("cited_unit_missing"):
+        return True
     if model.intent(vector):
         return True
     production = record.get("router_abstention") or {}

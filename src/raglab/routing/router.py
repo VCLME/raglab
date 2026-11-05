@@ -342,17 +342,21 @@ class QueryRouter:
             threshold=threshold_for(self.settings, decision.corpus.corpus_name, source, language),
             score_source=source,
             legal_citation=decision.legal_citation_found,
+            cited_unit_missing=decision.legal_citation_status == "unit_not_found",
             joint=self._joint(decision, retrieved) if self.settings.routing_intent_knn else None,
         )
         if translated_score is not None and source == "dense":
             abstention = abstention.model_copy(update={"translated_score": round(translated_score, 4)})
         declined = abstention.abstain
+        missing = decision.legal_citation if abstention.reason == "cited_unit_missing" else None
         return decision.model_copy(
             update={
                 "abstention": abstention,
                 "answer_from_documents": not declined,
                 "fallback_answer": (
-                    fallback_answer(decision.intent.intent, decision.language.language) if declined else None
+                    fallback_answer(decision.intent.intent, decision.language.language, missing_citation=missing)
+                    if declined
+                    else None
                 ),
             }
         )

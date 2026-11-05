@@ -488,7 +488,10 @@ def test_answers_use_the_production_top_k_and_the_judge_sees_that_context(
     assert calls[0]["top_k"] == 10
     assert calls[0]["generation_top_k"] == service.settings.default_top_k == 5
     judged_context = faith_cls.return_value.score.call_args.kwargs["retrieved_texts"]
-    assert judged_context == ["t1", "t2", "t3", "t4", "t5"]
+    # Judge protocol v2: the five passages as the writer read them.
+    assert len(judged_context) == 5
+    assert [passage.rsplit("\n", 1)[-1] for passage in judged_context] == ["t1", "t2", "t3", "t4", "t5"]
+    assert judged_context[0].startswith("[Source rank=1]\nFichier: a.txt")
 
 
 def test_faithfulness_judge_reads_chunks_in_full():

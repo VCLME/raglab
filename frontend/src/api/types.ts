@@ -318,8 +318,16 @@ export interface CitationInfo {
   code?: string | null;
   /** CELEX of the EU act ("32016R0679"), when one is cited. */
   celex?: string | null;
+  /** The cited act (law, code, EU act) is indexed. */
   law_found: boolean;
   article_found: boolean;
+  /** The question names a unit (article, recital, annex), and whether it is indexed. */
+  unit_requested?: boolean;
+  unit_found?: boolean;
+  /** in_force, historical, not_yet_in_force, or null when unknown. */
+  version?: string | null;
+  /** found, act_only, unit_not_found or act_not_found. */
+  status?: "found" | "act_only" | "unit_not_found" | "act_not_found";
 }
 
 export type RetrievalMode = "dense" | "lexical" | "hybrid";
@@ -398,6 +406,7 @@ export interface RoutingDecision {
   };
   legal_citation?: string | null;
   legal_citation_found?: boolean;
+  legal_citation_status?: string | null;
   abstention: {
     abstain: boolean;
     reason: string | null;

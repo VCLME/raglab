@@ -10,8 +10,9 @@ from __future__ import annotations
 from time import perf_counter
 from typing import TYPE_CHECKING, Any
 
+from raglab.retrieval.citations import EXEMPT_STATUSES
 from raglab.routing.abstention import language_threshold
-from raglab.routing.citation import cited_text_in_run
+from raglab.routing.citation import resolve_cited_text
 from raglab.routing.router import QueryRouter
 
 if TYPE_CHECKING:
@@ -44,12 +45,14 @@ def route_and_retrieve(service: QueryService, **kwargs: Any) -> RetrievalOutcome
     finished = perf_counter()
     if decision.citation is not None:
         # The citation resolver already looked the text up when it ran.
-        found = (
-            bool(outcome.citation.get("law_found"))
-            if outcome.citation is not None
-            else cited_text_in_run(service.session, outcome.index_run, decision.citation)
+        status = (
+            str(outcome.citation.get("status"))
+            if outcome.citation is not None and outcome.citation.get("status")
+            else resolve_cited_text(service.session, outcome.index_run, decision.citation).status
         )
-        decision = decision.model_copy(update={"legal_citation_found": found})
+        decision = decision.model_copy(
+            update={"legal_citation_found": status in EXEMPT_STATUSES, "legal_citation_status": status}
+        )
     translated = (
         translated_dense_score(service, outcome)
         if translated_abstention(service, cross_language, decision.corpus.corpus_name, decision.language.language)
