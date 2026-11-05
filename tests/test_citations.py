@@ -3,7 +3,15 @@ from __future__ import annotations
 import pytest
 
 from raglab.domain.schemas import RetrievedChunk
-from raglab.retrieval.citations import Citation, article_start_pattern, merge_with_citation, parse_citation
+from raglab.retrieval.citations import (
+    Citation,
+    CitationResolution,
+    article_start_pattern,
+    code_version,
+    law_article_version,
+    merge_with_citation,
+    parse_citation,
+)
 
 
 @pytest.mark.parametrize(
@@ -174,3 +182,126 @@ def test_eu_profile_leaves_the_other_profiles_alone():
     )
     # An article number without an act or a recital is not an EU citation.
     assert parse_citation("What does Article 6 say about lawfulness?") is None
+
+
+# Audit 2026-11-04, lot 1: act, unit and version are checked apart.
+
+
+@pytest.mark.parametrize(
+    ("question", "article"),
+    [
+        ("O que diz o art. 1.723 da Lei nº 10.406?", "1723"),
+        ("Segundo o artigo 1.723 da Lei 10.406/2002, o que é união estável?", "1723"),
+        ("O que diz o art. 49 da Lei nº 8.078?", "49"),
+    ],
+)
+def test_article_numbers_with_a_thousands_dot_are_read_whole(question, article):
+    citation = parse_citation(question)
+    assert citation is not None
+    assert citation.article == article
+
+
+@pytest.mark.parametrize(
+    ("text", "matches"),
+    [
+        ("Art. 1.723. É reconhecida como entidade familiar", True),
+        ("Art. 1723. É reconhecida", True),
+        ("Art. 1º Toda pessoa é capaz", False),
+        ("Art. 1.724. As relações pessoais", False),
+    ],
+)
+def test_article_start_pattern_reads_thousands_dots(text, matches):
+    assert bool(article_start_pattern("1723").search(text)) is matches
+
+
+@pytest.mark.parametrize(
+    ("resolution", "status", "exempt"),
+    [
+        (CitationResolution(act_found=True, unit_requested=True, unit_found=True), "found", True),
+        (CitationResolution(act_found=True, unit_requested=False, unit_found=False), "act_only", True),
+        (CitationResolution(act_found=True, unit_requested=True, unit_found=False), "unit_not_found", False),
+        (CitationResolution(act_found=False, unit_requested=True, unit_found=False), "act_not_found", False),
+        (CitationResolution(act_found=False, unit_requested=False, unit_found=False), "act_not_found", False),
+    ],
+)
+def test_citation_status_separates_the_act_from_the_unit(resolution, status, exempt):
+    assert resolution.status == status
+    assert resolution.exempt is exempt
+
+
+@pytest.mark.parametrize(
+    ("etat", "version"),
+    [
+        ("VIGUEUR", "in_force"),
+        ("ABROGE_DIFF", "in_force"),
+        ("VIGUEUR_DIFF", "not_yet_in_force"),
+        ("ABROGE", "historical"),
+        ("MODIFIE", "historical"),
+        (None, None),
+    ],
+)
+def test_code_article_version(etat, version):
+    assert code_version(etat) == version
+
+
+def _text_chunk(text: str) -> RetrievedChunk:
+    return _chunk("c1", 1).model_copy(update={"chunk_text": text})
+
+
+def test_a_repealed_brazilian_article_is_historical():
+    assert law_article_version([_text_chunk("Art. 5º (Revogado pela Lei nº 9.000, de 1995)")], "5") == "historical"
+    assert law_article_version([_text_chunk("Art. 5º O visto será concedido")], "5") == "in_force"
+    # "(Revogado)" further down belongs to a paragraph, not to the article.
+    text = "Art. 5º O visto será concedido.\n§ 1º (Revogado)."
+    assert law_article_version([_text_chunk(text)], "5") == "in_force"
+    assert law_article_version([], "5") is None
+
+
+@pytest.mark.parametrize(
+    "question",
+    [
+        "Que dit l'article 412 du RGPD ?",
+        "What does Article 140 of DORA require?",
+        "O que diz o artigo 999.º do Regulamento (UE) 2016/679?",
+    ],
+)
+def test_eu_citations_of_any_number_still_parse(question):
+    """Parsing does not judge the number: whether the unit exists is the
+    index's call (status unit_not_found)."""
+    citation = parse_citation(question)
+    assert citation is not None and citation.celex is not None and citation.unit == "article"
+
+
+@pytest.mark.parametrize(
+    ("question", "unit", "number"),
+    [
+        ("Que dit l'art 32 du RGPD ?", "article", "32"),
+        ("Que dit l'art 999 du RGPD ?", "article", "999"),
+        ("Que dit l'art.32 du RGPD ?", "article", "32"),
+    ],
+)
+def test_abbreviated_eu_units_are_not_read_as_a_bare_act(question, unit, number):
+    """A bare act is never declined: an unread abbreviation must keep its unit."""
+    citation = parse_citation(question)
+    assert citation is not None and citation.unit == unit and citation.article == number
+
+
+def test_an_eu_act_named_without_a_unit_stays_a_bare_act():
+    citation = parse_citation("Que prévoit le RGPD pour les sous-traitants ?")
+    assert citation is not None and citation.celex == "32016R0679" and citation.unit is None
+
+
+def test_an_article_split_from_its_number_by_a_chunk_boundary_is_found():
+    """lexml-0257: one chunk ends with "Art.", the next opens with "5º A lei…"."""
+    from types import SimpleNamespace
+
+    from raglab.retrieval.citations import _split_article_start
+
+    rows = [
+        SimpleNamespace(text="Art. 4º O orçamento…\nArt."),
+        SimpleNamespace(text="5º A lei orçamentária observará…"),
+        SimpleNamespace(text="Art. 6º Outra regra"),
+    ]
+    assert _split_article_start(rows, "5") == 1
+    assert _split_article_start(rows, "6") is None  # found the usual way, not here
+    assert _split_article_start(rows, "50") is None

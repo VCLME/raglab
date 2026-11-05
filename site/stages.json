@@ -100,5 +100,17 @@
     "name": "Version filter",
     "change": "full pipeline + only versions in force are searched (on by default; no regression on these sets, measured on its own sets below)",
     "status": "9.10 · default"
+  },
+  {
+    "label": "audit-lot1-before",
+    "name": "Re-run before the cited-unit check",
+    "change": "same full pipeline re-run at commit 8711e3c, retrieval only, as the reference for the audit lot 1 comparison (query translation off)",
+    "status": "audit · comparison"
+  },
+  {
+    "label": "audit-lot1-after",
+    "name": "Cited-unit check",
+    "change": "+ the cited article, recital or annex is checked, not only the act; article numbers with a thousands dot and articles split from their number by a chunk boundary are found (retrieval only)",
+    "status": "audit lot 1 · default"
   }
 ]

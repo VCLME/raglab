@@ -26,12 +26,16 @@ from raglab.llm.writer import WriterManager, get_writer
 from raglab.logging_utils import log_event
 from raglab.observability.metrics import observe_query
 from raglab.retrieval.citations import (
+    CitationResolution,
     article_chunks,
+    code_version,
     document_chunks,
     find_code_article,
     find_eu_unit,
     find_law_document,
+    has_code,
     has_eu_act,
+    law_article_version,
     merge_with_citation,
     parse_citation,
 )
@@ -391,12 +395,21 @@ class QueryService:
         pinned: list[RetrievedChunk] = []
         cited_code: str | None = None
         eu_act_found = False
+        # Act, unit and version checked apart (see CitationResolution).
+        resolution: CitationResolution | None = None
         if parsed is not None and parsed.law_number is not None:
             law_document_id = find_law_document(self.session, index_run, parsed)
             if citation is not None and law_document_id is not None:
                 if citation.article:
                     pinned = article_chunks(self.session, index_run, law_document_id, citation.article)
                 filters = (filters or RetrievalFilters()).model_copy(update={"document_ids": [law_document_id]})
+            if citation is not None:
+                resolution = CitationResolution(
+                    act_found=law_document_id is not None,
+                    unit_requested=bool(citation.article),
+                    unit_found=bool(pinned),
+                    version=law_article_version(pinned, citation.article) if citation.article else None,
+                )
         elif parsed is not None and parsed.celex is not None:
             # A unit of an EU act is a document of its own (one per language):
             # pin it and search the rest of the cited act.
@@ -408,6 +421,13 @@ class QueryService:
                     pinned = document_chunks(self.session, index_run, eu_unit.document_id)
                 base = filters or RetrievalFilters()
                 filters = base.model_copy(update={"metadata_equals": {**base.metadata_equals, "celex": parsed.celex}})
+            if citation is not None:
+                resolution = CitationResolution(
+                    act_found=eu_act_found,
+                    unit_requested=parsed.unit is not None and parsed.article is not None,
+                    unit_found=eu_unit is not None,
+                    version=(("in_force" if eu_unit.in_force else "historical") if eu_unit is not None else None),
+                )
         elif citation is not None:
             # An article of a French code is a document of its own: pin it
             # and search the rest of the cited code.
@@ -421,6 +441,12 @@ class QueryService:
                 if cited_code:
                     base = filters or RetrievalFilters()
                     filters = base.model_copy(update={"metadata_equals": {**base.metadata_equals, "code": cited_code}})
+            resolution = CitationResolution(
+                act_found=code_article is not None or has_code(self.session, index_run, citation.code),
+                unit_requested=True,
+                unit_found=code_article is not None,
+                version=code_version(code_article.etat) if code_article is not None else None,
+            )
         # The graph holds laws (profile "laws") and EU acts (profile
         # "eu_acts"): a cited law's or EU act's article seeds it.
         seed_articles = (
@@ -619,10 +645,15 @@ class QueryService:
                     "article": citation.article,
                     "code": cited_code or citation.code,
                     "celex": citation.celex,
-                    "law_found": law_document_id is not None or eu_act_found,
+                    "law_found": resolution.act_found,
                     "article_found": bool(pinned),
+                    # The act alone never vouches for the cited unit.
+                    "unit_requested": resolution.unit_requested,
+                    "unit_found": resolution.unit_found,
+                    "version": resolution.version,
+                    "status": resolution.status,
                 }
-                if citation is not None
+                if citation is not None and resolution is not None
                 else None
             ),
             graph=use_graph,

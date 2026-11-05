@@ -542,6 +542,7 @@
     "reasons": {
       "intent": "intenção",
       "low_score": "score baixo demais",
+      "cited_unit_missing": "artigo citado ausente",
       "no_passage": "nenhum trecho",
       "none": "—",
       "low_joint_score": "intenção + score baixos demais"
@@ -908,6 +909,8 @@
     "citation_badge_title": "Fixado: a pergunta cita a lei e o artigo deste trecho.",
     "citation_resolved": "Citação reconhecida: {{label}}",
     "citation_unresolved": "Citação reconhecida ({{label}}), mas a lei não está no índice: busca normal.",
+    "citation_unit_missing": "Citação reconhecida ({{label}}): o ato está indexado, mas não esta unidade. Busca restrita ao ato.",
+    "citation_historical": "(versão que não está mais em vigor)",
     "rerank_notice_skipped_no_gpu": "Re-ranking desativado ({{why}}): na CPU levaria vários segundos. Force-o com “ativado” se precisar.",
     "rerank_notice_cpu": "Re-ranking executado na CPU ({{why}}): conte vários segundos por consulta.",
     "graph_label": "Grafo de remissões",

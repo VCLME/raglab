@@ -87,3 +87,33 @@ Ce qu'il faut en retenir honnêtement :
 - sur les 72 questions jamais regardées, le gain est le même avec ou sans re-ranking (0,722) : la méthode ne sur-apprend pas les 25 questions de mise au point ;
 - le re-ranking fait perdre 3 des 25 questions de mise au point (0,840 → 0,720, écart non significatif : +1 / −4, p = 0,375). Il réordonne les chunks à l'intérieur de l'article épinglé, et un article long peut repousser le bon passage au-delà du top 5 ;
 - seul, le résolveur de citations coûte de la fidélité (0,903 → 0,842 sur LexML, `citations-v1`). Combiné au re-ranking (`full-v1`), on retrouve 0,895.
+
+## Acte, unité et version (audit du 4 novembre 2026, lot 1)
+
+**Problème confirmé.** Le routeur exemptait du refus toute question citant un acte indexé, sans vérifier l'unité citée. « L'article 412 du RGPD », « Article 140 of DORA » ou « art. 999 da Lei nº 13.445 » n'étaient jamais refusées. Pour une loi brésilienne, seule la loi était vérifiée. Les codes français, eux, vérifiaient déjà l'article. Quatre défauts de lecture sont apparus en construisant le jeu de test :
+- « art. 1.723 » était lu « art. 1 », et le mauvais article était épinglé en tête ;
+- « l'article 13 de la Lei 13.445 » perdait son numéro ;
+- « l'art 999 du RGPD » (abréviation sans point) devenait l'acte seul, donc exempté ;
+- un article dont « Art. » et le numéro tombent dans deux chunks n'était pas trouvé.
+
+**Changement.** Une citation se résout en acte, unité et version (`CitationResolution`). Les statuts et la règle du routeur sont décrits dans [routing.md](routing.md). Sans routeur, rien n'est refusé : la réponse porte `citation.status`, `unit_found` et `version`, et la page Retrieval l'affiche. Les quatre défauts de lecture sont corrigés.
+
+**Mesure de la règle**, déterministe et sans GPU, sur le jeu figé [citation_refs](../benchmarks/citation_refs/README.md) de 45 références :
+- règle correcte : 33 → 44 (+11 / −0, p = 0,001) ;
+- unité lue correctement : 38 → 44 (+6 / −0, p = 0,031) ;
+- sur les 253 questions des jeux figés qui citent un texte, aucune ne change de règle (aucune n'est refusée à tort).
+
+**Mesure de la recherche**, sur le même pipeline (hybride, re-ranking, citations, versions `in_force`, traduction coupée des deux côtés). Runs `audit-lot1-before` (code `8711e3c`) et `audit-lot1-after`, appariés :
+
+| Jeu | Recall@5 | Gagnées / perdues | MRR |
+|---|---|---|---|
+| LexML (277) | 0,816 → 0,823 | +2 / −0 (p = 0,50) | 0,694 → 0,699 |
+| LexML, questions à numéro d'article (97) | 0,722 → 0,742 | +2 / −0 | 0,511 → 0,525 |
+| Renvois LexML (46) | 0,870 → 0,870 | 0 / 0 | 0,739 → 0,723 |
+| Code de la consommation (300), UE (300), Brazil expat (38) | inchangés | 0 / 0 | inchangés |
+
+- **Les deux questions gagnées** (`lexml-0062`, `lexml-0257`) sont des articles coupés de leur numéro par le découpage. Ils sont maintenant trouvés et épinglés.
+- **La baisse de MRR sur les renvois** vient d'une seule question (`lexml-ref-0027`). L'article 10 cité est désormais trouvé et épinglé en tête, et le passage qui répond, dans l'article renvoyé, passe du rang 1 au rang 4. C'est le compromis décrit par l'audit en priorité 3 (l'épinglage d'un article cité peut repousser la disposition qui répond).
+- **Latence de l'étape citation :** p50 4,5 → 5,5 ms sur LexML, 39,8 → 36,9 ms sur le Code de la consommation. Les écarts de latence totale viennent du re-ranking, sur un GPU partagé avec une autre application pendant la mesure : ils ne sont pas attribuables au changement.
+- **Ces écarts ne sont pas significatifs :** absence de preuve de régression, pas une non-régression démontrée.
+
