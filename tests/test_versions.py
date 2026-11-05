@@ -570,3 +570,63 @@ def test_default_all_keeps_the_grounded_prompt_byte_identical():
     # Only status lines were added (and repealed wording replaced).
     added = [line for line in in_force.user_prompt.splitlines() if line not in plain.user_prompt.splitlines()]
     assert added and all(line.startswith("Statut :") or "[disposition abrogée" in line for line in added)
+
+
+# --- Judge context (audit 2026-11-04, lot 2) ---------------------------------
+
+
+def test_the_reference_date_line_follows_a_frozen_clock():
+    """Replaying a recorded context needs the day it was shown: the reference
+    date is only written when it is not "today"."""
+    version = metadata_version(_l121_21(4), date(2026, 11, 4))
+    assert "à la date du" not in prompt_line(version, today=date(2026, 11, 4))
+    assert "(à la date du 4 novembre 2026)" in prompt_line(version, today=date(2026, 11, 5))
+
+
+def test_presented_passages_are_the_writer_context_block_by_block():
+    from raglab.generation.prompts import presented_passages
+
+    metadata = {"doc-old": _l121_21(3)}
+    chunks = annotate(
+        [_chunk("old", 1, "Le consommateur dispose d'un délai de quatorze jours.")],
+        resolve_policy(None, "q", today=TODAY),
+        metadata,
+    )
+    passages = presented_passages(chunks, today=TODAY)
+    assert build_context(chunks) == "\n\n".join(presented_passages(chunks))
+    assert "Statut : ancienne version" in passages[0]
+    markers = annotate([_chunk("law", 1, LEXML_MIXED)], resolve_policy(None, "q", today=TODAY), {})
+    assert "É vedada" not in presented_passages(markers)[0]
+
+
+def test_the_judge_reads_the_presented_context_when_it_was_recorded():
+    from raglab.experiments.recall import judge_context
+
+    raw = {
+        "retrieved_chunks": [{"chunk_text": "a"}, {"chunk_text": "b"}, {"chunk_text": "c"}],
+        "generation_context_size": 2,
+    }
+    assert judge_context(raw) == ["a", "b"]  # reports judged under v1
+    assert judge_context({**raw, "generation_context": ["Statut : x\nExtrait:\na"]}) == ["Statut : x\nExtrait:\na"]
+
+
+def test_rejudge_rebuilds_both_protocols_from_a_recorded_answer():
+    from raglab.experiments.rejudge import annotated, contexts, summarize
+
+    metadata = {"doc-old": _l121_21(3)}
+    chunks = annotate([_chunk("old", 1, "Délai de quatorze jours.")], resolve_policy(None, "q", today=TODAY), metadata)
+    detail = {"retrieved_chunks": [chunk.model_dump() for chunk in chunks], "generation_context_size": 1}
+    assert contexts(detail, "raw", TODAY) == ["Délai de quatorze jours."]
+    assert "Statut : ancienne version" in contexts(detail, "presented", TODAY)[0]
+    assert annotated(detail, TODAY) is True
+    plain = {"retrieved_chunks": [_chunk("x", 1, "t").model_dump()], "generation_context_size": 1}
+    assert annotated(plain, TODAY) is False
+    rows = [
+        {"id": "a", "annotated": True, "original": 1.0, "raw": 1.0, "presented": 1.0},
+        {"id": "b", "annotated": True, "original": 0.5, "raw": 0.5, "presented": 1.0},
+        {"id": "c", "annotated": True, "original": 1.0, "raw": 1.0, "presented": 0.5},
+    ]
+    summary = summarize(rows, ("raw", "presented"))
+    assert summary["paired"]["fully_faithful_only_presented"] == 1
+    assert summary["paired"]["fully_faithful_only_raw"] == 1
+    assert summary["raw_vs_original_changed"] == 0

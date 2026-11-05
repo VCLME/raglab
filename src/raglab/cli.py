@@ -304,6 +304,30 @@ def bench_compare(
     typer.echo(render(compare_runs(load(before), load(after), k=k, pairs=pairs), k=k))
 
 
+@bench_app.command("rejudge")
+def bench_rejudge(
+    report: Path = typer.Argument(..., help="Rapport detaille d'un run (data/reports/recall-*.json)."),
+    out: Path = typer.Option(
+        ..., "--out", help="Fichier JSON des nouvelles notes (les resultats historiques ne changent pas)."
+    ),
+    clock: str = typer.Option(
+        ..., "--clock", help="Date du run (AAAA-MM-JJ) : le contexte presente est reconstruit avec cette horloge."
+    ),
+    judge_backend: str = typer.Option(
+        "llamacpp", "--judge-backend", help="llamacpp (Gemma, defaut des runs publies) ou ollama."
+    ),
+) -> None:
+    """Re-noter la fidelite des memes reponses : contexte brut (protocole v1) et contexte presente au redacteur (v2)."""
+    from datetime import date
+
+    from raglab.experiments.rejudge import rejudge
+
+    result = rejudge(report, today=date.fromisoformat(clock), judge=JudgeConfig(backend=judge_backend))
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(result, ensure_ascii=False, indent=1), encoding="utf-8")
+    typer.echo(json.dumps(result["summary"], ensure_ascii=False, indent=1))
+
+
 @bench_app.command("report")
 def bench_report(
     labels: list[str] = typer.Argument(..., help="Runs a comparer, dans l'ordre des colonnes."),

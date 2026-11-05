@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from datetime import date
 
 from raglab.domain.schemas import RetrievedChunk
 from raglab.domain.versions import prompt_line, strip_revoked
@@ -166,33 +167,41 @@ def no_context_answer_for(language: str, french_answer: str) -> str:
     return NO_CONTEXT_ANSWERS.get(language, french_answer)
 
 
+def presented_passage(chunk: RetrievedChunk, *, today: date | None = None) -> str:
+    """One passage exactly as the writer reads it in its context."""
+    # Version state of the passage (versions option, phase 9.10): the model
+    # is told which article version it reads, and does not read the wording
+    # of provisions marked repealed.
+    status = prompt_line(chunk.version, today=today)
+    text = chunk.chunk_text
+    version = chunk.version
+    if version is not None and version.in_prompt and version.source == "markers" and version.revoked_lines:
+        text = strip_revoked(text)
+    return "\n".join(
+        [
+            f"[Source rank={chunk.rank}]",
+            f"Fichier: {chunk.file_name}",
+            f"Chemin: {chunk.source_path}",
+            f"Score: {chunk.score:.4f}",
+            *([status] if status else []),
+            "Extrait:",
+            text,
+        ]
+    )
+
+
+def presented_passages(chunks: list[RetrievedChunk], *, today: date | None = None) -> list[str]:
+    """The passages of the writer's context as presented. Recorded with the
+    answer, so the faithfulness judge grades against what the writer saw
+    (version line, repealed provisions replaced by a note), not the raw
+    chunk text."""
+    return [presented_passage(chunk, today=today) for chunk in chunks]
+
+
 def build_context(chunks: list[RetrievedChunk]) -> str:
     # Kept as measured (French labels in every language): only the
     # instructions follow the question's language.
-    blocks: list[str] = []
-    for chunk in chunks:
-        # Version state of the passage (versions option, phase 9.10): the
-        # model is told which article version it reads, and does not read
-        # the wording of provisions marked repealed.
-        status = prompt_line(chunk.version)
-        text = chunk.chunk_text
-        version = chunk.version
-        if version is not None and version.in_prompt and version.source == "markers" and version.revoked_lines:
-            text = strip_revoked(text)
-        blocks.append(
-            "\n".join(
-                [
-                    f"[Source rank={chunk.rank}]",
-                    f"Fichier: {chunk.file_name}",
-                    f"Chemin: {chunk.source_path}",
-                    f"Score: {chunk.score:.4f}",
-                    *([status] if status else []),
-                    "Extrait:",
-                    text,
-                ]
-            )
-        )
-    return "\n\n".join(blocks)
+    return "\n\n".join(presented_passages(chunks))
 
 
 def build_prompt_bundle(question: str, chunks: list[RetrievedChunk], *, no_context_answer: str) -> PromptBundle:
