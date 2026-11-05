@@ -44,7 +44,9 @@ def _context(detail: dict) -> tuple[int, int, int]:
 def main(before: str, after: str) -> None:
     load = lambda name: json.loads((Path("benchmarks/results") / f"{name}.json").read_text(encoding="utf-8"))  # noqa: E731
     runs = load(before), load(after)
-    print("| Suite | Questions | With a repeat (before -> after) | Repeated passages | Useful chars / question | Useful share |")
+    print(
+        "| Suite | Questions | With a repeat (before -> after) | Repeated passages | Useful chars / question | Useful share |"
+    )
     print("|---|---|---|---|---|---|")
     for suite_a in runs[0]["suites"]:
         suite_b = next(s for s in runs[1]["suites"] if s["suite"] == suite_a["suite"])
