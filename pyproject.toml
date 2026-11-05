@@ -73,6 +73,8 @@ ignore = ["E501"]
 # get_settings() is lru_cached and feeds the CLI --help defaults.
 extend-immutable-calls = [
   "fastapi.Depends",
+  "fastapi.Header",
+  "fastapi.Query",
   "typer.Argument",
   "typer.Option",
   "raglab.config.get_settings",

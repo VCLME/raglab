@@ -55,6 +55,79 @@ export interface ConfigResponse {
   retrieval_dedup?: boolean;
   llm_providers?: string[];
   default_llm_provider?: string;
+  /** Server-side conversation history (RAGLAB_CONVERSATION_HISTORY). */
+  conversation_history?: boolean;
+  /** Days an idle conversation is kept on the server; 0 = until deleted. */
+  conversation_retention_days?: number;
+}
+
+/** GET /api/conversations item. */
+export interface ConversationSummary {
+  id: string;
+  title: string;
+  corpus_name: string | null;
+  actor: string | null;
+  channel: string;
+  created_at: string;
+  updated_at: string;
+  message_count: number;
+}
+
+export interface MessageSource {
+  chunk_id: string;
+  document_id: string | null;
+  file_name: string;
+  source_path: string | null;
+  char_start: number | null;
+  char_end: number | null;
+  rank: number;
+  score: number | null;
+  cited: boolean;
+}
+
+/** One recorded turn of GET /api/conversations/{id}. */
+export interface ConversationMessage {
+  id: string;
+  position: number;
+  question: string;
+  answer: string | null;
+  /** completed, stopped or failed. */
+  status: string;
+  error: string | null;
+  corpus_name: string | null;
+  index_run_id: string | null;
+  strategy: string | null;
+  sources: MessageSource[];
+  /** The writer's context as presented, one string per passage. */
+  presented_context: string[];
+  citation: CitationInfo | null;
+  routing: RoutingDecision | null;
+  options: Record<string, unknown>;
+  llm_provider: string | null;
+  llm_model: string | null;
+  generator_notice: string | null;
+  timings_ms: Record<string, number>;
+  elapsed_ms: number | null;
+  first_token_ms: number | null;
+  request_id: string | null;
+  created_at: string;
+}
+
+export interface ConversationDetail extends ConversationSummary {
+  messages: ConversationMessage[];
+}
+
+/** GET /api/conversations/search hit; matches in `snippet` sit between ⟦ and ⟧. */
+export interface ConversationSearchHit {
+  conversation_id: string;
+  title: string;
+  corpus_name: string | null;
+  message_id: string;
+  position: number;
+  question: string;
+  snippet: string;
+  rank: number;
+  created_at: string;
 }
 
 /**
@@ -371,6 +444,10 @@ export interface QueryResponse {
   generation_stats?: Record<string, number>;
   // Present when the request enabled the query router (phase 9.4).
   routing?: RoutingDecision | null;
+  // Conversation and message the turn was recorded as (server history);
+  // null when the server did not record it.
+  conversation_id?: string | null;
+  message_id?: string | null;
 }
 
 export type RoutingIntent = "documentary" | "conversational" | "out_of_scope";

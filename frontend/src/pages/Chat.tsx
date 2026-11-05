@@ -1,19 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useGpuWhy } from "../hooks/useGpuWhy";
 import { ApiError, extractErrorDetail, get, queryWithStreaming } from "../api/client";
-import type {
-  CitationInfo,
-  CorpusSummary,
-  IndexRunSummary,
-  LlmModelsResponse,
-  QueryResponse,
-  QueryTranslationInfo,
-  RetrievalMode,
-  RetrievedChunk,
-  RoutingDecision,
-  VersionsInfo,
-} from "../api/types";
+import type { CorpusSummary, IndexRunSummary, LlmModelsResponse, QueryResponse } from "../api/types";
 import {
   ChatOptions,
   LEGAL_OPTIONS,
@@ -24,7 +13,8 @@ import {
 import { parseVersionsValue } from "../components/Versions";
 import { ChunkCard } from "../components/ChunkCard";
 import { extractCitedRanks, renderAnswer } from "../components/AnswerText";
-import { SendIcon, StopIcon } from "../components/Icon";
+import { HistoryIcon, SendIcon, StopIcon } from "../components/Icon";
+import { HistoryPanel } from "../components/HistoryPanel";
 import { PipelineStrip, type RouteInfo } from "../components/PipelineStrip";
 import { FieldLabelContext, Select } from "../components/Select";
 import { RoutingPanel } from "../components/RoutingPanel";
@@ -47,45 +37,20 @@ import {
 import { useApiAction, useApiLoad } from "../hooks/useApi";
 import { useConfig } from "../hooks/useConfig";
 import { useEducationalMode } from "../hooks/useEducationalMode";
+import { newId, useConversationHistory } from "../history/useConversationHistory";
+import type { ChatTurn, StoredConversation } from "../history/types";
 
-interface ChatTurn {
+/** The conversation shown in the Chat, as the history knows it. */
+interface CurrentConversation {
   id: string;
-  question: string;
-  answer: string | null;
-  chunks: RetrievedChunk[];
-  index_run_id: string | null;
-  strategy: string | null;
-  elapsed_ms: number | null;
-  // Time from the start of generation to the first streamed token.
-  first_token_ms?: number | null;
-  streaming?: boolean;
-  error?: { message: string; detail: string | null };
-  // Router decisions when routing was on for this turn.
-  routing?: RoutingDecision | null;
-  // Stopped with the « Arrêter » button; a partial answer stays visible.
-  stopped?: boolean;
-  // Stage-by-stage view of the request, drawn by the educational mode.
-  pipeline?: PipelineState;
-  retrieval_mode?: RetrievalMode | null;
-  rerank?: boolean | null;
-  // "skipped_no_gpu" or "cpu" when the re-ranker had no GPU.
-  rerank_notice?: string | null;
-  // Why the fallback model wrote this answer instead of the default writer.
-  generator_notice?: string | null;
-  citation?: CitationInfo | null;
-  lexemes?: string[];
-  // Graph branch: whether it ran, why it was skipped, its counters.
-  graph?: boolean | null;
-  graph_notice?: string | null;
-  graph_stats?: Record<string, number> | null;
-  // Version policy applied (versions option).
-  versions?: VersionsInfo | null;
-  // Question translated into the corpus language for BM25 (query_translation).
-  query_translation?: QueryTranslationInfo | null;
+  origin: "server" | "local";
+  title: string;
+  created_at: string;
 }
 
-function newTurnId(): string {
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+/** A turn saved while its request was running: reopened, it shows as stopped. */
+function settled(turn: ChatTurn): ChatTurn {
+  return turn.answer === null && !turn.error && !turn.stopped ? { ...turn, stopped: true } : turn;
 }
 
 function shortDate(iso: string | null): string {
@@ -137,6 +102,14 @@ export function Chat() {
   const [turns, setTurns] = useState<ChatTurn[]>([]);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [highlight, setHighlight] = useState<Record<string, string | null>>({});
+  const [conversation, setConversation] = useState<CurrentConversation | null>(null);
+  // A conversation reopened from the history stays read-only until « Continuer ».
+  const [readOnly, setReadOnly] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyNotice, setHistoryNotice] = useState<string | null>(null);
+  const conversationRef = useRef<CurrentConversation | null>(null);
+  conversationRef.current = conversation;
+  const composerRef = useRef<HTMLTextAreaElement | null>(null);
 
   const streamRef = useRef<HTMLDivElement | null>(null);
   const [educational] = useEducationalMode();
@@ -170,6 +143,8 @@ export function Chat() {
     runsForCorpus.find((r) => r.id === indexRunId) ?? runsForCorpus[0] ?? null;
 
   const action = useApiAction(queryWithStreaming);
+  const apiWaiting = corpora.error !== null && corpora.data === null;
+  const history = useConversationHistory(config, apiWaiting);
 
   // Hand-written examples first; other corpora fall back to questions of
   // the validation set pinned to them.
@@ -185,8 +160,10 @@ export function Chat() {
 
   const send = async (overrideQuestion?: string) => {
     const q = (overrideQuestion ?? question).trim();
-    if (!q || (!corpus && !routing)) return;
-    const id = newTurnId();
+    if (!q || (!corpus && !routing) || readOnly) return;
+    const id = newId();
+    const createdAt = new Date().toISOString();
+    const picked = parseLlm(llm);
     setTurns((prev) => [
       ...prev,
       {
@@ -198,9 +175,26 @@ export function Chat() {
         strategy: null,
         elapsed_ms: null,
         pipeline: startPipeline(),
+        created_at: createdAt,
+        corpus: corpus || null,
+        llm_provider: picked?.provider ?? null,
+        llm_model: picked?.model ?? null,
       },
     ]);
     setQuestion("");
+    setHistoryNotice(null);
+
+    // One id per conversation: the server's when it keeps the history.
+    const previous = conversationRef.current;
+    const target = await history.ensure(previous, corpus || null);
+    const current: CurrentConversation = {
+      id: target.id,
+      origin: target.origin,
+      title: previous?.title || q,
+      created_at: previous?.created_at ?? createdAt,
+    };
+    conversationRef.current = current;
+    setConversation(current);
 
     const body: Record<string, unknown> = {
       question: q,
@@ -210,7 +204,6 @@ export function Chat() {
       generate: true,
       routing,
     };
-    const picked = parseLlm(llm);
     if (picked) {
       body.llm_provider = picked.provider;
       body.llm_model = picked.model;
@@ -220,6 +213,11 @@ export function Chat() {
     (Object.keys(options) as (keyof RetrievalOverrides)[]).forEach((key) => {
       if (options[key] !== null && (!LEGAL_OPTIONS.includes(key) || legalCorpus)) body[key] = options[key];
     });
+    const { question: _question, ...turnOptions } = body;
+    if (current.origin === "server") {
+      body.conversation_id = current.id;
+      body.message_id = id;
+    }
     const patchTurn = (update: (tn: ChatTurn) => Partial<ChatTurn>) =>
       setTurns((prev) => prev.map((tn) => (tn.id === id ? { ...tn, ...update(tn) } : tn)));
     // Stage events go through a queue so replayed stages light up one by one;
@@ -266,7 +264,16 @@ export function Chat() {
         elapsed_ms: result.elapsed_ms,
         first_token_ms: result.first_token_ms ?? null,
         streaming: false,
+        options: turnOptions,
+        llm_provider: result.llm_provider ?? picked?.provider ?? null,
       }));
+      // The server did not record it (history turned off meanwhile): the
+      // conversation lives on in this browser only.
+      if (current.origin === "server" && !result.conversation_id) {
+        const local = { ...current, origin: "local" as const };
+        conversationRef.current = local;
+        setConversation(local);
+      }
       // The writer may have started (or stopped answering) meanwhile.
       if (result.generator_notice || llms.data?.generator?.notice) llms.refresh();
     } catch (e) {
@@ -283,8 +290,10 @@ export function Chat() {
           : "Erreur inconnue";
       const detail = e instanceof ApiError ? extractErrorDetail(e) : null;
       // A partial streamed answer stays visible above the error.
-      patchTurn(() => ({ streaming: false, error: { message, detail } }));
+      patchTurn(() => ({ streaming: false, error: { message, detail }, options: turnOptions }));
       scheduler.push(() => patchPipeline(failPipeline));
+      // A failed request also says whether the API (and its history) is still there.
+      history.failed(e);
     } finally {
       if (abortRef.current === controller) abortRef.current = null;
     }
@@ -317,7 +326,56 @@ export function Chat() {
     setTurns([]);
     setExpanded({});
     setHighlight({});
+    setConversation(null);
+    conversationRef.current = null;
+    setReadOnly(false);
+    setHistoryNotice(null);
     action.reset();
+  };
+
+  // Keep each finished turn in the browser (and its list), server or not.
+  const { save } = history;
+  useEffect(() => {
+    if (!conversation || readOnly || action.loading || turns.length === 0) return;
+    const stored: StoredConversation = {
+      id: conversation.id,
+      title: conversation.title,
+      corpus: turns[0].corpus ?? (corpus || null),
+      created_at: conversation.created_at,
+      updated_at: turns[turns.length - 1].created_at ?? conversation.created_at,
+      origin: conversation.origin,
+      turns,
+    };
+    save(stored);
+  }, [conversation, readOnly, action.loading, turns, corpus, save]);
+
+  const openConversation = useCallback(
+    async (id: string) => {
+      schedulerRef.current?.cancel();
+      abortRef.current?.abort();
+      const loaded = await history.load(id);
+      setHistoryOpen(false);
+      if (!loaded) {
+        setHistoryNotice(t("history.not_found"));
+        return;
+      }
+      setTurns(loaded.turns.map(settled));
+      setExpanded({});
+      setHighlight({});
+      const opened = { id: loaded.id, origin: loaded.origin, title: loaded.title, created_at: loaded.created_at };
+      conversationRef.current = opened;
+      setConversation(opened);
+      setReadOnly(true);
+      setHistoryNotice(null);
+      action.reset();
+      if (loaded.corpus && corpora.data?.some((c) => c.name === loaded.corpus)) setCorpus(loaded.corpus);
+    },
+    [history, t, action, corpora.data]
+  );
+
+  const continueConversation = () => {
+    setReadOnly(false);
+    setTimeout(() => composerRef.current?.focus(), 0);
   };
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -348,7 +406,6 @@ export function Chat() {
     : t("chat.llm_default", { model: defaultModel, provider: defaultProvider });
 
   const corpusList = corpora.data ?? [];
-  const apiWaiting = corpora.error !== null && corpora.data === null;
   const empty = turns.length === 0;
   const noRuns = !!corpus && !indexRuns.loading && runsForCorpus.length === 0;
   const lastTurn = turns[turns.length - 1];
@@ -406,6 +463,16 @@ export function Chat() {
             routing={routing}
             onRoutingChange={setRouting}
           />
+          <button
+            className="ghost sm"
+            onClick={() => setHistoryOpen(true)}
+            aria-haspopup="dialog"
+            aria-expanded={historyOpen}
+            title={t("history.open_title")}
+          >
+            <HistoryIcon size={15} />
+            {t("history.open")}
+          </button>
           {/* Always there (disabled when empty) so the bar does not reflow at the first answer. */}
           <button className="ghost sm" onClick={reset} disabled={turns.length === 0}>
             {t("chat.new_conversation")}
@@ -417,6 +484,25 @@ export function Chat() {
         <p className="inline-status" role="status">
           <Spinner /> {t("chat.api_waiting_hint")}
         </p>
+      ) : null}
+
+      {historyNotice ? (
+        <p className="inline-status error" role="alert">
+          {historyNotice}
+        </p>
+      ) : null}
+
+      {historyOpen ? (
+        <HistoryPanel
+          history={history}
+          currentId={conversation?.id ?? null}
+          retentionDays={config?.conversation_retention_days ?? 0}
+          onOpen={openConversation}
+          onDeleted={(id) => {
+            if (id === conversationRef.current?.id) reset();
+          }}
+          onClose={() => setHistoryOpen(false)}
+        />
       ) : null}
 
       {empty ? (
@@ -451,8 +537,24 @@ export function Chat() {
         </div>
       )}
 
+      {readOnly ? (
+        <div className="archived-bar" role="status">
+          <span>
+            {t("history.archived", {
+              date: new Date(conversation?.created_at ?? Date.now()).toLocaleString(i18n.language, {
+                dateStyle: "medium",
+                timeStyle: "short",
+              }),
+            })}
+          </span>
+          <button className="sm" onClick={continueConversation}>
+            {t("history.continue")}
+          </button>
+        </div>
+      ) : (
       <div className="composer">
         <textarea
+          ref={composerRef}
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
           onKeyDown={onKeyDown}
@@ -509,6 +611,7 @@ export function Chat() {
           )}
         </div>
       </div>
+      )}
 
       {/* Below the composer, until the first question or the first keystroke. */}
       {empty && suggestions.length > 0 && !question.trim() ? (

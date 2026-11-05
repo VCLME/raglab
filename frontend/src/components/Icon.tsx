@@ -172,3 +172,30 @@ export function StopIcon(props: IconProps) {
     </Stroke>
   );
 }
+
+export function HistoryIcon(props: IconProps) {
+  return (
+    <Stroke {...props}>
+      <path d="M3.5 12a8.5 8.5 0 1 0 2.5-6" />
+      <path d="M3.5 4v4h4" />
+      <path d="M12 7.5V12l3 2" />
+    </Stroke>
+  );
+}
+
+export function PencilIcon(props: IconProps) {
+  return (
+    <Stroke {...props}>
+      <path d="M4 20h4L19 9l-4-4L4 16v4Z" />
+      <path d="m13.5 6.5 4 4" />
+    </Stroke>
+  );
+}
+
+export function TrashIcon(props: IconProps) {
+  return (
+    <Stroke {...props}>
+      <path d="M4 7h16M9.5 7V4.5h5V7M6.5 7l1 12.5h9l1-12.5" />
+    </Stroke>
+  );
+}

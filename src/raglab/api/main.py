@@ -7,6 +7,7 @@ from raglab.api.errors import register_error_handlers
 from raglab.api.middleware import ApiKeyRateLimitMiddleware, MetricsMiddleware, RequestIdMiddleware
 from raglab.api.routers import (
     bench,
+    conversations,
     corpora,
     databases,
     experiments,
@@ -74,6 +75,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(graph.router)
     app.include_router(sources.router)
     app.include_router(databases.router)
+    app.include_router(conversations.router)
 
     return app
 

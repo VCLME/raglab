@@ -14,6 +14,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from raglab.config import Settings
+from raglab.conversations.store import ConversationHistoryDisabledError, ConversationNotFoundError
 from raglab.domain.errors import GraphUnavailableError, SourceBusyError, SourceFetchError, StageTimeoutError
 from raglab.llm.errors import LLMProviderError
 from raglab.ollama.errors import OllamaError, OllamaOutOfMemoryError
@@ -66,6 +67,10 @@ def describe_error(exc: Exception, settings: Settings) -> ErrorInfo | None:
         if exc.cause:
             source_body["cause"] = exc.cause
         return ErrorInfo(502, source_body)
+    if isinstance(exc, ConversationNotFoundError):
+        return ErrorInfo(404, {"detail": str(exc), "error": "ConversationNotFoundError"})
+    if isinstance(exc, ConversationHistoryDisabledError):
+        return ErrorInfo(404, {"detail": str(exc), "error": "ConversationHistoryDisabledError"})
     if isinstance(exc, SourceBusyError):
         return ErrorInfo(409, {"detail": str(exc), "error": "SourceBusyError"})
     # Raw transport errors from code paths that do not type them yet
@@ -101,6 +106,8 @@ def register_error_handlers(app: FastAPI, settings: Settings) -> None:
         GraphUnavailableError,
         SourceFetchError,
         SourceBusyError,
+        ConversationNotFoundError,
+        ConversationHistoryDisabledError,
         requests.exceptions.Timeout,
         requests.exceptions.ConnectionError,
         ValueError,

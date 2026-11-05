@@ -199,4 +199,6 @@ def config(settings: Settings = Depends(get_current_settings)) -> ConfigResponse
         retrieval_dedup=settings.retrieval_dedup,
         llm_providers=settings.llm_provider_names,
         default_llm_provider=settings.default_llm_provider,
+        conversation_history=settings.conversation_history,
+        conversation_retention_days=settings.conversation_retention_days,
     )

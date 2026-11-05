@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+import getpass
 import json
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import typer
@@ -10,10 +11,14 @@ from sqlalchemy import select
 from raglab.benchmarks import AVAILABLE_LOADERS, get_loader
 from raglab.benchmarks.lexml_questions import generate_questions, review_question_set
 from raglab.config import get_settings
+from raglab.conversations import ConversationStore, TurnRecorder
+from raglab.conversations.store import HIGHLIGHT_START, HIGHLIGHT_STOP
 from raglab.db import initialize_database, session_scope
 from raglab.db.lexical import refresh_lexical_index
 from raglab.db.models import Corpus, IndexRun
+from raglab.db.session import get_session_factory
 from raglab.domain.enums import ChunkingStrategy, RetrievalMode
+from raglab.domain.schemas import QueryResponse
 from raglab.experiments.ragas import JudgeConfig
 from raglab.experiments.recall import GeneratorConfig, RecallBenchmarkService
 from raglab.experiments.service import ExperimentService
@@ -47,6 +52,10 @@ eurlex_app = typer.Typer(no_args_is_help=True, help="Actes de l'UE (EUR-Lex / CE
 ollama_app = typer.Typer(no_args_is_help=True, help="Pilotage du service Ollama.")
 bench_app = typer.Typer(no_args_is_help=True, help="Datasets de benchmark.")
 graph_app = typer.Typer(no_args_is_help=True, help="Graphe structure dans Neo4j (lois, articles, renvois).")
+history_app = typer.Typer(
+    no_args_is_help=True,
+    help="Historique des conversations cote serveur (RAGLAB_CONVERSATION_HISTORY).",
+)
 sources_app = typer.Typer(
     no_args_is_help=True, help="Sources officielles (Legifrance, EUR-Lex) : collecte puis ingestion, comme l'Atelier."
 )
@@ -60,6 +69,7 @@ app.add_typer(ollama_app, name="ollama")
 app.add_typer(bench_app, name="bench")
 app.add_typer(graph_app, name="graph")
 app.add_typer(sources_app, name="sources")
+app.add_typer(history_app, name="history")
 
 
 @app.callback()
@@ -1149,6 +1159,12 @@ def query(
         help="Experimental : ecarter les passages qui repetent un passage garde (meme document, spans chevauchants) "
         "et remplir depuis une reserve plus profonde. Defaut: RAGLAB_RETRIEVAL_DEDUP.",
     ),
+    conversation: str | None = typer.Option(
+        None,
+        "--conversation",
+        help="Ajouter ce tour a une conversation de l'historique serveur (son id, ou `new` pour en ouvrir une). "
+        "Demande RAGLAB_CONVERSATION_HISTORY=true.",
+    ),
 ) -> None:
     filters = build_retrieval_filters(
         document_ids=document_ids,
@@ -1157,6 +1173,133 @@ def query(
         tags=tags,
         metadata_equals=metadata_equals,
     )
+    requested = {
+        "top_k": top_k,
+        "retrieval_mode": retrieval_mode,
+        "lexical_weight": lexical_weight,
+        "rrf_k": rrf_k,
+        "rerank": rerank,
+        "citations": citations,
+        "graph": graph,
+        "versions": versions,
+        "query_translation": query_translation,
+        "dedup": dedup,
+        "routing": routing,
+        "strategy": strategy,
+        "index_run_id": index_run_id,
+        "generate": generate,
+        "llm_provider": provider,
+        "llm_model": llm_model,
+        "filters": filters,
+    }
+    recorder = _conversation_recorder(conversation, question=question, corpus=corpus, requested=requested)
+    try:
+        _run_query(
+            recorder,
+            question=question,
+            corpus=corpus,
+            strategy=strategy,
+            index_run_id=index_run_id,
+            top_k=top_k,
+            generate=generate,
+            filters=filters,
+            retrieval_mode=retrieval_mode,
+            lexical_weight=lexical_weight,
+            rrf_k=rrf_k,
+            rerank=rerank,
+            citations=citations,
+            graph=graph,
+            versions=versions,
+            stream=stream,
+            llm_model=llm_model,
+            provider=provider,
+            routing=routing,
+            query_translation=query_translation,
+            dedup=dedup,
+        )
+    except KeyboardInterrupt:
+        if recorder is not None:
+            recorder.failed("Interrompu (Ctrl+C) avant la fin de la reponse.", status="stopped")
+        raise
+    except Exception as exc:
+        if recorder is not None:
+            recorder.failed(f"{type(exc).__name__}: {exc}")
+        raise
+
+
+def _conversation_recorder(
+    conversation: str | None,
+    *,
+    question: str,
+    corpus: str | None,
+    requested: dict,
+) -> TurnRecorder | None:
+    if not conversation:
+        return None
+    settings = get_settings()
+    if not settings.conversation_history:
+        raise typer.BadParameter(
+            "l'historique serveur est desactive (RAGLAB_CONVERSATION_HISTORY=false).",
+            param_hint="--conversation",
+        )
+    with session_scope() as session:
+        store = ConversationStore(session, settings)
+        if conversation == "new":
+            conversation = store.create(corpus_name=corpus, actor=_os_user(), channel="cli").id
+        elif not store.exists(conversation):
+            raise typer.BadParameter(f"conversation introuvable : {conversation}", param_hint="--conversation")
+    return TurnRecorder(
+        get_session_factory(),
+        settings,
+        conversation_id=conversation,
+        question=question,
+        requested=requested,
+        corpus_name=corpus,
+    )
+
+
+def _os_user() -> str | None:
+    try:
+        return getpass.getuser()
+    except Exception:
+        return None
+
+
+def _tag_recorded(data: dict, recorder: TurnRecorder | None) -> dict:
+    """Record a finished turn and add the conversation ids to the JSON shown."""
+    if recorder is None:
+        return data
+    response = QueryResponse.model_validate({key: value for key, value in data.items() if key != "first_token_ms"})
+    message_id = recorder.completed(response, first_token_ms=data.get("first_token_ms"))
+    if message_id is None:
+        return data
+    return {**data, "conversation_id": recorder.conversation_id, "message_id": message_id}
+
+
+def _run_query(
+    recorder: TurnRecorder | None,
+    *,
+    question: str,
+    corpus: str | None,
+    strategy: ChunkingStrategy | None,
+    index_run_id: str | None,
+    top_k: int | None,
+    generate: bool,
+    filters,
+    retrieval_mode: RetrievalMode | None,
+    lexical_weight: float | None,
+    rrf_k: int | None,
+    rerank: bool | None,
+    citations: bool | None,
+    graph: bool | None,
+    versions: str | None,
+    stream: bool,
+    llm_model: str | None,
+    provider: str | None,
+    routing: bool,
+    query_translation: bool | None,
+    dedup: bool | None,
+) -> None:
     with session_scope() as session:
         service = QueryService(session)
         if stream and generate:
@@ -1185,7 +1328,7 @@ def query(
                 elif event == "done":
                     final = data
             typer.echo("", err=True)
-            typer.echo(json.dumps(final, indent=2, ensure_ascii=False))
+            typer.echo(json.dumps(_tag_recorded(final, recorder), indent=2, ensure_ascii=False))
             return
         response = service.query(
             question=question,
@@ -1208,7 +1351,156 @@ def query(
             query_translation=query_translation,
             dedup=dedup,
         )
-    typer.echo(response.model_dump_json(indent=2))
+    if recorder is None:
+        typer.echo(response.model_dump_json(indent=2))
+        return
+    tagged = _tag_recorded(response.model_dump(mode="json"), recorder)
+    typer.echo(json.dumps(tagged, indent=2, ensure_ascii=False))
+
+
+def _history_store(session) -> ConversationStore:
+    settings = get_settings()
+    if not settings.conversation_history:
+        typer.echo(
+            "Historique serveur desactive (RAGLAB_CONVERSATION_HISTORY=false) : rien n'est enregistre cote serveur.",
+            err=True,
+        )
+        raise typer.Exit(code=1)
+    return ConversationStore(session, settings)
+
+
+def _highlight(snippet: str) -> str:
+    return snippet.replace(HIGHLIGHT_START, "[").replace(HIGHLIGHT_STOP, "]").replace("\n", " / ")
+
+
+@history_app.command("list")
+def history_list(
+    corpus: str | None = typer.Option(None, "--corpus", help="Seulement ce corpus."),
+    since: datetime | None = typer.Option(None, "--since", formats=["%Y-%m-%d"], help="Actives depuis (AAAA-MM-JJ)."),
+    until: datetime | None = typer.Option(
+        None, "--until", formats=["%Y-%m-%d"], help="Commencees au plus tard (AAAA-MM-JJ)."
+    ),
+    limit: int = typer.Option(50, "--limit", min=1),
+    as_json: bool = typer.Option(False, "--json", help="Sortie JSON (comme GET /api/conversations)."),
+) -> None:
+    """Conversations, la plus recemment active d'abord."""
+    from raglab.api.routers.conversations import summary
+
+    with session_scope() as session:
+        rows = _history_store(session).list_conversations(
+            corpus=corpus,
+            since=since.date() if since else None,
+            until=until.date() if until else None,
+            limit=limit,
+        )
+        items = [summary(row.conversation, row.message_count) for row in rows]
+    if as_json:
+        typer.echo(json.dumps([item.model_dump(mode="json") for item in items], indent=2, ensure_ascii=False))
+        return
+    for item in items:
+        typer.echo(
+            f"{item.id}  {item.updated_at:%Y-%m-%d %H:%M}  {item.corpus_name or '-':<16}  "
+            f"{item.message_count:>3} tour(s)  {item.title}"
+        )
+
+
+@history_app.command("show")
+def history_show(
+    conversation_id: str = typer.Argument(..., help="Id de la conversation."),
+    as_json: bool = typer.Option(False, "--json", help="Sortie JSON complete (contexte presente, options, timings)."),
+) -> None:
+    """Questions, reponses et sources d'une conversation."""
+    from raglab.api.routers.conversations import detail
+
+    with session_scope() as session:
+        try:
+            conversation = detail(_history_store(session).get(conversation_id))
+        except LookupError as exc:
+            typer.echo(str(exc), err=True)
+            raise typer.Exit(code=1) from exc
+    if as_json:
+        typer.echo(conversation.model_dump_json(indent=2))
+        return
+    typer.echo(f"{conversation.title}  ({conversation.corpus_name or '-'}, {conversation.created_at:%Y-%m-%d %H:%M})")
+    for message in conversation.messages:
+        typer.echo("")
+        typer.echo(f"[{message.position + 1}] Q : {message.question}")
+        typer.echo(f"    R : {message.answer or '(' + message.status + ')'}")
+        if message.error:
+            typer.echo(f"    ! {message.error}")
+        for source in message.sources:
+            mark = "*" if source.cited else " "
+            typer.echo(f"   {mark} rank {source.rank} {source.file_name} [{source.char_start}:{source.char_end}]")
+        model = " / ".join(part for part in (message.llm_provider, message.llm_model) if part)
+        typer.echo(f"    {model or '-'} · {message.elapsed_ms or 0:.0f} ms · {message.created_at:%Y-%m-%d %H:%M}")
+
+
+@history_app.command("search")
+def history_search(
+    query_text: str = typer.Argument(..., metavar="QUERY", help='Mots, "phrase exacte", -exclu, or.'),
+    corpus: str | None = typer.Option(None, "--corpus"),
+    since: datetime | None = typer.Option(None, "--since", formats=["%Y-%m-%d"]),
+    until: datetime | None = typer.Option(None, "--until", formats=["%Y-%m-%d"]),
+    limit: int = typer.Option(20, "--limit", min=1),
+    as_json: bool = typer.Option(False, "--json"),
+) -> None:
+    """Recherche plein texte dans les questions et les reponses (PostgreSQL, sans accents, par langue)."""
+    with session_scope() as session:
+        hits = _history_store(session).search(
+            query_text,
+            corpus=corpus,
+            since=since.date() if since else None,
+            until=until.date() if until else None,
+            limit=limit,
+        )
+    if as_json:
+        typer.echo(json.dumps([hit.__dict__ for hit in hits], indent=2, ensure_ascii=False, default=str))
+        return
+    if not hits:
+        typer.echo("Aucun resultat.", err=True)
+    for hit in hits:
+        typer.echo(f"{hit.conversation_id}  #{hit.position + 1}  {hit.title}")
+        typer.echo(f"    {_highlight(hit.snippet)}")
+
+
+@history_app.command("delete")
+def history_delete(
+    conversation_id: str = typer.Argument(..., help="Id de la conversation."),
+    yes: bool = typer.Option(False, "--yes", "-y", help="Ne pas demander de confirmation."),
+) -> None:
+    """Supprimer une conversation et tous ses messages (definitif)."""
+    if not yes:
+        typer.confirm(f"Supprimer definitivement la conversation {conversation_id} ?", abort=True)
+    with session_scope() as session:
+        try:
+            _history_store(session).delete(conversation_id)
+        except LookupError as exc:
+            typer.echo(str(exc), err=True)
+            raise typer.Exit(code=1) from exc
+    typer.echo(f"Conversation {conversation_id} supprimee.")
+
+
+@history_app.command("purge")
+def history_purge(
+    older_than_days: int | None = typer.Option(
+        None,
+        "--older-than-days",
+        min=0,
+        help="Supprimer les conversations inactives depuis plus de N jours (defaut : RAGLAB_CONVERSATION_RETENTION_DAYS).",
+    ),
+    yes: bool = typer.Option(False, "--yes", "-y"),
+) -> None:
+    """Appliquer la duree de conservation : supprimer les conversations trop anciennes."""
+    days = older_than_days if older_than_days is not None else get_settings().conversation_retention_days
+    if days <= 0 and older_than_days is None:
+        typer.echo("RAGLAB_CONVERSATION_RETENTION_DAYS=0 : pas de duree de conservation, rien a purger.", err=True)
+        raise typer.Exit(code=0)
+    cutoff = datetime.now(UTC) - timedelta(days=days)
+    if not yes:
+        typer.confirm(f"Supprimer les conversations inactives depuis le {cutoff:%Y-%m-%d %H:%M} UTC ?", abort=True)
+    with session_scope() as session:
+        deleted = _history_store(session).purge(cutoff)
+    typer.echo(f"{deleted} conversation(s) supprimee(s).")
 
 
 @experiment_app.command("run")

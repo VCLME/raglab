@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -107,6 +107,11 @@ class ConfigResponse(BaseModel):
     # Enabled generation providers (RAGLAB_LLM_PROVIDERS) and the default one.
     llm_providers: list[str] = Field(default_factory=lambda: ["ollama"])
     default_llm_provider: str = "ollama"
+    # Server-side conversation history (RAGLAB_CONVERSATION_HISTORY): the
+    # Chat then reads and writes /api/conversations, IndexedDB being its
+    # offline cache; off, the browser keeps the history alone.
+    conversation_history: bool = False
+    conversation_retention_days: int = 0
 
 
 class GenerationSettings(BaseModel):
@@ -272,6 +277,12 @@ class QueryRequest(BaseModel):
     mode: str = "vector"
     seed_top_n: int = 3
     entity_weight: float = 0.3
+    # Conversation history (RAGLAB_CONVERSATION_HISTORY): append this turn to
+    # the conversation (created with POST /api/conversations). Without it the
+    # query is not recorded. `message_id` is the id the client gave the turn
+    # (a UUID), so its offline copy and the server row share one id.
+    conversation_id: str | None = None
+    message_id: str | None = None
 
     @field_validator("versions")
     @classmethod
@@ -671,3 +682,82 @@ class SourceJobStatus(BaseModel):
     error: dict[str, Any] | None = None
     result: dict[str, Any] | None = None
     command: str
+
+
+class ConversationCreate(BaseModel):
+    # Client-proposed UUID: a conversation the browser started offline keeps
+    # its id once the server knows it. Creating an existing id returns it.
+    id: str | None = None
+    title: str = ""
+    corpus: str | None = None
+    channel: Literal["ui", "api", "cli"] = "api"
+
+
+class ConversationRename(BaseModel):
+    title: str = Field(..., min_length=1, max_length=500)
+
+
+class ConversationSummaryOut(BaseModel):
+    id: str
+    title: str
+    corpus_name: str | None
+    actor: str | None
+    channel: str
+    created_at: datetime
+    updated_at: datetime
+    message_count: int = 0
+
+
+class MessageSource(BaseModel):
+    chunk_id: str
+    document_id: str | None = None
+    file_name: str
+    source_path: str | None = None
+    char_start: int | None = None
+    char_end: int | None = None
+    rank: int
+    score: float | None = None
+    # The answer cites this passage with [Rank N].
+    cited: bool = False
+
+
+class MessageOut(BaseModel):
+    id: str
+    position: int
+    question: str
+    answer: str | None
+    status: str
+    error: str | None
+    corpus_name: str | None
+    index_run_id: str | None
+    strategy: str | None
+    sources: list[MessageSource]
+    presented_context: list[str]
+    citation: dict[str, Any] | None
+    routing: dict[str, Any] | None
+    options: dict[str, Any]
+    llm_provider: str | None
+    llm_model: str | None
+    generator_notice: str | None
+    timings_ms: dict[str, float]
+    elapsed_ms: float | None
+    first_token_ms: float | None
+    request_id: str | None
+    created_at: datetime
+
+
+class ConversationDetail(ConversationSummaryOut):
+    messages: list[MessageOut] = Field(default_factory=list)
+
+
+class ConversationSearchHit(BaseModel):
+    conversation_id: str
+    title: str
+    corpus_name: str | None
+    message_id: str
+    position: int
+    question: str
+    # Question and answer excerpt, matches between ⟦ and ⟧.
+    snippet: str
+    rank: float
+    created_at: datetime
