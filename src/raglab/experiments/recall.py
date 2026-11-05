@@ -39,6 +39,7 @@ from raglab.experiments.ragas import (
     FaithfulnessJudge,
     JudgeConfig,
 )
+from raglab.generation.prompts import presented_passages
 from raglab.graph.query import GraphQueryService
 from raglab.llm.local_server import LocalLLMServer
 from raglab.llm.openai_compat import OpenAICompatibleChat
@@ -384,6 +385,7 @@ class RecallBenchmarkService:
                 **(
                     {
                         "judge": judge.label(self.settings),
+                        "judge_protocol": JUDGE_PROTOCOL,
                         "generator": generator.label(self.settings),
                         "ragas_case_limit": ragas_case_limit,
                         "generation_top_k": self.settings.default_top_k,
@@ -497,6 +499,13 @@ class RecallBenchmarkService:
                         "expected_urns": case.expected_urns,
                         "retrieved_chunks": retrieved,
                         "answer": response.answer if generate and not deferred else None,
+                        # The writer's passages as presented (version line, repealed
+                        # provisions replaced): what the faithfulness judge reads.
+                        "generation_context": (
+                            presented_passages(list(response.retrieved_chunks)[:generation_top_k])
+                            if generate and not deferred and self.backend == "pgvector"
+                            else None
+                        ),
                         "generation_context_size": (
                             (min(generation_top_k, len(retrieved)) if self.backend == "pgvector" else len(retrieved))
                             if generate
@@ -596,6 +605,7 @@ class RecallBenchmarkService:
             "dataset_path": str(dataset_path),
             "total_cases": total_cases,
             "judge": judge.label(self.settings) if compute_ragas else None,
+            "judge_protocol": JUDGE_PROTOCOL if compute_ragas else None,
             "summary": summary,
             "by_type": by_type,
             **({"by_split": by_split} if by_split else {}),
@@ -653,6 +663,7 @@ class RecallBenchmarkService:
                 answer = answerer.generate_answer(question, chunks[:generation_top_k], model=generator.model)
                 detail = details[position]
                 detail["answer"] = answer
+                detail["generation_context"] = presented_passages(chunks[:generation_top_k])
                 detail["timings_ms"]["generation"] = round((perf_counter() - started) * 1000, 3)
                 detail["generation_stats"] = dict(answerer.last_stats)
 
@@ -678,11 +689,7 @@ class RecallBenchmarkService:
                     "faithfulness": judges["faithfulness"].score(
                         question=case.question,
                         answer=answer,
-                        # The judge sees exactly the context the generator saw.
-                        retrieved_texts=[
-                            chunk["chunk_text"]
-                            for chunk in detail["retrieved_chunks"][: detail.get("generation_context_size") or None]
-                        ],
+                        retrieved_texts=judge_context(detail),
                     ),
                     "answer_relevancy": judges["answer_relevancy"].score(question=case.question, answer=answer),
                 }
@@ -704,6 +711,24 @@ class RecallBenchmarkService:
         else:
             grade_all()
         return scores
+
+
+# What the faithfulness judge reads (audit 2026-11-04, lot 2):
+#   v1 (until 8711e3c): the raw text of the chunks given to the writer;
+#   v2: the passages as the writer read them (`generation_context`, with the
+#       version line and repealed provisions replaced by a note).
+# Results judged under v1 are kept as they are; a v2 run says so here.
+JUDGE_PROTOCOL = "faithfulness-presented-context-v2"
+
+
+def judge_context(detail: dict[str, Any]) -> list[str]:
+    """The writer's context for the faithfulness judge: as presented when it
+    was recorded, else (reports before v2) the raw chunk texts."""
+    presented = detail.get("generation_context")
+    if presented is not None:
+        return list(presented)
+    size = detail.get("generation_context_size") or None
+    return [chunk["chunk_text"] for chunk in detail["retrieved_chunks"][:size]]
 
 
 def _build_judges(settings: Settings, config: JudgeConfig) -> dict[str, Any]:

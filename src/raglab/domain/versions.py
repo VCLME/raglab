@@ -403,8 +403,11 @@ def _fr_date(value: str | None) -> str:
     return f"{'1er' if day.day == 1 else day.day} {months[day.month - 1]} {day.year}"
 
 
-def prompt_line(version: ChunkVersion | None) -> str | None:
-    """One line telling the model the version state of a passage."""
+def prompt_line(version: ChunkVersion | None, *, today: date | None = None) -> str | None:
+    """One line telling the model the version state of a passage.
+
+    `today` freezes the clock: the reference date is only mentioned when it
+    is not today, so replaying a recorded context needs the day it was shown."""
     if version is None or not version.in_prompt:
         return None
     if version.source == "markers":
@@ -422,7 +425,7 @@ def prompt_line(version: ChunkVersion | None) -> str | None:
         until = f", jusqu'au {_fr_date(version.date_fin)}" if version.date_fin else ""
         reference = (
             f" (à la date du {_fr_date(version.reference_date)})"
-            if version.reference_date and version.reference_date != date.today().isoformat()
+            if version.reference_date and version.reference_date != (today or date.today()).isoformat()
             else ""
         )
         return f"Statut : version de l'{label} en vigueur{since}{until}{reference}."
