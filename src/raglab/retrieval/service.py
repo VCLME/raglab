@@ -603,10 +603,10 @@ class QueryService:
         if use_dedup:
             dedup_started = perf_counter()
             # Version state first: two cuts of different versions never merge.
-            pool = annotate(
+            annotated_pool = annotate(
                 retrieved, policy, self.version_lookup.metadata(sorted({chunk.document_id for chunk in retrieved}))
             )
-            retrieved, dedup_stats = select_distinct(pool, effective_top_k)
+            retrieved, dedup_stats = select_distinct(annotated_pool, effective_top_k)
             timings_ms["dedup"] = round((perf_counter() - dedup_started) * 1000, 3)
             timings_ms["retrieval"] = round(timings_ms["retrieval"] + timings_ms["dedup"], 3)
         if branch.hits:
