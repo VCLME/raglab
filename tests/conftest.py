@@ -1,3 +1,4 @@
+import os
 import sys
 from pathlib import Path
 
@@ -10,6 +11,8 @@ if str(SRC) not in sys.path:
 
 import pytest  # noqa: E402
 
+UNREACHABLE_TEST_DATABASE = "postgresql+psycopg://raglab:raglab@127.0.0.1:1/raglab_test"
+
 
 @pytest.fixture(autouse=True)
 def _isolated_reports_dir(tmp_path, monkeypatch):
@@ -17,6 +20,14 @@ def _isolated_reports_dir(tmp_path, monkeypatch):
     from raglab.config import get_settings
 
     monkeypatch.setenv("RAGLAB_REPORTS_DIR", str(tmp_path / "reports"))
+    # Never the working database: a *_test database when one is given, else
+    # an address nothing listens on, so a stray write fails at once. The
+    # engine also refuses any database not named *_test.
+    monkeypatch.setenv("RAGLAB_DATABASE_URL", os.environ.get("RAGLAB_TEST_DATABASE_URL") or UNREACHABLE_TEST_DATABASE)
+    monkeypatch.setenv("RAGLAB_REQUIRE_TEST_DATABASE", "true")
+    from raglab.db import session as db_session
+
+    db_session.reset_engine()
     # Unit tests exercise each retrieval path explicitly; they do not depend
     # on the shipped default (hybrid + rerank), tested in test_defaults.py.
     monkeypatch.setenv("RAGLAB_DEFAULT_RETRIEVAL_MODE", "dense")
@@ -35,6 +46,7 @@ def _isolated_reports_dir(tmp_path, monkeypatch):
     get_settings.cache_clear()
     yield
     get_settings.cache_clear()
+    db_session.reset_engine()
 
 
 class NoVersionLookup:

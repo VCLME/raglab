@@ -14,7 +14,12 @@ def _by_kind(body: dict, kind: str) -> dict:
 
 
 @patch("raglab.api.routers.databases.Neo4jGraphStore")
-def test_databases_returns_both_connections(neo4j_cls, client: TestClient, mock_session):
+def test_databases_returns_both_connections(neo4j_cls, client: TestClient, mock_session, monkeypatch):
+    # The compose URL (the suite points RAGLAB_DATABASE_URL at a *_test database).
+    from raglab.config import get_settings
+
+    monkeypatch.setenv("RAGLAB_DATABASE_URL", "postgresql+psycopg://raglab:raglab@postgres:5432/raglab")
+    get_settings.cache_clear()
     # pg SELECT 1 succeeds -> postgres status = ok
     mock_session.execute.return_value = None
     # neo4j ping returns True -> status = ok

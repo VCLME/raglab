@@ -36,6 +36,7 @@ import requests
 from sqlalchemy import text
 
 from raglab.benchmarks.compare import case_rows
+from raglab.benchmarks.integrity import check_documents, describe, indexed_documents
 from raglab.config import Settings, get_settings
 from raglab.domain.enums import ChunkingStrategy, RetrievalMode
 from raglab.experiments.ragas import JudgeConfig
@@ -385,6 +386,19 @@ def run_suite(
             text("SELECT count(*) FROM documents d JOIN corpora c ON c.id = d.corpus_id WHERE c.name = :name"),
             {"name": suite.corpus_name},
         ).scalar_one()
+        # What retrieval will search, not only what sits on disk.
+        corpus_check = (
+            check_documents(
+                indexed_documents(session, str(indexing["index_run_id"])), suite.manifest_path, suite.corpus_dir
+            )
+            if suite.manifest_path
+            else None
+        )
+    if corpus_check is not None and corpus_check["problems"]:
+        raise RuntimeError(
+            f"L'index {indexing['index_run_id']} de la suite {suite.name} ne correspond pas au manifeste fige "
+            f"({describe(corpus_check)}). Reconstruire un index propre : docs/benchmarks/protocole.md."
+        )
     log_event(LOGGER, logging.INFO, "bench.suite.indexed", suite=suite.name, ingestion=ingestion, indexing=indexing)
     graph_build: dict[str, Any] | None = None
     if graph or (graph is None and settings.graph_retrieval):
@@ -428,6 +442,7 @@ def run_suite(
         "index_run_id": indexing["index_run_id"],
         "chunks": indexing.get("chunks"),
         "documents": documents,
+        **({"corpus_check": corpus_check} if corpus_check is not None else {}),
         "total_cases": report["total_cases"],
         "retrieval_mode": report.get("retrieval_mode"),
         "lexical_weight": report.get("lexical_weight"),
