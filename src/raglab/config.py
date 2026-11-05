@@ -22,6 +22,9 @@ class Settings(BaseSettings):
     log_format: str = "text"
 
     database_url: str = "postgresql+psycopg://raglab:raglab@localhost:5432/raglab"
+    # Set by the test suite: the engine refuses any database whose name does
+    # not end with "_test", so a test can never write to the working one.
+    require_test_database: bool = False
     ollama_base_url: str = "http://localhost:11434"
     # Optional OpenAI-compatible server (llama.cpp's llama-server). The start
     # command may contain `{profile}`; leave both commands empty to only use

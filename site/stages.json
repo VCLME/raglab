@@ -130,5 +130,11 @@
     "name": "De-duplication v2 (replaced)",
     "change": "+ drop overlapping cuts of one document (80 % overlap) that add no number, negation or exception; replaced by strict containment after a review counterexample (retrieval only)",
     "status": "audit lot 3 · replaced"
+  },
+  {
+    "label": "clean-legi-v1",
+    "name": "Clean consumer-code index",
+    "change": "same pipeline on a rebuilt consumer-code index without the document a test had written (5 998 documents, checked against the frozen manifest; retrieval only)",
+    "status": "review lot 1 · comparison"
   }
 ]
