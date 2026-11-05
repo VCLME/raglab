@@ -167,7 +167,17 @@
     "meta_total": "total",
     "placeholder_touch": "Pose ta question…",
     "meta_corpus": "corpus",
-    "meta_run": "run"
+    "meta_run": "run",
+    "thinking_routing": "Choix du corpus…",
+    "thinking_embed": "Vectorisation de la question…",
+    "thinking_retrieval": "Recherche des passages…",
+    "thinking_lexical": "Recherche par mots-clés…",
+    "thinking_graph": "Parcours des renvois…",
+    "thinking_fusion": "Fusion des classements…",
+    "thinking_rerank": "Re-ranking des passages…",
+    "thinking_versions": "Vérification des versions…",
+    "thinking_prompt": "Préparation du contexte…",
+    "thinking_generation": "Rédaction de la réponse…"
   },
   "history": {
     "title": "Historique des conversations",
@@ -175,7 +185,7 @@
     "retry": "Réessayer",
     "not_persistent": "Stockage du navigateur indisponible (fenêtre privée ?) : l'historique sera perdu au rechargement.",
     "search_label": "Rechercher dans l'historique",
-    "search_placeholder": "Chercher dans les questions et les réponses…",
+    "search_placeholder": "Rechercher…",
     "list_label": "Conversations",
     "results_label": "Résultats de la recherche",
     "no_results": "Aucune conversation ne correspond.",
@@ -218,7 +228,8 @@
     "group_today": "Aujourd'hui",
     "group_yesterday": "Hier",
     "group_week": "7 derniers jours",
-    "group_older": "Plus ancien"
+    "group_older": "Plus ancien",
+    "search_clear": "Effacer la recherche"
   },
   "dashboard": {
     "pull_in_progress": "Téléchargement…",

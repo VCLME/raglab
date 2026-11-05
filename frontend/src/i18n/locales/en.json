@@ -167,7 +167,17 @@
     "meta_total": "total",
     "placeholder_touch": "Ask your question…",
     "meta_corpus": "corpus",
-    "meta_run": "run"
+    "meta_run": "run",
+    "thinking_routing": "Choosing the corpus…",
+    "thinking_embed": "Embedding the question…",
+    "thinking_retrieval": "Searching the passages…",
+    "thinking_lexical": "Keyword search…",
+    "thinking_graph": "Following cross-references…",
+    "thinking_fusion": "Fusing the rankings…",
+    "thinking_rerank": "Re-ranking the passages…",
+    "thinking_versions": "Checking versions…",
+    "thinking_prompt": "Building the context…",
+    "thinking_generation": "Writing the answer…"
   },
   "history": {
     "title": "Conversation history",
@@ -175,7 +185,7 @@
     "retry": "Retry",
     "not_persistent": "Browser storage unavailable (private window?): the history will be lost on reload.",
     "search_label": "Search the history",
-    "search_placeholder": "Search questions and answers…",
+    "search_placeholder": "Search…",
     "list_label": "Conversations",
     "results_label": "Search results",
     "no_results": "No conversation matches.",
@@ -218,7 +228,8 @@
     "group_today": "Today",
     "group_yesterday": "Yesterday",
     "group_week": "Previous 7 days",
-    "group_older": "Older"
+    "group_older": "Older",
+    "search_clear": "Clear the search"
   },
   "dashboard": {
     "pull_in_progress": "Pulling…",

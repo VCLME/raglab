@@ -57,5 +57,6 @@ test("Answer: a latency receipt sums up the time per stage; the meta line labels
   await expect(receipt).toHaveAttribute("aria-label", /Vectorisation 12 ms, .*LLM 1534 ms/);
   const meta = page.locator(".answer-meta");
   await expect(meta).toContainText("1er token");
-  await expect(meta).toContainText("total1600 ms");
+  // French digit grouping: "1 600 ms" (narrow no-break space).
+  await expect(meta).toContainText(/total1\s600\sms/);
 });

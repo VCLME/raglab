@@ -276,6 +276,20 @@ export function HistorySidebar({
           placeholder={t("history.search_placeholder")}
           aria-label={t("history.search_label")}
         />
+        {query ? (
+          <button
+            type="button"
+            className="icon-btn search-clear"
+            onClick={() => {
+              setQuery("");
+              searchRef.current?.focus();
+            }}
+            aria-label={t("history.search_clear")}
+            title={t("history.search_clear")}
+          >
+            <CloseIcon size={13} />
+          </button>
+        ) : null}
       </label>
 
       {history.mode === "offline" ? (

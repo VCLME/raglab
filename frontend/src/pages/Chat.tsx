@@ -347,7 +347,22 @@ export function Chat() {
   // lesson the user just opened.
   const latest = turns[turns.length - 1];
   const followKey = `${turns.length}:${latest?.answer?.length ?? 0}:${latest?.chunks.length ?? 0}:${latest?.error ? 1 : 0}`;
+  // Someone who scrolled up to read is not pulled back down by the stream;
+  // a new question always brings the view to it.
+  const stickRef = useRef(true);
+  const followedTurns = useRef(0);
   useEffect(() => {
+    const onScroll = () => {
+      const gap = document.documentElement.scrollHeight - (window.scrollY + window.innerHeight);
+      stickRef.current = gap < 160;
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+  useEffect(() => {
+    const newTurn = turns.length !== followedTurns.current;
+    followedTurns.current = turns.length;
+    if (!newTurn && !stickRef.current) return;
     if (streamRef.current) {
       // Instant while tokens stream in: a smooth scroll per token would stutter.
       streamRef.current.scrollIntoView({
@@ -598,65 +613,68 @@ export function Chat() {
         </div>
       )}
 
-      <div className="composer">
-        <textarea
-          ref={composerRef}
-          value={question}
-          onChange={(e) => setQuestion(e.target.value)}
-          onKeyDown={onKeyDown}
-          placeholder={
-            corpus || routing ? t(touch ? "chat.placeholder_touch" : "chat.placeholder") : t("chat.placeholder_empty")
-          }
-          aria-label={t("chat.question_label")}
-          rows={2}
-        />
-        <div className="composer-row">
-          <div className="model-pick">
-            <Select
-              size="sm"
-              value={llm}
-              onChange={(e) => setLlm(e.target.value)}
-              title={
-                writer?.notice
-                  ? t(`chat.generator_notice_${writer.notice}`, { defaultValue: writer.notice })
-                  : t("chat.llm_title")
-              }
-              aria-label={t("chat.llm_label")}
-            >
-              <option value="">{defaultLlmLabel}</option>
-              {providers.map((p) => (
-                <optgroup key={p.name} label={p.label}>
-                  {p.available && p.models.length > 0 ? (
-                    p.models.map((m) => (
-                      <option key={m} value={llmValue(p.name, m)}>
-                        {m}
+      {/* Sticks to the bottom on an opaque band, so the answer never shows under it. */}
+      <div className="composer-dock">
+        <div className="composer">
+          <textarea
+            ref={composerRef}
+            value={question}
+            onChange={(e) => setQuestion(e.target.value)}
+            onKeyDown={onKeyDown}
+            placeholder={
+              corpus || routing ? t(touch ? "chat.placeholder_touch" : "chat.placeholder") : t("chat.placeholder_empty")
+            }
+            aria-label={t("chat.question_label")}
+            rows={2}
+          />
+          <div className="composer-row">
+            <div className="model-pick">
+              <Select
+                size="sm"
+                value={llm}
+                onChange={(e) => setLlm(e.target.value)}
+                title={
+                  writer?.notice
+                    ? t(`chat.generator_notice_${writer.notice}`, { defaultValue: writer.notice })
+                    : t("chat.llm_title")
+                }
+                aria-label={t("chat.llm_label")}
+              >
+                <option value="">{defaultLlmLabel}</option>
+                {providers.map((p) => (
+                  <optgroup key={p.name} label={p.label}>
+                    {p.available && p.models.length > 0 ? (
+                      p.models.map((m) => (
+                        <option key={m} value={llmValue(p.name, m)}>
+                          {m}
+                        </option>
+                      ))
+                    ) : (
+                      <option value={`${p.name}::`} disabled>
+                        {p.available ? t("chat.llm_no_models") : t("chat.llm_unreachable")}
                       </option>
-                    ))
-                  ) : (
-                    <option value={`${p.name}::`} disabled>
-                      {p.available ? t("chat.llm_no_models") : t("chat.llm_unreachable")}
-                    </option>
-                  )}
-                </optgroup>
-              ))}
-            </Select>
+                    )}
+                  </optgroup>
+                ))}
+              </Select>
+            </div>
+            {/* While a request runs, the same place stops it. */}
+            {action.loading ? (
+              <button className="send ghost" onClick={stop}>
+                {t("chat.stop")}
+                <StopIcon size={13} />
+              </button>
+            ) : (
+              <button
+                className="send"
+                onClick={() => send()}
+                disabled={!question.trim() || (!corpus && !routing) || noRuns}
+              >
+                {t("common.submit")}
+                <SendIcon size={15} />
+              </button>
+            )}
           </div>
-          {/* While a request runs, the same place stops it. */}
-          {action.loading ? (
-            <button className="send ghost" onClick={stop}>
-              {t("chat.stop")}
-              <StopIcon size={13} />
-            </button>
-          ) : (
-            <button
-              className="send"
-              onClick={() => send()}
-              disabled={!question.trim() || (!corpus && !routing) || noRuns}
-            >
-              {t("common.submit")}
-              <SendIcon size={15} />
-            </button>
-          )}
         </div>
       </div>
 
@@ -762,6 +780,59 @@ const RECEIPT_STAGES: NodeId[] = [
   "prompt",
   "generation",
 ];
+
+/** The stage a request is in, from its live pipeline: the last one still running. */
+function runningStage(pipeline: PipelineState | undefined): NodeId | null {
+  if (!pipeline) return null;
+  const running = RECEIPT_STAGES.filter((id) => pipeline.nodes[id]?.status === "running");
+  return running.length > 0 ? running[running.length - 1] : null;
+}
+
+/** `value`, but each shown value stays at least `holdMs` before the next replaces it. */
+function useHeld<T>(value: T, holdMs: number): T {
+  const [shown, setShown] = useState(value);
+  const since = useRef(Date.now());
+  useEffect(() => {
+    if (value === shown) return;
+    const wait = Math.max(0, holdMs - (Date.now() - since.current));
+    const timer = setTimeout(() => {
+      since.current = Date.now();
+      setShown(value);
+    }, wait);
+    return () => clearTimeout(timer);
+  }, [value, shown, holdMs]);
+  return shown;
+}
+
+// Shortest time a stage name stays on screen: replayed stages last a few ms.
+const STAGE_LABEL_HOLD_MS = 450;
+
+/**
+ * While raglab works: four small squares, the shape of the citation chips,
+ * fill one after the other like passages being retrieved, beside the stage
+ * the request is really in (from the stream's stage events).
+ */
+function ThinkingStatus({ pipeline }: { pipeline: PipelineState | undefined }) {
+  const { t } = useTranslation();
+  const stage = runningStage(pipeline);
+  const label = useHeld(
+    stage ? t(`chat.thinking_${stage}`, { defaultValue: t("chat.loading") }) : t("chat.loading"),
+    STAGE_LABEL_HOLD_MS
+  );
+  return (
+    <div className="inline-status thinking" role="status">
+      <span className="retrieval-mark" aria-hidden="true">
+        <span />
+        <span />
+        <span />
+        <span />
+      </span>
+      <span key={label} className="thinking-label">
+        {label}
+      </span>
+    </div>
+  );
+}
 
 /** "14:02" today, "04/11 14:02" another day. */
 function stampTime(iso: string | undefined, language: string): string | null {
@@ -869,14 +940,7 @@ function ChatTurnView({
 
       <div className="turn-body">
         {(turn.answer === null || turn.answer === "") && !turn.error && !turn.stopped ? (
-          <div className="inline-status" role="status">
-            <span className="dots">
-              <span />
-              <span />
-              <span />
-            </span>
-            {t("chat.loading")}
-          </div>
+          <ThinkingStatus pipeline={turn.pipeline} />
         ) : null}
 
         {turn.stopped && !turn.answer ? (
@@ -985,13 +1049,13 @@ function ChatTurnView({
                   {turn.first_token_ms != null ? (
                     <span title={t("chat.meta_first_token_title")}>
                       <span className="meta-label">{t("chat.meta_first_token_label")}</span>
-                      {t("chat.meta_ms", { ms: turn.first_token_ms.toFixed(0) })}
+                      <code>{t("chat.meta_ms", { ms: Math.round(turn.first_token_ms).toLocaleString(i18n.language) })}</code>
                     </span>
                   ) : null}
                   {turn.elapsed_ms != null ? (
                     <span>
                       <span className="meta-label">{t("chat.meta_total")}</span>
-                      {t("chat.meta_ms", { ms: turn.elapsed_ms.toFixed(0) })}
+                      <code>{t("chat.meta_ms", { ms: Math.round(turn.elapsed_ms).toLocaleString(i18n.language) })}</code>
                     </span>
                   ) : null}
                   {turn.corpus ? (

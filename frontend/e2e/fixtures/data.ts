@@ -175,7 +175,12 @@ export const databases: DatabasesResponse = {
   ],
 };
 
-export const suggestions: string[] = ["Quelle est la durée du mandat présidentiel ?"];
+export const suggestions: string[] = [
+  "Quelle est la durée du mandat présidentiel ?",
+  "Qui vote la loi et contrôle l'action du Gouvernement ?",
+  "Le Président peut-il exercer plus de deux mandats de suite ?",
+  "Qui peut saisir le Conseil constitutionnel ?",
+];
 
 export const QUESTION = "Quelle est la durée du mandat présidentiel ?";
 

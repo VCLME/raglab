@@ -89,7 +89,7 @@ export function SourceList({
               {stamp ? <span className={`source-stamp ${stamp.tone}`}>{stamp.label}</span> : null}
               <span className="source-score">
                 {entry.count > 1 ? `${t("chat.source_chunks", { count: entry.count })} · ` : ""}
-                {entry.best.score.toFixed(2)}
+                {entry.best.score.toFixed(3)}
               </span>
             </button>
           </li>
