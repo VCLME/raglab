@@ -83,3 +83,26 @@ raglab bench all --suite br_expat --label brexpat-qt-v1 --ragas-limit 0    # dé
 Planalto met ses textes compilés à jour en place : une collecte ultérieure peut différer (Lei 9.249 et Lei 10.666 ont été modifiées en 2026). Comparez les `sha256` de `corpus_manifest.json` avec ceux de `data/lexml/br_expat/manifest.json` ; `raglab bench` refuse de tourner si un texte a changé.
 
 Licence : législation fédérale brésilienne, domaine public (Lei 9.610/1998, art. 8º, IV).
+
+## Preuves suffisantes (`evidence_v1.jsonl`, préparé)
+
+Ce fichier répond au lot 3 de la contre-relecture des PR #83 à #85. Recall@5 compte une question retrouvée dès qu'un passage touche le bon article. Or une réponse peut exiger plusieurs dispositions à la fois (Q4 : le cas d'infraction **et** le montant), et une même preuve peut exister dans deux textes (la loi, et le décret qui la reprend).
+
+`evidence_v1.jsonl` décrit, pour chaque question, des **groupes de preuves** :
+- toutes les dispositions d'un groupe sont nécessaires ;
+- un groupe suffit, les groupes étant des alternatives.
+
+Le jeu figé (`ground_truth.jsonl`) n'est pas modifié.
+
+**État : proposition automatique, non relue.** `scripts/br_expat_evidence.py` regroupe les `provision_spans` (vérifiées à la main à la construction du jeu) par texte. Toutes les dispositions d'une même loi forment un groupe, et deux textes sont des alternatives. Chaque ligne porte `annotation: "auto-by-file"` et `reviewed_by: null`. Il faut une relecture humaine avant de publier le niveau « preuves complètes » comme résultat : certains regroupements par texte peuvent être faux (deux dispositions d'une même loi qui sont en réalité des alternatives).
+
+**Trois niveaux**, calculés sur les 5 passages des runs enregistrés (`scripts/evidence_eval.py`, `src/raglab/benchmarks/evidence.py`). Une disposition compte comme couverte quand un passage du même fichier en recouvre au moins la moitié.
+
+| Run | Article | Disposition | Preuves complètes (groupes non relus) |
+|---|---|---|---|
+| `brexpat-naive-v1` | 0,460 | 0,378 | 0,297 |
+| `brexpat-full-v1` | 0,540 | 0,486 | 0,378 (+5 / −2, p = 0,45) |
+| `brexpat-qt-v1` | 0,703 | 0,540 | 0,432 (+3 / −1, p = 0,63) |
+
+Ces chiffres portent sur 37 questions (Q30, hors corpus, n'a pas de preuve). Les trois niveaux s'écartent nettement : trouver l'article ne veut pas dire trouver la disposition qui répond, ni toutes celles qui sont nécessaires.
+

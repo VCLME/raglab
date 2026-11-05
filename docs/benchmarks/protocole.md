@@ -160,7 +160,7 @@ Résultats ([benchmarks/judging](../../benchmarks/judging/README.md)), sur les m
 - **jeu « versions » avec filtre** (100 contextes annotés) : 0,885 en v1, 0,928 en v2 (+0,043, IC 95 % [+0,008 ; +0,082], 7 réponses notées 1,0 en v2 seulement, aucune dans l'autre sens, p = 0,016) ;
 - **même jeu sans filtre** (aucune annotation, témoin) : 0,930 dans les deux protocoles.
 
-L'écart de fidélité publié entre ces deux runs (0,935 contre 0,895) n'est plus observé en v2 (0,930 et 0,928). Les deux runs n'ayant pas les mêmes réponses, ce n'est pas une preuve causale complète.
+Les deux runs portent sur les mêmes 100 questions, donc ils se comparent de façon appariée, même si leurs réponses diffèrent. L'écart publié entre eux (0,935 contre 0,895, soit −0,040, IC 95 % [−0,090 ; +0,015], p = 0,17) n'était pas significatif. En v2, il vaut −0,002 [−0,055 ; +0,050]. Une différence non significative ne démontre pas l'équivalence.
 
 ## Limites connues
 
