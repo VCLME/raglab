@@ -28,7 +28,7 @@ test("Learning mode: a stage picked after scrolling down opens its lesson on scr
   await page.getByRole("button", { name: "Mode pédagogique" }).click();
   for (let i = 0; i < 3; i++) {
     await ask(page);
-    await expect(page.locator(".bubble.assistant")).toHaveCount(i + 1);
+    await expect(page.locator(".turn-answer")).toHaveCount(i + 1);
   }
   await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
   await page.getByRole("button", { name: /^Recherche vectorielle/ }).click();
@@ -47,12 +47,13 @@ test("Learning mode: a stage picked after scrolling down opens its lesson on scr
 test("Chat: the bar does not reflow at the first answer; Send stays on the right", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto("/");
+  // On a phone the history is a drawer; its header keeps « Nouvelle conversation » at hand.
   const newConversation = page.getByRole("button", { name: "Nouvelle conversation" });
-  await expect(newConversation).toBeDisabled();
+  await expect(newConversation).toBeVisible();
   const before = (await page.locator(".settings-bar").boundingBox())!.height;
   await ask(page);
   await expect(page.getByText(/Le Président est élu/)).toBeVisible();
-  await expect(newConversation).toBeEnabled();
+  await expect(newConversation).toBeVisible();
   expect((await page.locator(".settings-bar").boundingBox())!.height).toBe(before);
   // No index echo in the composer (the Index picker already says it).
   await expect(page.locator(".composer").getByText(/^index :/)).toHaveCount(0);

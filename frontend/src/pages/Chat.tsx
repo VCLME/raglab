@@ -13,8 +13,8 @@ import {
 import { parseVersionsValue } from "../components/Versions";
 import { ChunkCard } from "../components/ChunkCard";
 import { extractCitedRanks, renderAnswer } from "../components/AnswerText";
-import { HistoryIcon, SendIcon, StopIcon } from "../components/Icon";
-import { HistoryPanel } from "../components/HistoryPanel";
+import { ChevronDownIcon, NewChatIcon, SendIcon, SidebarIcon, StopIcon } from "../components/Icon";
+import { HistorySidebar } from "../components/HistorySidebar";
 import { PipelineStrip, type RouteInfo } from "../components/PipelineStrip";
 import { FieldLabelContext, Select } from "../components/Select";
 import { RoutingPanel } from "../components/RoutingPanel";
@@ -37,6 +37,7 @@ import {
 import { useApiAction, useApiLoad } from "../hooks/useApi";
 import { useConfig } from "../hooks/useConfig";
 import { useEducationalMode } from "../hooks/useEducationalMode";
+import { useMediaQuery } from "../hooks/useMediaQuery";
 import { newId, useConversationHistory } from "../history/useConversationHistory";
 import type { ChatTurn, StoredConversation } from "../history/types";
 
@@ -74,6 +75,20 @@ function formatRunLabel(run: IndexRunSummary): string {
 // Pause before closing each replayed stage, so the diagram can be followed.
 const REPLAY_STEP_MS = 280;
 
+// The history is a column beside the Chat from this width, a drawer below it.
+const SIDEBAR_QUERY = "(min-width: 1024px)";
+// The learning strip needs the width: the column docks beside it only on large screens.
+const SIDEBAR_EDU_QUERY = "(min-width: 1560px)";
+const SIDEBAR_KEY = "raglab.historySidebar";
+
+function readSidebarOpen(): boolean {
+  try {
+    return localStorage.getItem(SIDEBAR_KEY) !== "closed";
+  } catch {
+    return true;
+  }
+}
+
 // While the API is not up yet (UI started first), lists are fetched again on this period.
 const RETRY_MS = 3000;
 
@@ -103,9 +118,11 @@ export function Chat() {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [highlight, setHighlight] = useState<Record<string, string | null>>({});
   const [conversation, setConversation] = useState<CurrentConversation | null>(null);
-  // A conversation reopened from the history stays read-only until « Continuer ».
-  const [readOnly, setReadOnly] = useState(false);
-  const [historyOpen, setHistoryOpen] = useState(false);
+  const wide = useMediaQuery(SIDEBAR_QUERY);
+  const roomy = useMediaQuery(SIDEBAR_EDU_QUERY);
+  // Desktop: the column can be folded (remembered); narrower: an off-canvas drawer.
+  const [sidebarOpen, setSidebarOpen] = useState(readSidebarOpen);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [historyNotice, setHistoryNotice] = useState<string | null>(null);
   const conversationRef = useRef<CurrentConversation | null>(null);
   conversationRef.current = conversation;
@@ -160,7 +177,7 @@ export function Chat() {
 
   const send = async (overrideQuestion?: string) => {
     const q = (overrideQuestion ?? question).trim();
-    if (!q || (!corpus && !routing) || readOnly) return;
+    if (!q || (!corpus && !routing)) return;
     const id = newId();
     const createdAt = new Date().toISOString();
     const picked = parseLlm(llm);
@@ -328,15 +345,40 @@ export function Chat() {
     setHighlight({});
     setConversation(null);
     conversationRef.current = null;
-    setReadOnly(false);
     setHistoryNotice(null);
     action.reset();
+  };
+
+  // Wide enough again: the column takes over from the drawer.
+  const dockable = educational ? roomy : wide;
+  useEffect(() => {
+    if (dockable) setDrawerOpen(false);
+  }, [dockable]);
+
+  const showSidebar = (open: boolean) => {
+    setSidebarOpen(open);
+    try {
+      localStorage.setItem(SIDEBAR_KEY, open ? "open" : "closed");
+    } catch {
+      // private mode: keep the in-memory value
+    }
+  };
+
+  // On a phone, focusing the composer would pull the keyboard up over the conversation.
+  const focusComposer = () => {
+    if (wide) setTimeout(() => composerRef.current?.focus(), 0);
+  };
+
+  const newConversation = () => {
+    reset();
+    setDrawerOpen(false);
+    focusComposer();
   };
 
   // Keep each finished turn in the browser (and its list), server or not.
   const { save } = history;
   useEffect(() => {
-    if (!conversation || readOnly || action.loading || turns.length === 0) return;
+    if (!conversation || action.loading || turns.length === 0) return;
     const stored: StoredConversation = {
       id: conversation.id,
       title: conversation.title,
@@ -347,14 +389,14 @@ export function Chat() {
       turns,
     };
     save(stored);
-  }, [conversation, readOnly, action.loading, turns, corpus, save]);
+  }, [conversation, action.loading, turns, corpus, save]);
 
   const openConversation = useCallback(
     async (id: string) => {
       schedulerRef.current?.cancel();
       abortRef.current?.abort();
       const loaded = await history.load(id);
-      setHistoryOpen(false);
+      setDrawerOpen(false);
       if (!loaded) {
         setHistoryNotice(t("history.not_found"));
         return;
@@ -365,18 +407,14 @@ export function Chat() {
       const opened = { id: loaded.id, origin: loaded.origin, title: loaded.title, created_at: loaded.created_at };
       conversationRef.current = opened;
       setConversation(opened);
-      setReadOnly(true);
       setHistoryNotice(null);
       action.reset();
       if (loaded.corpus && corpora.data?.some((c) => c.name === loaded.corpus)) setCorpus(loaded.corpus);
+      // Reopened as a normal chat: the next question continues it.
+      if (wide) setTimeout(() => composerRef.current?.focus(), 0);
     },
-    [history, t, action, corpora.data]
+    [history, t, action, corpora.data, wide]
   );
-
-  const continueConversation = () => {
-    setReadOnly(false);
-    setTimeout(() => composerRef.current?.focus(), 0);
-  };
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
@@ -411,9 +449,38 @@ export function Chat() {
   const lastTurn = turns[turns.length - 1];
   const lastPipeline = lastTurn?.pipeline ?? idlePipeline();
 
+  const inline = dockable && sidebarOpen;
+  // Without the column: a slim header to reach the history and start afresh.
+  // Without the column, the settings bar carries the way to the history and a
+  // fresh start (no extra row: the learning strip already takes the height).
+  const showHistory = inline ? null : (
+    <button
+      type="button"
+      className="ghost icon-btn"
+      onClick={() => (dockable ? showSidebar(true) : setDrawerOpen(true))}
+      aria-label={t("history.show")}
+      aria-expanded={dockable ? false : drawerOpen}
+      title={t("history.show")}
+    >
+      <SidebarIcon size={17} />
+    </button>
+  );
+  const startAfresh = inline ? null : (
+    <button
+      type="button"
+      className="ghost icon-btn"
+      onClick={newConversation}
+      aria-label={t("chat.new_conversation")}
+      title={t("chat.new_conversation")}
+    >
+      <NewChatIcon size={17} />
+    </button>
+  );
+
   const page = (
     <div className="chat-page">
       <div className="settings-bar">
+        {showHistory}
         <div className="compact-field">
           <label id="chat-corpus-label">{t("chat.corpus_label")}</label>
           <FieldLabelContext.Provider value="chat-corpus-label">
@@ -463,20 +530,7 @@ export function Chat() {
             routing={routing}
             onRoutingChange={setRouting}
           />
-          <button
-            className="ghost sm"
-            onClick={() => setHistoryOpen(true)}
-            aria-haspopup="dialog"
-            aria-expanded={historyOpen}
-            title={t("history.open_title")}
-          >
-            <HistoryIcon size={15} />
-            {t("history.open")}
-          </button>
-          {/* Always there (disabled when empty) so the bar does not reflow at the first answer. */}
-          <button className="ghost sm" onClick={reset} disabled={turns.length === 0}>
-            {t("chat.new_conversation")}
-          </button>
+          {startAfresh}
         </div>
       </div>
 
@@ -490,19 +544,6 @@ export function Chat() {
         <p className="inline-status error" role="alert">
           {historyNotice}
         </p>
-      ) : null}
-
-      {historyOpen ? (
-        <HistoryPanel
-          history={history}
-          currentId={conversation?.id ?? null}
-          retentionDays={config?.conversation_retention_days ?? 0}
-          onOpen={openConversation}
-          onDeleted={(id) => {
-            if (id === conversationRef.current?.id) reset();
-          }}
-          onClose={() => setHistoryOpen(false)}
-        />
       ) : null}
 
       {empty ? (
@@ -537,21 +578,6 @@ export function Chat() {
         </div>
       )}
 
-      {readOnly ? (
-        <div className="archived-bar" role="status">
-          <span>
-            {t("history.archived", {
-              date: new Date(conversation?.created_at ?? Date.now()).toLocaleString(i18n.language, {
-                dateStyle: "medium",
-                timeStyle: "short",
-              }),
-            })}
-          </span>
-          <button className="sm" onClick={continueConversation}>
-            {t("history.continue")}
-          </button>
-        </div>
-      ) : (
       <div className="composer">
         <textarea
           ref={composerRef}
@@ -611,7 +637,6 @@ export function Chat() {
           )}
         </div>
       </div>
-      )}
 
       {/* Below the composer, until the first question or the first keystroke. */}
       {empty && suggestions.length > 0 && !question.trim() ? (
@@ -623,45 +648,76 @@ export function Chat() {
     </div>
   );
 
-  if (!educational) return page;
-  // Decisions of the last request (from its response), or what the current
-  // options will do before the first question.
-  const planned = effectiveOptions(options, config, legalCorpus);
-  const answered = !!lastTurn?.index_run_id;
-  const route: RouteInfo = {
-    known: answered,
-    mode: (answered ? lastTurn?.retrieval_mode : null) ?? planned.mode,
-    rerank: (answered ? lastTurn?.rerank : null) ?? planned.rerank,
-    // Before a question, a re-ranking left off for lack of GPU already says why.
-    rerankNotice: answered
-      ? lastTurn?.rerank_notice ?? null
-      : config?.rerank_gpu === false && !planned.rerank
-      ? "skipped_no_gpu"
-      : null,
-    rerankCandidates: config?.rerank_candidates ?? 40,
-    legalCorpus,
-    citationsOn: planned.citations,
-    citation: answered ? lastTurn?.citation ?? null : null,
-    graphOn: (answered ? lastTurn?.graph : null) ?? planned.graph,
-    graphNotice: answered ? lastTurn?.graph_notice ?? null : null,
-    graphStats: answered ? lastTurn?.graph_stats ?? null : null,
-    versionsMode: parseVersionsValue(planned.versions).mode,
-    versions: answered ? lastTurn?.versions ?? null : null,
-  };
-  return (
-    <div className="edu-shell">
-      <PipelineStrip
-        state={lastPipeline}
-        question={lastTurn?.question}
-        lexemes={lastTurn?.lexemes}
-        rrfK={config?.rrf_k ?? 60}
-        lexicalWeight={config?.hybrid_lexical_weight ?? 0.5}
-        graphWeight={config?.graph_weight ?? 0.5}
-        route={route}
+  const sidebar =
+    inline || drawerOpen ? (
+      <HistorySidebar
+        history={history}
+        variant={inline ? "inline" : "drawer"}
+        currentId={conversation?.id ?? null}
+        onOpen={openConversation}
+        onNew={newConversation}
+        onDeleted={(id) => {
+          if (id === conversationRef.current?.id) reset();
+        }}
+        onRenamed={(id, title) => {
+          const current = conversationRef.current;
+          if (current?.id !== id) return;
+          const renamed = { ...current, title };
+          conversationRef.current = renamed;
+          setConversation(renamed);
+        }}
+        onClose={() => (inline ? showSidebar(false) : setDrawerOpen(false))}
       />
-      {page}
+    ) : null;
+
+  return (
+    <div className={`chat-layout${inline ? " with-sidebar" : ""}`}>
+      {sidebar}
+      <div className="chat-main">{educational ? educationalShell() : page}</div>
     </div>
   );
+
+  // The learning mode puts the request's pipeline above the chat.
+  function educationalShell() {
+    // Decisions of the last request (from its response), or what the current
+    // options will do before the first question.
+    const planned = effectiveOptions(options, config, legalCorpus);
+    const answered = !!lastTurn?.index_run_id;
+    const route: RouteInfo = {
+      known: answered,
+      mode: (answered ? lastTurn?.retrieval_mode : null) ?? planned.mode,
+      rerank: (answered ? lastTurn?.rerank : null) ?? planned.rerank,
+      // Before a question, a re-ranking left off for lack of GPU already says why.
+      rerankNotice: answered
+        ? lastTurn?.rerank_notice ?? null
+        : config?.rerank_gpu === false && !planned.rerank
+        ? "skipped_no_gpu"
+        : null,
+      rerankCandidates: config?.rerank_candidates ?? 40,
+      legalCorpus,
+      citationsOn: planned.citations,
+      citation: answered ? lastTurn?.citation ?? null : null,
+      graphOn: (answered ? lastTurn?.graph : null) ?? planned.graph,
+      graphNotice: answered ? lastTurn?.graph_notice ?? null : null,
+      graphStats: answered ? lastTurn?.graph_stats ?? null : null,
+      versionsMode: parseVersionsValue(planned.versions).mode,
+      versions: answered ? lastTurn?.versions ?? null : null,
+    };
+    return (
+      <div className="edu-shell">
+        <PipelineStrip
+          state={lastPipeline}
+          question={lastTurn?.question}
+          lexemes={lastTurn?.lexemes}
+          rrfK={config?.rrf_k ?? 60}
+          lexicalWeight={config?.hybrid_lexical_weight ?? 0.5}
+          graphWeight={config?.graph_weight ?? 0.5}
+          route={route}
+        />
+        {page}
+      </div>
+    );
+  }
 }
 
 interface TurnProps {
@@ -692,7 +748,7 @@ function ChatTurnView({
   return (
     <>
       <div className="bubble user">
-        <div className="role">{t("chat.user_role")}</div>
+        <span className="role sr-only">{t("chat.user_role")}</span>
         {turn.question}
       </div>
 
@@ -734,19 +790,32 @@ function ChatTurnView({
       ) : null}
 
       {turn.answer ? (
-        <div className="bubble assistant" aria-busy={turn.streaming ? true : undefined}>
-          <div className="role">{t("chat.assistant_role")}</div>
-          <div className="answer-text" style={{ whiteSpace: "pre-wrap" }}>
+        <article className="turn-answer" aria-busy={turn.streaming ? true : undefined}>
+          <span className="role sr-only">{t("chat.assistant_role")}</span>
+          <div className="answer-text">
             {renderAnswer(turn.answer, turn.chunks, highlight, (chunk) => onSelectSource(chunk.file_name))}
             {turn.streaming ? <span className="stream-caret" aria-hidden="true" /> : null}
           </div>
           {turn.stopped ? <p className="answer-stopped">{t("chat.stopped")}</p> : null}
           {sourceChunks.length > 0 ? (
-            <div className="sources">
-              <div className="sources-label">
-                {t("chat.sources_header", {
-                  count: new Set(sourceChunks.map((c) => c.file_name)).size,
-                })}
+            <section className="sources" aria-labelledby={`sources-${turn.id}`}>
+              <div className="sources-head">
+                <span className="sources-label" id={`sources-${turn.id}`}>
+                  {t("chat.sources_header", {
+                    count: new Set(sourceChunks.map((c) => c.file_name)).size,
+                  })}
+                </span>
+                <button
+                  type="button"
+                  className={`details-toggle${expanded ? " open" : ""}`}
+                  onClick={onToggleDetails}
+                  aria-expanded={expanded}
+                >
+                  {t(`chat.chunks_${expanded ? "hide" : "show"}${highlight ? "_filtered" : ""}`, {
+                    count: visibleChunks.length,
+                  })}
+                  <ChevronDownIcon size={14} />
+                </button>
               </div>
               <SourceList
                 chunks={sourceChunks}
@@ -754,19 +823,14 @@ function ChatTurnView({
                 activeFile={highlight}
                 citedRanks={turn.answer ? extractCitedRanks(turn.answer) : undefined}
               />
-              <button className="details-toggle" onClick={onToggleDetails}>
-                {t(`chat.chunks_${expanded ? "hide" : "show"}${highlight ? "_filtered" : ""}`, {
-                  count: visibleChunks.length,
-                })}
-              </button>
               {expanded ? (
-                <div style={{ marginTop: 12 }}>
+                <ol className="chunk-list">
                   {visibleChunks.map((c) => (
-                    <ChunkCard key={c.chunk_id} chunk={c} />
+                    <ChunkCard key={c.chunk_id} chunk={c} compact />
                   ))}
-                </div>
+                </ol>
               ) : null}
-            </div>
+            </section>
           ) : null}
           {turn.routing ? <RoutingPanel routing={turn.routing} /> : null}
           {turn.rerank_notice ? (
@@ -815,7 +879,7 @@ function ChatTurnView({
               <span>{t("chat.meta_ms", { ms: turn.elapsed_ms.toFixed(0) })}</span>
             ) : null}
           </div>
-        </div>
+        </article>
       ) : null}
     </>
   );

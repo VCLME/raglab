@@ -173,16 +173,6 @@ export function StopIcon(props: IconProps) {
   );
 }
 
-export function HistoryIcon(props: IconProps) {
-  return (
-    <Stroke {...props}>
-      <path d="M3.5 12a8.5 8.5 0 1 0 2.5-6" />
-      <path d="M3.5 4v4h4" />
-      <path d="M12 7.5V12l3 2" />
-    </Stroke>
-  );
-}
-
 export function PencilIcon(props: IconProps) {
   return (
     <Stroke {...props}>
@@ -196,6 +186,33 @@ export function TrashIcon(props: IconProps) {
   return (
     <Stroke {...props}>
       <path d="M4 7h16M9.5 7V4.5h5V7M6.5 7l1 12.5h9l1-12.5" />
+    </Stroke>
+  );
+}
+
+export function SidebarIcon(props: IconProps) {
+  return (
+    <Stroke {...props}>
+      <rect x="3.5" y="4.5" width="17" height="15" rx="2.5" />
+      <path d="M9.5 4.5v15" />
+    </Stroke>
+  );
+}
+
+export function NewChatIcon(props: IconProps) {
+  return (
+    <Stroke {...props}>
+      <path d="M12 4.5H7A2.5 2.5 0 0 0 4.5 7v10A2.5 2.5 0 0 0 7 19.5h10a2.5 2.5 0 0 0 2.5-2.5v-5" />
+      <path d="M17.5 3.5 20.5 6.5 13 14h-3v-3l7.5-7.5Z" />
+    </Stroke>
+  );
+}
+
+export function SearchIcon(props: IconProps) {
+  return (
+    <Stroke {...props}>
+      <circle cx="11" cy="11" r="6.5" />
+      <path d="m16 16 4 4" />
     </Stroke>
   );
 }

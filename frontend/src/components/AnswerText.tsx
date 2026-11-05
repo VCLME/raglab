@@ -38,7 +38,8 @@ export function renderAnswer(
   let match: RegExpExecArray | null;
   while ((match = CITATION_REGEX.exec(cleaned)) !== null) {
     if (match.index > lastIndex) {
-      parts.push(cleaned.slice(lastIndex, match.index));
+      // The chip keeps its own small gap: no space before it, as a footnote.
+      parts.push(cleaned.slice(lastIndex, match.index).replace(/ +$/, ""));
     }
     const rank = Number(match[1]);
     const chunk = chunks.find((c) => c.rank === rank);

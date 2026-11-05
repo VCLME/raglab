@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { RetrievedChunk } from "../api/types";
 
 interface Props {
@@ -29,6 +30,11 @@ function aggregate(chunks: RetrievedChunk[]): Aggregated[] {
   return Array.from(map.values()).sort((a, b) => a.best.rank - b.best.rank);
 }
 
+/**
+ * One chip per source file under an answer: its best rank (the number the
+ * answer's citations show), its name and its best score. Cited files first;
+ * the others behind « +N ».
+ */
 export function SourceList({
   chunks,
   onSelect,
@@ -36,6 +42,7 @@ export function SourceList({
   collapseAfter = 5,
   citedRanks,
 }: Props) {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
   if (!chunks.length) return null;
   const aggregated = aggregate(chunks);
@@ -53,53 +60,44 @@ export function SourceList({
   const hiddenCount = aggregated.length - visible.length;
 
   return (
-    <div className="source-list">
+    <ul className="source-chips">
       {visible.map((entry) => {
         const isActive = activeFile === entry.file_name;
         return (
-          <button
-            key={entry.file_name}
-            className="source-pill"
-            onClick={() => onSelect?.(entry.file_name)}
-            style={
-              isActive
-                ? { borderColor: "var(--accent)", background: "var(--surface-hover)" }
-                : undefined
-            }
-            title={entry.best.source_path}
-          >
-            <span className="num">{entry.best.rank}</span>
-            <span>{entry.file_name}</span>
-            <span className="score">
-              {entry.count > 1 ? `${entry.count} chunks · ` : ""}
-              {entry.best.score.toFixed(2)}
-            </span>
-          </button>
+          <li key={entry.file_name}>
+            <button
+              type="button"
+              className={`source-chip${isActive ? " active" : ""}`}
+              onClick={() => onSelect?.(entry.file_name)}
+              aria-pressed={isActive}
+              title={entry.best.source_path || entry.file_name}
+            >
+              <span className="cite-num">{entry.best.rank}</span>
+              <span className="source-name">{entry.file_name}</span>
+              <span className="source-score">
+                {entry.count > 1 ? `${t("chat.source_chunks", { count: entry.count })} · ` : ""}
+                {entry.best.score.toFixed(2)}
+              </span>
+            </button>
+          </li>
         );
       })}
       {hiddenCount > 0 && !shouldExpand ? (
-        <button
-          className="source-pill more"
-          onClick={() => setExpanded(true)}
-          title={
-            hasCitations
-              ? `Afficher les ${hiddenCount} autres sources non citees`
-              : `Afficher les ${hiddenCount} autres sources`
-          }
-        >
-          +{hiddenCount} {hasCitations ? "non cite" : "autre"}
-          {hiddenCount > 1 ? "s" : ""}
-        </button>
+        <li>
+          <button type="button" className="source-chip more" onClick={() => setExpanded(true)}>
+            {hasCitations
+              ? t("chat.sources_more_uncited", { count: hiddenCount })
+              : t("chat.sources_more", { count: hiddenCount })}
+          </button>
+        </li>
       ) : null}
       {shouldExpand && aggregated.length > defaultVisible.length && !activeIsHidden ? (
-        <button
-          className="source-pill more"
-          onClick={() => setExpanded(false)}
-          title="Masquer les sources non citees"
-        >
-          masquer
-        </button>
+        <li>
+          <button type="button" className="source-chip more" onClick={() => setExpanded(false)}>
+            {t("chat.sources_less")}
+          </button>
+        </li>
       ) : null}
-    </div>
+    </ul>
   );
 }

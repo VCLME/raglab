@@ -75,7 +75,7 @@ test("Options switches: pill track, knob inside, on/off positions, role switch",
   expect(off.knob.left).toBeGreaterThanOrEqual(off.track.left);
 });
 
-test("Chat settings bar: pickers, Options and New conversation share the top-bar control style", async ({ page }) => {
+test("Chat settings bar: pickers and Options share the top-bar control style", async ({ page }) => {
   await page.goto("/");
   await page.emulateMedia({ reducedMotion: "reduce" });
   await expect(page.getByRole("combobox", { name: /^Corpus/ })).toContainText(data.CORPUS);
@@ -93,7 +93,6 @@ test("Chat settings bar: pickers, Options and New conversation share the top-bar
   for (const selector of [
     ".settings-bar .select-trigger",
     ".settings-bar .options-trigger",
-    ".settings-bar button.ghost:not(.options-trigger)",
     ".lang-current",
   ]) {
     expect(await style(selector), selector).toBe(reference);

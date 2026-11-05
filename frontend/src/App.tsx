@@ -111,7 +111,7 @@ function WorkshopLayout() {
 
 function ChatLayout() {
   return (
-    <main className="content">
+    <main className="content chat-content">
       <Chat />
     </main>
   );

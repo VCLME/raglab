@@ -14,11 +14,9 @@ async function ask(page: Page, question: string) {
   await expect(answers.last()).toContainText("Le Président est élu pour cinq ans");
 }
 
-function openHistory(page: Page) {
-  return page.getByRole("button", { name: "Historique" }).click();
-}
-
-const panel = (page: Page) => page.getByRole("dialog", { name: "Historique des conversations" });
+// Desktop: the history is a column on the left of the Chat.
+const panel = (page: Page) => page.getByRole("complementary", { name: "Historique des conversations" });
+const conversations = (page: Page) => panel(page).getByRole("navigation", { name: "Conversations" });
 
 /** The stream's done event, as the server sends it once the turn is recorded. */
 function recordedStream(conversationId: string, messageId: (route: Route) => string) {
@@ -33,16 +31,20 @@ function recordedStream(conversationId: string, messageId: (route: Route) => str
 }
 
 test.describe("Conversation history", () => {
-  test("browser only: listed, survives a reload, searched, reopened read-only, continued, renamed, deleted", async ({
+  test("browser only: listed by date, survives a reload, searched, reopened as a chat, continued, renamed, deleted", async ({
     page,
   }) => {
     await page.goto("/");
+    const list = conversations(page);
+    await expect(list).toContainText("Aucune conversation pour l'instant");
     await ask(page, data.QUESTION);
+    // Listed as soon as it is answered, marked as the open one.
+    await expect(list.getByRole("button", { name: /^Quelle est la durée/ })).toHaveAttribute("aria-current", "page");
 
     await page.reload();
-    await openHistory(page);
-    await expect(panel(page).getByRole("status")).toContainText("Gardé dans ce navigateur seulement");
-    const list = panel(page).getByRole("list", { name: "Conversations" });
+    // Where the history lives is not announced: nothing needs the user here.
+    await expect(panel(page).getByRole("status")).toHaveCount(0);
+    await expect(list.getByRole("heading", { name: "Aujourd'hui" })).toBeVisible();
     await expect(list.getByRole("button", { name: /^Quelle est la durée du mandat présidentiel/ })).toBeVisible();
     await expect(list).toContainText(data.CORPUS);
     await expect(list).toContainText("1 échange");
@@ -56,32 +58,28 @@ test.describe("Conversation history", () => {
     await panel(page).getByRole("searchbox").fill("parlement");
     await results.getByRole("button").first().click();
 
-    // Reopened read-only, with its answer and sources.
-    await expect(panel(page)).toHaveCount(0);
+    // Reopened as a normal chat: its answer and sources, the composer ready to continue.
     await expect(page.locator(".bubble.user")).toContainText(data.QUESTION);
     await expect(page.getByText("Sources · 2 fichiers")).toBeVisible();
-    await expect(page.getByText(/en lecture seule/)).toBeVisible();
-    await expect(page.getByPlaceholder(/Pose ta question/)).toHaveCount(0);
-    await page.getByRole("button", { name: "Continuer cette conversation" }).click();
     await expect(page.getByPlaceholder(/Pose ta question/)).toBeFocused();
+    await panel(page).getByRole("searchbox").fill("");
     await ask(page, "Et le Parlement ?");
-
-    await openHistory(page);
     await expect(list).toContainText("2 échanges");
     await list.getByRole("button", { name: /Renommer/ }).click();
     const title = panel(page).getByRole("textbox", { name: "Nouveau titre" });
     await title.fill("Mandat du Président");
     await title.press("Enter");
     await expect(list.getByRole("button", { name: /^Mandat du Président/ })).toBeVisible();
+    // Renamed while open: the next turn keeps the new title.
+    await ask(page, "Et le Sénat ?");
+    await expect(list.getByRole("button", { name: /^Mandat du Président/ })).toContainText("3 échanges");
 
     await page.reload();
-    await openHistory(page);
     await expect(list.getByRole("button", { name: /^Mandat du Président/ })).toBeVisible();
     await list.getByRole("button", { name: "Supprimer « Mandat du Président »" }).click();
     await panel(page).getByRole("button", { name: "Supprimer", exact: true }).click();
     await expect(list).toContainText("Aucune conversation pour l'instant");
     await page.reload();
-    await openHistory(page);
     await expect(list).toContainText("Aucune conversation pour l'instant");
   });
 
@@ -159,9 +157,8 @@ test.describe("Conversation history", () => {
     expect(streamed[0].message_id).toMatch(/^[0-9a-f-]{36}$/);
     expect(streamed[0].message_id).not.toEqual(streamed[1].message_id);
 
-    await openHistory(page);
-    await expect(panel(page).getByRole("status")).toContainText("Enregistré sur le serveur, conservé 90 jours");
-    const list = panel(page).getByRole("list", { name: "Conversations" });
+    await expect(panel(page).getByRole("status")).toHaveCount(0);
+    const list = conversations(page);
     // The server's list, no duplicate of the cached copy of the current conversation.
     await expect(list.getByRole("listitem")).toHaveCount(2);
 
@@ -174,12 +171,11 @@ test.describe("Conversation history", () => {
     await expect(page.locator(".answer-text")).toContainText("Le Parlement vote la loi");
     await expect(page.getByText("Sources · 1 fichier")).toBeVisible();
 
-    await openHistory(page);
+    await panel(page).getByRole("searchbox").fill("");
     await list.getByRole("button", { name: "Supprimer « Qui vote la loi ? »" }).click();
     await panel(page).getByRole("button", { name: "Supprimer", exact: true }).click();
     await expect.poll(() => deleted).toEqual([OTHER_ID]);
     // The open conversation was the deleted one: the Chat starts afresh.
-    await page.keyboard.press("Escape");
     await expect(page.getByRole("heading", { name: "Pose une question à tes documents" })).toBeVisible();
   });
 
@@ -205,11 +201,57 @@ test.describe("Conversation history", () => {
         : route.fallback()
     );
     await page.reload();
-    await openHistory(page);
-    await expect(panel(page).getByRole("status")).toContainText("API injoignable");
-    const list = panel(page).getByRole("list", { name: "Conversations" });
-    await list.getByRole("button", { name: /^Quelle est la durée/ }).click();
+    await expect(panel(page).getByRole("status")).toContainText(
+      "API injoignable : seules les conversations de ce navigateur sont listées."
+    );
+    await conversations(page).getByRole("button", { name: /^Quelle est la durée/ }).click();
     await expect(page.locator(".answer-text")).toContainText("Le Président est élu pour cinq ans");
-    await expect(page.getByText(/en lecture seule/)).toBeVisible();
+    // A normal chat: the composer is there (it waits for the API to pick a corpus).
+    await expect(page.locator(".composer textarea")).toBeVisible();
+  });
+
+  test("desktop: the column folds, and stays folded after a reload", async ({ page }) => {
+    await page.goto("/");
+    await expect(panel(page)).toBeVisible();
+    await panel(page).getByRole("button", { name: "Masquer l'historique" }).click();
+    await expect(panel(page)).toHaveCount(0);
+    // Folded, the settings bar keeps the history and « Nouvelle conversation » one click away.
+    await expect(page.getByRole("button", { name: "Nouvelle conversation" })).toBeVisible();
+    await page.reload();
+    await expect(page.getByRole("combobox", { name: /^Corpus/ })).toContainText(data.CORPUS);
+    await expect(panel(page)).toHaveCount(0);
+    await page.getByRole("button", { name: "Afficher l'historique" }).click();
+    await expect(panel(page)).toBeVisible();
+    await expect(page.getByRole("button", { name: "Afficher l'historique" })).toHaveCount(0);
+  });
+
+  test("phone: an off-canvas drawer that opens a conversation and closes", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto("/");
+    await ask(page, data.QUESTION);
+    await expect(panel(page)).toHaveCount(0);
+
+    const drawer = page.getByRole("dialog", { name: "Historique des conversations" });
+    const show = page.getByRole("button", { name: "Afficher l'historique" });
+    await show.click();
+    await expect(drawer).toBeVisible();
+    await expect(drawer.getByRole("searchbox")).toBeFocused();
+    const overflow = () =>
+      page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(await overflow()).toBeLessThanOrEqual(0);
+    await page.keyboard.press("Escape");
+    await expect(drawer).toHaveCount(0);
+    await expect(show).toBeFocused();
+
+    // « Nouvelle conversation » from the drawer empties the Chat and closes it.
+    await show.click();
+    await drawer.getByRole("button", { name: "Nouvelle conversation" }).click();
+    await expect(drawer).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Pose une question à tes documents" })).toBeVisible();
+
+    await show.click();
+    await drawer.getByRole("button", { name: /^Quelle est la durée/ }).click();
+    await expect(drawer).toHaveCount(0);
+    await expect(page.locator(".answer-text")).toContainText("Le Président est élu pour cinq ans");
   });
 });
