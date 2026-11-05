@@ -75,7 +75,7 @@
   --shadow-inset: inset 0 0 0 1px var(--border);
 
   /* Chat: the user's question bubble and the selected conversation (neutral, never the accent) */
-  --bubble-user: oklch(0.94 0.009 110);
+  --bubble-user: oklch(0.945 0.022 155);
   --row-selected: oklch(0.925 0.01 110);
 
   /* motion */
@@ -1088,7 +1088,7 @@ button.citation.active,
 
 .turn-answer .answer-meta {
   gap: 4px 16px;
-  margin-top: 8px;
+  margin-top: 10px;
   font-family: var(--ui);
   font-size: 12px;
   color: var(--text);
@@ -1109,7 +1109,7 @@ button.citation.active,
   gap: 2px;
   height: 4px;
   max-width: 72ch;
-  margin-top: 18px;
+  margin-top: 16px;
 }
 .latency-segment {
   border-radius: 2px;
@@ -1128,8 +1128,10 @@ button.citation.active,
   color: var(--muted);
 }
 
-.bubble .routing-panel,
 .turn-answer .routing-panel {
+  margin-top: 14px;
+}
+.bubble .routing-panel {
   margin-top: 10px;
   padding-top: 10px;
   border-top: 1px solid var(--border);
@@ -1349,26 +1351,26 @@ button.source-chip.more:hover {
 }
 
 /* Passages under an answer: one ruled list, the text in the reading face. */
+.answer-details {
+  margin-top: 14px;
+}
 .chunk-list {
   list-style: none;
-  margin: 12px 0 0;
+  margin: 0;
   padding: 0;
-  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 .chunk.compact {
-  margin: 0;
-  padding: 12px 0;
+  margin: 0 -10px;
+  padding: 10px;
   background: none;
   border: none;
-  border-bottom: 1px solid var(--border);
-  border-radius: 0;
+  border-radius: var(--radius-sm);
 }
 .chunk.compact.active {
-  margin: 0 -10px;
-  padding: 12px 10px;
   background: var(--accent-soft);
-  border-color: transparent;
-  border-radius: var(--radius-sm);
 }
 .chunk.compact.active .cite-num {
   background: var(--accent);
@@ -1471,63 +1473,31 @@ button.icon-btn:active {
 }
 
 /*
- * Each turn reads as a lab-notebook entry: Q{n} in the gutter, the question,
- * a stamp of what it ran against (corpus, index run, time), then the answer
- * aligned on the question. No bubbles: a rule between entries.
+ * A turn: the question in a bubble on the right (a light tint of the accent),
+ * the answer below it without a bubble. Space, not rules, between turns.
  */
 .chat-stream {
-  --turn-gutter: 40px;
   gap: 0;
 }
-.turn + .turn {
-  margin-top: 28px;
-  padding-top: 24px;
-  border-top: 1px solid var(--border);
-}
-.turn-question {
+.turn {
   display: flex;
-  align-items: baseline;
+  flex-direction: column;
 }
-.turn-no {
-  flex: 0 0 var(--turn-gutter);
-  font-family: var(--mono);
-  font-size: 12px;
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
-  color: var(--dim);
+.turn + .turn {
+  margin-top: 32px;
 }
-.turn-question-body {
-  min-width: 0;
-}
-.turn-question-text {
-  margin: 0;
-  max-width: 72ch;
-  font-size: 16px;
-  font-weight: 600;
-  line-height: 1.45;
-  letter-spacing: -0.005em;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-.turn-stamp {
-  margin: 4px 0 0;
-  font-family: var(--mono);
-  font-size: 11.5px;
-  color: var(--dim);
-  font-variant-numeric: tabular-nums;
-  overflow-wrap: anywhere;
+.chat-stream .bubble.user {
+  max-width: min(80%, 64ch);
+  padding: 9px 16px;
+  background: var(--bubble-user);
+  border-radius: 18px;
+  font-size: 15px;
 }
 .turn-body {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin-top: 14px;
-  padding-left: var(--turn-gutter);
-}
-@media (max-width: 640px) {
-  .chat-stream {
-    --turn-gutter: 30px;
-  }
+  margin-top: 16px;
 }
 .turn-answer {
   position: relative;
@@ -1601,87 +1571,35 @@ button.icon-btn:active {
   font-weight: 650;
   letter-spacing: -0.02em;
   line-height: 1.2;
-  margin: 0 0 10px;
-}
-.welcome p {
-  color: var(--muted);
   margin: 0;
-  max-width: 62ch;
-  font-size: 15px;
 }
 
-.welcome p.welcome-modes {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-  margin: 20px 0 0;
-  font-size: 13px;
-  color: var(--muted);
-}
-/* The sentence on its own line, the four modes together below it. */
-.welcome-modes > span:first-child {
-  flex-basis: 100%;
-  margin-bottom: 2px;
-}
-.mode-tag {
-  padding: 1px 8px;
-  border: 1px solid var(--border-strong);
-  border-radius: 4px;
-  color: var(--text);
-  font-size: 12.5px;
-  cursor: help;
-}
-
-.suggestions {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
-  gap: 8px;
-  margin-top: 24px;
-}
-.suggestion {
-  padding: 12px 14px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  color: var(--text);
-  text-align: left;
-  font-size: 13.5px;
-  font-weight: 500;
-  line-height: 1.45;
-  cursor: pointer;
-}
-.suggestion:hover {
-  border-color: var(--accent-border);
-  background: var(--accent-soft);
-}
-
-/* Chat examples, under the composer: quieter than cards. */
+/* Example prompts under the composer: quiet italic lines, no label (as in Open WebUI). */
 .examples {
-  margin-top: 16px;
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
-.examples-label {
-  margin: 0 0 8px;
+button.suggestion {
+  justify-content: flex-start;
+  max-width: 100%;
+  min-height: 0;
+  padding: 5px 8px;
+  margin-left: -8px;
+  background: transparent;
+  border: none;
   color: var(--dim);
-  font-size: 12px;
-  font-weight: 500;
-}
-.examples .suggestions {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  margin-top: 0;
-}
-@media (max-width: 640px) {
-  .examples .suggestions {
-    grid-template-columns: 1fr;
-  }
-}
-.examples .suggestion {
-  padding: 10px 12px;
-  color: var(--muted);
   font-size: 13px;
+  font-style: italic;
   font-weight: 400;
+  line-height: 1.45;
+  text-align: left;
 }
-.examples .suggestion:hover {
+button.suggestion:hover {
+  background: var(--surface-hover);
   color: var(--text);
 }
 
@@ -4567,20 +4485,20 @@ button.icon-only {
   font-weight: 600;
   color: var(--muted);
 }
+/* A row like the conversations below it: no box, a tint on hover. */
 button.history-new {
   justify-content: flex-start;
   gap: 10px;
-  height: 36px;
+  height: 34px;
   min-height: 0;
-  padding: 0 10px;
-  background: var(--surface);
-  border: 1px solid var(--border-strong);
+  padding: 0 8px;
+  background: transparent;
+  border: none;
   color: var(--text);
   font-weight: 500;
 }
 button.history-new:hover {
-  background: var(--surface-2);
-  border-color: var(--muted);
+  background: var(--surface-hover);
 }
 button.history-new:active {
   transform: scale(0.98);

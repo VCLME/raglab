@@ -16,7 +16,7 @@ test.describe("Chat", () => {
 
     await ask(page, data.QUESTION);
 
-    await expect(page.locator(".turn-question-text")).toContainText(data.QUESTION);
+    await expect(page.locator(".bubble.user")).toContainText(data.QUESTION);
     await expect(page.getByText(/Le Président est élu pour cinq ans/)).toBeVisible();
     await expect(page.getByText(/Le Parlement vote la loi/)).toBeVisible();
     // [Rank N] markers become citation buttons, never raw text.
@@ -25,13 +25,14 @@ test.describe("Chat", () => {
 
     const citation = page.getByTitle("Source 1 · titre_II_president.txt");
     await expect(citation).toBeVisible();
-    await expect(page.getByRole("button", { name: "Afficher les 3 chunks" })).toBeVisible();
-    // The question reads as a notebook entry, stamped with what it ran against.
-    await expect(page.locator(".turn-stamp")).toContainText(`${data.CORPUS} · run 3f1c9a52`);
+    await expect(page.getByRole("button", { name: "Détails · 3 chunks" })).toBeVisible();
 
-    // Clicking the citation opens the passages of its file, its own passage outlined.
+    // Clicking the citation opens the details on the passages of its file, its own passage outlined.
     await citation.click();
-    await expect(page.getByRole("button", { name: "Masquer les 2 chunks filtrés" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Masquer les détails" })).toBeVisible();
+    // The details also say what the question ran against.
+    await expect(page.locator(".answer-meta")).toContainText(`corpus${data.CORPUS}`);
+    await expect(page.locator(".answer-meta")).toContainText("run3f1c9a52");
     await expect(page.locator(".chunk.compact.active")).toContainText("Article 6. Le Président de la République");
     await expect(page.getByText("Nul ne peut exercer plus de deux mandats consécutifs.")).toBeVisible();
     await expect(page.getByText(/Article 24\. Le Parlement vote la loi/)).toHaveCount(0);
@@ -40,7 +41,7 @@ test.describe("Chat", () => {
 
     // A second click clears the selection.
     await citation.click();
-    await expect(page.getByRole("button", { name: "Masquer les 3 chunks" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Masquer les détails" })).toBeVisible();
     await expect(page.getByText(/Article 24\. Le Parlement vote la loi/)).toBeVisible();
   });
 

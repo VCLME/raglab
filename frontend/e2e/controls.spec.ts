@@ -169,8 +169,9 @@ test("Welcome text only mentions suggestions when there are some", async ({ page
 test("Chat examples sit under the composer and hide once you type", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("combobox", { name: /^Corpus/ })).toContainText(data.CORPUS);
-  const examples = page.locator(".examples");
-  await expect(examples.getByText("Exemples")).toBeVisible();
+  // Quiet italic prompts, no visible label.
+  const examples = page.getByRole("list", { name: "Exemples" });
+  await expect(page.getByText("Exemples", { exact: true })).toHaveCount(0);
   const chip = examples.getByRole("button", { name: data.suggestions[0] });
   await expect(chip).toBeVisible();
   // Below the composer, not above it.

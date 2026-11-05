@@ -50,18 +50,12 @@ test("Answer: a legal passage is cited by its article and says whether it is sti
 test("Answer: a latency receipt sums up the time per stage; the meta line labels its numbers", async ({ page }) => {
   await page.goto("/");
   await ask(page);
+  // Measurements live in the details, with the passages.
+  await page.getByRole("button", { name: "Détails · 3 chunks" }).click();
   const receipt = page.getByRole("img", { name: /^Durée par étape/ });
   await expect(receipt).toBeVisible();
   await expect(receipt).toHaveAttribute("aria-label", /Vectorisation 12 ms, .*LLM 1534 ms/);
   const meta = page.locator(".answer-meta");
   await expect(meta).toContainText("1er token");
   await expect(meta).toContainText("total1600 ms");
-});
-
-test("Welcome: the four failure modes the lab measures", async ({ page }) => {
-  await page.goto("/");
-  const modes = page.locator(".welcome-modes");
-  for (const mode of ["identifiants", "renvois", "versions", "hors périmètre"]) {
-    await expect(modes.locator(".mode-tag", { hasText: mode })).toBeVisible();
-  }
 });

@@ -88,8 +88,8 @@ test("Chat copy: real plurals, one form of address", async ({ page, api }) => {
   await page.goto("/");
   await ask(page);
   await expect(page.getByText("Sources · 1 fichier", { exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Afficher le chunk" })).toBeVisible();
-  await expect(page.locator(".turn-question .role")).toHaveText("Toi");
+  await expect(page.getByRole("button", { name: "Détails · 1 chunk" })).toBeVisible();
+  await expect(page.locator(".bubble.user .role")).toHaveText("Toi");
   await expect(page.getByText(/\(s\)/)).toHaveCount(0);
 });
 

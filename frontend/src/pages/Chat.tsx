@@ -578,29 +578,14 @@ export function Chat() {
         <div>
           <div className="welcome">
             <h1>{t("chat.welcome_title")}</h1>
-            <p className="muted">
-              {t("chat.welcome_subtitle")}
-              {suggestions.length > 0 ? ` ${t("chat.welcome_pick")}` : ""}
-            </p>
-            {/* What this lab measures: the four ways a naive RAG fails. */}
-            <p className="welcome-modes">
-              <span>{t("chat.modes_intro")}</span>
-              {(["identifiers", "references", "versions", "scope"] as const).map((mode) => (
-                <span key={mode} className="mode-tag" title={t(`chat.mode_${mode}_hint`)}>
-                  {t(`chat.mode_${mode}`)}
-                  <span className="sr-only"> : {t(`chat.mode_${mode}_hint`)}</span>
-                </span>
-              ))}
-            </p>
           </div>
         </div>
       ) : (
         <div className="chat-stream" ref={streamRef}>
-          {turns.map((turn, i) => (
+          {turns.map((turn) => (
             <ChatTurnView
               key={turn.id}
               turn={turn}
-              number={i + 1}
               expanded={!!expanded[turn.id]}
               highlight={highlight[turn.id] ?? null}
               onToggleDetails={() =>
@@ -677,10 +662,7 @@ export function Chat() {
 
       {/* Below the composer, until the first question or the first keystroke. */}
       {empty && suggestions.length > 0 && !question.trim() ? (
-        <div className="examples">
-          <p className="examples-label">{t("chat.examples_label")}</p>
-          <SuggestionChips suggestions={suggestions} onPick={(s) => send(s)} />
-        </div>
+        <SuggestionChips label={t("chat.examples_label")} suggestions={suggestions} onPick={(s) => send(s)} />
       ) : null}
     </div>
   );
@@ -760,8 +742,6 @@ export function Chat() {
 
 interface TurnProps {
   turn: ChatTurn;
-  /** 1-based position in the conversation: the turn reads as entry Q{number}. */
-  number: number;
   expanded: boolean;
   highlight: string | null;
   onToggleDetails: () => void;
@@ -833,7 +813,6 @@ function LatencyReceipt({ pipeline }: { pipeline: PipelineState | undefined }) {
 
 function ChatTurnView({
   turn,
-  number,
   expanded,
   highlight,
   onToggleDetails,
@@ -878,27 +857,15 @@ function ChatTurnView({
     onHighlight(highlight === file ? null : file);
   };
 
-  const stamp = [
-    turn.corpus,
-    turn.index_run_id ? `run ${turn.index_run_id.slice(0, 8)}` : null,
-    stampTime(turn.created_at, i18n.language),
-  ].filter(Boolean);
+  const time = stampTime(turn.created_at, i18n.language);
   const versions = turn.versions && turn.versions.scope !== "none" ? turn.versions : null;
 
   return (
-    <section className="turn" aria-labelledby={`q-${turn.id}`}>
-      <header className="turn-question">
-        <span className="turn-no" aria-hidden="true">
-          Q{number}
-        </span>
-        <div className="turn-question-body">
-          <p className="turn-question-text" id={`q-${turn.id}`}>
-            <span className="role sr-only">{t("chat.user_role")}</span>
-            {turn.question}
-          </p>
-          {stamp.length > 0 ? <p className="turn-stamp">{stamp.join(" · ")}</p> : null}
-        </div>
-      </header>
+    <section className="turn">
+      <div className="bubble user">
+        <span className="role sr-only">{t("chat.user_role")}</span>
+        {turn.question}
+      </div>
 
       <div className="turn-body">
         {(turn.answer === null || turn.answer === "") && !turn.error && !turn.stopped ? (
@@ -971,17 +938,77 @@ function ChatTurnView({
                   citedRanks={turn.answer ? extractCitedRanks(turn.answer) : undefined}
                 />
                 {expanded ? (
-                  <ol className="chunk-list">
-                    {visibleChunks.map((c) => (
-                      <ChunkCard
-                        key={c.chunk_id}
-                        chunk={c}
-                        compact
-                        anchorId={anchor(c.rank)}
-                        active={focusRank === c.rank}
-                      />
-                    ))}
-                  </ol>
+                  <div className="answer-details">
+                    <ol className="chunk-list">
+                      {visibleChunks.map((c) => (
+                        <ChunkCard
+                          key={c.chunk_id}
+                          chunk={c}
+                          compact
+                          anchorId={anchor(c.rank)}
+                          active={focusRank === c.rank}
+                        />
+                      ))}
+                    </ol>
+                {turn.streaming ? null : <LatencyReceipt pipeline={turn.pipeline} />}
+                <div className="answer-meta">
+                  {turn.query_translation?.translated ? (
+                    <span title={turn.query_translation.text}>
+                      {t("chat.meta_translated", { lang: turn.query_translation.target_language })}
+                    </span>
+                  ) : null}
+                  {turn.retrieval_mode ? (
+                    <span>
+                      <span className="meta-label">{t("chat.meta_mode")}</span>
+                      {t(`retrieval.mode_short_${turn.retrieval_mode}`, { defaultValue: turn.retrieval_mode })}
+                      {turn.rerank ? ` + ${t("chat.meta_rerank")}` : ""}
+                    </span>
+                  ) : null}
+                  {turn.citation ? (
+                    <span title={turn.citation.label}>
+                      <span className="meta-label">{t("chat.meta_citation")}</span>
+                      {turn.citation.label}
+                    </span>
+                  ) : null}
+                  {versions ? (
+                    <span>
+                      <span className="meta-label">{t("chat.meta_versions")}</span>
+                      {t(`chat.meta_versions_${versions.mode}`, { date: formatDay(versions.date, i18n.language) })}
+                    </span>
+                  ) : null}
+                  {turn.strategy ? (
+                    <span>
+                      <span className="meta-label">{t("chat.meta_strategy")}</span>
+                      <code>{turn.strategy}</code>
+                    </span>
+                  ) : null}
+                  {turn.first_token_ms != null ? (
+                    <span title={t("chat.meta_first_token_title")}>
+                      <span className="meta-label">{t("chat.meta_first_token_label")}</span>
+                      {t("chat.meta_ms", { ms: turn.first_token_ms.toFixed(0) })}
+                    </span>
+                  ) : null}
+                  {turn.elapsed_ms != null ? (
+                    <span>
+                      <span className="meta-label">{t("chat.meta_total")}</span>
+                      {t("chat.meta_ms", { ms: turn.elapsed_ms.toFixed(0) })}
+                    </span>
+                  ) : null}
+                  {turn.corpus ? (
+                    <span>
+                      <span className="meta-label">{t("chat.meta_corpus")}</span>
+                      {turn.corpus}
+                    </span>
+                  ) : null}
+                  {turn.index_run_id ? (
+                    <span title={turn.index_run_id}>
+                      <span className="meta-label">{t("chat.meta_run")}</span>
+                      <code>{turn.index_run_id.slice(0, 8)}</code>
+                    </span>
+                  ) : null}
+                  {time ? <span>{time}</span> : null}
+                </div>
+                  </div>
                 ) : null}
               </section>
             ) : null}
@@ -996,51 +1023,6 @@ function ChatTurnView({
                 {t(`chat.generator_notice_${turn.generator_notice}`, { defaultValue: turn.generator_notice })}
               </p>
             ) : null}
-            {turn.streaming ? null : <LatencyReceipt pipeline={turn.pipeline} />}
-            <div className="answer-meta">
-              {turn.query_translation?.translated ? (
-                <span title={turn.query_translation.text}>
-                  {t("chat.meta_translated", { lang: turn.query_translation.target_language })}
-                </span>
-              ) : null}
-              {turn.retrieval_mode ? (
-                <span>
-                  <span className="meta-label">{t("chat.meta_mode")}</span>
-                  {t(`retrieval.mode_short_${turn.retrieval_mode}`, { defaultValue: turn.retrieval_mode })}
-                  {turn.rerank ? ` + ${t("chat.meta_rerank")}` : ""}
-                </span>
-              ) : null}
-              {turn.citation ? (
-                <span title={turn.citation.label}>
-                  <span className="meta-label">{t("chat.meta_citation")}</span>
-                  {turn.citation.label}
-                </span>
-              ) : null}
-              {versions ? (
-                <span>
-                  <span className="meta-label">{t("chat.meta_versions")}</span>
-                  {t(`chat.meta_versions_${versions.mode}`, { date: formatDay(versions.date, i18n.language) })}
-                </span>
-              ) : null}
-              {turn.strategy ? (
-                <span>
-                  <span className="meta-label">{t("chat.meta_strategy")}</span>
-                  <code>{turn.strategy}</code>
-                </span>
-              ) : null}
-              {turn.first_token_ms != null ? (
-                <span title={t("chat.meta_first_token_title")}>
-                  <span className="meta-label">{t("chat.meta_first_token_label")}</span>
-                  {t("chat.meta_ms", { ms: turn.first_token_ms.toFixed(0) })}
-                </span>
-              ) : null}
-              {turn.elapsed_ms != null ? (
-                <span>
-                  <span className="meta-label">{t("chat.meta_total")}</span>
-                  {t("chat.meta_ms", { ms: turn.elapsed_ms.toFixed(0) })}
-                </span>
-              ) : null}
-            </div>
           </article>
         ) : null}
       </div>
