@@ -513,14 +513,19 @@ def article_chunks(session: Session, index_run: IndexRun, document_id: str, arti
     return [_pinned(row, document_id, position) for position, row in enumerate(pinned, start=1)]
 
 
-def merge_with_citation(pinned: list[RetrievedChunk], ranked: list[RetrievedChunk], top_k: int) -> list[RetrievedChunk]:
+def merge_with_citation(
+    pinned: list[RetrievedChunk], ranked: list[RetrievedChunk], top_k: int, order_within: int | None = None
+) -> list[RetrievedChunk]:
     """Article chunks first, then the rest of the law, re-ranked.
 
     Within the article, chunks the retriever also ranked come first, in its
     order (the most relevant part of a long article leads); the others keep
-    the article's reading order.
+    the article's reading order. `order_within` limits that ordering to the
+    first ranked chunks: with de-duplication `ranked` is a deeper pool, and
+    the article must come out as it would from the top-k alone.
     """
-    position = {chunk.chunk_id: index for index, chunk in enumerate(ranked)}
+    window = ranked if order_within is None else ranked[:order_within]
+    position = {chunk.chunk_id: index for index, chunk in enumerate(window)}
     article = sorted(pinned, key=lambda chunk: (position.get(chunk.chunk_id, len(ranked)), pinned.index(chunk)))
     seen = {chunk.chunk_id for chunk in pinned}
     merged = [*article, *(chunk for chunk in ranked if chunk.chunk_id not in seen)][:top_k]

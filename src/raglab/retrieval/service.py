@@ -559,7 +559,14 @@ class QueryService:
             if pinned:
                 # Keep every candidate when the cross-encoder still has to
                 # choose among them; the article is pinned again after it.
-                retrieved = merge_with_citation(pinned, retrieved, stage_top_k if do_rerank else final_cut)
+                # Without it, the article is ordered from the top-k alone, so
+                # that dedup's deeper pool does not reorder it.
+                retrieved = merge_with_citation(
+                    pinned,
+                    retrieved,
+                    stage_top_k if do_rerank else final_cut,
+                    order_within=None if do_rerank else effective_top_k,
+                )
             searched = perf_counter()
 
         # `embed` + `retrieval` (+ `rerank` when on) are the stages the recall
@@ -598,7 +605,9 @@ class QueryService:
             if pinned:
                 # A cited article is the answer by construction: the
                 # cross-encoder orders the rest, it does not demote the pin.
-                retrieved = merge_with_citation(pinned, retrieved, final_cut)
+                # Its chunks are ordered from the top-k alone, so that dedup's
+                # deeper pool does not change passages it does not drop.
+                retrieved = merge_with_citation(pinned, retrieved, final_cut, order_within=effective_top_k)
         dedup_stats: dict[str, Any] = {}
         if use_dedup:
             dedup_started = perf_counter()

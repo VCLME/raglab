@@ -53,6 +53,27 @@ Dans un texte juridique, la disposition qui le dit compte. La règle a été ret
 
 **v3, inclusion stricte (actuelle).** Elle est re-mesurée avec les paramètres de production, réponses comprises : voir [benchmarks/pipeline-2026-11/README.md](../benchmarks/pipeline-2026-11/README.md) (lot 4 de la contre-relecture). Sur les runs v2 enregistrés, les deux questions gagnées (`lexml-0017`, `lexml-0128`) venaient de fragments entièrement inclus, que la v3 écarte aussi.
 
+## Effet de bord corrigé : l'ordre de l'article cité
+
+Le lot 4 a montré que l'option n'était pas un simple filtre. Pour la réserve, le re-ranker renvoie 40 passages au lieu de 5. Or `merge_with_citation` ordonnait les tranches d'un article cité selon leur position dans la liste du re-ranker. Avec 40 passages, des tranches absentes du top se trouvaient classées, au lieu de garder l'ordre de lecture.
+
+Pour un long article, le top 5 changeait donc même quand rien n'était écarté. C'était le cas de 16 questions (7 LexML, 9 UE), plus 13 réordonnées.
+
+Correctif : les tranches de l'article sont ordonnées à partir des `top_k` premiers passages seulement (`order_within`), dans les deux modes. La réserve ne sert plus qu'à remplacer les passages écartés.
+
+Vérification avec `scripts/dedup_side_effects.py`, sur des runs de recherche seule, appariés sur les 4 jeux de la production (715 questions, top 10) :
+
+| Jeu | Questions | Avec un passage écarté | Non touchées, autre ensemble | Non touchées, autre ordre | Recall@5 +/− |
+|---|---|---|---|---|---|
+| LexML | 277 | 12 | 0 (avant : 7) | 0 (avant : 5) | +2 / −0 |
+| Versions | 100 | 0 | 0 | 0 | 0 / 0 |
+| UE | 300 | 2 | 0 (avant : 9) | 0 (avant : 8) | 0 / 0 |
+| Brazil expat | 38 | 1 | 0 | 0 | 0 / 0 |
+
+Les colonnes « avant » viennent du lot 4, au top 5. Avec le correctif, l'option ne modifie plus que les questions où elle écarte un passage.
+
+Le run sans déduplication (`pinned-order-dedup-off`) donne exactement les mêmes passages que `pipeline-2026-11-dedup-off` sur les 715 questions : le correctif ne change rien quand l'option est coupée. Les deux gains LexML (`lexml-0017`, `lexml-0128`) restent.
+
 ## Décision
 
 Option laissée **désactivée par défaut**. Elle ne coûte presque rien et réduit la redondance là où il y en a. Mais aucun gain significatif de recherche n'est mesuré, et l'effet sur les réponses reste à mesurer.
