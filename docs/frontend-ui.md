@@ -355,6 +355,28 @@ La configuration (`frontend/playwright.config.ts`) construit le bundle de produc
 
 En CI, le job `e2e` lance la suite et publie le rapport HTML en artefact en cas d'echec.
 
+## Vidéo de démonstration (`video/`)
+
+Le film de démo du site (MP4 + WebM, 1920×1080, environ 45 s une fois les vraies réponses capturées) et le GIF du README (environ 13 s, 1280 px, 15 images/s) sont générés par du code : un script Playwright pilote la vraie interface (en anglais) et en capture chaque état, puis [Remotion](https://www.remotion.dev/) (React) anime ces captures : mouvements de caméra, curseur, sous-titres, carte du chiffre clé. Les réponses ne sont jamais inventées : l'API est enregistrée une fois sur une instance réelle, puis rejouée. Le rendu est donc identique d'une fois sur l'autre et n'a besoin ni de l'API ni du GPU.
+
+Parcours filmé (questions dans `video/scenario.mjs`) : une question qui cite un article de loi brésilienne (corpus LexML), la réponse en streaming et son passage cité ; un changement de corpus vers les actes européens, avec l'état « en vigueur » ; le mode pédagogique, avec le pipeline qui s'allume étape par étape puis l'explication du re-ranking ; la page Retrieval de l'Atelier avec ses scores intermédiaires ; enfin le Recall@5 des questions citant un article, lu dans `benchmarks/results/` (`baseline-v1` → `full-v1`).
+
+```bash
+cd video
+npm install                 # une seule fois (Remotion embarque son propre ffmpeg)
+npm run capture             # 1. enregistre l'API réelle -> fixtures/demo.json (GPU)
+npm run render -- --shots   # 2. captures d'écran + rendu -> out/demo.mp4, out/demo.webm, out/demo.gif
+npm run publish             # 3. copie dans docs/images/ et site/assets/, met la démo dans le README et le site
+```
+
+- **Capture** (`scripts/capture.mjs`) : à lancer quand l'API tourne sur `http://localhost:8000` (ou `--api URL`), avec Ollama, le modèle de génération et les corpus LexML et UE indexés, GPU libre (trois réponses sont générées). Un petit serveur sert le frontend construit et relaie `/api` vers l'API en enregistrant chaque réponse JSON et chaque événement SSE avec son heure d'arrivée. Seule retouche : `conversation_history` est mis à `false` dans `/api/config`, pour que la démo n'ajoute aucune conversation à l'historique du serveur. Le fichier `video/fixtures/demo.json` est à commiter ; son bloc `meta` donne la date, le commit, l'URL de l'API et le modèle.
+- **Captures d'écran** (`scripts/shots.mjs`) : rejoue l'API depuis la fixture. Les flux SSE avancent événement par événement, et une capture est prise à chaque étape du chargement et tous les quelques tokens. Le fichier `public/shots/timeline.json` indique quand chaque image apparaît, où clique le curseur et où se trouvent les éléments que la caméra cadre. Une requête absente de la fixture fait échouer la commande : l'interface appelle alors un nouvel endpoint, et il faut refaire la capture.
+- **Quand refaire quoi** : si l'interface change, `npm run render -- --shots` suffit. Si les questions, les corpus ou les réponses attendues changent, relancer `npm run capture`. Les réglages se trouvent ici : rythme (vitesse de frappe, durée maximale d'une réponse) dans `scripts/shots.mjs`, découpage, cadrages et sous-titres dans `src/Demo.tsx`, aperçu interactif avec `npm run studio`.
+- **Données provisoires** : sans `fixtures/demo.json`, le rendu utilise `fixtures/placeholder.json`, tiré des mocks e2e (`npm run placeholder`). Chaque image porte alors un bandeau rouge « PLACEHOLDER DATA », et `npm run publish` refuse de publier.
+- **Licence** : Remotion est gratuit pour un particulier ou une entreprise de trois personnes au plus ; au-delà, une licence d'entreprise est nécessaire (voir sa licence).
+
+Le dossier `video/` n'est pas dans la CI : il a son propre `package.json`, et `npm run typecheck` vérifie ses sources.
+
 ## Exemple de session
 
 1. Collecter LexML et indexer en une commande via l'UI : `LexML → load` avec `corpus=lexml_real`, `strategy=traditional`, `page_limit=1`.

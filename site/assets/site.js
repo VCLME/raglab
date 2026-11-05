@@ -7,6 +7,14 @@
   document.documentElement.classList.add("js");
   var reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
 
+  // The demo video plays on its own, muted; with reduced motion it waits for a click.
+  Array.prototype.forEach.call(document.querySelectorAll("video[autoplay]"), function (video) {
+    if (!reduce.matches) return;
+    video.removeAttribute("autoplay");
+    video.pause();
+    video.controls = true;
+  });
+
   // Arriving from another page on an anchor: start at the top and glide to the section, as an
   // in-page link does. Reloads and back/forward keep the browser's own position.
   var nav = performance.getEntriesByType && performance.getEntriesByType("navigation")[0];
