@@ -56,10 +56,12 @@ def test_other_documents_and_other_versions_never_merge_on_overlap():
     assert not redundant(_chunk("b", 12, len(DOC), version=old), _chunk("a", 0, len(DOC), version=new))
 
 
-def test_identical_text_in_two_documents_of_the_same_state_is_redundant():
-    assert redundant(_chunk("b", 0, len(DOC), document="d2"), _chunk("a", 0, len(DOC)))
-    old = ChunkVersion(source="metadata", etat="ABROGE", in_force=False)
-    assert not redundant(_chunk("b", 0, len(DOC), document="d2", version=old), _chunk("a", 0, len(DOC)))
+def test_identical_wording_at_another_place_is_kept():
+    """Another article or law with the same words is another provision
+    (audit lot 3, v1 merged them and lost 4 questions)."""
+    assert not redundant(_chunk("b", 0, len(DOC), document="d2"), _chunk("a", 0, len(DOC)))
+    # Same document, a repeated paragraph elsewhere: no overlap, kept.
+    assert not redundant(_chunk("b", 500, 500 + len(DOC), text=DOC), _chunk("a", 0, len(DOC)))
 
 
 def test_freed_places_are_refilled_from_the_pool_with_provenance_kept():

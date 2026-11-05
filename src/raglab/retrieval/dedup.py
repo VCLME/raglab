@@ -12,8 +12,10 @@ A passage is dropped only when all of these hold against a passage already
 kept: same document and same version state, the spans overlap on at least
 `MIN_OVERLAP` of the dropped passage, and what it adds beyond the kept span
 carries no number, negation or exception word (so "25 %" vs "2,5 %", "não"
-or "salvo" never merge). Identical text in two documents of the same version
-state is dropped too. Pinned citation passages are never dropped. Kept
+or "salvo" never merge). Identical wording at another place (another article,
+another law, another version file) is kept: in legal text the provision that
+says it matters (measured: merging it lost 4 questions, see docs). Pinned
+citation passages are never dropped. Kept
 passages keep their offsets, scores and ranks of origin; only `rank` is
 renumbered. Chunkers are untouched: this reads chunk spans and text.
 """
@@ -35,7 +37,6 @@ _PROTECTED_RE = re.compile(
     r"salvo|exceto|ressalvad[oa]s?|sauf|except|unless|hormis|à l'exception|exception|exce[cç][aã]o)\b",
     re.IGNORECASE,
 )
-_SPACE_RE = re.compile(r"\s+")
 
 
 def _version_key(chunk: RetrievedChunk) -> tuple[Any, ...]:
@@ -43,10 +44,6 @@ def _version_key(chunk: RetrievedChunk) -> tuple[Any, ...]:
     if version is None:
         return ()
     return (version.source, version.etat, version.in_force, version.revoked_lines, version.revoked_only)
-
-
-def _normalized(text: str) -> str:
-    return _SPACE_RE.sub(" ", text).strip().casefold()
 
 
 def _uncovered_text(chunk: RetrievedChunk, kept: RetrievedChunk) -> str | None:
@@ -72,8 +69,6 @@ def redundant(chunk: RetrievedChunk, kept: RetrievedChunk) -> bool:
     """Whether `chunk` adds nothing that `kept` does not already give."""
     if _version_key(chunk) != _version_key(kept):
         return False
-    if _normalized(chunk.chunk_text) == _normalized(kept.chunk_text):
-        return True
     extra = _uncovered_text(chunk, kept)
     return extra is not None and _PROTECTED_RE.search(extra) is None
 
