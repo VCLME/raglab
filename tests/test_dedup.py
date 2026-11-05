@@ -131,7 +131,7 @@ def test_the_service_searches_a_deeper_pool_and_refills_with_dedup_on():
     ]
     service, embedder = _service(pool, dedup_pool=8)
     with embedder:
-        on = service.query(question="Qual a alíquota?", retrieval_mode="dense", rerank=False, dedup=True, top_k=5)
+        on = service.query(question="Qual a alíquota?", retrieval_mode="dense", rerank=False, dedup=True, top_k=5, generate_answer=False)
     assert service.vector_store.search.call_args.kwargs["top_k"] == 8
     assert [chunk.chunk_id for chunk in on.retrieved_chunks] == ["a", "c", "d", "e", "f"]
     assert on.dedup_stats["dropped"][0]["chunk_id"] == "b" and on.dedup_stats["refilled"] == 1
@@ -139,7 +139,7 @@ def test_the_service_searches_a_deeper_pool_and_refills_with_dedup_on():
 
     service, embedder = _service(pool[:5], dedup_pool=8)
     with embedder:
-        off = service.query(question="Qual a alíquota?", retrieval_mode="dense", rerank=False, top_k=5)
+        off = service.query(question="Qual a alíquota?", retrieval_mode="dense", rerank=False, top_k=5, generate_answer=False)
     assert service.vector_store.search.call_args.kwargs["top_k"] == 5
     assert off.dedup_stats is None
     assert [chunk.chunk_id for chunk in off.retrieved_chunks] == ["a", "b", "c", "d", "e"]
