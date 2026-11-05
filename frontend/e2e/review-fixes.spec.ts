@@ -89,7 +89,7 @@ test("Chat copy: real plurals, one form of address", async ({ page, api }) => {
   await ask(page);
   await expect(page.getByText("Sources · 1 fichier", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Afficher le chunk" })).toBeVisible();
-  await expect(page.locator(".bubble.user .role")).toHaveText("Toi");
+  await expect(page.locator(".turn-question .role")).toHaveText("Toi");
   await expect(page.getByText(/\(s\)/)).toHaveCount(0);
 });
 
@@ -107,7 +107,7 @@ test("Retrieval: fields are labelled, citations are chips that point to their ch
   const answer = page.locator(".answer-text");
   await expect(answer).toContainText("Le Président est élu");
   await expect(answer.getByText("[Rank 1]")).toHaveCount(0);
-  await page.getByTitle("Source rank 3 — titre_IV_parlement.txt").click();
+  await page.getByTitle("Source 3 · titre_IV_parlement.txt").click();
   const cited = page.locator("#chunk-rank-3");
   await expect(cited).toHaveClass(/active/);
   await expect(cited).toBeInViewport();

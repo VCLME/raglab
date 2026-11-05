@@ -73,6 +73,24 @@ export function VersionsField({ value, onChange }: FieldProps) {
   );
 }
 
+/** One or two words on whether a passage is still the law, for a source chip; null when unknown. */
+export function versionStamp(
+  version: ChunkVersion | null | undefined,
+  t: (key: string, options?: Record<string, unknown>) => string
+): { tone: "ok" | "warn" | "err"; label: string } | null {
+  if (!version) return null;
+  if (version.source === "markers") {
+    if (version.revoked_only) return { tone: "err", label: t("chat.stamp_repealed") };
+    if (version.revoked_lines) return { tone: "warn", label: t("chat.stamp_some_revoked") };
+    return version.amended_by
+      ? { tone: "warn", label: t("chat.stamp_rewritten", { year: version.last_amended_year ?? "?" }) }
+      : null;
+  }
+  if (version.in_force) return { tone: "ok", label: t("chat.stamp_in_force") };
+  const repealed = !version.replaced_by && ["ABROGE", "ABROGE_DIFF", "TRANSFERE", "ANNULE"].includes(version.etat ?? "");
+  return { tone: "err", label: repealed ? t("chat.stamp_repealed") : t("chat.stamp_old") };
+}
+
 /** Badge of a passage: in force, old version, repealed, repealed provisions. */
 export function VersionBadge({ version }: { version: ChunkVersion | null | undefined }) {
   const { t, i18n } = useTranslation();

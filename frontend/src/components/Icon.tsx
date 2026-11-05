@@ -216,3 +216,12 @@ export function SearchIcon(props: IconProps) {
     </Stroke>
   );
 }
+
+export function AlertIcon(props: IconProps) {
+  return (
+    <Stroke {...props}>
+      <path d="M12 4 21 19.5H3L12 4Z" />
+      <path d="M12 10v4M12 17v.01" />
+    </Stroke>
+  );
+}

@@ -90,7 +90,7 @@ export function ChunkCard({ chunk, maxScore, showScores = false, anchorId, activ
 
   if (compact) {
     return (
-      <li className="chunk compact">
+      <li className={`chunk compact${active ? " active" : ""}`} id={anchorId} tabIndex={anchorId ? -1 : undefined}>
         <div className="head">
           <span className="cite-num">{chunk.rank}</span>
           <strong className="chunk-file" title={chunk.source_path || chunk.file_name}>

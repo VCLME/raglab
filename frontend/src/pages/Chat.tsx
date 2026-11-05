@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useGpuWhy } from "../hooks/useGpuWhy";
 import { ApiError, extractErrorDetail, get, queryWithStreaming } from "../api/client";
-import type { CorpusSummary, IndexRunSummary, LlmModelsResponse, QueryResponse } from "../api/types";
+import type { CorpusSummary, IndexRunSummary, LlmModelsResponse, QueryResponse, RetrievedChunk } from "../api/types";
 import {
   ChatOptions,
   LEGAL_OPTIONS,
@@ -13,7 +13,7 @@ import {
 import { parseVersionsValue } from "../components/Versions";
 import { ChunkCard } from "../components/ChunkCard";
 import { extractCitedRanks, renderAnswer } from "../components/AnswerText";
-import { ChevronDownIcon, NewChatIcon, SendIcon, SidebarIcon, StopIcon } from "../components/Icon";
+import { AlertIcon, ChevronDownIcon, NewChatIcon, SendIcon, SidebarIcon, StopIcon } from "../components/Icon";
 import { HistorySidebar } from "../components/HistorySidebar";
 import { PipelineStrip, type RouteInfo } from "../components/PipelineStrip";
 import { FieldLabelContext, Select } from "../components/Select";
@@ -32,6 +32,7 @@ import {
   idlePipeline,
   prefersReducedMotion,
   startPipeline,
+  type NodeId,
   type PipelineState,
 } from "../edu/pipeline";
 import { useApiAction, useApiLoad } from "../hooks/useApi";
@@ -55,7 +56,7 @@ function settled(turn: ChatTurn): ChatTurn {
 }
 
 function shortDate(iso: string | null): string {
-  if (!iso) return "—";
+  if (!iso) return "?";
   try {
     const d = new Date(iso);
     const pad = (n: number) => n.toString().padStart(2, "0");
@@ -68,7 +69,9 @@ function shortDate(iso: string | null): string {
 }
 
 function formatRunLabel(run: IndexRunSummary): string {
-  const parts = [run.strategy, run.embedding_model_name ?? "—", shortDate(run.started_at)];
+  // The model without its publisher ("multilingual-e5-small"), so the date still fits.
+  const model = run.embedding_model_name ? run.embedding_model_name.split("/").pop() : "?";
+  const parts = [run.strategy, model, shortDate(run.started_at)];
   return parts.join(" · ");
 }
 
@@ -88,6 +91,9 @@ function readSidebarOpen(): boolean {
     return true;
   }
 }
+
+// Length of the drawer's exit animation (styles.css, history-out).
+const DRAWER_EXIT_MS = 160;
 
 // While the API is not up yet (UI started first), lists are fetched again on this period.
 const RETRY_MS = 3000;
@@ -119,10 +125,28 @@ export function Chat() {
   const [highlight, setHighlight] = useState<Record<string, string | null>>({});
   const [conversation, setConversation] = useState<CurrentConversation | null>(null);
   const wide = useMediaQuery(SIDEBAR_QUERY);
+  // No keyboard shortcut to advertise on a touch screen.
+  const touch = useMediaQuery("(pointer: coarse)");
   const roomy = useMediaQuery(SIDEBAR_EDU_QUERY);
   // Desktop: the column can be folded (remembered); narrower: an off-canvas drawer.
   const [sidebarOpen, setSidebarOpen] = useState(readSidebarOpen);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  // The drawer slides out before it unmounts.
+  const [drawerClosing, setDrawerClosing] = useState(false);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const closeDrawer = useCallback(() => {
+    if (closeTimer.current) return;
+    if (prefersReducedMotion()) {
+      setDrawerOpen(false);
+      return;
+    }
+    setDrawerClosing(true);
+    closeTimer.current = setTimeout(() => {
+      closeTimer.current = null;
+      setDrawerClosing(false);
+      setDrawerOpen(false);
+    }, DRAWER_EXIT_MS);
+  }, []);
   const [historyNotice, setHistoryNotice] = useState<string | null>(null);
   const conversationRef = useRef<CurrentConversation | null>(null);
   conversationRef.current = conversation;
@@ -325,7 +349,11 @@ export function Chat() {
   const followKey = `${turns.length}:${latest?.answer?.length ?? 0}:${latest?.chunks.length ?? 0}:${latest?.error ? 1 : 0}`;
   useEffect(() => {
     if (streamRef.current) {
-      streamRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
+      // Instant while tokens stream in: a smooth scroll per token would stutter.
+      streamRef.current.scrollIntoView({
+        behavior: latest?.streaming || prefersReducedMotion() ? "auto" : "smooth",
+        block: "end",
+      });
     }
   }, [followKey]);
 
@@ -371,7 +399,7 @@ export function Chat() {
 
   const newConversation = () => {
     reset();
-    setDrawerOpen(false);
+    if (drawerOpen) closeDrawer();
     focusComposer();
   };
 
@@ -396,7 +424,7 @@ export function Chat() {
       schedulerRef.current?.cancel();
       abortRef.current?.abort();
       const loaded = await history.load(id);
-      setDrawerOpen(false);
+      closeDrawer();
       if (!loaded) {
         setHistoryNotice(t("history.not_found"));
         return;
@@ -413,7 +441,7 @@ export function Chat() {
       // Reopened as a normal chat: the next question continues it.
       if (wide) setTimeout(() => composerRef.current?.focus(), 0);
     },
-    [history, t, action, corpora.data, wide]
+    [history, t, action, corpora.data, wide, closeDrawer]
   );
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -554,25 +582,32 @@ export function Chat() {
               {t("chat.welcome_subtitle")}
               {suggestions.length > 0 ? ` ${t("chat.welcome_pick")}` : ""}
             </p>
+            {/* What this lab measures: the four ways a naive RAG fails. */}
+            <p className="welcome-modes">
+              <span>{t("chat.modes_intro")}</span>
+              {(["identifiers", "references", "versions", "scope"] as const).map((mode) => (
+                <span key={mode} className="mode-tag" title={t(`chat.mode_${mode}_hint`)}>
+                  {t(`chat.mode_${mode}`)}
+                  <span className="sr-only"> : {t(`chat.mode_${mode}_hint`)}</span>
+                </span>
+              ))}
+            </p>
           </div>
         </div>
       ) : (
         <div className="chat-stream" ref={streamRef}>
-          {turns.map((turn) => (
+          {turns.map((turn, i) => (
             <ChatTurnView
               key={turn.id}
               turn={turn}
+              number={i + 1}
               expanded={!!expanded[turn.id]}
               highlight={highlight[turn.id] ?? null}
               onToggleDetails={() =>
                 setExpanded((prev) => ({ ...prev, [turn.id]: !prev[turn.id] }))
               }
-              onSelectSource={(file) =>
-                setHighlight((prev) => ({
-                  ...prev,
-                  [turn.id]: prev[turn.id] === file ? null : file,
-                }))
-              }
+              onShowDetails={() => setExpanded((prev) => ({ ...prev, [turn.id]: true }))}
+              onHighlight={(file) => setHighlight((prev) => ({ ...prev, [turn.id]: file }))}
             />
           ))}
         </div>
@@ -584,7 +619,9 @@ export function Chat() {
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
           onKeyDown={onKeyDown}
-          placeholder={corpus || routing ? t("chat.placeholder") : t("chat.placeholder_empty")}
+          placeholder={
+            corpus || routing ? t(touch ? "chat.placeholder_touch" : "chat.placeholder") : t("chat.placeholder_empty")
+          }
           aria-label={t("chat.question_label")}
           rows={2}
         />
@@ -666,7 +703,8 @@ export function Chat() {
           conversationRef.current = renamed;
           setConversation(renamed);
         }}
-        onClose={() => (inline ? showSidebar(false) : setDrawerOpen(false))}
+        closing={drawerClosing}
+        onClose={() => (inline ? showSidebar(false) : closeDrawer())}
       />
     ) : null;
 
@@ -722,165 +760,290 @@ export function Chat() {
 
 interface TurnProps {
   turn: ChatTurn;
+  /** 1-based position in the conversation: the turn reads as entry Q{number}. */
+  number: number;
   expanded: boolean;
   highlight: string | null;
   onToggleDetails: () => void;
-  onSelectSource: (file: string) => void;
+  onShowDetails: () => void;
+  onHighlight: (file: string | null) => void;
+}
+
+// Stages of the latency receipt, in pipeline order.
+const RECEIPT_STAGES: NodeId[] = [
+  "routing",
+  "embed",
+  "retrieval",
+  "lexical",
+  "graph",
+  "fusion",
+  "rerank",
+  "versions",
+  "prompt",
+  "generation",
+];
+
+/** "14:02" today, "04/11 14:02" another day. */
+function stampTime(iso: string | undefined, language: string): string | null {
+  if (!iso) return null;
+  const at = new Date(iso);
+  if (Number.isNaN(at.getTime())) return null;
+  const time = at.toLocaleTimeString(language, { hour: "2-digit", minute: "2-digit" });
+  if (at.toDateString() === new Date().toDateString()) return time;
+  return `${at.toLocaleDateString(language, { day: "2-digit", month: "2-digit" })} ${time}`;
+}
+
+function formatDay(iso: string | null | undefined, language: string): string {
+  const at = iso ? new Date(iso) : new Date();
+  return Number.isNaN(at.getTime()) ? iso ?? "" : at.toLocaleDateString(language, { dateStyle: "medium" });
+}
+
+/**
+ * Time spent per stage of the request, as one thin bar: the measurement of
+ * every answer, not only in the learning mode. Generation, usually the
+ * longest, takes the accent; the retrieval stages share the neutrals.
+ */
+function LatencyReceipt({ pipeline }: { pipeline: PipelineState | undefined }) {
+  const { t } = useTranslation();
+  if (!pipeline) return null;
+  const segments = RECEIPT_STAGES.map((id) => ({ id, ms: pipeline.nodes[id]?.duration_ms ?? 0 })).filter(
+    (s) => s.ms > 0
+  );
+  const total = segments.reduce((sum, s) => sum + s.ms, 0);
+  if (segments.length < 2 || total <= 0) return null;
+  const label = (s: { id: NodeId; ms: number }) =>
+    `${t(`edu.stages.${s.id}.short`)} ${s.ms < 10 ? s.ms.toFixed(1) : Math.round(s.ms)} ms`;
+  return (
+    <div
+      className="latency-receipt"
+      role="img"
+      aria-label={t("chat.receipt_label", { stages: segments.map(label).join(", ") })}
+    >
+      {segments.map((s) => (
+        <span
+          key={s.id}
+          className={`latency-segment ${s.id}`}
+          style={{ flexGrow: s.ms, minWidth: 3 }}
+          title={label(s)}
+        />
+      ))}
+    </div>
+  );
 }
 
 function ChatTurnView({
   turn,
+  number,
   expanded,
   highlight,
   onToggleDetails,
-  onSelectSource,
+  onShowDetails,
+  onHighlight,
 }: TurnProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const gpuWhy = useGpuWhy();
   const [showDetail, setShowDetail] = useState(false);
+  // The cited passage a citation marker points to, shown and outlined.
+  const [focusRank, setFocusRank] = useState<number | null>(null);
   // When the router declines, the retrieved passages are not sources.
   const declined = turn.routing ? !turn.routing.answer_from_documents : false;
   const sourceChunks = declined ? [] : turn.chunks;
   const visibleChunks = highlight
     ? sourceChunks.filter((c) => c.file_name === highlight)
     : sourceChunks;
+  const anchor = (rank: number) => `turn-${turn.id}-rank-${rank}`;
+
+  useEffect(() => {
+    if (focusRank == null || !expanded) return;
+    document.getElementById(anchor(focusRank))?.scrollIntoView({
+      block: "nearest",
+      behavior: prefersReducedMotion() ? "auto" : "smooth",
+    });
+  }, [focusRank, expanded]);
+
+  // A marker shows its own passage; clicking it again clears the selection.
+  const selectCitation = (chunk: RetrievedChunk) => {
+    if (highlight === chunk.file_name && focusRank === chunk.rank) {
+      setFocusRank(null);
+      onHighlight(null);
+      return;
+    }
+    setFocusRank(chunk.rank);
+    onHighlight(chunk.file_name);
+    onShowDetails();
+  };
+  // A source chip selects its whole file.
+  const selectSource = (file: string) => {
+    setFocusRank(null);
+    onHighlight(highlight === file ? null : file);
+  };
+
+  const stamp = [
+    turn.corpus,
+    turn.index_run_id ? `run ${turn.index_run_id.slice(0, 8)}` : null,
+    stampTime(turn.created_at, i18n.language),
+  ].filter(Boolean);
+  const versions = turn.versions && turn.versions.scope !== "none" ? turn.versions : null;
 
   return (
-    <>
-      <div className="bubble user">
-        <span className="role sr-only">{t("chat.user_role")}</span>
-        {turn.question}
-      </div>
-
-      {(turn.answer === null || turn.answer === "") && !turn.error && !turn.stopped ? (
-        <div className="inline-status" role="status">
-          <span className="dots">
-            <span />
-            <span />
-            <span />
-          </span>
-          {t("chat.loading")}
+    <section className="turn" aria-labelledby={`q-${turn.id}`}>
+      <header className="turn-question">
+        <span className="turn-no" aria-hidden="true">
+          Q{number}
+        </span>
+        <div className="turn-question-body">
+          <p className="turn-question-text" id={`q-${turn.id}`}>
+            <span className="role sr-only">{t("chat.user_role")}</span>
+            {turn.question}
+          </p>
+          {stamp.length > 0 ? <p className="turn-stamp">{stamp.join(" · ")}</p> : null}
         </div>
-      ) : null}
+      </header>
 
-      {turn.stopped && !turn.answer ? (
-        <div className="inline-status" role="status">
-          {t("chat.stopped")}
-        </div>
-      ) : null}
-
-      {turn.error ? (
-        <>
-          <div className="inline-status error">
-            <span>⚠</span>
-            {turn.error.message}
-            {turn.error.detail ? (
-              <button
-                className="detail-toggle"
-                onClick={() => setShowDetail((v) => !v)}
-              >
-                {showDetail ? t("chat.error_hide_detail") : t("chat.error_detail")}
-              </button>
-            ) : null}
+      <div className="turn-body">
+        {(turn.answer === null || turn.answer === "") && !turn.error && !turn.stopped ? (
+          <div className="inline-status" role="status">
+            <span className="dots">
+              <span />
+              <span />
+              <span />
+            </span>
+            {t("chat.loading")}
           </div>
-          {showDetail && turn.error.detail ? (
-            <div className="inline-detail">{turn.error.detail}</div>
-          ) : null}
-        </>
-      ) : null}
+        ) : null}
 
-      {turn.answer ? (
-        <article className="turn-answer" aria-busy={turn.streaming ? true : undefined}>
-          <span className="role sr-only">{t("chat.assistant_role")}</span>
-          <div className="answer-text">
-            {renderAnswer(turn.answer, turn.chunks, highlight, (chunk) => onSelectSource(chunk.file_name))}
-            {turn.streaming ? <span className="stream-caret" aria-hidden="true" /> : null}
+        {turn.stopped && !turn.answer ? (
+          <div className="inline-status" role="status">
+            {t("chat.stopped")}
           </div>
-          {turn.stopped ? <p className="answer-stopped">{t("chat.stopped")}</p> : null}
-          {sourceChunks.length > 0 ? (
-            <section className="sources" aria-labelledby={`sources-${turn.id}`}>
-              <div className="sources-head">
-                <span className="sources-label" id={`sources-${turn.id}`}>
-                  {t("chat.sources_header", {
-                    count: new Set(sourceChunks.map((c) => c.file_name)).size,
-                  })}
-                </span>
-                <button
-                  type="button"
-                  className={`details-toggle${expanded ? " open" : ""}`}
-                  onClick={onToggleDetails}
-                  aria-expanded={expanded}
-                >
-                  {t(`chat.chunks_${expanded ? "hide" : "show"}${highlight ? "_filtered" : ""}`, {
-                    count: visibleChunks.length,
-                  })}
-                  <ChevronDownIcon size={14} />
+        ) : null}
+
+        {turn.error ? (
+          <>
+            <div className="inline-status error">
+              <AlertIcon size={15} />
+              {turn.error.message}
+              {turn.error.detail ? (
+                <button className="detail-toggle" onClick={() => setShowDetail((v) => !v)}>
+                  {showDetail ? t("chat.error_hide_detail") : t("chat.error_detail")}
                 </button>
-              </div>
-              <SourceList
-                chunks={sourceChunks}
-                onSelect={onSelectSource}
-                activeFile={highlight}
-                citedRanks={turn.answer ? extractCitedRanks(turn.answer) : undefined}
-              />
-              {expanded ? (
-                <ol className="chunk-list">
-                  {visibleChunks.map((c) => (
-                    <ChunkCard key={c.chunk_id} chunk={c} compact />
-                  ))}
-                </ol>
               ) : null}
-            </section>
-          ) : null}
-          {turn.routing ? <RoutingPanel routing={turn.routing} /> : null}
-          {turn.rerank_notice ? (
-            <p className="answer-notice" role="note">
-              {t(`chat.rerank_notice_${turn.rerank_notice}`, { defaultValue: turn.rerank_notice, why: gpuWhy })}
-            </p>
-          ) : null}
-          {turn.generator_notice ? (
-            <p className="answer-notice" role="note">
-              {t(`chat.generator_notice_${turn.generator_notice}`, { defaultValue: turn.generator_notice })}
-            </p>
-          ) : null}
-          <div className="answer-meta">
-            {turn.query_translation?.translated ? (
-              <span title={turn.query_translation.text}>
-                {t("chat.meta_translated", { lang: turn.query_translation.target_language })}
-              </span>
+            </div>
+            {showDetail && turn.error.detail ? <div className="inline-detail">{turn.error.detail}</div> : null}
+          </>
+        ) : null}
+
+        {turn.answer ? (
+          <article className="turn-answer" aria-busy={turn.streaming ? true : undefined}>
+            <span className="role sr-only">{t("chat.assistant_role")}</span>
+            <div className="answer-text">
+              {renderAnswer(turn.answer, turn.chunks, highlight, selectCitation, {
+                activeRank: focusRank,
+                articleLabels: true,
+              })}
+              {turn.streaming ? <span className="stream-caret" aria-hidden="true" /> : null}
+            </div>
+            {turn.stopped ? <p className="answer-stopped">{t("chat.stopped")}</p> : null}
+            {sourceChunks.length > 0 ? (
+              <section className="sources" aria-labelledby={`sources-${turn.id}`}>
+                <div className="sources-head">
+                  <span className="sources-label" id={`sources-${turn.id}`}>
+                    {t("chat.sources_header", {
+                      count: new Set(sourceChunks.map((c) => c.file_name)).size,
+                    })}
+                  </span>
+                  <button
+                    type="button"
+                    className={`details-toggle${expanded ? " open" : ""}`}
+                    onClick={onToggleDetails}
+                    aria-expanded={expanded}
+                  >
+                    {t(`chat.chunks_${expanded ? "hide" : "show"}${highlight ? "_filtered" : ""}`, {
+                      count: visibleChunks.length,
+                    })}
+                    <ChevronDownIcon size={14} />
+                  </button>
+                </div>
+                <SourceList
+                  chunks={sourceChunks}
+                  onSelect={selectSource}
+                  activeFile={highlight}
+                  citedRanks={turn.answer ? extractCitedRanks(turn.answer) : undefined}
+                />
+                {expanded ? (
+                  <ol className="chunk-list">
+                    {visibleChunks.map((c) => (
+                      <ChunkCard
+                        key={c.chunk_id}
+                        chunk={c}
+                        compact
+                        anchorId={anchor(c.rank)}
+                        active={focusRank === c.rank}
+                      />
+                    ))}
+                  </ol>
+                ) : null}
+              </section>
             ) : null}
-            {turn.retrieval_mode ? (
-              <span>
-                {t("chat.meta_mode")} <code>{turn.retrieval_mode}{turn.rerank ? " + rerank" : ""}</code>
-              </span>
+            {turn.routing ? <RoutingPanel routing={turn.routing} /> : null}
+            {turn.rerank_notice ? (
+              <p className="answer-notice" role="note">
+                {t(`chat.rerank_notice_${turn.rerank_notice}`, { defaultValue: turn.rerank_notice, why: gpuWhy })}
+              </p>
             ) : null}
-            {turn.citation ? (
-              <span title={turn.citation.label}>
-                {t("chat.meta_citation")} <code>{turn.citation.label}</code>
-              </span>
+            {turn.generator_notice ? (
+              <p className="answer-notice" role="note">
+                {t(`chat.generator_notice_${turn.generator_notice}`, { defaultValue: turn.generator_notice })}
+              </p>
             ) : null}
-            {turn.strategy ? (
-              <span>
-                {t("chat.meta_strategy")} <code>{turn.strategy}</code>
-              </span>
-            ) : null}
-            {turn.index_run_id ? (
-              <span title={turn.index_run_id}>
-                {t("chat.meta_index_run")}{" "}
-                <code>{turn.index_run_id.slice(0, 8)}</code>
-              </span>
-            ) : null}
-            {turn.first_token_ms != null ? (
-              <span title={t("chat.meta_first_token_title")}>
-                {t("chat.meta_first_token", { ms: turn.first_token_ms.toFixed(0) })}
-              </span>
-            ) : null}
-            {turn.elapsed_ms != null ? (
-              <span>{t("chat.meta_ms", { ms: turn.elapsed_ms.toFixed(0) })}</span>
-            ) : null}
-          </div>
-        </article>
-      ) : null}
-    </>
+            {turn.streaming ? null : <LatencyReceipt pipeline={turn.pipeline} />}
+            <div className="answer-meta">
+              {turn.query_translation?.translated ? (
+                <span title={turn.query_translation.text}>
+                  {t("chat.meta_translated", { lang: turn.query_translation.target_language })}
+                </span>
+              ) : null}
+              {turn.retrieval_mode ? (
+                <span>
+                  <span className="meta-label">{t("chat.meta_mode")}</span>
+                  {t(`retrieval.mode_short_${turn.retrieval_mode}`, { defaultValue: turn.retrieval_mode })}
+                  {turn.rerank ? ` + ${t("chat.meta_rerank")}` : ""}
+                </span>
+              ) : null}
+              {turn.citation ? (
+                <span title={turn.citation.label}>
+                  <span className="meta-label">{t("chat.meta_citation")}</span>
+                  {turn.citation.label}
+                </span>
+              ) : null}
+              {versions ? (
+                <span>
+                  <span className="meta-label">{t("chat.meta_versions")}</span>
+                  {t(`chat.meta_versions_${versions.mode}`, { date: formatDay(versions.date, i18n.language) })}
+                </span>
+              ) : null}
+              {turn.strategy ? (
+                <span>
+                  <span className="meta-label">{t("chat.meta_strategy")}</span>
+                  <code>{turn.strategy}</code>
+                </span>
+              ) : null}
+              {turn.first_token_ms != null ? (
+                <span title={t("chat.meta_first_token_title")}>
+                  <span className="meta-label">{t("chat.meta_first_token_label")}</span>
+                  {t("chat.meta_ms", { ms: turn.first_token_ms.toFixed(0) })}
+                </span>
+              ) : null}
+              {turn.elapsed_ms != null ? (
+                <span>
+                  <span className="meta-label">{t("chat.meta_total")}</span>
+                  {t("chat.meta_ms", { ms: turn.elapsed_ms.toFixed(0) })}
+                </span>
+              ) : null}
+            </div>
+          </article>
+        ) : null}
+      </div>
+    </section>
   );
 }

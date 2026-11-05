@@ -472,7 +472,7 @@ pre {
 
 @media (max-width: 560px) {
   .topbar {
-    padding: 0 12px;
+    padding: 0 16px;
   }
   .topbar .inline {
     flex-wrap: nowrap;
@@ -650,7 +650,7 @@ button > svg {
   justify-content: flex-start;
 }
 button:active {
-  transform: translateY(1px);
+  transform: scale(0.97);
 }
 button[disabled] {
   background: var(--surface-2);
@@ -1039,6 +1039,21 @@ button.citation {
 button.citation + button.citation {
   margin-left: 2px;
 }
+/* A cited article instead of a rank: "art. L221-18". */
+button.citation.labelled {
+  max-width: 11em;
+  padding: 0 5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--mono);
+  font-weight: 500;
+}
+.cite-nums {
+  display: inline-flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
 button.citation::after {
   content: "";
   position: absolute;
@@ -1050,7 +1065,7 @@ button.citation:hover {
   color: var(--accent-strong);
 }
 button.citation:active {
-  transform: scale(0.94);
+  transform: scale(0.96);
 }
 button.citation.active,
 .source-chip.active .cite-num {
@@ -1069,6 +1084,42 @@ button.citation.active,
   font-family: var(--mono);
   font-variant-numeric: tabular-nums;
   margin-top: 14px;
+}
+
+.turn-answer .answer-meta {
+  gap: 4px 16px;
+  margin-top: 8px;
+  font-family: var(--ui);
+  font-size: 12px;
+  color: var(--text);
+}
+.turn-answer .answer-meta .meta-label {
+  margin-right: 5px;
+  color: var(--dim);
+}
+.turn-answer .answer-meta code {
+  font-size: 11.5px;
+  background: none;
+  padding: 0;
+}
+
+/* Time per stage of the request, one thin bar; generation takes the accent. */
+.latency-receipt {
+  display: flex;
+  gap: 2px;
+  height: 4px;
+  max-width: 72ch;
+  margin-top: 18px;
+}
+.latency-segment {
+  border-radius: 2px;
+  background: var(--border-strong);
+}
+.latency-segment:nth-child(even) {
+  background: var(--border);
+}
+.latency-segment.generation {
+  background: var(--accent-border);
 }
 
 /* Query router (phase 9.4) */
@@ -1238,6 +1289,27 @@ button.source-chip.active {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* Whether the source is still the law (versions, phase 9.10): words, tinted. */
+.source-stamp {
+  flex-shrink: 0;
+  padding: 1px 6px;
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+.source-stamp.ok {
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+.source-stamp.warn {
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+.source-stamp.err {
+  background: var(--err-soft);
+  color: var(--err);
+}
 .source-chip .source-score {
   flex-shrink: 0;
   color: var(--dim);
@@ -1290,6 +1362,18 @@ button.source-chip.more:hover {
   border: none;
   border-bottom: 1px solid var(--border);
   border-radius: 0;
+}
+.chunk.compact.active {
+  margin: 0 -10px;
+  padding: 12px 10px;
+  background: var(--accent-soft);
+  border-color: transparent;
+  border-radius: var(--radius-sm);
+}
+.chunk.compact.active .cite-num {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
 }
 .chunk.compact .head {
   justify-content: flex-start;
@@ -1386,15 +1470,64 @@ button.icon-btn:active {
   transform: scale(0.94);
 }
 
-/* The answer reads as the page, not as a card; only the question is a bubble. */
-.chat-stream > .bubble.user {
-  max-width: min(80%, 64ch);
-  padding: 9px 16px;
-  border-radius: 18px;
-  font-size: 15px;
+/*
+ * Each turn reads as a lab-notebook entry: Q{n} in the gutter, the question,
+ * a stamp of what it ran against (corpus, index run, time), then the answer
+ * aligned on the question. No bubbles: a rule between entries.
+ */
+.chat-stream {
+  --turn-gutter: 40px;
+  gap: 0;
 }
-.chat-stream > .bubble.user:not(:first-child) {
-  margin-top: 24px;
+.turn + .turn {
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+.turn-question {
+  display: flex;
+  align-items: baseline;
+}
+.turn-no {
+  flex: 0 0 var(--turn-gutter);
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--dim);
+}
+.turn-question-body {
+  min-width: 0;
+}
+.turn-question-text {
+  margin: 0;
+  max-width: 72ch;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.45;
+  letter-spacing: -0.005em;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.turn-stamp {
+  margin: 4px 0 0;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--dim);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.turn-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 14px;
+  padding-left: var(--turn-gutter);
+}
+@media (max-width: 640px) {
+  .chat-stream {
+    --turn-gutter: 30px;
+  }
 }
 .turn-answer {
   position: relative;
@@ -1418,7 +1551,6 @@ button.icon-btn:active {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  box-shadow: var(--shadow-card);
 }
 .settings-bar .compact-field {
   display: flex;
@@ -1476,6 +1608,29 @@ button.icon-btn:active {
   margin: 0;
   max-width: 62ch;
   font-size: 15px;
+}
+
+.welcome p.welcome-modes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 20px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+/* The sentence on its own line, the four modes together below it. */
+.welcome-modes > span:first-child {
+  flex-basis: 100%;
+  margin-bottom: 2px;
+}
+.mode-tag {
+  padding: 1px 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 12.5px;
+  cursor: help;
 }
 
 .suggestions {
@@ -2340,7 +2495,7 @@ button.icon-btn:active {
 .lang-current:active,
 .settings-bar .select-trigger:active,
 .settings-bar button.ghost:active {
-  transform: translateY(1px);
+  transform: scale(0.97);
 }
 .settings-bar button.ghost[disabled] {
   background: var(--surface);
@@ -4368,6 +4523,22 @@ button.icon-only {
   z-index: 70;
   background: oklch(0.25 0.02 110 / 0.2);
   animation: history-fade 200ms var(--ease-out);
+}
+.history-sidebar.drawer.closing {
+  animation: history-out 160ms var(--ease-out) forwards;
+}
+.history-backdrop.closing {
+  animation: history-fade-out 160ms var(--ease-out) forwards;
+}
+@keyframes history-out {
+  to {
+    transform: translateX(-100%);
+  }
+}
+@keyframes history-fade-out {
+  to {
+    opacity: 0;
+  }
 }
 @keyframes history-in {
   from {

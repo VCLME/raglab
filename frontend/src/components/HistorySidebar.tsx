@@ -15,6 +15,8 @@ interface Props {
   onDeleted: (id: string) => void;
   /** The open conversation keeps its new title in the Chat, so its next save does not undo it. */
   onRenamed: (id: string, title: string) => void;
+  /** The drawer is sliding out (it unmounts right after). */
+  closing?: boolean;
   /** Folds the column, or closes the drawer. */
   onClose: () => void;
 }
@@ -69,7 +71,17 @@ function Highlighted({ text }: { text: string }) {
  * history lives is not shown; only what needs the user is (API unreachable,
  * no browser storage).
  */
-export function HistorySidebar({ history, currentId, variant, onOpen, onNew, onDeleted, onRenamed, onClose }: Props) {
+export function HistorySidebar({
+  history,
+  currentId,
+  variant,
+  closing = false,
+  onOpen,
+  onNew,
+  onDeleted,
+  onRenamed,
+  onClose,
+}: Props) {
   const { t, i18n } = useTranslation();
   const [query, setQuery] = useState("");
   const [hits, setHits] = useState<HistoryHit[] | null>(null);
@@ -230,7 +242,7 @@ export function HistorySidebar({ history, currentId, variant, onOpen, onNew, onD
 
   const sidebar = (
     <aside
-      className={`history-sidebar ${drawer ? "drawer" : "docked"}`}
+      className={`history-sidebar ${drawer ? "drawer" : "docked"}${closing ? " closing" : ""}`}
       aria-label={t("history.title")}
       role={drawer ? "dialog" : undefined}
       aria-modal={drawer ? true : undefined}
@@ -319,7 +331,7 @@ export function HistorySidebar({ history, currentId, variant, onOpen, onNew, onD
   if (!drawer) return sidebar;
   return (
     <>
-      <div className="history-backdrop" onClick={onClose} aria-hidden="true" />
+      <div className={`history-backdrop${closing ? " closing" : ""}`} onClick={onClose} aria-hidden="true" />
       {sidebar}
     </>
   );

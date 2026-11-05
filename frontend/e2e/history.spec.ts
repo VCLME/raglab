@@ -59,7 +59,7 @@ test.describe("Conversation history", () => {
     await results.getByRole("button").first().click();
 
     // Reopened as a normal chat: its answer and sources, the composer ready to continue.
-    await expect(page.locator(".bubble.user")).toContainText(data.QUESTION);
+    await expect(page.locator(".turn-question-text")).toContainText(data.QUESTION);
     await expect(page.getByText("Sources · 2 fichiers")).toBeVisible();
     await expect(page.getByPlaceholder(/Pose ta question/)).toBeFocused();
     await panel(page).getByRole("searchbox").fill("");
@@ -166,8 +166,8 @@ test.describe("Conversation history", () => {
     const results = panel(page).getByRole("list", { name: "Résultats de la recherche" });
     await expect(results.locator("mark")).toHaveText("Parlement");
     await results.getByRole("button").click();
-    await expect(page.locator(".bubble.user")).toHaveCount(1);
-    await expect(page.locator(".bubble.user")).toHaveText(/Qui vote la loi/);
+    await expect(page.locator(".turn-question-text")).toHaveCount(1);
+    await expect(page.locator(".turn-question-text")).toHaveText(/Qui vote la loi/);
     await expect(page.locator(".answer-text")).toContainText("Le Parlement vote la loi");
     await expect(page.getByText("Sources · 1 fichier")).toBeVisible();
 
