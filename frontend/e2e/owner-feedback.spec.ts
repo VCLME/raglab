@@ -176,8 +176,9 @@ test("Article references and the graph only for corpora of law articles: hidden,
   await expect(trigger).not.toContainText("articles de loi");
   await trigger.click();
   const dialog = page.getByRole("dialog", { name: /Options de recherche/ });
-  // Re-ranking and the query router: no legal option on this corpus.
-  await expect(dialog.getByRole("switch")).toHaveCount(2);
+  // Re-ranking, de-duplication and the query router: no legal option on this corpus.
+  await expect(dialog.getByRole("switch")).toHaveCount(3);
+  await expect(dialog.getByRole("switch", { name: /^Déduplication/ })).toHaveCount(1);
   await expect(dialog.getByRole("switch", { name: /^Routage/ })).toHaveCount(1);
   await expect(dialog.getByText("Références d'articles de loi")).toHaveCount(0);
   await page.keyboard.press("Escape");
