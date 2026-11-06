@@ -13,15 +13,15 @@ import { copyFile, readFile, stat, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ROOT, VIDEO_DIR } from "./common.mjs";
 
-const README_DEMO = `[![raglab in action: a question citing a Brazilian law, the streamed answer with its citations, the cited passage opened](docs/images/demo.gif)](https://vclme.github.io/raglab/)`;
+const README_DEMO = `[![raglab in action: a plain question answered from two cited articles, then the passages behind them](docs/images/demo.gif)](https://vclme.github.io/raglab/)`;
 
 const SITE_DEMO = `  <figure>
     <video class="shot-media" width="1920" height="1080" autoplay muted loop playsinline preload="metadata" poster="assets/chat-welcome.png"
-      aria-label="raglab in use: a question citing a Brazilian law and its sources, a French consumer-code article in force, learning mode, then the Workshop's intermediate scores.">
+      aria-label="raglab in use: the conversation history, a plain question answered from several cited articles, learning mode with the Fusion and Re-ranking lessons, then three Workshop retrieval settings and their scores.">
       <source src="assets/demo.webm" type="video/webm">
       <source src="assets/demo.mp4" type="video/mp4">
     </video>
-    <figcaption>The chat, its sources, learning mode and the Workshop, replayed from a real session on local models.</figcaption>
+    <figcaption>History, a plain question and its sources, learning mode and the Workshop, replayed from a real session on local models.</figcaption>
   </figure>`;
 
 /** Replace what sits between the demo:start and demo:end comments of `file`. */
