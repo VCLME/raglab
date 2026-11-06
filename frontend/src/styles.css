@@ -2655,6 +2655,7 @@ button.switch.on .switch-knob {
   color: var(--muted);
 }
 .edu-track-scroll {
+  container-type: inline-size;
   overflow-x: auto;
   scrollbar-width: thin;
   /* room for focus rings */
@@ -2676,7 +2677,7 @@ button.switch.on .switch-knob {
 .edu-lanes {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 /* Fork and merge: one SVG path per lane (see BranchWires). */
 .edu-wires {
@@ -2713,21 +2714,25 @@ button.switch.on .switch-knob {
   color: var(--score-graph);
 }
 /* Decision node (legal citation): a node with a diamond marker. */
+.edu-node.decision {
+  position: relative;
+  padding-left: 25px;
+}
 .edu-node.decision::before {
   content: "";
+  position: absolute;
+  left: 11px;
+  top: calc(50% - 4px);
   width: 7px;
   height: 7px;
   border: 1.5px solid currentColor;
   transform: rotate(45deg);
-  flex-shrink: 0;
 }
 .edu-node.decision .edu-node-meta {
-  max-width: 16ch;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  max-width: 15ch;
 }
 .edu-arrow.wire {
-  flex: 1 0 18px;
+  flex: 1 0 12px;
 }
 .edu-arrow.wire.tail::after,
 .edu-arrow.join::after {
@@ -2735,11 +2740,11 @@ button.switch.on .switch-knob {
 }
 /* Head wires stay short: the fork curve already carries the line. */
 .edu-arrow.wire:not(.tail) {
-  flex: 0 0 14px;
+  flex: 0 0 12px;
 }
 .edu-arrow {
   position: relative;
-  flex: 0 0 20px;
+  flex: 0 0 16px;
   height: 2px;
   background: var(--border-strong);
   transition: background var(--dur) var(--ease-out);
@@ -2760,12 +2765,17 @@ button.switch.on .switch-knob {
 .edu-arrow.lit::after {
   border-left-color: var(--accent);
 }
+/* Name above, duration or state below: the strip fits a 1440 px screen
+ * next to the history sidebar. Height kept in step with BranchWires. */
 .edu-node {
   flex-shrink: 0;
-  gap: 7px;
-  height: 34px;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+  height: 38px;
   min-height: 0;
-  padding: 0 10px;
+  padding: 0 12px;
+  line-height: 1.15;
   white-space: nowrap;
   background: var(--surface);
   color: var(--text);
@@ -2781,8 +2791,11 @@ button.switch.on .switch-knob {
   border-color: var(--muted);
 }
 .edu-node-meta {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 400;
   color: var(--muted);
 }
@@ -2821,6 +2834,32 @@ button.switch.on .switch-knob {
 .edu-node.active .edu-node-meta {
   color: var(--on-accent);
   opacity: 0.85;
+}
+/* Tablets: tighter nodes and arrows, so the whole pipeline still fits
+ * (below this it scrolls sideways). */
+@container (max-width: 1100px) {
+  .edu-node {
+    padding: 0 7px;
+    font-size: 12px;
+  }
+  .edu-node.decision {
+    padding-left: 21px;
+  }
+  .edu-node.decision::before {
+    left: 8px;
+  }
+  .edu-node-meta {
+    font-size: 10px;
+  }
+  .edu-arrow {
+    flex-basis: 11px;
+  }
+  .edu-arrow.wire:not(.tail) {
+    flex-basis: 9px;
+  }
+  .edu-node.decision .edu-node-meta {
+    max-width: 10ch;
+  }
 }
 /* Running: the fill breathes, no ring around the node. */
 @keyframes edu-pulse {

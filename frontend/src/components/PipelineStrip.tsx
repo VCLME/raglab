@@ -224,6 +224,8 @@ export function PipelineStrip({ state, question, lexemes = [], rrfK, lexicalWeig
       ? [{ off: graphOff, in: !graphOff && reached("graph"), out: !graphOff && state.nodes.graph.status === "done" }]
       : []),
   ];
+  // The merge exit and the arrow out of it light once the stage after the lanes runs.
+  const merged = reached(main[0]) && lanes.some((lane) => lane.out);
 
   return (
     <>
@@ -253,7 +255,11 @@ export function PipelineStrip({ state, question, lexemes = [], rrfK, lexicalWeig
               ` join${reached("embed") || reached("lexical") ? " lit" : ""}`
             )}
             <div className={`edu-branch${route.mode === "hybrid" ? " both" : ""}`}>
-              <BranchWires side="fork" lanes={lanes.map((lane) => ({ off: lane.off, lit: lane.in }))} />
+              <BranchWires
+                side="fork"
+                lanes={lanes.map((lane) => ({ off: lane.off, lit: lane.in }))}
+                shared={{ off: false, lit: lanes.some((lane) => lane.in) }}
+              />
               <div className="edu-lanes">
                 <div className={`edu-lane${vectorOff ? " off" : ""}`}>
                   {wire(lanes[0].in, true)}
@@ -275,13 +281,19 @@ export function PipelineStrip({ state, question, lexemes = [], rrfK, lexicalWeig
                   </div>
                 ) : null}
               </div>
-              <BranchWires side="merge" lanes={lanes.map((lane) => ({ off: lane.off, lit: lane.out }))} />
+              <BranchWires
+                side="merge"
+                lanes={lanes.map((lane) => ({ off: lane.off, lit: lane.out }))}
+                shared={{ off: false, lit: merged }}
+              />
             </div>
             {main.map((id, i) => (
               <Fragment key={id}>
-                {i === 0
-                  ? arrow(reached("retrieval") ? "retrieval" : "lexical", id)
-                  : arrow(main[i - 1], id)}
+                {i === 0 ? (
+                  <span className={`edu-arrow${merged ? " lit" : ""}`} aria-hidden="true" />
+                ) : (
+                  arrow(main[i - 1], id)
+                )}
                 {node(id)}
               </Fragment>
             ))}
@@ -312,43 +324,51 @@ export function PipelineStrip({ state, question, lexemes = [], rrfK, lexicalWeig
 }
 
 // Lane geometry, kept in step with `.edu-node` (height) and `.edu-lanes` (gap) in styles.css.
-const LANE_HEIGHT = 34;
-const LANE_GAP = 10;
-const WIRE_WIDTH = 28;
-const WIRE_RADIUS = 8;
+const LANE_HEIGHT = 38;
+const LANE_GAP = 8;
+const WIRE_WIDTH = 24;
+const WIRE_RADIUS = 7;
+
+interface WireLane {
+  off: boolean;
+  lit: boolean;
+}
 
 /**
- * Fork (or merge) between the track and the parallel lanes: one path per
- * lane from the track's centre line to the lane's, with rounded corners.
- * The paths share their first (fork) or last (merge) stretch, so the dimmed
- * ones are drawn first and the lit ones last: a lit route stays continuous.
+ * Fork (or merge) between the track and the parallel lanes. The stretch the
+ * lanes share (the stem of the fork, the exit of the merge) is its own path,
+ * lit with the track it joins; each lane has one path, with rounded corners,
+ * lit with its own stage. A lane never lights the shared stretch: a lane
+ * still running is never painted over by one that is done. Dimmed paths are
+ * drawn first, lit ones last.
  */
-function BranchWires({ side, lanes }: { side: "fork" | "merge"; lanes: { off: boolean; lit: boolean }[] }) {
+function BranchWires({ side, lanes, shared }: { side: "fork" | "merge"; lanes: WireLane[]; shared: WireLane }) {
   const height = lanes.length * LANE_HEIGHT + (lanes.length - 1) * LANE_GAP;
   const centre = height / 2;
   const bend = WIRE_WIDTH / 2;
   const r = WIRE_RADIUS;
-  // Drawn left to right, from `from` (y at x = 0) to `to` (y at the right edge).
-  const path = (from: number, to: number) => {
-    if (from === to) return `M0 ${from} H${WIRE_WIDTH}`;
-    const s = Math.sign(to - from);
-    return (
-      `M0 ${from} H${bend - r} Q${bend} ${from} ${bend} ${from + s * r} ` +
-      `V${to - s * r} Q${bend} ${to} ${bend + r} ${to} H${WIRE_WIDTH}`
-    );
+  // The fork's stem ends, and the merge's exit starts, where the curves leave or join the centre line.
+  const join = side === "fork" ? bend - r : bend + r;
+  const lanePath = (y: number) => {
+    if (side === "fork") {
+      if (y === centre) return `M${join} ${y} H${WIRE_WIDTH}`;
+      const s = Math.sign(y - centre);
+      return `M${join} ${centre} Q${bend} ${centre} ${bend} ${centre + s * r} V${y - s * r} Q${bend} ${y} ${bend + r} ${y} H${WIRE_WIDTH}`;
+    }
+    if (y === centre) return `M0 ${y} H${join}`;
+    const s = Math.sign(centre - y);
+    return `M0 ${y} H${bend - r} Q${bend} ${y} ${bend} ${y + s * r} V${centre - s * r} Q${bend} ${centre} ${join} ${centre}`;
   };
-  const order = (lane: { off: boolean; lit: boolean }) => (lane.lit ? 2 : lane.off ? 0 : 1);
-  const drawn = lanes
-    .map((lane, i) => ({ ...lane, y: LANE_HEIGHT / 2 + i * (LANE_HEIGHT + LANE_GAP) }))
-    .sort((a, b) => order(a) - order(b));
+  const sharedPath = side === "fork" ? `M0 ${centre} H${join}` : `M${join} ${centre} H${WIRE_WIDTH}`;
+  const order = (lane: WireLane) => (lane.lit ? 2 : lane.off ? 0 : 1);
+  const drawn = [
+    { ...shared, key: "shared", d: sharedPath },
+    ...lanes.map((lane, i) => ({ ...lane, key: `lane-${i}`, d: lanePath(LANE_HEIGHT / 2 + i * (LANE_HEIGHT + LANE_GAP)) })),
+  ].sort((a, b) => order(a) - order(b));
   return (
     <svg className={`edu-wires ${side}`} width={WIRE_WIDTH} height={height} aria-hidden="true">
-      {drawn.map((lane) => (
-        <path
-          key={lane.y}
-          className={lane.lit ? "lit" : lane.off ? "off" : undefined}
-          d={side === "fork" ? path(centre, lane.y) : path(lane.y, centre)}
-        />
+      {drawn.map((path) => (
+        <path key={path.key} className={path.lit ? "lit" : path.off ? "off" : undefined} d={path.d} />
       ))}
     </svg>
   );
