@@ -43,13 +43,13 @@ export const SCENARIO = {
   ask: {
     corpus: CONSUMER,
     question:
-      "I bought a laptop online last week and changed my mind. Can I still return it, and who pays for shipping?",
+      "I bought a laptop online and changed my mind. How many days do I have to cancel, and how quickly must I be refunded?",
   },
   // 3. Learning mode: another question, the pipeline lights up stage by
   //    stage, then two lessons.
   learning: {
     corpus: CONSUMER,
-    question: "Can a seller refuse to refund me after I cancel?",
+    question: "When must the seller refund me after I withdraw from an online purchase?",
     lessons: [/^Fusion/, /^Re-ranking/],
   },
   // 4. Workshop > Retrieval: one question, three settings, no generation.

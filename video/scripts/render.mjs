@@ -27,11 +27,11 @@ await mkdir(join(VIDEO_DIR, "out"), { recursive: true });
 
 const only = arg("only");
 const outputs = {
-  // H.264 for every browser; CRF 20 keeps UI text sharp.
-  mp4: ["Demo", "out/demo.mp4", "--codec=h264", "--crf=20", "--pixel-format=yuv420p"],
-  webm: ["Demo", "out/demo.webm", "--codec=vp9", "--crf=34"],
-  // 15 fps, 1280 px wide, looping: the README GIF.
-  gif: ["DemoShort", "out/demo.gif", "--codec=gif", "--every-nth-frame=2", "--scale=0.6667", "--number-of-gif-loops=0"],
+  // H.264 for every browser; CRF 23 keeps UI text sharp at a site-friendly size.
+  mp4: ["Demo", "out/demo.mp4", "--codec=h264", "--crf=23", "--pixel-format=yuv420p"],
+  webm: ["Demo", "out/demo.webm", "--codec=vp9", "--crf=38"],
+  // 15 fps, 1120 px wide, looping: the README GIF (under 8 MB).
+  gif: ["DemoShort", "out/demo.gif", "--codec=gif", "--every-nth-frame=2", "--scale=0.5833", "--number-of-gif-loops=0"],
 };
 for (const [name, [composition, file, ...flags]] of Object.entries(outputs)) {
   if (only && only !== name) continue;

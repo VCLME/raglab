@@ -154,9 +154,11 @@ export function Demo() {
   );
 }
 
-// The GIF: the plain question, from the first keystroke to the passages.
+// The GIF: the plain question, from the first keystroke to its sources
+// (the README budget is 8 MB).
 const SHORT_FROM = Math.max(0, at(ask, "ask") - 300);
-const SHORT = { intro: 45, ask: f(ask.duration - SHORT_FROM), outro: 70 };
+const SHORT_TO = at(ask, "passages", ask.duration) + 400;
+const SHORT = { intro: 45, ask: f(SHORT_TO - SHORT_FROM), outro: 70 };
 export const SHORT_FRAMES = SHORT.intro + SHORT.ask + SHORT.outro - 2 * OVERLAP;
 
 export function DemoShort() {

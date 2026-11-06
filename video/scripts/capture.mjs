@@ -73,7 +73,10 @@ const director = {
     for (let attempt = 1; ; attempt++) {
       const last = await nextAnswer();
       const end = last.events.at(-1);
-      const declined = NO_ANSWER.test(String(end.data.answer ?? ""));
+      // On camera, an answer must also cite its passages the way the Chat
+      // turns into chips ("[Rank N]").
+      const text = String(end.data.answer ?? "");
+      const declined = NO_ANSWER.test(text) || (!any && !/\[Rank \d+\]/.test(text));
       const tokens = last.events.filter((e) => e.event === "token").length;
       console.log(`answer: ${tokens} tokens in ${end.t} ms${declined ? " (declined)" : ""} - ${last.body.question}`);
       await page.waitForTimeout(1200);

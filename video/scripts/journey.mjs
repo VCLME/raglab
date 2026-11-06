@@ -106,7 +106,9 @@ export async function journey(page, d) {
   await page.waitForTimeout(500);
   await d.rect("hits", sidebar);
   await d.state(1600);
-  await d.click(sidebar.locator("button.history-open").first(), "reopen");
+  // The conversation whose title has the word, not just its answer.
+  const hit = sidebar.locator("button.history-open").filter({ hasText: new RegExp(SCENARIO.history.search, "i") });
+  await d.click(hit.first(), "reopen");
   await page.waitForTimeout(700);
   await d.rect("reopened", answer());
   await d.mark("reopened");
