@@ -357,7 +357,7 @@ En CI, le job `e2e` lance la suite et publie le rapport HTML en artefact en cas 
 
 ## Vidéo de démonstration (`video/`)
 
-Le film de démo du site (MP4 + WebM, 1920×1080, environ DUREE_FILM) et le GIF du README (la question simple puis la question de suivi en mode pédagogique, environ DUREE_GIF, 960 px, 7,5 images/s, moins de 8 Mo) sont générés par du code : un script Playwright pilote la vraie interface (en anglais) et en capture chaque état, puis [Remotion](https://www.remotion.dev/) (React) anime ces captures : mouvements de caméra, curseur, sous-titres, carte du chiffre clé. Les réponses ne sont jamais inventées : l'API est enregistrée une fois sur une instance réelle, puis rejouée. Le rendu est donc identique d'une fois sur l'autre et n'a besoin ni de l'API ni du GPU.
+Le film de démo du site (MP4 + WebM, 1920×1080, environ 2 min 30) et le GIF du README (la question simple puis la question de suivi en mode pédagogique, environ 45 s, 960 px, 7,5 images/s, moins de 8 Mo) sont générés par du code : un script Playwright pilote la vraie interface (en anglais) et en capture chaque état, puis [Remotion](https://www.remotion.dev/) (React) anime ces captures : mouvements de caméra, curseur, sous-titres, carte du chiffre clé. Les réponses ne sont jamais inventées : l'API est enregistrée une fois sur une instance réelle, puis rejouée. Le rendu est donc identique d'une fois sur l'autre et n'a besoin ni de l'API ni du GPU.
 
 Parcours filmé (questions dans `video/scenario.mjs`) :
 
