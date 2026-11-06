@@ -1,13 +1,13 @@
 /**
- * The cut. `Demo` is the full film for the site (raglab opening, a plain
- * question and its sources, a follow-up in learning mode, the Workshop);
- * `DemoShort` the README animation (the same story, shortened).
+ * The cut. `DemoShort` is the demo on the site and in the README (a plain
+ * question, a follow-up in learning mode, the Workshop to its graph);
+ * `Demo` the longer cut (sources, lessons, import), kept for reference.
  */
 import React from "react";
 import { AbsoluteFill, Sequence } from "remotion";
 import { AppScene, type CameraKey, type CaptionCue } from "./AppScene";
 import { AndMore, Intro, Outro, Paper, PlaceholderBadge } from "./Brand";
-import { FILM_SPEED, fApp } from "./theme";
+import { fApp } from "./theme";
 import { at, clickAt, timeline, type Rect, type Segment } from "./timeline";
 
 const { ask, learning, workshop } = timeline.segments;
@@ -127,9 +127,9 @@ const OVERLAP = 16;
 
 export const LEN = {
   intro: 180,
-  ask: fApp(ask.duration, FILM_SPEED),
-  learning: fApp(learning.duration, FILM_SPEED),
-  workshop: fApp(workshop.duration, FILM_SPEED),
+  ask: fApp(ask.duration),
+  learning: fApp(learning.duration),
+  workshop: fApp(workshop.duration),
   more: 270,
   outro: 180,
 };
@@ -152,7 +152,6 @@ export function Demo() {
         captions={captions}
         duration={len}
         joined={joined}
-        speed={FILM_SPEED}
         enterFrames={joined ? OVERLAP : undefined}
         exitFrames={last ? undefined : 0}
       />

@@ -1,6 +1,7 @@
 /**
- * Renders the demo: out/demo.mp4 and out/demo.webm (the full film, for the
- * site) and out/demo.webp (the short cut, for the README), plus
+ * Renders the demo: out/demo.mp4 and out/demo.webm (the short cut in full
+ * resolution at 30 fps, for the site) and out/demo.webp (the same cut at
+ * 960 px and 15 fps, for the README), plus
  * out/demo.meta.json saying which shots they come from (publish.mjs checks
  * it). Takes the shots first when there are none, when the fixture is newer
  * than them, or with --shots.
@@ -28,8 +29,8 @@ await mkdir(join(VIDEO_DIR, "out"), { recursive: true });
 const only = arg("only");
 const outputs = {
   // H.264 for every browser; CRF 18 keeps UI text sharp, even on zooms.
-  mp4: ["Demo", "out/demo.mp4", "--codec=h264", "--crf=18", "--pixel-format=yuv420p"],
-  webm: ["Demo", "out/demo.webm", "--codec=vp9", "--crf=30"],
+  mp4: ["DemoShort", "out/demo.mp4", "--codec=h264", "--crf=18", "--pixel-format=yuv420p"],
+  webm: ["DemoShort", "out/demo.webm", "--codec=vp9", "--crf=30"],
   // The README animation: the short cut as frames (960 px wide), then an
   // animated WebP at 15 fps (scripts/webp.py), smooth and sharp
   // where a GIF would need a low frame rate to stay small.
