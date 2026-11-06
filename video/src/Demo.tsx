@@ -7,7 +7,7 @@ import React from "react";
 import { AbsoluteFill, Sequence } from "remotion";
 import { AppScene, type CameraKey, type CaptionCue } from "./AppScene";
 import { AndMore, Intro, Outro, Paper, PlaceholderBadge } from "./Brand";
-import { f } from "./theme";
+import { fApp } from "./theme";
 import { at, clickAt, timeline, type Rect, type Segment } from "./timeline";
 
 const { ask, learning, workshop } = timeline.segments;
@@ -127,9 +127,9 @@ const OVERLAP = 16;
 
 export const LEN = {
   intro: 180,
-  ask: f(ask.duration),
-  learning: f(learning.duration),
-  workshop: f(workshop.duration),
+  ask: fApp(ask.duration),
+  learning: fApp(learning.duration),
+  workshop: fApp(workshop.duration),
   more: 270,
   outro: 180,
 };
@@ -187,9 +187,9 @@ const WORK_FROM = 0;
 const WORK_TO = at(workshop, "graph-view", workshop.duration) + 3500;
 const SHORT = {
   intro: 60,
-  ask: f(ASK_TO - ASK_FROM),
-  learning: f(LEARN_TO - LEARN_FROM),
-  workshop: f(WORK_TO - WORK_FROM),
+  ask: fApp(ASK_TO - ASK_FROM),
+  learning: fApp(LEARN_TO - LEARN_FROM),
+  workshop: fApp(WORK_TO - WORK_FROM),
   outro: 110,
 };
 export const SHORT_FRAMES = Object.values(SHORT).reduce((a, b) => a + b, 0) - 4 * OVERLAP;
