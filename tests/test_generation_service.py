@@ -52,6 +52,62 @@ def test_prompt_follows_the_question_language():
     assert question_language("") == "fr"
 
 
+def _passage(text: str) -> RetrievedChunk:
+    return _chunk().model_copy(update={"chunk_text": text})
+
+
+_PT_PASSAGE = "Art. 1º Esta Lei dispõe sobre os direitos e os deveres do migrante e do visitante no País."
+
+
+def test_no_quote_when_the_passages_are_in_another_language():
+    english = build_prompt_bundle(
+        "What does art. 1 of Lei nº 13.445 regulate?", [_passage(_PT_PASSAGE)], no_context_answer="X."
+    )
+    assert "(the context is in Portuguese) and note their [Rank X]" in english.system_prompt
+    assert "based on those passages" in english.system_prompt
+    assert "Write the whole answer in English" in english.system_prompt
+    assert "copy them in quotes" not in english.system_prompt
+
+    french = build_prompt_bundle(
+        "Que prévoit l'article 1 de cette loi ?", [_passage(_PT_PASSAGE)], no_context_answer="X."
+    )
+    assert "(le contexte est en portugais) et note leur [Rank X]" in french.system_prompt
+
+    translated = build_prompt_bundle(
+        "What does art. 1 of Lei nº 13.445 regulate?",
+        [_passage(_PT_PASSAGE)],
+        no_context_answer="X.",
+        cross_language="translate",
+    )
+    assert "The context is in Portuguese: translate them into English" in translated.system_prompt
+
+
+def test_same_language_prompt_keeps_the_verbatim_quote():
+    french = build_prompt_bundle("Que dit le document ?", [_chunk()], no_context_answer="X.")
+    reference = build_prompt_bundle(
+        "Que dit le document ?", [_chunk()], no_context_answer="X.", cross_language="verbatim"
+    )
+    assert french.system_prompt == reference.system_prompt
+    assert "traduis" not in french.system_prompt
+
+    # The prompt measured before answer-lang-en, for the benchmarks.
+    verbatim = build_prompt_bundle(
+        "What does art. 1 of Lei nº 13.445 regulate?",
+        [_passage(_PT_PASSAGE)],
+        no_context_answer="X.",
+        cross_language="verbatim",
+    )
+    assert "copy them in quotes" in verbatim.system_prompt and "translate" not in verbatim.system_prompt
+
+
+def test_context_language_follows_most_passages():
+    from raglab.generation.prompts import context_language
+
+    assert context_language([_passage(_PT_PASSAGE), _passage(_PT_PASSAGE), _chunk()]) == "pt"
+    assert context_language([_passage("12 345 678")]) is None
+    assert context_language([]) is None
+
+
 def test_generate_answer_returns_fallback_without_calling_ollama():
     settings = Settings(generation_no_context_answer="Contexte insuffisant.")
     generator = OllamaGenerator(settings)

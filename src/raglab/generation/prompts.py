@@ -6,6 +6,7 @@ from datetime import date
 
 from raglab.domain.schemas import RetrievedChunk
 from raglab.domain.versions import prompt_line, strip_revoked
+from raglab.routing.language import detect_language
 
 
 @dataclass(slots=True)
@@ -120,9 +121,9 @@ _SYSTEM = {
     "fr": (
         "Tu es un assistant de recherche documentaire. Réponds uniquement à partir du contexte fourni, en français.\n"
         "Procède ainsi :\n"
-        "1. Cherche dans le contexte la ou les phrases qui répondent à la question et recopie-les entre guillemets, "
-        "avec leur [Rank X].\n"
-        "2. Puis réponds en une ou deux phrases en t'appuyant sur ces citations, en citant chaque fait avec [Rank X].\n"
+        "{quote_step}\n"
+        "{answer_step}\n"
+        "{language_rule}"
         "N'invente aucun fait, aucune date, aucun numéro d'article ni aucune référence juridique.\n"
         "Si plusieurs sources se contredisent, signale-le.\n"
         "Seulement si aucune phrase du contexte ne se rapporte à la question, réponds exactement par cette phrase "
@@ -132,8 +133,9 @@ _SYSTEM = {
     "pt": (
         "Você é um assistente de pesquisa documental. Responda somente com base no contexto fornecido, em português.\n"
         "Proceda assim:\n"
-        "1. Procure no contexto a(s) frase(s) que respondem à pergunta e copie-as entre aspas, com o seu [Rank X].\n"
-        "2. Depois responda em uma ou duas frases com base nessas citações, citando cada fato com [Rank X].\n"
+        "{quote_step}\n"
+        "{answer_step}\n"
+        "{language_rule}"
         "Não invente fatos, datas, números de artigo nem referências jurídicas.\n"
         "Se as fontes se contradisserem, diga isso.\n"
         "Somente se nenhuma frase do contexto tratar da pergunta, responda exatamente com esta frase e nada mais:\n"
@@ -142,14 +144,68 @@ _SYSTEM = {
     "en": (
         "You are a document research assistant. Answer only from the provided context, in English.\n"
         "Proceed as follows:\n"
-        "1. Find the sentence(s) in the context that answer the question and copy them in quotes, with their [Rank X].\n"
-        "2. Then answer in one or two sentences based on those quotes, citing each fact with [Rank X].\n"
+        "{quote_step}\n"
+        "{answer_step}\n"
+        "{language_rule}"
         "Never invent facts, dates, article numbers or legal references.\n"
         "If sources contradict each other, say so.\n"
         "Only if no sentence of the context relates to the question, reply exactly with this sentence and nothing "
         "else:\n"
         '"{fallback}"'
     ),
+}
+# Steps 1 and 2 of _SYSTEM. Passages in the question's language: the quote
+# is copied (the measured V4 prompt, unchanged). Passages in another
+# language: copied verbatim, a Portuguese or French quote opened the answer
+# (101 of 120 cross-language answers with Qwen3.6, 58 with qwen2.5:7b).
+# Asked to translate it ("translate"), the writers still copied it in 79 and
+# 35 answers; without a quote ("omit", the default) 1 and 5 answers of 120
+# kept foreign text (docs/benchmarks/prompt.md, answer-lang-en-v1).
+CROSS_LANGUAGE_MODES = ("verbatim", "translate", "omit")
+_QUOTE_STEP = {
+    "fr": "1. Cherche dans le contexte la ou les phrases qui répondent à la question et recopie-les entre guillemets, "
+    "avec leur [Rank X].",
+    "pt": "1. Procure no contexto a(s) frase(s) que respondem à pergunta e copie-as entre aspas, com o seu [Rank X].",
+    "en": "1. Find the sentence(s) in the context that answer the question and copy them in quotes, with their [Rank X].",
+}
+_TRANSLATED_QUOTE_STEP = {
+    "fr": "1. Cherche dans le contexte la ou les phrases qui répondent à la question. Le contexte est en {source} : "
+    "traduis-les en français et donne la traduction entre guillemets, avec leur [Rank X].",
+    "pt": "1. Procure no contexto a(s) frase(s) que respondem à pergunta. O contexto está em {source}: "
+    "traduza-as para o português e dê a tradução entre aspas, com o seu [Rank X].",
+    "en": "1. Find the sentence(s) in the context that answer the question. The context is in {source}: "
+    "translate them into English and give the translation in quotes, with their [Rank X].",
+}
+_PASSAGE_STEP = {
+    "fr": "1. Cherche dans le contexte le ou les passages qui répondent à la question (le contexte est en {source}) "
+    "et note leur [Rank X].",
+    "pt": "1. Procure no contexto o(s) trecho(s) que respondem à pergunta (o contexto está em {source}) "
+    "e anote o seu [Rank X].",
+    "en": "1. Find the passage(s) of the context that answer the question (the context is in {source}) "
+    "and note their [Rank X].",
+}
+_ANSWER_STEP = {
+    "fr": "2. Puis réponds en une ou deux phrases en t'appuyant sur ces citations, en citant chaque fait avec [Rank X].",
+    "pt": "2. Depois responda em uma ou duas frases com base nessas citações, citando cada fato com [Rank X].",
+    "en": "2. Then answer in one or two sentences based on those quotes, citing each fact with [Rank X].",
+}
+_ANSWER_FROM_PASSAGES_STEP = {
+    "fr": "2. Puis réponds en une ou deux phrases en t'appuyant sur ces passages, en citant chaque fait avec [Rank X].",
+    "pt": "2. Depois responda em uma ou duas frases com base nesses trechos, citando cada fato com [Rank X].",
+    "en": "2. Then answer in one or two sentences based on those passages, citing each fact with [Rank X].",
+}
+_LANGUAGE_RULE = {
+    "fr": "Écris toute la réponse en français, citations comprises ; seuls les noms propres et les intitulés "
+    "(lois, organismes, articles) restent tels qu'ils sont écrits.\n",
+    "pt": "Escreva toda a resposta em português, inclusive as citações; só os nomes próprios e os títulos "
+    "(leis, órgãos, artigos) ficam como estão escritos.\n",
+    "en": "Write the whole answer in English, quotes included; only proper names and titles "
+    "(laws, bodies, articles) stay as written.\n",
+}
+_LANGUAGE_NAMES = {
+    "fr": {"fr": "français", "pt": "portugais", "en": "anglais"},
+    "pt": {"fr": "francês", "pt": "português", "en": "inglês"},
+    "en": {"fr": "French", "pt": "Portuguese", "en": "English"},
 }
 _LABELS = {"fr": ("Question", "Contexte"), "pt": ("Pergunta", "Contexto"), "en": ("Question", "Context")}
 
@@ -161,6 +217,17 @@ def question_language(question: str) -> str:
     scores = {language: sum(word in vocabulary for word in words) for language, vocabulary in _LANGUAGE_WORDS.items()}
     best = max(scores, key=lambda language: scores[language])
     return best if scores[best] > scores["fr"] else "fr"
+
+
+def context_language(chunks: list[RetrievedChunk]) -> str | None:
+    """Language of most passages ("fr", "pt" or "en"); None when none has a
+    clear one."""
+    counts: dict[str, int] = {}
+    for chunk in chunks:
+        detected = detect_language(chunk.chunk_text).language
+        if detected in _LANGUAGE_NAMES:
+            counts[detected] = counts.get(detected, 0) + 1
+    return max(counts, key=lambda language: counts[language]) if counts else None
 
 
 def no_context_answer_for(language: str, french_answer: str) -> str:
@@ -204,12 +271,32 @@ def build_context(chunks: list[RetrievedChunk]) -> str:
     return "\n\n".join(presented_passages(chunks))
 
 
-def build_prompt_bundle(question: str, chunks: list[RetrievedChunk], *, no_context_answer: str) -> PromptBundle:
+def build_prompt_bundle(
+    question: str,
+    chunks: list[RetrievedChunk],
+    *,
+    no_context_answer: str,
+    cross_language: str = "omit",
+) -> PromptBundle:
     """Prompt in the question's language; `no_context_answer` is the French
-    fallback sentence (the others are in NO_CONTEXT_ANSWERS)."""
+    fallback sentence (the others are in NO_CONTEXT_ANSWERS). `cross_language`
+    is what happens to the quote when the passages are in another language
+    (CROSS_LANGUAGE_MODES; "verbatim" is the prompt before answer-lang-en)."""
     language = question_language(question)
     fallback = no_context_answer_for(language, no_context_answer)
     question_label, context_label = _LABELS[language]
-    system_prompt = _SYSTEM[language].format(fallback=fallback)
+    source = context_language(chunks) if cross_language != "verbatim" else None
+    quote_step, answer_step, language_rule = _QUOTE_STEP[language], _ANSWER_STEP[language], ""
+    if source is not None and source != language:
+        source_name = _LANGUAGE_NAMES[language][source]
+        language_rule = _LANGUAGE_RULE[language]
+        if cross_language == "omit":
+            quote_step = _PASSAGE_STEP[language].format(source=source_name)
+            answer_step = _ANSWER_FROM_PASSAGES_STEP[language]
+        else:
+            quote_step = _TRANSLATED_QUOTE_STEP[language].format(source=source_name)
+    system_prompt = _SYSTEM[language].format(
+        fallback=fallback, quote_step=quote_step, answer_step=answer_step, language_rule=language_rule
+    )
     user_prompt = f"{question_label}:\n{question}\n\n{context_label}:\n{build_context(chunks)}"
     return PromptBundle(system_prompt=system_prompt, user_prompt=user_prompt)
