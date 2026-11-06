@@ -224,8 +224,8 @@ export function PipelineStrip({ state, question, lexemes = [], rrfK, lexicalWeig
       ? [{ off: graphOff, in: !graphOff && reached("graph"), out: !graphOff && state.nodes.graph.status === "done" }]
       : []),
   ];
-  // The merge exit and the arrow out of it light once the stage after the lanes runs.
-  const merged = reached(main[0]) && lanes.some((lane) => lane.out);
+  // The merge exit and the arrow into Fusion light with the first lane done.
+  const merged = lanes.some((lane) => !lane.off && lane.out);
 
   return (
     <>
@@ -324,8 +324,8 @@ export function PipelineStrip({ state, question, lexemes = [], rrfK, lexicalWeig
 }
 
 // Lane geometry, kept in step with `.edu-node` (height) and `.edu-lanes` (gap) in styles.css.
-const LANE_HEIGHT = 38;
-const LANE_GAP = 8;
+const LANE_HEIGHT = 30;
+const LANE_GAP = 14;
 const WIRE_WIDTH = 24;
 const WIRE_RADIUS = 7;
 
@@ -337,10 +337,9 @@ interface WireLane {
 /**
  * Fork (or merge) between the track and the parallel lanes. The stretch the
  * lanes share (the stem of the fork, the exit of the merge) is its own path,
- * lit with the track it joins; each lane has one path, with rounded corners,
- * lit with its own stage. A lane never lights the shared stretch: a lane
- * still running is never painted over by one that is done. Dimmed paths are
- * drawn first, lit ones last.
+ * lit as soon as one lane uses it; each lane has one path, with rounded
+ * corners, lit with its own stage, so a lane still running stays grey up to
+ * the junction. Dimmed paths are drawn first, lit ones last.
  */
 function BranchWires({ side, lanes, shared }: { side: "fork" | "merge"; lanes: WireLane[]; shared: WireLane }) {
   const height = lanes.length * LANE_HEIGHT + (lanes.length - 1) * LANE_GAP;
