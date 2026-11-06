@@ -16,6 +16,8 @@ export interface RetrievalOverrides {
   graph: boolean | null;
   /** in_force, all or as_of=YYYY-MM-DD (phase 9.10). */
   versions: string | null;
+  /** Experimental de-duplication of the final passages (audit, lot 3). */
+  dedup: boolean | null;
 }
 
 export const NO_OVERRIDES: RetrievalOverrides = {
@@ -24,6 +26,7 @@ export const NO_OVERRIDES: RetrievalOverrides = {
   citations: null,
   graph: null,
   versions: null,
+  dedup: null,
 };
 
 /** Options that only apply to a corpus of law / code articles. */
@@ -44,6 +47,7 @@ export function effectiveOptions(value: RetrievalOverrides, config: ConfigRespon
     citations: legalCorpus && (value.citations ?? config?.citation_resolver ?? true),
     graph: legalCorpus && (value.graph ?? config?.graph_retrieval ?? false),
     versions: legalCorpus ? (value.versions ?? config?.versions_default ?? "in_force") : "in_force",
+    dedup: value.dedup ?? config?.retrieval_dedup ?? false,
   };
 }
 
@@ -73,6 +77,7 @@ export function ChatOptions({ value, onChange, config, legalCorpus, routing = fa
   const overridden =
     value.retrieval_mode !== null ||
     value.rerank !== null ||
+    value.dedup !== null ||
     (legalCorpus && (value.citations !== null || value.graph !== null || value.versions !== null));
   const noGpu = config?.rerank_gpu === false;
   const gpuWhy = useGpuWhy();
@@ -100,7 +105,9 @@ export function ChatOptions({ value, onChange, config, legalCorpus, routing = fa
   const set = <K extends keyof RetrievalOverrides>(key: K, next: NonNullable<RetrievalOverrides[K]>) => {
     const defaults = effectiveOptions(NO_OVERRIDES, config, legalCorpus);
     const defaultValue =
-      key === "retrieval_mode" ? defaults.mode : defaults[key as "rerank" | "citations" | "graph" | "versions"];
+      key === "retrieval_mode"
+        ? defaults.mode
+        : defaults[key as "rerank" | "citations" | "graph" | "versions" | "dedup"];
     onChange({ ...value, [key]: next === defaultValue ? null : next });
   };
 
@@ -110,6 +117,7 @@ export function ChatOptions({ value, onChange, config, legalCorpus, routing = fa
     current.rerank ? t("chat.options_rerank_short") : null,
     current.citations ? t("chat.options_citations_short") : null,
     current.graph ? t("chat.options_graph_short") : null,
+    current.dedup ? t("chat.options_dedup_short") : null,
     legalCorpus && current.versions !== (config?.versions_default ?? "in_force")
       ? t(`versions.short_${parseVersionsValue(current.versions).mode}`)
       : null,
@@ -168,6 +176,13 @@ export function ChatOptions({ value, onChange, config, legalCorpus, routing = fa
             onChange={(on) => set("rerank", on)}
             badge={noGpu && !current.rerank ? t("chat.options_no_gpu_badge") : undefined}
             help={{ text: t("chat.help_rerank"), label: t("chat.help_label", { option: t("retrieval.rerank_label") }) }}
+          />
+
+          <Switch
+            label={t("retrieval.dedup_label")}
+            description={t("chat.options_dedup_hint")}
+            checked={current.dedup}
+            onChange={(on) => set("dedup", on)}
           />
 
           {onRoutingChange ? (
