@@ -1,0 +1,7427 @@
+{
+  "label": "pipeline-2026-11-dedup-off",
+  "strategy": "traditional",
+  "retrieval_mode": "hybrid",
+  "rerank": true,
+  "graph": false,
+  "versions": "in_force",
+  "query_translation": true,
+  "generator": "llamacpp:qwen35b-moe-rag",
+  "rerank_model": "BAAI/bge-reranker-v2-m3",
+  "rerank_candidates": 40,
+  "top_k": 5,
+  "ragas_limit": 100,
+  "environment": {
+    "date": "2026-11-05T14:49:01+00:00",
+    "git_commit": "677286f",
+    "git_dirty": false,
+    "os": "Windows-11-10.0.26300-SP0",
+    "cpu": "Intel64 Family 6 Model 154 Stepping 3, GenuineIntel",
+    "cpu_count": 20,
+    "ram": "32 GiB",
+    "gpu": "NVIDIA GeForce RTX 3070 Ti Laptop GPU, 8192 MiB, 595.79",
+    "python": "3.12.10",
+    "torch": "2.11.0+cu128",
+    "transformers": "5.5.4",
+    "postgres": "16.13 (Debian 16.13-1.pgdg12+1)",
+    "pgvector": "0.8.2",
+    "embedding_model": "transformers:intfloat/multilingual-e5-small (cpu)",
+    "distance": "cosine",
+    "generation_model": "ollama:qwen2.5:7b (845dbda0ea48)",
+    "judge": "llamacpp:gemma4-26b-a4b",
+    "command": "raglab bench all --label pipeline-2026-11-dedup-off --suite br_expat --suite legi_versions --suite lexml_fulltext --suite eurlex_compliance --ragas-limit 100 --generator-provider llamacpp --generator-profile qwen35b-moe-rag --no-dedup"
+  },
+  "suites": [
+    {
+      "suite": "lexml_fulltext",
+      "language": "pt",
+      "corpus_name": "bench_lexml_pt",
+      "index_run_id": "63b704a5-04e9-494d-ac6b-9e813a8a9e1c",
+      "chunks": 6075,
+      "documents": 252,
+      "corpus_check": {
+        "documents": 252,
+        "manifest_documents": 252,
+        "fingerprint": "c6673250c61c5351877e9744c82566d89bcfdd9258b138e45db4a7f126b012c7",
+        "problems": {}
+      },
+      "total_cases": 277,
+      "retrieval_mode": "hybrid",
+      "lexical_weight": 0.5,
+      "rrf_k": 60,
+      "rerank": true,
+      "citations": null,
+      "graph": null,
+      "graph_notices": null,
+      "versions": null,
+      "summary": {
+        "recall@1": 0.6028880866425993,
+        "recall@5": 0.8231046931407943,
+        "recall@10": 0.8664259927797834,
+        "precision@1": 0.6028880866425993,
+        "precision@5": 0.1747292418772568,
+        "precision@10": 0.09205776173285228,
+        "mrr": 0.6989757033980859,
+        "mean_first_relevant_rank": 1.7875,
+        "recall@1_ci_low": 0.5451,
+        "recall@1_ci_high": 0.6643,
+        "recall@5_ci_low": 0.7762,
+        "recall@5_ci_high": 0.8664,
+        "recall@10_ci_low": 0.8267,
+        "recall@10_ci_high": 0.9061,
+        "mrr_ci_low": 0.6518,
+        "mrr_ci_high": 0.746,
+        "latency_citation_p50_ms": 3.988,
+        "latency_citation_p95_ms": 9.486,
+        "latency_dense_p50_ms": 25.435,
+        "latency_dense_p95_ms": 45.68,
+        "latency_embed_p50_ms": 36.069,
+        "latency_embed_p95_ms": 88.521,
+        "latency_fusion_p50_ms": 0.653,
+        "latency_fusion_p95_ms": 1.049,
+        "latency_generation_p50_ms": 10173.183,
+        "latency_generation_p95_ms": 18868.009,
+        "latency_lexical_p50_ms": 28.291,
+        "latency_lexical_p95_ms": 63.28,
+        "latency_query_p50_ms": 434.339,
+        "latency_query_p95_ms": 580.307,
+        "latency_rerank_p50_ms": 321.542,
+        "latency_rerank_p95_ms": 455.147,
+        "latency_retrieval_p50_ms": 59.477,
+        "latency_retrieval_p95_ms": 110.783,
+        "latency_versions_p50_ms": 4.17,
+        "latency_versions_p95_ms": 7.244,
+        "generation_tokens_per_second_p50": 23.11,
+        "rerank_cache_hit_rate": 0.0043,
+        "outdated_hit@1": 0.0,
+        "outdated_hit@5": 0.0,
+        "outdated_hit@10": 0.0,
+        "faithfulness_mean": 0.99,
+        "faithfulness_judged": 100,
+        "answer_relevancy_mean": 0.955,
+        "answer_relevancy_judged": 100,
+        "answer_correctness_mean": 0.71,
+        "answer_correctness_judged": 100
+      },
+      "by_type": {
+        "entity": {
+          "cases": 87,
+          "recall@1": 0.8160919540229885,
+          "recall@5": 0.9425287356321839,
+          "recall@10": 0.9425287356321839,
+          "mrr": 0.8745210727969348,
+          "outdated_hit@1": 0.0,
+          "outdated_hit@5": 0.0,
+          "outdated_hit@10": 0.0
+        },
+        "paraphrase": {
+          "cases": 93,
+          "recall@1": 0.6559139784946236,
+          "recall@5": 0.7956989247311828,
+          "recall@10": 0.8279569892473119,
+          "mrr": 0.7158730158730159,
+          "outdated_hit@1": 0.0,
+          "outdated_hit@5": 0.0,
+          "outdated_hit@10": 0.0
+        },
+        "reference": {
+          "cases": 97,
+          "recall@1": 0.36082474226804123,
+          "recall@5": 0.7422680412371134,
+          "recall@10": 0.8350515463917526,
+          "mrr": 0.5253272786777942,
+          "outdated_hit@1": 0.0,
+          "outdated_hit@5": 0.0,
+          "outdated_hit@10": 0.0
+        }
+      },
+      "report_path": "data\\reports\\recall-lexml_fulltext-20261105-153339.json",
+      "experiment_run_id": "db5448fe-5913-440b-8f78-c731acf0e70c",
+      "cases": [
+        {
+          "id": "lexml-0001",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0002",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 1,
+          "reciprocal_rank": 0.125,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0003",
+          "type": "entity",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "lexml-0004",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0005",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "lexml-0006",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0007",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0009",
+          "type": "entity",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0010",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0011",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0012",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0013",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0014",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0015",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0016",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0017",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 1,
+          "reciprocal_rank": 0.16666666666666666,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0018",
+          "type": "entity",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "lexml-0019",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0020",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0022",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0023",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 1,
+          "reciprocal_rank": 0.1
+        },
+        {
+          "id": "lexml-0024",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0025",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 1,
+          "reciprocal_rank": 0.14285714285714285
+        },
+        {
+          "id": "lexml-0026",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0027",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0028",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0029",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 1,
+          "reciprocal_rank": 0.16666666666666666,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0031",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0032",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0033",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0034",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0035",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0036",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0037",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0038",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333
+        },
+        {
+          "id": "lexml-0039",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0040",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0041",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0042",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0044",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0045",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0046",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0047",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0048",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0049",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0050",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0051",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0052",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0053",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0054",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0055",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0056",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "lexml-0057",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0058",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0059",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0060",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0061",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0062",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "lexml-0064",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0065",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333
+        },
+        {
+          "id": "lexml-0066",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0067",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0068",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0069",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0070",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0071",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.25
+        },
+        {
+          "id": "lexml-0072",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0073",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0074",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0075",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0076",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "lexml-0077",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.25
+        },
+        {
+          "id": "lexml-0078",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0079",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0080",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "lexml-0081",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0082",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0083",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.2,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0084",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0085",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0086",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0087",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0088",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0089",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0090",
+          "type": "entity",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333
+        },
+        {
+          "id": "lexml-0091",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 1,
+          "reciprocal_rank": 0.1,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0092",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "lexml-0093",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0094",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0095",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0097",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "lexml-0098",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 1,
+          "reciprocal_rank": 0.1111111111111111,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0099",
+          "type": "entity",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "lexml-0100",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "lexml-0101",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.25
+        },
+        {
+          "id": "lexml-0102",
+          "type": "entity",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "lexml-0103",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0104",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0105",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0106",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0107",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0108",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0110",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "lexml-0111",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0112",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0113",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0114",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0115",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0116",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "lexml-0117",
+          "type": "entity",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0118",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.2,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0119",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333
+        },
+        {
+          "id": "lexml-0120",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0121",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0122",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0123",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0124",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0125",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.25,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0127",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0128",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 1,
+          "reciprocal_rank": 0.14285714285714285
+        },
+        {
+          "id": "lexml-0129",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0130",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0131",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0132",
+          "type": "entity",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0133",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333
+        },
+        {
+          "id": "lexml-0134",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0136",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0137",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0139",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0140",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0141",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0142",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0143",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 1,
+          "reciprocal_rank": 0.16666666666666666
+        },
+        {
+          "id": "lexml-0144",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0145",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0146",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "lexml-0147",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0148",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0149",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0150",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0151",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0152",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "lexml-0153",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0155",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0156",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0157",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0158",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0159",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0160",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0161",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0162",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0163",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0164",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 1,
+          "reciprocal_rank": 0.1111111111111111,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0165",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0166",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0167",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0168",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0169",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0170",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0171",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0172",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0173",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "lexml-0174",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0175",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0176",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0177",
+          "type": "entity",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.25,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0178",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0179",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "lexml-0180",
+          "type": "entity",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0182",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0183",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0184",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0185",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0186",
+          "type": "entity",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0187",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0188",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "lexml-0189",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0190",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0191",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0192",
+          "type": "entity",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0193",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0194",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0196",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333
+        },
+        {
+          "id": "lexml-0197",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333
+        },
+        {
+          "id": "lexml-0198",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0199",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0200",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.25,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0201",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0202",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0204",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0205",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0206",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0207",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0208",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0209",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0210",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0211",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0212",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0213",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0214",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0215",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0216",
+          "type": "entity",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "lexml-0217",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0218",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0219",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0220",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "lexml-0221",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.2
+        },
+        {
+          "id": "lexml-0222",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0223",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0224",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0226",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0227",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.25
+        },
+        {
+          "id": "lexml-0228",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0229",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0230",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0231",
+          "type": "entity",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0232",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0233",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333
+        },
+        {
+          "id": "lexml-0234",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0235",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0236",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0237",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0239",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "lexml-0240",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0241",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 1,
+          "reciprocal_rank": 0.1,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0242",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0243",
+          "type": "entity",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "lexml-0244",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0245",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0246",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0247",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0248",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0249",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0250",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "lexml-0251",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0252",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0253",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "lexml-0254",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.2,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0255",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0257",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0259",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0260",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0261",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0262",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0263",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "lexml-0264",
+          "type": "entity",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "lexml-0265",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0266",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0268",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.2,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0269",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0270",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "lexml-0271",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0272",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0273",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0274",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "lexml-0275",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 1,
+          "reciprocal_rank": 0.1,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0277",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0278",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0279",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0280",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0281",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0282",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0283",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0284",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0286",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0288",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0289",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0290",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0291",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0292",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "lexml-0293",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333
+        },
+        {
+          "id": "lexml-0294",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0295",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0296",
+          "type": "reference",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0298",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "lexml-0299",
+          "type": "reference",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "lexml-0300",
+          "type": "entity",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        }
+      ]
+    },
+    {
+      "suite": "legi_versions",
+      "language": "fr",
+      "corpus_name": "bench_legi_consommation_fr",
+      "index_run_id": "e6521653-9cf7-445c-9cf8-7e7fdfddb587",
+      "chunks": 10228,
+      "documents": 5998,
+      "corpus_check": {
+        "documents": 5998,
+        "manifest_documents": 5998,
+        "fingerprint": "7ddeda0e4e940248408bcd24c84d78764a6674b35594722b1d5179863bdd2800",
+        "problems": {}
+      },
+      "total_cases": 100,
+      "retrieval_mode": "hybrid",
+      "lexical_weight": 0.5,
+      "rrf_k": 60,
+      "rerank": true,
+      "citations": null,
+      "graph": null,
+      "graph_notices": null,
+      "versions": null,
+      "summary": {
+        "recall@1": 0.74,
+        "recall@5": 0.93,
+        "recall@10": 0.94,
+        "precision@1": 0.74,
+        "precision@5": 0.18599999999999967,
+        "precision@10": 0.09499999999999982,
+        "mrr": 0.8100952380952381,
+        "mean_first_relevant_rank": 1.4787234042553192,
+        "recall@1_ci_low": 0.66,
+        "recall@1_ci_high": 0.82,
+        "recall@5_ci_low": 0.88,
+        "recall@5_ci_high": 0.98,
+        "recall@10_ci_low": 0.89,
+        "recall@10_ci_high": 0.98,
+        "mrr_ci_low": 0.7428,
+        "mrr_ci_high": 0.8737,
+        "latency_citation_p50_ms": 45.6,
+        "latency_citation_p95_ms": 55.938,
+        "latency_dense_p50_ms": 64.274,
+        "latency_dense_p95_ms": 171.433,
+        "latency_embed_p50_ms": 68.757,
+        "latency_embed_p95_ms": 96.524,
+        "latency_fusion_p50_ms": 1.184,
+        "latency_fusion_p95_ms": 2.251,
+        "latency_generation_p50_ms": 10560.669,
+        "latency_generation_p95_ms": 17595.038,
+        "latency_lexical_p50_ms": 70.877,
+        "latency_lexical_p95_ms": 153.413,
+        "latency_query_p50_ms": 491.53,
+        "latency_query_p95_ms": 719.058,
+        "latency_rerank_p50_ms": 281.629,
+        "latency_rerank_p95_ms": 334.902,
+        "latency_retrieval_p50_ms": 146.103,
+        "latency_retrieval_p95_ms": 382.286,
+        "latency_versions_p50_ms": 5.907,
+        "latency_versions_p95_ms": 7.88,
+        "generation_tokens_per_second_p50": 22.48,
+        "rerank_cache_hit_rate": 0.0,
+        "outdated_hit@1": 0.0,
+        "outdated_hit@5": 0.0,
+        "outdated_hit@10": 0.0,
+        "outdated_answer_rate": 0.01,
+        "outdated_answer_judged": 100,
+        "faithfulness_mean": 0.965,
+        "faithfulness_judged": 100,
+        "answer_relevancy_mean": 0.975,
+        "answer_relevancy_judged": 100,
+        "answer_correctness_mean": 0.93,
+        "answer_correctness_judged": 100
+      },
+      "by_type": {
+        "as_of": {
+          "cases": 20,
+          "recall@1": 0.5,
+          "recall@5": 0.8,
+          "recall@10": 0.85,
+          "mrr": 0.6363095238095238,
+          "outdated_hit@1": 0.0,
+          "outdated_hit@5": 0.0,
+          "outdated_hit@10": 0.0,
+          "outdated_answer_rate": 0.0,
+          "outdated_answer_judged": 20
+        },
+        "moved": {
+          "cases": 20,
+          "recall@1": 0.85,
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "mrr": 0.8891666666666668,
+          "outdated_hit@1": 0.0,
+          "outdated_hit@5": 0.0,
+          "outdated_hit@10": 0.0,
+          "outdated_answer_rate": 0.0,
+          "outdated_answer_judged": 20
+        },
+        "reused_number": {
+          "cases": 20,
+          "recall@1": 0.95,
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "mrr": 0.9666666666666666,
+          "outdated_hit@1": 0.0,
+          "outdated_hit@5": 0.0,
+          "outdated_hit@10": 0.0,
+          "outdated_answer_rate": 0.0,
+          "outdated_answer_judged": 20
+        },
+        "rewritten": {
+          "cases": 40,
+          "recall@1": 0.7,
+          "recall@5": 0.925,
+          "recall@10": 0.925,
+          "mrr": 0.7791666666666667,
+          "outdated_hit@1": 0.0,
+          "outdated_hit@5": 0.0,
+          "outdated_hit@10": 0.0,
+          "outdated_answer_rate": 0.025,
+          "outdated_answer_judged": 40
+        }
+      },
+      "by_split": {
+        "dev": {
+          "cases": 25,
+          "recall@1": 0.68,
+          "recall@5": 0.96,
+          "recall@10": 0.96,
+          "mrr": 0.7966666666666667,
+          "outdated_hit@1": 0.0,
+          "outdated_hit@5": 0.0,
+          "outdated_hit@10": 0.0,
+          "outdated_answer_rate": 0.0,
+          "outdated_answer_judged": 25
+        },
+        "heldout": {
+          "cases": 75,
+          "recall@1": 0.76,
+          "recall@5": 0.92,
+          "recall@10": 0.9333333333333333,
+          "mrr": 0.8145714285714285,
+          "outdated_hit@1": 0.0,
+          "outdated_hit@5": 0.0,
+          "outdated_hit@10": 0.0,
+          "outdated_answer_rate": 0.013333333333333334,
+          "outdated_answer_judged": 75
+        }
+      },
+      "by_type_heldout": {
+        "as_of": {
+          "cases": 15,
+          "recall@1": 0.5333333333333333,
+          "recall@5": 0.7333333333333333,
+          "recall@10": 0.8,
+          "mrr": 0.6261904761904762,
+          "outdated_hit@1": 0.0,
+          "outdated_hit@5": 0.0,
+          "outdated_hit@10": 0.0,
+          "outdated_answer_rate": 0.0,
+          "outdated_answer_judged": 15
+        },
+        "moved": {
+          "cases": 15,
+          "recall@1": 0.8666666666666667,
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "mrr": 0.8966666666666666,
+          "outdated_hit@1": 0.0,
+          "outdated_hit@5": 0.0,
+          "outdated_hit@10": 0.0,
+          "outdated_answer_rate": 0.0,
+          "outdated_answer_judged": 15
+        },
+        "reused_number": {
+          "cases": 15,
+          "recall@1": 0.9333333333333333,
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "mrr": 0.9555555555555556,
+          "outdated_hit@1": 0.0,
+          "outdated_hit@5": 0.0,
+          "outdated_hit@10": 0.0,
+          "outdated_answer_rate": 0.0,
+          "outdated_answer_judged": 15
+        },
+        "rewritten": {
+          "cases": 30,
+          "recall@1": 0.7333333333333333,
+          "recall@5": 0.9333333333333333,
+          "recall@10": 0.9333333333333333,
+          "mrr": 0.7972222222222223,
+          "outdated_hit@1": 0.0,
+          "outdated_hit@5": 0.0,
+          "outdated_hit@10": 0.0,
+          "outdated_answer_rate": 0.03333333333333333,
+          "outdated_answer_judged": 30
+        }
+      },
+      "report_path": "data\\reports\\recall-legi_versions-20261105-162037.json",
+      "experiment_run_id": "ea91ffe7-77cd-413e-8292-329e77250d37",
+      "cases": [
+        {
+          "id": "legi-versions-0001",
+          "type": "rewritten",
+          "split": "dev",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0002",
+          "type": "rewritten",
+          "split": "dev",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.25,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0003",
+          "type": "rewritten",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0004",
+          "type": "rewritten",
+          "split": "dev",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0005",
+          "type": "rewritten",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 1
+        },
+        {
+          "id": "legi-versions-0006",
+          "type": "rewritten",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0007",
+          "type": "rewritten",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0008",
+          "type": "rewritten",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0009",
+          "type": "rewritten",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0010",
+          "type": "rewritten",
+          "split": "dev",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0011",
+          "type": "rewritten",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0012",
+          "type": "rewritten",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0013",
+          "type": "rewritten",
+          "split": "dev",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0014",
+          "type": "rewritten",
+          "split": "dev",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0015",
+          "type": "rewritten",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0016",
+          "type": "rewritten",
+          "split": "dev",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0017",
+          "type": "rewritten",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0018",
+          "type": "rewritten",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0019",
+          "type": "rewritten",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0020",
+          "type": "rewritten",
+          "split": "dev",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0021",
+          "type": "rewritten",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0022",
+          "type": "rewritten",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0023",
+          "type": "rewritten",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0024",
+          "type": "rewritten",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.25,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0025",
+          "type": "rewritten",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0026",
+          "type": "rewritten",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.25,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0027",
+          "type": "rewritten",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0028",
+          "type": "rewritten",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0029",
+          "type": "rewritten",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0030",
+          "type": "rewritten",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0031",
+          "type": "rewritten",
+          "split": "dev",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0032",
+          "type": "rewritten",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0033",
+          "type": "rewritten",
+          "split": "dev",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0034",
+          "type": "rewritten",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0035",
+          "type": "rewritten",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0036",
+          "type": "rewritten",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0037",
+          "type": "rewritten",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.25,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0038",
+          "type": "rewritten",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0039",
+          "type": "rewritten",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0040",
+          "type": "rewritten",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0041",
+          "type": "reused_number",
+          "split": "dev",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0042",
+          "type": "reused_number",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0043",
+          "type": "reused_number",
+          "split": "dev",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0044",
+          "type": "reused_number",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0045",
+          "type": "reused_number",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0046",
+          "type": "reused_number",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0047",
+          "type": "reused_number",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0048",
+          "type": "reused_number",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0049",
+          "type": "reused_number",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0050",
+          "type": "reused_number",
+          "split": "dev",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0051",
+          "type": "reused_number",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0052",
+          "type": "reused_number",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0053",
+          "type": "reused_number",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0054",
+          "type": "reused_number",
+          "split": "dev",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0055",
+          "type": "reused_number",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0056",
+          "type": "reused_number",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0057",
+          "type": "reused_number",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0058",
+          "type": "reused_number",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0059",
+          "type": "reused_number",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0060",
+          "type": "reused_number",
+          "split": "dev",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0061",
+          "type": "moved",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.2,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0062",
+          "type": "moved",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0063",
+          "type": "moved",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0064",
+          "type": "moved",
+          "split": "dev",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0065",
+          "type": "moved",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0066",
+          "type": "moved",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0067",
+          "type": "moved",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0068",
+          "type": "moved",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0069",
+          "type": "moved",
+          "split": "dev",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0070",
+          "type": "moved",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0071",
+          "type": "moved",
+          "split": "dev",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0072",
+          "type": "moved",
+          "split": "dev",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0073",
+          "type": "moved",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0074",
+          "type": "moved",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0075",
+          "type": "moved",
+          "split": "dev",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0076",
+          "type": "moved",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0077",
+          "type": "moved",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0078",
+          "type": "moved",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0079",
+          "type": "moved",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0080",
+          "type": "moved",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.25,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0081",
+          "type": "as_of",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0082",
+          "type": "as_of",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.25,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0083",
+          "type": "as_of",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 1,
+          "reciprocal_rank": 0.14285714285714285,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0084",
+          "type": "as_of",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0085",
+          "type": "as_of",
+          "split": "dev",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0086",
+          "type": "as_of",
+          "split": "dev",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0087",
+          "type": "as_of",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0088",
+          "type": "as_of",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0089",
+          "type": "as_of",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0090",
+          "type": "as_of",
+          "split": "dev",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0091",
+          "type": "as_of",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0092",
+          "type": "as_of",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0093",
+          "type": "as_of",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0094",
+          "type": "as_of",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0095",
+          "type": "as_of",
+          "split": "dev",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0096",
+          "type": "as_of",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0097",
+          "type": "as_of",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0098",
+          "type": "as_of",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0099",
+          "type": "as_of",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        },
+        {
+          "id": "legi-versions-0100",
+          "type": "as_of",
+          "split": "dev",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0,
+          "outdated_answer": 0
+        }
+      ]
+    },
+    {
+      "suite": "eurlex_compliance",
+      "language": "multi",
+      "corpus_name": "bench_eurlex_compliance",
+      "index_run_id": "cb69410c-123c-4a9e-a55b-91d14c9bb9fe",
+      "chunks": 11804,
+      "documents": 4236,
+      "corpus_check": {
+        "documents": 4236,
+        "manifest_documents": 4236,
+        "fingerprint": "549d2d09b317b3d826d110d99578b763e56e201c4c4f1c0ad1957e880aed928e",
+        "problems": {}
+      },
+      "total_cases": 300,
+      "retrieval_mode": "hybrid",
+      "lexical_weight": 0.5,
+      "rrf_k": 60,
+      "rerank": true,
+      "citations": null,
+      "graph": null,
+      "graph_notices": null,
+      "versions": null,
+      "summary": {
+        "recall@1": 0.48,
+        "recall@5": 0.7166666666666667,
+        "recall@10": 0.78,
+        "precision@1": 0.48,
+        "precision@5": 0.14466666666666694,
+        "precision@10": 0.07900000000000024,
+        "mrr": 0.5860939153439153,
+        "mean_first_relevant_rank": 2.047008547008547,
+        "recall@1_ci_low": 0.4267,
+        "recall@1_ci_high": 0.5367,
+        "recall@5_ci_low": 0.6667,
+        "recall@5_ci_high": 0.7667,
+        "recall@10_ci_low": 0.7333,
+        "recall@10_ci_high": 0.8267,
+        "mrr_ci_low": 0.5388,
+        "mrr_ci_high": 0.6339,
+        "latency_citation_p50_ms": 23.873,
+        "latency_citation_p95_ms": 39.877,
+        "latency_dense_p50_ms": 77.521,
+        "latency_dense_p95_ms": 117.307,
+        "latency_embed_p50_ms": 64.575,
+        "latency_embed_p95_ms": 106.798,
+        "latency_fusion_p50_ms": 0.892,
+        "latency_fusion_p95_ms": 1.195,
+        "latency_generation_p50_ms": 10798.182,
+        "latency_generation_p95_ms": 24411.402,
+        "latency_lexical_p50_ms": 84.411,
+        "latency_lexical_p95_ms": 136.061,
+        "latency_query_p50_ms": 607.901,
+        "latency_query_p95_ms": 757.423,
+        "latency_rerank_p50_ms": 327.537,
+        "latency_rerank_p95_ms": 467.961,
+        "latency_retrieval_p50_ms": 199.858,
+        "latency_retrieval_p95_ms": 294.833,
+        "generation_tokens_per_second_p50": 22.41,
+        "rerank_cache_hit_rate": 0.0,
+        "faithfulness_mean": 0.985,
+        "faithfulness_judged": 100,
+        "answer_relevancy_mean": 0.94,
+        "answer_relevancy_judged": 100,
+        "answer_correctness_mean": 0.812,
+        "answer_correctness_judged": 100
+      },
+      "by_type": {
+        "cross_language": {
+          "cases": 40,
+          "recall@1": 0.05,
+          "recall@5": 0.175,
+          "recall@10": 0.25,
+          "mrr": 0.10916666666666666
+        },
+        "cross_reference": {
+          "cases": 22,
+          "recall@1": 0.0,
+          "recall@5": 0.2727272727272727,
+          "recall@10": 0.6363636363636364,
+          "mrr": 0.1240981240981241
+        },
+        "entity": {
+          "cases": 40,
+          "recall@1": 0.775,
+          "recall@5": 0.975,
+          "recall@10": 0.975,
+          "mrr": 0.8591666666666666
+        },
+        "paraphrase": {
+          "cases": 41,
+          "recall@1": 0.6341463414634146,
+          "recall@5": 0.9024390243902439,
+          "recall@10": 0.9512195121951219,
+          "mrr": 0.7644599303135888
+        },
+        "reference": {
+          "cases": 41,
+          "recall@1": 0.8048780487804879,
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "mrr": 0.8963414634146342
+        },
+        "scenario": {
+          "cases": 116,
+          "recall@1": 0.4482758620689655,
+          "recall@5": 0.7327586206896551,
+          "recall@10": 0.7844827586206896,
+          "mrr": 0.5713088396278051
+        }
+      },
+      "by_split": {
+        "dev": {
+          "cases": 75,
+          "recall@1": 0.4533333333333333,
+          "recall@5": 0.7066666666666667,
+          "recall@10": 0.7866666666666666,
+          "mrr": 0.5709206349206348
+        },
+        "heldout": {
+          "cases": 225,
+          "recall@1": 0.4888888888888889,
+          "recall@5": 0.72,
+          "recall@10": 0.7777777777777778,
+          "mrr": 0.5911516754850089
+        }
+      },
+      "by_type_heldout": {
+        "cross_language": {
+          "cases": 30,
+          "recall@1": 0.06666666666666667,
+          "recall@5": 0.16666666666666666,
+          "recall@10": 0.26666666666666666,
+          "mrr": 0.12055555555555555
+        },
+        "cross_reference": {
+          "cases": 16,
+          "recall@1": 0.0,
+          "recall@5": 0.25,
+          "recall@10": 0.625,
+          "mrr": 0.11750992063492063
+        },
+        "entity": {
+          "cases": 30,
+          "recall@1": 0.8,
+          "recall@5": 0.9666666666666667,
+          "recall@10": 0.9666666666666667,
+          "mrr": 0.8677777777777779
+        },
+        "paraphrase": {
+          "cases": 31,
+          "recall@1": 0.6451612903225806,
+          "recall@5": 0.9354838709677419,
+          "recall@10": 0.9354838709677419,
+          "mrr": 0.7752688172043011
+        },
+        "reference": {
+          "cases": 31,
+          "recall@1": 0.8064516129032258,
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "mrr": 0.8951612903225806
+        },
+        "scenario": {
+          "cases": 87,
+          "recall@1": 0.4482758620689655,
+          "recall@5": 0.735632183908046,
+          "recall@10": 0.7816091954022989,
+          "mrr": 0.5712141944900566
+        }
+      },
+      "report_path": "data\\reports\\recall-eurlex_compliance-20261105-171045.json",
+      "experiment_run_id": "331c4f74-84dd-49ad-9218-e6d3ea881993",
+      "cases": [
+        {
+          "id": "eurlex-0001",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333
+        },
+        {
+          "id": "eurlex-0002",
+          "type": "paraphrase",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.2
+        },
+        {
+          "id": "eurlex-0003",
+          "type": "scenario",
+          "split": "dev",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0004",
+          "type": "reference",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.25
+        },
+        {
+          "id": "eurlex-0005",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0006",
+          "type": "cross_language",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0007",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0008",
+          "type": "entity",
+          "split": "dev",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0009",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0010",
+          "type": "paraphrase",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0011",
+          "type": "scenario",
+          "split": "dev",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0012",
+          "type": "reference",
+          "split": "dev",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0013",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0014",
+          "type": "cross_reference",
+          "split": "dev",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.25
+        },
+        {
+          "id": "eurlex-0015",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 1,
+          "reciprocal_rank": 0.1111111111111111
+        },
+        {
+          "id": "eurlex-0016",
+          "type": "cross_language",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0017",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.2
+        },
+        {
+          "id": "eurlex-0018",
+          "type": "cross_reference",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333
+        },
+        {
+          "id": "eurlex-0019",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "eurlex-0020",
+          "type": "paraphrase",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333
+        },
+        {
+          "id": "eurlex-0021",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0022",
+          "type": "entity",
+          "split": "dev",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0023",
+          "type": "scenario",
+          "split": "dev",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0024",
+          "type": "reference",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0025",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "eurlex-0026",
+          "type": "cross_language",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0027",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0028",
+          "type": "cross_reference",
+          "split": "dev",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 1,
+          "reciprocal_rank": 0.1
+        },
+        {
+          "id": "eurlex-0029",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0030",
+          "type": "entity",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0031",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0032",
+          "type": "paraphrase",
+          "split": "dev",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0033",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0034",
+          "type": "reference",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0035",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.25
+        },
+        {
+          "id": "eurlex-0036",
+          "type": "cross_language",
+          "split": "dev",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0037",
+          "type": "scenario",
+          "split": "dev",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0038",
+          "type": "entity",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0039",
+          "type": "scenario",
+          "split": "dev",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0040",
+          "type": "cross_reference",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 1,
+          "reciprocal_rank": 0.14285714285714285
+        },
+        {
+          "id": "eurlex-0041",
+          "type": "scenario",
+          "split": "dev",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "eurlex-0042",
+          "type": "paraphrase",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "eurlex-0043",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0044",
+          "type": "reference",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0045",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.25
+        },
+        {
+          "id": "eurlex-0046",
+          "type": "cross_language",
+          "split": "dev",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0047",
+          "type": "scenario",
+          "split": "dev",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0048",
+          "type": "paraphrase",
+          "split": "dev",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0049",
+          "type": "scenario",
+          "split": "dev",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.25
+        },
+        {
+          "id": "eurlex-0050",
+          "type": "entity",
+          "split": "dev",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "eurlex-0051",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0052",
+          "type": "cross_reference",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 1,
+          "reciprocal_rank": 0.16666666666666666
+        },
+        {
+          "id": "eurlex-0053",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "eurlex-0054",
+          "type": "reference",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0055",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "eurlex-0056",
+          "type": "cross_language",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0057",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0058",
+          "type": "entity",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "eurlex-0059",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333
+        },
+        {
+          "id": "eurlex-0060",
+          "type": "cross_reference",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0061",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0062",
+          "type": "paraphrase",
+          "split": "dev",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0063",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "eurlex-0064",
+          "type": "reference",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0065",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0066",
+          "type": "cross_language",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "eurlex-0067",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0068",
+          "type": "entity",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0069",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0070",
+          "type": "cross_reference",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0071",
+          "type": "scenario",
+          "split": "dev",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "eurlex-0072",
+          "type": "paraphrase",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0073",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0074",
+          "type": "reference",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0075",
+          "type": "scenario",
+          "split": "dev",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "eurlex-0076",
+          "type": "cross_language",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0077",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0078",
+          "type": "entity",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0079",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0080",
+          "type": "paraphrase",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0081",
+          "type": "scenario",
+          "split": "dev",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "eurlex-0082",
+          "type": "reference",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0083",
+          "type": "scenario",
+          "split": "dev",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0084",
+          "type": "cross_reference",
+          "split": "dev",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333
+        },
+        {
+          "id": "eurlex-0085",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "eurlex-0086",
+          "type": "cross_language",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0087",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0088",
+          "type": "entity",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0089",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "eurlex-0090",
+          "type": "paraphrase",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0091",
+          "type": "scenario",
+          "split": "dev",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0092",
+          "type": "cross_reference",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 1,
+          "reciprocal_rank": 0.1111111111111111
+        },
+        {
+          "id": "eurlex-0093",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0094",
+          "type": "reference",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "eurlex-0095",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "eurlex-0096",
+          "type": "cross_language",
+          "split": "dev",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0097",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0098",
+          "type": "entity",
+          "split": "dev",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333
+        },
+        {
+          "id": "eurlex-0099",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0100",
+          "type": "paraphrase",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0101",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0102",
+          "type": "cross_reference",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0103",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0104",
+          "type": "reference",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0105",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0106",
+          "type": "cross_language",
+          "split": "dev",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0107",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 1,
+          "reciprocal_rank": 0.125
+        },
+        {
+          "id": "eurlex-0108",
+          "type": "entity",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0109",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333
+        },
+        {
+          "id": "eurlex-0110",
+          "type": "cross_reference",
+          "split": "dev",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0111",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.2
+        },
+        {
+          "id": "eurlex-0112",
+          "type": "paraphrase",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0113",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0114",
+          "type": "reference",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0115",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "eurlex-0116",
+          "type": "cross_language",
+          "split": "dev",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0117",
+          "type": "scenario",
+          "split": "dev",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0118",
+          "type": "entity",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0119",
+          "type": "scenario",
+          "split": "dev",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "eurlex-0120",
+          "type": "paraphrase",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0121",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333
+        },
+        {
+          "id": "eurlex-0122",
+          "type": "cross_reference",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.2
+        },
+        {
+          "id": "eurlex-0123",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0124",
+          "type": "reference",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "eurlex-0125",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0126",
+          "type": "cross_language",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0127",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0128",
+          "type": "entity",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0129",
+          "type": "scenario",
+          "split": "dev",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333
+        },
+        {
+          "id": "eurlex-0130",
+          "type": "cross_reference",
+          "split": "dev",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0131",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0132",
+          "type": "paraphrase",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "eurlex-0133",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0134",
+          "type": "reference",
+          "split": "dev",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0135",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0136",
+          "type": "cross_language",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0137",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0138",
+          "type": "entity",
+          "split": "dev",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "eurlex-0139",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333
+        },
+        {
+          "id": "eurlex-0140",
+          "type": "paraphrase",
+          "split": "dev",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0141",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0142",
+          "type": "cross_reference",
+          "split": "dev",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 1,
+          "reciprocal_rank": 0.16666666666666666
+        },
+        {
+          "id": "eurlex-0143",
+          "type": "scenario",
+          "split": "dev",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0144",
+          "type": "reference",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0145",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "eurlex-0146",
+          "type": "cross_language",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0147",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0148",
+          "type": "entity",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0149",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0150",
+          "type": "paraphrase",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "eurlex-0151",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0152",
+          "type": "reference",
+          "split": "dev",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "eurlex-0153",
+          "type": "scenario",
+          "split": "dev",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0154",
+          "type": "cross_reference",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333
+        },
+        {
+          "id": "eurlex-0155",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333
+        },
+        {
+          "id": "eurlex-0156",
+          "type": "cross_language",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.2
+        },
+        {
+          "id": "eurlex-0157",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0158",
+          "type": "entity",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0159",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0160",
+          "type": "paraphrase",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0161",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0162",
+          "type": "reference",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0163",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0164",
+          "type": "cross_reference",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0165",
+          "type": "scenario",
+          "split": "dev",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0166",
+          "type": "cross_language",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0167",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "eurlex-0168",
+          "type": "entity",
+          "split": "dev",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0169",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0170",
+          "type": "cross_reference",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0171",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.25
+        },
+        {
+          "id": "eurlex-0172",
+          "type": "paraphrase",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0173",
+          "type": "scenario",
+          "split": "dev",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0174",
+          "type": "reference",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0175",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0176",
+          "type": "cross_language",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 1,
+          "reciprocal_rank": 0.125
+        },
+        {
+          "id": "eurlex-0177",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0178",
+          "type": "paraphrase",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "eurlex-0179",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "eurlex-0180",
+          "type": "entity",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0181",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0182",
+          "type": "cross_reference",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0183",
+          "type": "scenario",
+          "split": "dev",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0184",
+          "type": "reference",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0185",
+          "type": "scenario",
+          "split": "dev",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0186",
+          "type": "cross_language",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0187",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 1,
+          "reciprocal_rank": 0.16666666666666666
+        },
+        {
+          "id": "eurlex-0188",
+          "type": "entity",
+          "split": "dev",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0189",
+          "type": "scenario",
+          "split": "dev",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 1,
+          "reciprocal_rank": 0.14285714285714285
+        },
+        {
+          "id": "eurlex-0190",
+          "type": "paraphrase",
+          "split": "dev",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "eurlex-0191",
+          "type": "scenario",
+          "split": "dev",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0192",
+          "type": "reference",
+          "split": "dev",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0193",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0194",
+          "type": "cross_reference",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 1,
+          "reciprocal_rank": 0.125
+        },
+        {
+          "id": "eurlex-0195",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0196",
+          "type": "cross_language",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 1,
+          "reciprocal_rank": 0.125
+        },
+        {
+          "id": "eurlex-0197",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0198",
+          "type": "entity",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0199",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0200",
+          "type": "paraphrase",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0201",
+          "type": "scenario",
+          "split": "dev",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.25
+        },
+        {
+          "id": "eurlex-0202",
+          "type": "cross_reference",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 1,
+          "reciprocal_rank": 0.14285714285714285
+        },
+        {
+          "id": "eurlex-0203",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0204",
+          "type": "reference",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "eurlex-0205",
+          "type": "scenario",
+          "split": "dev",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0206",
+          "type": "cross_language",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0207",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0208",
+          "type": "entity",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "eurlex-0209",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 1,
+          "reciprocal_rank": 0.14285714285714285
+        },
+        {
+          "id": "eurlex-0210",
+          "type": "cross_reference",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 1,
+          "reciprocal_rank": 0.125
+        },
+        {
+          "id": "eurlex-0211",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "eurlex-0212",
+          "type": "paraphrase",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "eurlex-0213",
+          "type": "scenario",
+          "split": "dev",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0214",
+          "type": "reference",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0215",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0216",
+          "type": "cross_language",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 1,
+          "reciprocal_rank": 0.16666666666666666
+        },
+        {
+          "id": "eurlex-0217",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0218",
+          "type": "cross_reference",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.2
+        },
+        {
+          "id": "eurlex-0219",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0220",
+          "type": "entity",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.2
+        },
+        {
+          "id": "eurlex-0221",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0222",
+          "type": "paraphrase",
+          "split": "dev",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0223",
+          "type": "scenario",
+          "split": "dev",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 1,
+          "reciprocal_rank": 0.1
+        },
+        {
+          "id": "eurlex-0224",
+          "type": "reference",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0225",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0226",
+          "type": "cross_language",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0227",
+          "type": "scenario",
+          "split": "dev",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0228",
+          "type": "paraphrase",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0229",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "eurlex-0230",
+          "type": "entity",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0231",
+          "type": "scenario",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0232",
+          "type": "reference",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0233",
+          "type": "cross_language",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0234",
+          "type": "paraphrase",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0235",
+          "type": "entity",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0236",
+          "type": "reference",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0237",
+          "type": "cross_language",
+          "split": "dev",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0238",
+          "type": "entity",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0239",
+          "type": "paraphrase",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0240",
+          "type": "reference",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0241",
+          "type": "cross_language",
+          "split": "dev",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.25
+        },
+        {
+          "id": "eurlex-0242",
+          "type": "entity",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0243",
+          "type": "paraphrase",
+          "split": "dev",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "eurlex-0244",
+          "type": "reference",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0245",
+          "type": "cross_language",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0246",
+          "type": "entity",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0247",
+          "type": "paraphrase",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0248",
+          "type": "reference",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0249",
+          "type": "cross_language",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0250",
+          "type": "entity",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "eurlex-0251",
+          "type": "paraphrase",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0252",
+          "type": "reference",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "eurlex-0253",
+          "type": "cross_language",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0254",
+          "type": "entity",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333
+        },
+        {
+          "id": "eurlex-0255",
+          "type": "paraphrase",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0256",
+          "type": "reference",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0257",
+          "type": "cross_language",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0258",
+          "type": "entity",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0259",
+          "type": "paraphrase",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0260",
+          "type": "reference",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "eurlex-0261",
+          "type": "cross_language",
+          "split": "dev",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0262",
+          "type": "entity",
+          "split": "dev",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0263",
+          "type": "paraphrase",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0264",
+          "type": "reference",
+          "split": "dev",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0265",
+          "type": "cross_language",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0266",
+          "type": "entity",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0267",
+          "type": "paraphrase",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0268",
+          "type": "reference",
+          "split": "dev",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0269",
+          "type": "cross_language",
+          "split": "dev",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "eurlex-0270",
+          "type": "entity",
+          "split": "dev",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0271",
+          "type": "paraphrase",
+          "split": "dev",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 1,
+          "reciprocal_rank": 0.14285714285714285
+        },
+        {
+          "id": "eurlex-0272",
+          "type": "reference",
+          "split": "dev",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0273",
+          "type": "cross_language",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0274",
+          "type": "paraphrase",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "eurlex-0275",
+          "type": "entity",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0276",
+          "type": "reference",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0277",
+          "type": "cross_language",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0278",
+          "type": "entity",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0279",
+          "type": "paraphrase",
+          "split": "dev",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0280",
+          "type": "reference",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0281",
+          "type": "cross_language",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0282",
+          "type": "paraphrase",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0283",
+          "type": "entity",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0284",
+          "type": "reference",
+          "split": "dev",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "eurlex-0285",
+          "type": "cross_language",
+          "split": "dev",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0286",
+          "type": "entity",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0287",
+          "type": "paraphrase",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0288",
+          "type": "reference",
+          "split": "dev",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0289",
+          "type": "cross_language",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0290",
+          "type": "entity",
+          "split": "dev",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0291",
+          "type": "paraphrase",
+          "split": "dev",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 1,
+          "reciprocal_rank": 0.16666666666666666
+        },
+        {
+          "id": "eurlex-0292",
+          "type": "reference",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0293",
+          "type": "cross_language",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "eurlex-0294",
+          "type": "entity",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0295",
+          "type": "paraphrase",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "eurlex-0296",
+          "type": "reference",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0297",
+          "type": "cross_language",
+          "split": "heldout",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "eurlex-0298",
+          "type": "entity",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0299",
+          "type": "paraphrase",
+          "split": "heldout",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "eurlex-0300",
+          "type": "reference",
+          "split": "dev",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        }
+      ]
+    },
+    {
+      "suite": "br_expat",
+      "language": "pt",
+      "corpus_name": "bench_br_expat_pt",
+      "index_run_id": "0e88055e-6a24-4dc1-840e-8a3eee03722b",
+      "chunks": 3578,
+      "documents": 19,
+      "corpus_check": {
+        "documents": 19,
+        "manifest_documents": 19,
+        "fingerprint": "0d844e2742b11e79726da4a2a29d63905552eccf99f95c93687c7a6bc59ebe7c",
+        "problems": {}
+      },
+      "total_cases": 38,
+      "retrieval_mode": "hybrid",
+      "lexical_weight": 0.5,
+      "rrf_k": 60,
+      "rerank": true,
+      "citations": null,
+      "graph": null,
+      "graph_notices": null,
+      "versions": null,
+      "summary": {
+        "recall@1": 0.3157894736842105,
+        "recall@5": 0.6842105263157895,
+        "recall@10": 0.7894736842105263,
+        "precision@1": 0.3157894736842105,
+        "precision@5": 0.21578947368421056,
+        "precision@10": 0.1473684210526316,
+        "mrr": 0.4573099415204678,
+        "mean_first_relevant_rank": 2.8666666666666667,
+        "recall@1_ci_low": 0.1842,
+        "recall@1_ci_high": 0.4737,
+        "recall@5_ci_low": 0.5263,
+        "recall@5_ci_high": 0.8158,
+        "recall@10_ci_low": 0.6579,
+        "recall@10_ci_high": 0.8947,
+        "mrr_ci_low": 0.3319,
+        "mrr_ci_high": 0.5868,
+        "latency_dense_p50_ms": 59.447,
+        "latency_dense_p95_ms": 437.841,
+        "latency_embed_p50_ms": 47.383,
+        "latency_embed_p95_ms": 107.306,
+        "latency_fusion_p50_ms": 0.967,
+        "latency_fusion_p95_ms": 2.4,
+        "latency_generation_p50_ms": 12249.095,
+        "latency_generation_p95_ms": 27595.745,
+        "latency_lexical_p50_ms": 44.732,
+        "latency_lexical_p95_ms": 92.72,
+        "latency_query_p50_ms": 2439.796,
+        "latency_query_p95_ms": 3827.672,
+        "latency_rerank_p50_ms": 574.314,
+        "latency_rerank_p95_ms": 700.448,
+        "latency_retrieval_p50_ms": 1750.142,
+        "latency_retrieval_p95_ms": 3086.122,
+        "latency_translation_p50_ms": 1634.639,
+        "latency_translation_p95_ms": 2932.372,
+        "latency_versions_p50_ms": 4.345,
+        "latency_versions_p95_ms": 6.067,
+        "generation_tokens_per_second_p50": 18.92,
+        "rerank_cache_hit_rate": 0.0,
+        "outdated_hit@1": 0.0,
+        "outdated_hit@5": 0.0,
+        "outdated_hit@10": 0.0,
+        "faithfulness_mean": 1.0,
+        "faithfulness_judged": 38,
+        "answer_relevancy_mean": 0.8947368421052632,
+        "answer_relevancy_judged": 38,
+        "answer_correctness_mean": 0.5921052631578947,
+        "answer_correctness_judged": 38
+      },
+      "by_type": {
+        "company_tax": {
+          "cases": 9,
+          "recall@1": 0.2222222222222222,
+          "recall@5": 0.5555555555555556,
+          "recall@10": 0.7777777777777778,
+          "mrr": 0.3925925925925926,
+          "outdated_hit@1": 0.0,
+          "outdated_hit@5": 0.0,
+          "outdated_hit@10": 0.0
+        },
+        "immigration": {
+          "cases": 11,
+          "recall@1": 0.45454545454545453,
+          "recall@5": 0.9090909090909091,
+          "recall@10": 0.9090909090909091,
+          "mrr": 0.5984848484848485,
+          "outdated_hit@1": 0.0,
+          "outdated_hit@5": 0.0,
+          "outdated_hit@10": 0.0
+        },
+        "inss_personal_tax": {
+          "cases": 8,
+          "recall@1": 0.125,
+          "recall@5": 0.5,
+          "recall@10": 0.75,
+          "mrr": 0.28888888888888886,
+          "outdated_hit@1": 0.0,
+          "outdated_hit@5": 0.0,
+          "outdated_hit@10": 0.0
+        },
+        "paraphrase": {
+          "cases": 8,
+          "recall@1": 0.375,
+          "recall@5": 0.75,
+          "recall@10": 0.75,
+          "mrr": 0.49375,
+          "outdated_hit@1": 0.0,
+          "outdated_hit@5": 0.0,
+          "outdated_hit@10": 0.0
+        },
+        "trap": {
+          "cases": 2,
+          "recall@1": 0.5,
+          "recall@5": 0.5,
+          "recall@10": 0.5,
+          "mrr": 0.5,
+          "outdated_hit@1": 0.0,
+          "outdated_hit@5": 0.0,
+          "outdated_hit@10": 0.0
+        }
+      },
+      "report_path": "data\\reports\\recall-br_expat-20261105-173342.json",
+      "experiment_run_id": "edda17a0-818f-4991-a269-afd4592de848",
+      "cases": [
+        {
+          "id": "brx-01",
+          "type": "immigration",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "brx-02",
+          "type": "immigration",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "brx-03",
+          "type": "immigration",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.25,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "brx-04",
+          "type": "immigration",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "brx-05",
+          "type": "immigration",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.25,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "brx-06",
+          "type": "immigration",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "brx-07",
+          "type": "immigration",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "brx-08",
+          "type": "immigration",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.25,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "brx-09",
+          "type": "immigration",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "brx-10",
+          "type": "immigration",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "brx-11",
+          "type": "immigration",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "brx-12",
+          "type": "company_tax",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "brx-13",
+          "type": "company_tax",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 1,
+          "reciprocal_rank": 0.16666666666666666
+        },
+        {
+          "id": "brx-14",
+          "type": "company_tax",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "brx-15",
+          "type": "company_tax",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "brx-16",
+          "type": "company_tax",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 1,
+          "reciprocal_rank": 0.16666666666666666,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "brx-17",
+          "type": "company_tax",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "brx-18",
+          "type": "company_tax",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "brx-19",
+          "type": "company_tax",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.2
+        },
+        {
+          "id": "brx-20",
+          "type": "company_tax",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "brx-21",
+          "type": "inss_personal_tax",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.3333333333333333,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "brx-22",
+          "type": "inss_personal_tax",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.2,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "brx-23",
+          "type": "inss_personal_tax",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        },
+        {
+          "id": "brx-24",
+          "type": "inss_personal_tax",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "brx-25",
+          "type": "inss_personal_tax",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 1,
+          "reciprocal_rank": 0.1111111111111111,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "brx-26",
+          "type": "inss_personal_tax",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0
+        },
+        {
+          "id": "brx-27",
+          "type": "inss_personal_tax",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 1,
+          "reciprocal_rank": 0.16666666666666666
+        },
+        {
+          "id": "brx-28",
+          "type": "inss_personal_tax",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "brx-29",
+          "type": "trap",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "brx-30",
+          "type": "trap",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "brx-p07",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "brx-p01",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.25
+        },
+        {
+          "id": "brx-p11",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "brx-p12",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "brx-p17",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 0,
+          "recall@10": 0,
+          "reciprocal_rank": 0.0,
+          "outdated_hit@5": 0,
+          "outdated_hit@10": 0
+        },
+        {
+          "id": "brx-p19",
+          "type": "paraphrase",
+          "recall@1": 1,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 1.0
+        },
+        {
+          "id": "brx-p23",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.2
+        },
+        {
+          "id": "brx-p26",
+          "type": "paraphrase",
+          "recall@1": 0,
+          "recall@5": 1,
+          "recall@10": 1,
+          "reciprocal_rank": 0.5
+        }
+      ]
+    }
+  ]
+}
