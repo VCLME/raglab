@@ -33,30 +33,32 @@ export const HISTORY = [
   { corpus: LEXML, question: "Which rights does the Migration Law guarantee to migrants?", ago: 1 * DAY + 3_600_000 },
   { corpus: CONSUMER, question: "Can I cancel a gym membership I signed at a trade fair?", ago: 1 * DAY },
   { corpus: EU, question: "What must a company do after a personal data breach?", ago: 5 * 3_600_000 },
+  { corpus: CONSUMER, question: "When must the seller refund me after I withdraw from an online purchase?", ago: 2 * DAY },
   { corpus: CONSUMER, question: "How long is the legal guarantee of conformity?", ago: 2 * 3_600_000 },
+  // The conversation the film reopens from the search, then continues.
+  {
+    corpus: CONSUMER,
+    question: "I bought a laptop online and changed my mind. How many days do I have to cancel, and how quickly must I be refunded?",
+    ago: 40 * 60_000,
+  },
 ];
 
 export const SCENARIO = {
-  // 1. The history: scrolled, searched, an old conversation reopened.
-  history: { search: "withdraw" },
-  // 2. A plain question, no article cited: the answer draws on several passages.
-  ask: {
-    corpus: CONSUMER,
-    question:
-      "I bought a laptop online and changed my mind. How many days do I have to cancel, and how quickly must I be refunded?",
-  },
-  // 3. Learning mode: another question, the pipeline lights up stage by
-  //    stage, then two lessons.
+  // 1. The history: a word typed in its search, the matching conversation reopened.
+  history: { search: "refund", open: /laptop/i },
+  // 2. Learning mode, in that conversation: a follow-up question, the
+  //    pipeline followed brick by brick, then three lessons.
   learning: {
-    corpus: CONSUMER,
-    question: "When must the seller refund me after I withdraw from an online purchase?",
-    lessons: [/^Fusion/, /^Re-ranking/],
+    question: "And who pays to send it back?",
+    lessons: [/^BM25/, /^Fusion/, /^Re-ranking/],
   },
-  // 4. Workshop > Retrieval: one question, three settings, no generation.
-  //    In French, the corpus' language, so BM25 matches its words.
+  // 3. The Workshop: corpus, citation graph, evaluation, then Retrieval with
+  //    two settings (no generation). It follows the LexML corpus, whose
+  //    citation graph is built.
   workshop: {
-    corpus: CONSUMER,
-    question: "Quel est le délai de rétractation pour un achat en ligne ?",
-    lexicalWeight: "0.4",
+    corpus: LEXML,
+    law: /13\.445|Migra/i,
+    // In Portuguese, the corpus' language, so BM25 matches its words.
+    question: "Quais direitos a Lei de Migração garante aos migrantes?",
   },
 };

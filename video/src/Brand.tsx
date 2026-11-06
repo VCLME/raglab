@@ -140,6 +140,43 @@ function Bar({ label, value, grow, color }: { label: string; value: number; grow
   );
 }
 
+/** Everything the film could not stop on, as one card. */
+const MORE = [
+  "Chunking strategies, compared",
+  "Embedding models, swappable",
+  "Local LLMs: Ollama, llama.cpp, vLLM",
+  "Legal citations resolved to the article",
+  "REST API, CLI and Prometheus metrics",
+];
+
+export function AndMore({ duration }: { duration: number }) {
+  const exit = useExit(duration);
+  return (
+    <AbsoluteFill style={{ padding: "0 150px", justifyContent: "center", opacity: exit }}>
+      <Rise at={0}>
+        <div style={{ fontFamily: FONT.code, fontSize: 24, letterSpacing: "0.16em", textTransform: "uppercase", color: C.accent }}>
+          05 · And more
+        </div>
+      </Rise>
+      <Rise at={6}>
+        <div style={{ fontFamily: FONT.text, fontWeight: 600, fontSize: 64, letterSpacing: "-0.02em", color: C.ink, margin: "22px 0 40px" }}>
+          The whole lab, on your machine.
+        </div>
+      </Rise>
+      <div style={{ display: "grid", gap: 20 }}>
+        {MORE.map((line, i) => (
+          <Rise key={line} at={16 + i * 7}>
+            <div style={{ display: "flex", alignItems: "center", gap: 22, fontFamily: FONT.text, fontSize: 38, color: C.ink2 }}>
+              <span style={{ width: 22, height: 22, borderRadius: 5, background: C.accent, flex: "none" }} />
+              {line}
+            </div>
+          </Rise>
+        ))}
+      </div>
+    </AbsoluteFill>
+  );
+}
+
 export function Outro() {
   return (
     <AbsoluteFill style={{ alignItems: "center", justifyContent: "center", gap: 36 }}>

@@ -10,7 +10,7 @@ import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { chromium } from "playwright";
 import { VIEWPORT } from "../scenario.mjs";
-import { DIST, ROOT, VIDEO_DIR, arg, buildFrontend, loadFixture } from "./common.mjs";
+import { DIST, FRONTEND, ROOT, VIDEO_DIR, arg, buildFrontend, loadFixture } from "./common.mjs";
 import { journey } from "./journey.mjs";
 import { startServer } from "./server.mjs";
 
@@ -21,15 +21,23 @@ const DPR = 2;
 const CHAR_MS = 42;
 // Later questions: the viewer already knows the gesture.
 const FAST_CHAR_MS = 22;
+// A search term, typed slowly enough to watch the results narrow.
+const SLOW_CHAR_MS = 360;
 const ANSWER_BUDGET_MS = 1900;
 // Learning mode: the camera is on the pipeline, the answer runs faster.
-const STRIP_ANSWER_BUDGET_MS = 1100;
+const STRIP_ANSWER_BUDGET_MS = 2400;
 const STAGE_MS = 300;
-const STRIP_STAGE_MS = 260;
+// Learning mode: each brick of the pipeline holds this long (slow motion:
+// the real stages take milliseconds) while the camera moves to it.
+const STRIP_STAGE_MS = 2200;
 const TOKEN_STATES = 24;
 const CURSOR_MS = 480;
 // Stages the Chat loader names ("Embedding the question…", …).
 const LOADER_STAGES = ["embed", "retrieval", "rerank", "generation"];
+
+// Brick names on the learning-mode diagram (edu.stages.*.short), by stage id.
+const EN = JSON.parse(await readFile(join(FRONTEND, "src", "i18n", "locales", "en.json"), "utf8"));
+const STAGE_LABELS = Object.fromEntries(Object.entries(EN.edu.stages).map(([id, v]) => [id, v.short]));
 
 const { file, fixture } = await loadFixture(arg("fixture"));
 const placeholder = !!fixture.meta?.placeholder;
@@ -121,12 +129,13 @@ const director = {
     t += CURSOR_MS;
     await locator.click();
   },
-  async type(locator, text, { fast = false } = {}) {
+  async type(locator, text, { fast = false, slow = false } = {}) {
     if (quiet) return locator.fill(text);
     await locator.click();
     for (let i = 1; i <= text.length; i++) {
       await locator.fill(text.slice(0, i));
-      await director.state(fast ? FAST_CHAR_MS : CHAR_MS);
+      if (slow) await page.waitForTimeout(150);
+      await director.state(slow ? SLOW_CHAR_MS : fast ? FAST_CHAR_MS : CHAR_MS);
     }
   },
   async answer({ strip = false } = {}) {
@@ -155,6 +164,13 @@ const director = {
       if (shows(e)) {
         // The loader holds each label 450 ms (Chat.tsx, STAGE_LABEL_HOLD_MS).
         await page.waitForTimeout(strip ? 250 : 600);
+        if (strip) {
+          // Where this brick sits on the diagram, and when it lights up.
+          const label = STAGE_LABELS[e.data.stage] ?? e.data.stage;
+          const node = page.locator(".edu-track button").filter({ hasText: new RegExp(`^${label}`) });
+          await director.mark(`brick-${e.data.stage}`);
+          if (await node.count()) await director.rect(`brick-${e.data.stage}`, node.first());
+        }
         await director.state(strip ? STRIP_STAGE_MS : STAGE_MS);
       }
     }
@@ -162,6 +178,12 @@ const director = {
     // Tokens: about TOKEN_STATES images, paced like the real generation but
     // compressed to fit ANSWER_BUDGET_MS.
     if (firstToken !== -1) {
+      if (strip) {
+        // The LLM brick lights up with the first token.
+        const node = page.locator(".edu-track button").filter({ hasText: new RegExp(`^${STAGE_LABELS.generation}`) });
+        await director.mark("brick-generation");
+        if (await node.count()) await director.rect("brick-generation", node.first());
+      }
       const span = Math.max(1, events[tokenEnd - 1].t - events[firstToken].t);
       const scale = Math.min(1, (strip ? STRIP_ANSWER_BUDGET_MS : ANSWER_BUDGET_MS) / span);
       const group = Math.max(1, Math.ceil((tokenEnd - firstToken) / TOKEN_STATES));

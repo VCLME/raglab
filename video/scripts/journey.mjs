@@ -14,10 +14,10 @@
  *   mark(name)               a named instant (captions and camera key on it)
  *   rect(name, locator)      where an element is, for the camera
  *   click(locator, name)     the cursor travels there, then clicks
- *   type(locator, text, o)   typed one character at a time ({ fast } for repeats)
+ *   type(locator, text, o)   typed one character at a time ({ fast } or { slow })
  *   answer(o)                the streamed answer, event by event
- *                            ({ strip } in learning mode, { resend } to retry a
- *                            declined take, { any } to keep any answer)
+ *                            ({ strip } in learning mode: one image per brick,
+ *                            { resend } to retry a declined take, { any } to keep any answer)
  */
 import { HISTORY, LANGUAGE, SCENARIO } from "../scenario.mjs";
 
@@ -53,6 +53,7 @@ export async function journey(page, d) {
   const corpus = page.getByRole("combobox", { name: /^Corpus/ });
   const answer = () => page.locator(".turn-answer").last();
   const newConversation = page.getByRole("button", { name: "New conversation" }).first();
+  const learning = page.getByRole("button", { name: "Learning mode" });
 
   /** Ask the same question again in this conversation (a declined take). */
   const resend = async (text) => {
@@ -77,7 +78,7 @@ export async function journey(page, d) {
   });
   await d.setClock(d.now);
 
-  // ---- 1. History: scroll, search, reopen ---------------------------------
+  // ---- 1. History: a word typed in the search, a conversation reopened -----
   await d.segment("history");
   await page.goto("/");
   await corpus.waitFor();
@@ -86,118 +87,155 @@ export async function journey(page, d) {
   const sidebar = page.locator(".history-scroll");
   await d.rect("sidebar", sidebar);
   await d.mark("history");
-  await d.state(1400);
-  // A quick scroll down the list and back, a little at a time.
-  const box = await sidebar.boundingBox();
-  if (box) {
-    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-    for (const dy of [...Array(10).fill(45), ...Array(10).fill(-45)]) {
-      await page.mouse.wheel(0, dy);
-      await page.waitForTimeout(60);
-      await d.state(70);
-    }
-  }
-  await d.state(500);
+  await d.state(3600);
   const search = page.getByRole("searchbox").first();
-  await d.mark("search");
   await d.rect("search", search);
+  await d.mark("search");
   await d.click(search, "search");
-  await d.type(search, SCENARIO.history.search);
+  await d.state(400);
+  await d.type(search, SCENARIO.history.search, { slow: true });
   await page.waitForTimeout(500);
   await d.rect("hits", sidebar);
-  await d.state(1600);
-  // The conversation whose title has the word, not just its answer.
-  const hit = sidebar.locator("button.history-open").filter({ hasText: new RegExp(SCENARIO.history.search, "i") });
+  await d.mark("hits");
+  await d.state(4200);
+  const hit = sidebar.locator("button.history-open").filter({ hasText: SCENARIO.history.open });
   await d.click(hit.first(), "reopen");
-  await page.waitForTimeout(700);
+  await page.waitForTimeout(800);
   await d.rect("reopened", answer());
   await d.mark("reopened");
-  await d.state(2200);
+  await d.state(5000);
 
-  // ---- 2. A plain question, several sources --------------------------------
-  await d.segment("ask");
-  await d.click(newConversation, "new");
-  await page.waitForTimeout(400);
-  await pick(page, d, corpus, SCENARIO.ask.corpus, "corpus");
-  await d.rect("composer", page.locator(".composer"));
-  await d.mark("ask");
-  await d.state(700);
-  await d.type(composer, SCENARIO.ask.question);
-  await d.state(250);
-  await d.click(send, "send");
-  await d.answer({ resend: () => resend(SCENARIO.ask.question) });
-  await d.rect("answer", answer());
-  await d.mark("answered");
-  await d.state(1800);
-  // The sources: every passage the answer cites, highlighted in the details.
-  const details = answer().getByRole("button", { name: /^Details/ }).first();
-  await d.rect("sources", answer().locator(".source-chips").first());
-  await d.mark("sources");
-  await d.click(details, "details");
-  await page.waitForTimeout(700);
-  await d.rect("details", answer());
-  await d.state(2600);
-  await d.mark("passages");
-  await page.mouse.wheel(0, 320);
-  await page.waitForTimeout(500);
-  await d.rect("passages", answer().locator(".chunk").first());
-  await d.state(2600);
-
-  // ---- 3. Learning mode ----------------------------------------------------
+  // ---- 2. Learning mode, in this conversation: brick by brick --------------
   await d.segment("learning");
-  const learning = page.getByRole("button", { name: "Learning mode" });
+  await d.rect("toggle", learning);
+  await d.mark("toggle");
   await d.click(learning, "learning");
-  await page.waitForTimeout(500);
-  await d.click(newConversation, "new");
-  await page.waitForTimeout(500);
+  await page.waitForTimeout(700);
   await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(200);
   await d.rect("strip", page.locator(".edu-strip"));
+  await d.mark("strip");
+  await d.state(3600);
   await d.rect("composer", page.locator(".composer"));
-  await d.mark("learning");
-  await d.state(1400);
-  await d.type(composer, SCENARIO.learning.question, { fast: true });
-  await d.state(200);
+  await d.mark("follow-up");
+  await d.type(composer, SCENARIO.learning.question);
+  await d.state(500);
   await d.mark("send");
   await d.click(send, "send");
   await d.answer({ strip: true, resend: () => resend(SCENARIO.learning.question) });
+  await page.waitForTimeout(400);
+  await d.rect("answer", answer());
+  await d.mark("answered");
+  await d.state(4800);
+
+  // Three lessons: the pipeline explained on this very question.
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.waitForTimeout(300);
-  await d.rect("strip", page.locator(".edu-strip"));
-  await d.rect("track", page.locator(".edu-track"));
-  await d.mark("lit");
-  await d.state(2400);
+  await d.state(600);
   const track = page.locator(".edu-track");
   for (const [i, name] of SCENARIO.learning.lessons.entries()) {
     const node = track.getByRole("button", { name }).first();
     await d.rect(`node-${i}`, node);
     await d.mark(`lesson-${i}`);
     await d.click(node, `lesson-${i}`);
-    await page.waitForTimeout(700);
+    await page.waitForTimeout(800);
     await page.evaluate(() => window.scrollTo(0, 0));
     await page.waitForTimeout(200);
     await d.rect(`lesson-${i}`, page.locator(".edu-lesson"));
-    await d.state(3200);
+    await d.state(5600);
   }
   await d.quiet(async () => {
     await learning.click();
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(400);
   });
 
-  // ---- 4. Workshop: the build steps, then Retrieval with three settings ----
+  // ---- 3. Sources: the passages behind the follow-up answer ---------------
+  await d.segment("sources");
+  await answer().scrollIntoViewIfNeeded();
+  await page.waitForTimeout(300);
+  await d.rect("answer", answer());
+  await d.mark("sources");
+  await d.state(2200);
+  await d.click(answer().getByRole("button", { name: /^Details/ }).first(), "details");
+  await page.waitForTimeout(800);
+  await d.rect("details", answer());
+  await d.state(3600);
+  await page.mouse.wheel(0, 300);
+  await page.waitForTimeout(500);
+  await d.rect("passages", answer().locator(".chunk").first());
+  await d.mark("passages");
+  await d.state(4200);
+
+  // ---- 4. Workshop: corpus, graph, evaluation, retrieval -------------------
   await d.segment("workshop");
   await page.goto("/workshop");
   await page.waitForLoadState("networkidle");
-  await page.waitForTimeout(500);
-  await d.rect("overview", page.locator("main").first());
+  await d.quiet(async () => {
+    const scope = page.getByRole("combobox", { name: "Corpus" }).first();
+    await pick(page, d, scope, SCENARIO.workshop.corpus, "scope");
+    await page.waitForLoadState("networkidle");
+    await page.waitForTimeout(500);
+  });
+  const flow = page.locator(".flow-step");
+  await d.rect("flow", page.locator("ol").filter({ has: flow }).first());
   await d.mark("overview");
-  await d.state(2600);
-  await d.click(page.getByRole("link", { name: /Retrieval/ }).first(), "retrieval");
+  await d.state(4200);
+
+  const step = async (name, label, hold) => {
+    await d.click(flow.filter({ hasText: name }).first(), label);
+    await page.waitForLoadState("networkidle");
+    await page.waitForTimeout(700);
+    await d.rect(label, page.locator("main").first());
+    await d.mark(label);
+    await d.state(hold);
+  };
+  // Corpus: your data in, from a folder or an official source.
+  await step(/^Corpus/, "corpus", 3000);
+  const official = page.getByRole("tab", { name: /^Official sources/ }).or(page.getByRole("button", { name: /^Official sources/ }));
+  if (await official.count()) {
+    await d.click(official.first(), "official");
+    await page.waitForTimeout(600);
+    await d.rect("official", page.locator("main").first());
+    await d.state(3800);
+  }
+  // Graph: one law and the laws it cites.
+  await step(/^Graph/, "graph", 2000);
+  // The law list loads after the graph status: wait for it.
+  await page
+    .locator("button.graph-law")
+    .first()
+    .waitFor({ timeout: 30_000 })
+    .catch(() => {
+      if (!d.placeholder) throw new Error("the Graph page lists no law: is the citation graph built for this corpus?");
+    });
+  const law = page.locator("button.graph-law").filter({ hasText: SCENARIO.workshop.law });
+  const lawButton = (await law.count()) ? law.first() : page.locator("button.graph-law").first();
+  if (await lawButton.count()) {
+    await d.click(lawButton, "law");
+    await page.waitForTimeout(2500);
+    // The drawing sits below the law list: bring it into view.
+    await page.locator(".graph-card").first().scrollIntoViewIfNeeded();
+    await page.waitForTimeout(800);
+    await d.rect("graph-view", page.locator(".graph-card").first());
+    await d.mark("graph-view");
+    await d.state(5200);
+  }
+  // Evaluation: every run on the frozen question sets.
+  await step(/^Evaluation/, "evaluation", 2000);
+  const history = page.getByRole("tab", { name: /^History/ }).or(page.getByRole("button", { name: /^History/ }));
+  if (await history.count()) {
+    await d.click(history.first(), "eval-history");
+    await page.waitForTimeout(800);
+    await d.rect("eval-table", page.locator("table").first());
+    await d.mark("eval-table");
+    await d.state(4800);
+  }
+  // Retrieval: one question, two settings, the scores of each.
+  await step(/^Retrieval/, "retrieval", 600);
   const question = row(page, /^Question$/).locator("textarea");
   await question.waitFor();
-  await page.waitForLoadState("networkidle");
   await d.quiet(async () => {
     await question.fill(SCENARIO.workshop.question);
-    await pick(page, d, row(page, /^Corpus$/).getByRole("combobox"), SCENARIO.workshop.corpus, "w-corpus");
     await row(page, /^Generation$/).getByRole("checkbox").uncheck();
     await row(page, /^Law article references$/).getByRole("checkbox").uncheck();
     await page.evaluate(() => window.scrollTo(0, 0));
@@ -205,8 +243,7 @@ export async function journey(page, d) {
   });
   await d.rect("form", page.locator(".card").filter({ has: question }).first());
   await d.mark("form");
-  await d.state(1400);
-
+  await d.state(2400);
   const mode = row(page, /^Search mode$/).getByRole("combobox");
   const rerank = row(page, /^Cross-encoder re-ranking$/).getByRole("combobox");
   const run = page.getByRole("button", { name: "Run", exact: true });
@@ -220,30 +257,19 @@ export async function journey(page, d) {
     await page.waitForTimeout(300);
     await d.rect(`results-${n}`, results());
     await d.mark(`results-${n}`);
-    await d.state(3000);
+    await d.state(4800);
     await page.evaluate(() => window.scrollTo(0, 0));
     await page.waitForTimeout(300);
   };
-  // 1. Vector search only, no re-ranking.
+  // 1. Hybrid search (vectors + BM25 keywords), no re-ranking.
   await d.mark("setting-1");
-  await d.rect("mode", mode);
-  await pick(page, d, mode, /^dense/, "mode-dense", { hold: 600 });
+  await pick(page, d, mode, /^hybrid/, "mode-hybrid", { hold: 700 });
   await pick(page, d, rerank, /^off$/, "rerank-off");
   await d.state(500);
   await runAndShow(1);
-  // 2. Hybrid: BM25 joins in, with its weight.
+  // 2. The cross-encoder rereads the candidates.
   await d.mark("setting-2");
-  await pick(page, d, mode, /^hybrid/, "mode-hybrid", { hold: 600 });
-  const weight = row(page, /^BM25 weight$/).locator("input");
-  await d.rect("weight", weight);
-  await d.click(weight, "weight");
-  await d.type(weight, SCENARIO.workshop.lexicalWeight);
+  await pick(page, d, rerank, /^on$/, "rerank-on", { hold: 700 });
   await d.state(500);
   await runAndShow(2);
-  // 3. The cross-encoder rereads the candidates.
-  await d.mark("setting-3");
-  await d.rect("rerank", rerank);
-  await pick(page, d, rerank, /^on$/, "rerank-on", { hold: 600 });
-  await d.state(500);
-  await runAndShow(3);
 }
