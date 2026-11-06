@@ -10,55 +10,22 @@ export const LANGUAGE = "en";
 export const NO_ANSWER = /^"?I cannot answer reliably from the retrieved context/;
 
 const CONSUMER = /consommation/i;
-const EU = /eurlex|compliance/i;
 const LEXML = /lexml_pt/i;
-const EXPAT = /expat/i;
-
-const DAY = 86_400_000;
-
-/**
- * Earlier conversations, asked off camera before the film starts so the
- * history has something to show. Real questions and answers; only their
- * dates are staged (`ago`, before the capture's clock).
- */
-export const HISTORY = [
-  { corpus: EU, question: "What is a high-risk AI system?", ago: 24 * DAY },
-  { corpus: EXPAT, question: "Do foreigners need a CPF to open a bank account in Brazil?", ago: 19 * DAY },
-  { corpus: LEXML, question: "Who can apply for a humanitarian visa in Brazil?", ago: 15 * DAY },
-  { corpus: CONSUMER, question: "Are late payment penalties capped for consumers?", ago: 11 * DAY },
-  { corpus: EU, question: "When does DORA require reporting an ICT incident?", ago: 6 * DAY },
-  { corpus: EXPAT, question: "Can I get a residence permit in Brazil if my spouse is Brazilian?", ago: 5 * DAY },
-  { corpus: CONSUMER, question: "How do I withdraw from a distance contract?", ago: 4 * DAY },
-  { corpus: EU, question: "Which AI practices are prohibited under the AI Act?", ago: 3 * DAY },
-  { corpus: LEXML, question: "Which rights does the Migration Law guarantee to migrants?", ago: 1 * DAY + 3_600_000 },
-  { corpus: CONSUMER, question: "Can I cancel a gym membership I signed at a trade fair?", ago: 1 * DAY },
-  { corpus: EU, question: "What must a company do after a personal data breach?", ago: 5 * 3_600_000 },
-  { corpus: CONSUMER, question: "When must the seller refund me after I withdraw from an online purchase?", ago: 2 * DAY },
-  { corpus: CONSUMER, question: "How long is the legal guarantee of conformity?", ago: 2 * 3_600_000 },
-  // The conversation the film reopens from the search, then continues.
-  {
-    corpus: CONSUMER,
-    question: "I bought a laptop online and changed my mind. How many days do I have to cancel, and how quickly must I be refunded?",
-    ago: 40 * 60_000,
-  },
-];
 
 export const SCENARIO = {
-  // 1. The history: a word typed in its search, the matching conversation reopened.
-  history: { search: "refund", open: /laptop/i },
-  // 2. Learning mode, in that conversation: a follow-up question, the
+  // 1. A plain question in the Chat, answered from several articles, then its sources.
+  ask: {
+    corpus: CONSUMER,
+    question: "I bought a laptop online and changed my mind. How many days do I have to cancel, and how quickly must I be refunded?",
+  },
+  // 2. Learning mode, in the same conversation: a follow-up question, the
   //    pipeline followed brick by brick, then three lessons.
   learning: {
     question: "And who pays to send it back?",
     lessons: [/^BM25/, /^Fusion/, /^Re-ranking/],
   },
-  // 3. The Workshop: corpus, citation graph, evaluation, then Retrieval with
-  //    two settings (no generation). It follows the LexML corpus, whose
-  //    citation graph is built.
-  workshop: {
-    corpus: LEXML,
-    law: /13\.445|Migra/i,
-    // In Portuguese, the corpus' language, so BM25 matches its words.
-    question: "Quais direitos a Lei de Migração garante aos migrantes?",
-  },
+  // 3. The Workshop (expert mode): a run through its menus, the citation
+  //    graph of one law, then the three ways to import data. It follows the
+  //    LexML corpus, whose citation graph is built.
+  workshop: { corpus: LEXML, law: /13\.445|Migra/i },
 };

@@ -32,6 +32,7 @@ const STAGE_MS = 300;
 const STRIP_STAGE_MS = 2200;
 const TOKEN_STATES = 24;
 const CURSOR_MS = 480;
+const TOP_BAR_CURSOR_MS = 950;
 // Stages the Chat loader names ("Embedding the question…", …).
 const LOADER_STAGES = ["embed", "retrieval", "rerank", "generation"];
 
@@ -84,10 +85,6 @@ let quiet = false;
 
 const director = {
   placeholder,
-  now: CLOCK,
-  async setClock(date) {
-    await page.clock.setFixedTime(date);
-  },
   async quiet(fn) {
     quiet = true;
     try {
@@ -125,8 +122,9 @@ const director = {
     if ((await scrollKey()) !== before) await director.state(300);
     const b = await box(locator);
     if (b) seg.clicks.push({ name, t: Math.round(t), x: b.x + b.w / 2, y: b.y + b.h / 2 });
-    // The cursor travels over the current image, then presses.
-    t += CURSOR_MS;
+    // The cursor travels over the current image, then presses (a longer way
+    // up to the top bar: AppScene.tsx draws the same path).
+    t += b && b.y + b.h / 2 < 120 ? TOP_BAR_CURSOR_MS : CURSOR_MS;
     await locator.click();
   },
   async type(locator, text, { fast = false, slow = false } = {}) {

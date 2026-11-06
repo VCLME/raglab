@@ -1,4 +1,4 @@
-/** The title cards: paper, the four citation-chip squares, the wordmark, the number. */
+/** The title cards: paper, the four citation-chip squares, the wordmark. */
 import React from "react";
 import { AbsoluteFill, Easing, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
 import { C, FONT } from "./theme";
@@ -80,68 +80,10 @@ export function Intro({ duration }: { duration: number }) {
   );
 }
 
-export function Metric({ duration }: { duration: number }) {
-  const frame = useCurrentFrame();
-  const { before, after } = timeline.metrics;
-  const from = Math.round(before.recall5 * 100);
-  const to = Math.round(after.recall5 * 100);
-  const roll = Easing.out(Easing.cubic)(interpolate(frame, [18, 62], [0, 1], clamp));
-  const value = Math.round(from + (to - from) * roll);
-  const exit = useExit(duration);
-  return (
-    <AbsoluteFill style={{ padding: "0 150px", justifyContent: "center", opacity: exit }}>
-      <Rise at={0}>
-        <div style={{ fontFamily: FONT.code, fontSize: 24, letterSpacing: "0.16em", textTransform: "uppercase", color: C.accent }}>
-          06 · Measured
-        </div>
-      </Rise>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 44, margin: "26px 0 34px", fontFamily: FONT.code, fontWeight: 500 }}>
-        <Rise at={4}>
-          <span style={{ fontSize: 130, color: C.ink3, letterSpacing: "-0.03em" }}>{from}%</span>
-        </Rise>
-        <Rise at={10}>
-          <span style={{ fontSize: 96, color: C.ink3 }}>→</span>
-        </Rise>
-        <Rise at={14}>
-          <span style={{ fontSize: 250, color: C.accent, letterSpacing: "-0.03em", lineHeight: 0.9 }}>{value}%</span>
-        </Rise>
-      </div>
-      <Rise at={26}>
-        <div style={{ fontFamily: FONT.text, fontWeight: 600, fontSize: 54, letterSpacing: "-0.02em", lineHeight: 1.1, color: C.ink }}>
-          Questions citing an article number:
-          <br />
-          the right passage in the top 5.
-        </div>
-      </Rise>
-      <Rise at={34}>
-        <div style={{ marginTop: 28, fontFamily: FONT.code, fontSize: 22, color: C.ink3 }}>
-          LexML · {after.cases} questions · Recall@5 · {before.label} → {after.label}
-        </div>
-      </Rise>
-      <div style={{ position: "absolute", left: 1140, top: 430, width: 640, display: "grid", gap: 46 }}>
-        <Bar label={`${before.label} · dense search`} value={before.recall5} grow={[16, 40]} color={C.ink3} />
-        <Bar label={`${after.label} · full pipeline`} value={after.recall5} grow={[24, 64]} color={C.accent} />
-      </div>
-    </AbsoluteFill>
-  );
-}
-
-/** One run's Recall@5 as a bar, like the latency receipt under each answer. */
-function Bar({ label, value, grow, color }: { label: string; value: number; grow: [number, number]; color: string }) {
-  const frame = useCurrentFrame();
-  const p = out(interpolate(frame, grow, [0, 1], clamp));
-  return (
-    <div style={{ opacity: interpolate(frame, [grow[0] - 6, grow[0]], [0, 1], clamp) }}>
-      <div style={{ fontFamily: FONT.code, fontSize: 22, color: C.ink2, marginBottom: 14 }}>{label}</div>
-      <div style={{ height: 20, borderRadius: 10, background: C.paper2, boxShadow: `inset 0 0 0 1px ${C.rule}` }}>
-        <div style={{ width: `${value * 100 * p}%`, height: "100%", borderRadius: 10, background: color }} />
-      </div>
-    </div>
-  );
-}
-
 /** Everything the film could not stop on, as one card. */
+const { before, after } = timeline.metrics;
 const MORE = [
+  `Every brick measured: Recall@5 ${Math.round(before.recall5 * 100)}% → ${Math.round(after.recall5 * 100)}% on article questions`,
   "Chunking strategies, compared",
   "Embedding models, swappable",
   "Local LLMs: Ollama, llama.cpp, vLLM",

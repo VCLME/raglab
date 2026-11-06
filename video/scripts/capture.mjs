@@ -2,7 +2,7 @@
  * Records the API responses of the demo journey from a live raglab API into
  * fixtures/demo.json: every JSON body as served, every streamed answer with
  * its events and their arrival times. Run it once the API, Ollama and the
- * corpora are up (it generates three answers, so it needs the GPU).
+ * corpora are up (it generates two answers, so it needs the GPU).
  *
  *   node scripts/capture.mjs [--api http://localhost:8000] [--no-build]
  */
@@ -49,10 +49,6 @@ async function nextAnswer() {
 
 const director = {
   placeholder: false,
-  now: new Date(),
-  async setClock(date) {
-    await page.clock.setFixedTime(date);
-  },
   async quiet(fn) {
     await fn();
   },
@@ -66,21 +62,21 @@ const director = {
   async type(locator, text) {
     await locator.fill(text);
   },
-  async answer({ any = false, resend } = {}) {
+  async answer({ resend } = {}) {
     // A small local model sometimes declines a question it answers on the next
-    // try. On camera, such a take is dropped from the record and the question
+    // try. Such a take is dropped from the record and the question
     // asked again (up to 4 times); the answer kept is never edited.
     for (let attempt = 1; ; attempt++) {
       const last = await nextAnswer();
       const end = last.events.at(-1);
-      // On camera, an answer must also cite its passages the way the Chat
+      // An answer must also cite its passages the way the Chat
       // turns into chips ("[Rank N]").
       const text = String(end.data.answer ?? "");
-      const declined = NO_ANSWER.test(text) || (!any && !/\[Rank \d+\]/.test(text));
+      const declined = NO_ANSWER.test(text) || !/\[Rank \d+\]/.test(text);
       const tokens = last.events.filter((e) => e.event === "token").length;
       console.log(`answer: ${tokens} tokens in ${end.t} ms${declined ? " (declined)" : ""} - ${last.body.question}`);
       await page.waitForTimeout(1200);
-      if (!declined || any) return;
+      if (!declined) return;
       if (!resend || attempt >= 4) throw new Error(`the model declined "${last.body.question}": run the capture again`);
       server.recorded.splice(server.recorded.indexOf(last), 1);
       answered -= 1;

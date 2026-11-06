@@ -81,22 +81,28 @@ function project(cam: Cam, x: number, y: number) {
   return { x: ANCHOR_X + cam.s * (x - cam.cx), y: cam.ay + cam.s * (y - cam.cy) };
 }
 
-function Screen({ seg, ms }: { seg: Segment; ms: number }) {
+/** How long a page change blurs inside a `whip` range (ms). */
+const WHIP_MS = 320;
+
+function Screen({ seg, ms, whip }: { seg: Segment; ms: number; whip: [number, number][] }) {
   const states = seg.states;
   let i = 0;
   while (i + 1 < states.length && states[i + 1].t <= ms) i++;
   const cur = states[i];
   const prev = states[i - 1];
+  // Inside a whip range, each page change dissolves through a sideways blur.
+  const whipping = !!prev && whip.some(([a, b]) => cur.t >= a && cur.t <= b);
   // A short dissolve for in-place changes; a cut when the page scrolled.
-  const cut = !prev || prev.scroll !== cur.scroll;
-  const fade = cut ? 1 : Math.min(80, cur.t - prev.t);
+  const cut = !prev || (prev.scroll !== cur.scroll && !whipping);
+  const fade = cut ? 1 : whipping ? WHIP_MS : Math.min(80, cur.t - prev.t);
   const alpha = cut ? 1 : clamp01((ms - cur.t) / Math.max(1, fade));
+  const blur = whipping ? 14 * Math.sin(Math.PI * clamp01((ms - cur.t) / WHIP_MS)) : 0;
   const style: React.CSSProperties = { position: "absolute", inset: 0, width: VW, height: VH };
   return (
-    <>
+    <div style={{ position: "absolute", inset: 0, filter: blur > 0.3 ? `blur(${blur}px)` : undefined }}>
       {prev && alpha < 1 ? <Img src={staticFile(prev.src)} style={style} /> : null}
       <Img src={staticFile(cur.src)} style={{ ...style, opacity: alpha }} />
-    </>
+    </div>
   );
 }
 
@@ -106,8 +112,9 @@ function Cursor({ seg, ms, cam }: { seg: Segment; ms: number; cam: Cam }) {
   if (i === -1) return null;
   const c = clicks[i];
   const prev = clicks[i - 1];
-  const travel = 430;
-  const fromPt = prev && c.t - prev.t < 4000 ? prev : { x: c.x + 160, y: c.y + 120 };
+  const travel = c.y < 120 ? 900 : 430;
+  // With no recent click, come from the page below (from further for the top bar).
+  const fromPt = prev && c.t - prev.t < 4000 ? prev : c.y < 120 ? { x: c.x - 320, y: c.y + 460 } : { x: c.x + 160, y: c.y + 120 };
   const p = ease(clamp01((ms - c.t) / travel));
   const x = fromPt.x + (c.x - fromPt.x) * p;
   const y = fromPt.y + (c.y - fromPt.y) * p;
@@ -212,6 +219,7 @@ export function AppScene({
   enterFrames = 18,
   duration,
   exitFrames = 10,
+  whip = [],
 }: {
   seg: Segment;
   camera: CameraKey[];
@@ -222,6 +230,8 @@ export function AppScene({
   /** Length of the scene (frames): it fades out over its last `exitFrames`. */
   duration: number;
   exitFrames?: number;
+  /** Segment time ranges (ms) where page changes blur, for a quick run through. */
+  whip?: [number, number][];
 }) {
   const frame = useCurrentFrame();
   const ms = from + (frame * 1000) / FPS;
@@ -248,7 +258,7 @@ export function AppScene({
           boxShadow: `0 0 0 1px ${C.rule}, 0 50px 110px -40px oklch(0.2 0.02 60 / 0.45)`,
         }}
       >
-        <Screen seg={seg} ms={ms} />
+        <Screen seg={seg} ms={ms} whip={whip} />
       </div>
       <Cursor seg={seg} ms={ms} cam={cam} />
       <Caption cues={captions} ms={ms} />
