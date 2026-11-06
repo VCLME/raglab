@@ -1039,15 +1039,20 @@ button.citation {
 button.citation + button.citation {
   margin-left: 2px;
 }
-/* A cited article instead of a rank: "art. L221-18". */
+/* A cited article instead of a rank: "art. L221-18". A long label ends in
+   an ellipsis (start-aligned: centred, it overflowed on both sides). */
 button.citation.labelled {
+  justify-content: flex-start;
   max-width: 11em;
   padding: 0 5px;
+  font-family: var(--mono);
+  font-weight: 500;
+}
+.citation-label {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-family: var(--mono);
-  font-weight: 500;
 }
 .cite-nums {
   display: inline-flex;

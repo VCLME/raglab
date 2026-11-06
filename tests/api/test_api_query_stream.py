@@ -122,6 +122,16 @@ def test_stream_sends_retrieval_then_tokens_then_done(client, stream_service):
     assert done["retrieved_chunks"] == retrieval["retrieved_chunks"]
 
 
+def test_stream_done_answer_has_rank_markers_in_one_form(client, stream_service):
+    # Qwen3.6 sometimes copies the context header: the tokens go out as
+    # written, the final answer reads [Rank N].
+    retrieve, gen = stream_service(FakeGenerator(["Quatorze jours [Source ", "rank=1], ", "remboursé [Ranks 1 et 2]."]))
+    with retrieve, gen:
+        events = parse_sse(_post(client).text)
+    assert "".join(data["text"] for name, data in events if name == "token").count("[Source rank=1]") == 1
+    assert events[-1][1]["answer"] == "Quatorze jours [Rank 1], remboursé [Rank 1][Rank 2]."
+
+
 def test_stream_forwards_llm_model_to_the_generator(client, stream_service):
     generator = FakeGenerator(["ok"])
     retrieve, gen = stream_service(generator)

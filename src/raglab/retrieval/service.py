@@ -18,6 +18,7 @@ from raglab.domain.enums import ChunkingStrategy, RetrievalMode
 from raglab.domain.errors import StageTimeoutError, run_with_timeout
 from raglab.domain.schemas import QueryResponse, RetrievalFilters, RetrievedChunk
 from raglab.embeddings.factory import build_embedding_provider
+from raglab.generation.citations import normalize_citations
 from raglab.generation.prompts import build_prompt_bundle
 from raglab.generation.service import AnswerGenerator, OllamaGenerator, OpenAICompatGenerator
 from raglab.graph.structured import StructuredGraphStore, get_graph_store
@@ -760,7 +761,7 @@ class QueryService:
             generator = self.generator_for(provider)
             generation_started = perf_counter()
             context = outcome.retrieved[:generation_top_k] if generation_top_k else outcome.retrieved
-            answer = generator.generate_answer(question, context, model=model)
+            answer = normalize_citations(generator.generate_answer(question, context, model=model))
             outcome.timings_ms["generation"] = round((perf_counter() - generation_started) * 1000, 3)
             stats = dict(generator.last_stats)
         elapsed_ms = (perf_counter() - outcome.started) * 1000
@@ -863,8 +864,10 @@ class QueryService:
             generation_stats=stats,
             llm_provider=provider,
         )
+        # The fragments went out as written; the full answer carries the
+        # citation markers in their one form ([Rank N]).
         response = outcome.response(
-            answer="".join(parts).strip(),
+            answer=normalize_citations("".join(parts).strip()),
             elapsed_ms=elapsed_ms,
             generation_stats=stats,
             llm_provider=provider,

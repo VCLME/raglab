@@ -18,7 +18,8 @@ export function Citation({ rank, fileName, label, onClick, active }: Props) {
       title={fileName ? t("chat.citation_title_file", { rank, file: fileName }) : t("chat.citation_title", { rank })}
       type="button"
     >
-      {label ?? rank}
+      {/* The label sits in its own box: a flex button cannot end its text with an ellipsis. */}
+      {label ? <span className="citation-label">{label}</span> : rank}
     </button>
   );
 }
