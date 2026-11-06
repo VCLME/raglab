@@ -355,6 +355,40 @@ La configuration (`frontend/playwright.config.ts`) construit le bundle de produc
 
 En CI, le job `e2e` lance la suite et publie le rapport HTML en artefact en cas d'echec.
 
+## Vidéo de démonstration (`video/`)
+
+Le film de démo du site (MP4 + WebM, 1920×1080, environ 3 min 15) et l'animation du README (WebP animé : la même histoire raccourcie, jusqu'au graphe de l'Atelier ; 960 px, 15 images/s, moins de 8 Mo) sont générés par du code : un script Playwright pilote la vraie interface (en anglais) et en capture chaque état, puis [Remotion](https://www.remotion.dev/) (React) anime ces captures : mouvements de caméra, curseur, sous-titres, carte du chiffre clé. Les réponses ne sont jamais inventées : l'API est enregistrée une fois sur une instance réelle, puis rejouée. Le rendu est donc identique d'une fois sur l'autre et n'a besoin ni de l'API ni du GPU.
+
+Parcours filmé (questions dans `video/scenario.mjs`) :
+
+1. **Ouverture** : raglab s'affiche, vide, quelques secondes.
+2. **Chat** : le choix du corpus (Code de la consommation), puis une question en langage courant dont la réponse n'est pas celle qu'on attend (« I bought a sofa at a trade fair and I regret it. Can I withdraw, like for an online purchase? » : pas de rétractation dans une foire), dans l'interface simple, sans mode pédagogique ; la réponse cite plusieurs articles.
+3. **Sources** : les puces de citation, puis le détail, avec les passages cités et leur état « en vigueur ».
+4. **Mode pédagogique, dans la même conversation** : le curseur monte jusqu'au bouton et l'active ; une question de suivi (« And if the seller at the fair never told me there was no withdrawal period? » ; elle nomme la foire, car le Chat envoie chaque question seule) ; la caméra suit le pipeline brique par brique (vectorisation, recherche vectorielle, BM25, fusion, re-ranking, versions, prompt, LLM), au ralenti, puis la réponse ; ensuite les leçons BM25, Fusion et Re-ranking.
+5. **Mode expert (Atelier)** : le curseur clique sur « Workshop » ; la barre des étapes, puis un passage rapide et flouté par ses menus (découpage, vecteurs, évaluation, retrieval, modèles, bases) ; le graphe de citations d'une loi (Lei 13.445) ; enfin trois façons d'importer ses données (dossier local, LexML, sources officielles).
+6. Une carte « And more » (dont le Recall@5 des questions citant un article, lu dans `benchmarks/results/` : `baseline-v1` → `full-v1`), puis la carte de fin : raglab, 100 % local, le lien GitHub.
+
+Mise en scène (règles reprises du skill video-shotcraft) : les sous-titres ont leur propre bande sous l'image de l'application et ne couvrent jamais l'interface ; caméra stable (pas d'inclinaison, zoom plafonné à ×2, mouvements de 1,4 s ou plus, retour au plan large avant chaque changement de scène plutôt qu'une coupe) ; chaque plan important reste immobile au moins une seconde ; la frappe et les réponses vont à une vitesse lisible.
+
+```bash
+cd video
+npm install                 # une seule fois (Remotion embarque son propre ffmpeg)
+npm run capture             # 1. enregistre l'API réelle -> fixtures/demo.json (GPU)
+npm run render -- --shots   # 2. captures d'écran + rendu -> out/demo.mp4, out/demo.webm, out/demo.webp
+npm run publish             # 3. copie dans docs/images/ et site/assets/, met la démo dans le README et le site
+```
+
+- **Capture** (`scripts/capture.mjs`) : à lancer quand l'API tourne sur `http://localhost:8000` (ou `--api URL`), avec les corpus indexés (Code de la consommation, LexML) et le GPU libre : la capture pose les deux questions filmées, parcourt les pages de l'Atelier et ouvre le graphe de citations de LexML (Neo4j). Un petit serveur sert le frontend construit et relaie `/api` vers l'API en enregistrant chaque réponse JSON et chaque événement SSE avec son heure d'arrivée. Deux retouches seulement : `conversation_history` est mis à `false` dans `/api/config`, pour que la démo n'ajoute aucune conversation à l'historique du serveur, et les chemins de fichiers locaux sont raccourcis (`C:\Users\…\data\lexml\…` devient `data\lexml\…`) pour ne pas montrer le nom d'utilisateur de la machine. Le fichier `video/fixtures/demo.json` est à commiter ; son bloc `meta` donne la date, le commit, l'URL de l'API et le modèle.
+  - Rédacteur : la capture du 6 novembre 2026 a été faite avec le rédacteur par défaut, Qwen3.6 sur llama.cpp, démarré par l'API elle-même (`RAGLAB_LLAMACPP_START_COMMAND` / `RAGLAB_LLAMACPP_STOP_COMMAND`, voir [exploitation.md](exploitation.md)). Sans llama.cpp, la traduction de la question échoue (la recherche BM25 porte alors sur le texte anglais) et chaque réponse affiche l'avertissement du modèle de repli : qwen2.5:7b refuse alors souvent les questions en langage courant.
+  - Prises : un modèle local refuse parfois une question à laquelle il répond à l'essai suivant (phrase fixe « I cannot answer reliably from the retrieved context »), ou cite ses passages sous une autre forme que `[Rank N]`, que le Chat ne transforme pas en puces. La capture retire alors cette prise de l'enregistrement et repose la question (quatre essais au plus) ; les réponses gardées ne sont jamais retouchées. Toute erreur HTTP de l'API fait échouer la capture, sans rien écrire.
+- **Animation du README** (`scripts/webp.py`) : Remotion rend la version courte en images, puis le script en garde une sur deux et les assemble en WebP animé à 15 images/s ; les images identiques qui se suivent deviennent une seule image tenue plus longtemps, ce qui garde le fichier léger. Il faut Pillow compilé avec WebP (`python -c "import PIL.features as f; print(f.check('webp'))"`). Le WebP remplace le GIF : sous les 8 Mo, un GIF devait descendre à 6 images/s.
+- **Captures d'écran** (`scripts/shots.mjs`) : rejoue l'API depuis la fixture. Les flux SSE avancent événement par événement, et une capture est prise à chaque étape du chargement et tous les quelques tokens. Le fichier `public/shots/timeline.json` indique quand chaque image apparaît, où clique le curseur et où se trouvent les éléments que la caméra cadre. Une requête absente de la fixture fait échouer la commande : l'interface appelle alors un nouvel endpoint, et il faut refaire la capture.
+- **Quand refaire quoi** : si l'interface change, `npm run render -- --shots` suffit. Si les questions, les corpus ou les réponses attendues changent, relancer `npm run capture`. Les réglages se trouvent ici : rythme (vitesse de frappe, durée maximale d'une réponse) dans `scripts/shots.mjs`, découpage, cadrages et sous-titres dans `src/Demo.tsx`, aperçu interactif avec `npm run studio`.
+- **Données provisoires** : sans `fixtures/demo.json`, le rendu utilise `fixtures/placeholder.json`, tiré des mocks e2e (`npm run placeholder`). Chaque image porte alors un bandeau rouge « PLACEHOLDER DATA », et `npm run publish` refuse de publier.
+- **Licence** : Remotion est gratuit pour un particulier ou une entreprise de trois personnes au plus ; au-delà, une licence d'entreprise est nécessaire (voir sa licence).
+
+Le dossier `video/` n'est pas dans la CI : il a son propre `package.json`, et `npm run typecheck` vérifie ses sources.
+
 ## Exemple de session
 
 1. Collecter LexML et indexer en une commande via l'UI : `LexML → load` avec `corpus=lexml_real`, `strategy=traditional`, `page_limit=1`.

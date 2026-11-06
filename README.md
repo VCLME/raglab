@@ -5,9 +5,9 @@
 
 **Private RAG you can measure.** raglab answers questions from your documents without them ever leaving your servers, proves its quality with before/after numbers on frozen benchmarks, and says "not in your documents" instead of inventing.
 
-<!-- Demo GIF (20 s): record and save as docs/images/demo.gif, then replace the screenshot below with:
-![raglab demo](docs/images/demo.gif) -->
-![The raglab chat: pick a corpus, an index and a local model; answers cite the passages they use](docs/images/chat-welcome.png)
+<!-- demo:start (replaced by the demo animation: cd video && npm run publish) -->
+[![raglab in action: a plain question answered from several articles, a follow-up in learning mode with the pipeline lighting up brick by brick, then the Workshop and its citation graph](docs/images/demo.webp)](https://vclme.github.io/raglab/)
+<!-- demo:end -->
 
 Website: **[vclme.github.io/raglab](https://vclme.github.io/raglab/)** · Technical report (French): [PDF](docs/rapport/raglab-rapport.pdf) · Documentation (French): [docs/](docs/README.md)
 
