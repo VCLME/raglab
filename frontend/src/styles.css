@@ -2655,11 +2655,12 @@ button.switch.on .switch-knob {
   color: var(--muted);
 }
 .edu-track-scroll {
+  container-type: inline-size;
   overflow-x: auto;
   scrollbar-width: thin;
-  /* room for focus rings */
+  /* room for focus rings, and for the timings under the last lane */
   margin: -4px;
-  padding: 4px;
+  padding: 4px 4px 13px;
 }
 .edu-track {
   display: flex;
@@ -2676,7 +2677,7 @@ button.switch.on .switch-knob {
 .edu-lanes {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 14px;
 }
 /* Fork and merge: one SVG path per lane (see BranchWires). */
 .edu-wires {
@@ -2721,13 +2722,8 @@ button.switch.on .switch-knob {
   transform: rotate(45deg);
   flex-shrink: 0;
 }
-.edu-node.decision .edu-node-meta {
-  max-width: 16ch;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
 .edu-arrow.wire {
-  flex: 1 0 18px;
+  flex: 1 0 12px;
 }
 .edu-arrow.wire.tail::after,
 .edu-arrow.join::after {
@@ -2735,11 +2731,11 @@ button.switch.on .switch-knob {
 }
 /* Head wires stay short: the fork curve already carries the line. */
 .edu-arrow.wire:not(.tail) {
-  flex: 0 0 14px;
+  flex: 0 0 12px;
 }
 .edu-arrow {
   position: relative;
-  flex: 0 0 20px;
+  flex: 0 0 16px;
   height: 2px;
   background: var(--border-strong);
   transition: background var(--dur) var(--ease-out);
@@ -2760,12 +2756,15 @@ button.switch.on .switch-knob {
 .edu-arrow.lit::after {
   border-left-color: var(--accent);
 }
+/* The pill holds the stage name only: its width never changes while the
+ * request runs. Height kept in step with BranchWires. */
 .edu-node {
+  position: relative;
   flex-shrink: 0;
   gap: 7px;
-  height: 34px;
+  height: 30px;
   min-height: 0;
-  padding: 0 10px;
+  padding: 0 11px;
   white-space: nowrap;
   background: var(--surface);
   color: var(--text);
@@ -2780,10 +2779,19 @@ button.switch.on .switch-knob {
   background: var(--surface-hover);
   border-color: var(--muted);
 }
+/* Duration or state: small, under the pill, out of its width. */
 .edu-node-meta {
-  font-family: var(--mono);
-  font-size: 11px;
+  position: absolute;
+  top: calc(100% + 1px);
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: calc(100% + 14px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 10px;
+  font-style: italic;
   font-weight: 400;
+  line-height: 1.15;
   color: var(--muted);
 }
 .edu-node.done {
@@ -2819,8 +2827,25 @@ button.switch.on .switch-knob {
   color: var(--on-accent);
 }
 .edu-node.active .edu-node-meta {
-  color: var(--on-accent);
-  opacity: 0.85;
+  color: var(--accent-strong);
+}
+/* Tablets: tighter nodes and arrows, so the whole pipeline still fits
+ * (below this it scrolls sideways). */
+@container (max-width: 1100px) {
+  .edu-node {
+    gap: 5px;
+    padding: 0 8px;
+    font-size: 12px;
+  }
+  .edu-node-meta {
+    font-size: 10px;
+  }
+  .edu-arrow {
+    flex-basis: 11px;
+  }
+  .edu-arrow.wire:not(.tail) {
+    flex-basis: 9px;
+  }
 }
 /* Running: the fill breathes, no ring around the node. */
 @keyframes edu-pulse {
