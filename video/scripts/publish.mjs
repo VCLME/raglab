@@ -13,7 +13,7 @@ import { copyFile, readFile, stat, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ROOT, VIDEO_DIR } from "./common.mjs";
 
-const README_DEMO = `[![raglab in action: a plain question answered from several articles, then a follow-up in learning mode with the pipeline lighting up brick by brick](docs/images/demo.gif)](https://vclme.github.io/raglab/)`;
+const README_DEMO = `[![raglab in action: a plain question answered from several articles, a follow-up in learning mode with the pipeline lighting up brick by brick, then the Workshop and its citation graph](docs/images/demo.gif)](https://vclme.github.io/raglab/)`;
 
 const SITE_DEMO = `  <figure>
     <video class="shot-media" width="1920" height="1080" autoplay muted loop playsinline preload="metadata" poster="assets/chat-welcome.png"

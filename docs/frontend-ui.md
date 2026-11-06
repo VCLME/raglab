@@ -357,16 +357,18 @@ En CI, le job `e2e` lance la suite et publie le rapport HTML en artefact en cas 
 
 ## Vidéo de démonstration (`video/`)
 
-Le film de démo du site (MP4 + WebM, 1920×1080, environ 2 min 30) et le GIF du README (la question simple puis la question de suivi en mode pédagogique, environ 45 s, 960 px, 7,5 images/s, moins de 8 Mo) sont générés par du code : un script Playwright pilote la vraie interface (en anglais) et en capture chaque état, puis [Remotion](https://www.remotion.dev/) (React) anime ces captures : mouvements de caméra, curseur, sous-titres, carte du chiffre clé. Les réponses ne sont jamais inventées : l'API est enregistrée une fois sur une instance réelle, puis rejouée. Le rendu est donc identique d'une fois sur l'autre et n'a besoin ni de l'API ni du GPU.
+Le film de démo du site (MP4 + WebM, 1920×1080, environ 3 min 10) et le GIF du README (la même histoire raccourcie, jusqu'au graphe de l'Atelier ; 800 px, 6 images/s, moins de 8 Mo) sont générés par du code : un script Playwright pilote la vraie interface (en anglais) et en capture chaque état, puis [Remotion](https://www.remotion.dev/) (React) anime ces captures : mouvements de caméra, curseur, sous-titres, carte du chiffre clé. Les réponses ne sont jamais inventées : l'API est enregistrée une fois sur une instance réelle, puis rejouée. Le rendu est donc identique d'une fois sur l'autre et n'a besoin ni de l'API ni du GPU.
 
 Parcours filmé (questions dans `video/scenario.mjs`) :
 
 1. **Ouverture** : raglab s'affiche, vide, quelques secondes.
-2. **Chat** : le choix du corpus (Code de la consommation), puis une question en langage courant (« I bought a laptop online and changed my mind… ») dans l'interface simple, sans mode pédagogique ; la réponse cite plusieurs articles.
+2. **Chat** : le choix du corpus (Code de la consommation), puis une question en langage courant dont la réponse n'est pas celle qu'on attend (« I bought a sofa at a trade fair and I regret it. Can I withdraw, like for an online purchase? » : pas de rétractation dans une foire), dans l'interface simple, sans mode pédagogique ; la réponse cite plusieurs articles.
 3. **Sources** : les puces de citation, puis le détail, avec les passages cités et leur état « en vigueur ».
-4. **Mode pédagogique, dans la même conversation** : le curseur monte jusqu'au bouton et l'active ; une question de suivi (« And who pays to send it back? ») ; la caméra suit le pipeline brique par brique (vectorisation, recherche vectorielle, BM25, fusion, re-ranking, versions, prompt, LLM), au ralenti, puis la réponse ; ensuite les leçons BM25, Fusion et Re-ranking.
+4. **Mode pédagogique, dans la même conversation** : le curseur monte jusqu'au bouton et l'active ; une question de suivi (« And if the seller at the fair never told me there was no withdrawal period? » ; elle nomme la foire, car le Chat envoie chaque question seule) ; la caméra suit le pipeline brique par brique (vectorisation, recherche vectorielle, BM25, fusion, re-ranking, versions, prompt, LLM), au ralenti, puis la réponse ; ensuite les leçons BM25, Fusion et Re-ranking.
 5. **Mode expert (Atelier)** : le curseur clique sur « Workshop » ; la barre des étapes, puis un passage rapide et flouté par ses menus (découpage, vecteurs, évaluation, retrieval, modèles, bases) ; le graphe de citations d'une loi (Lei 13.445) ; enfin trois façons d'importer ses données (dossier local, LexML, sources officielles).
 6. Une carte « And more » (dont le Recall@5 des questions citant un article, lu dans `benchmarks/results/` : `baseline-v1` → `full-v1`), puis la carte de fin : raglab, 100 % local, le lien GitHub.
+
+Mise en scène (règles reprises du skill video-shotcraft) : les sous-titres ont leur propre bande sous l'image de l'application et ne couvrent jamais l'interface ; caméra stable (pas d'inclinaison, zoom plafonné à ×2, mouvements de 1,4 s ou plus) ; chaque plan important reste immobile au moins une seconde ; la frappe et les réponses vont à une vitesse lisible.
 
 ```bash
 cd video

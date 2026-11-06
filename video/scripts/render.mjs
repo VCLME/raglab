@@ -30,8 +30,8 @@ const outputs = {
   // H.264 for every browser; CRF 23 keeps UI text sharp at a site-friendly size.
   mp4: ["Demo", "out/demo.mp4", "--codec=h264", "--crf=23", "--pixel-format=yuv420p"],
   webm: ["Demo", "out/demo.webm", "--codec=vp9", "--crf=38"],
-  // 7.5 fps (the shots are mostly still), 960 px wide, looping: the README GIF (under 8 MB).
-  gif: ["DemoShort", "out/demo.gif", "--codec=gif", "--every-nth-frame=4", "--scale=0.5", "--number-of-gif-loops=0"],
+  // 6 fps (the shots are mostly still), 800 px wide, looping: the README GIF (under 8 MB).
+  gif: ["DemoShort", "out/demo.gif", "--codec=gif", "--every-nth-frame=5", "--scale=0.4167", "--number-of-gif-loops=0"],
 };
 for (const [name, [composition, file, ...flags]] of Object.entries(outputs)) {
   if (only && only !== name) continue;

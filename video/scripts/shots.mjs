@@ -18,20 +18,16 @@ const OUT = join(VIDEO_DIR, "public", "shots");
 const DPR = 2;
 // Video pacing (ms): one typed character, the longest a streamed answer may
 // take on screen, the shortest a loader stage shows.
-const CHAR_MS = 42;
-// Later questions: the viewer already knows the gesture.
-const FAST_CHAR_MS = 22;
-// A search term, typed slowly enough to watch the results narrow.
-const SLOW_CHAR_MS = 360;
-const ANSWER_BUDGET_MS = 1900;
-// Learning mode: the camera is on the pipeline, the answer runs faster.
-const STRIP_ANSWER_BUDGET_MS = 2400;
-const STAGE_MS = 300;
+const CHAR_MS = 60;
+const ANSWER_BUDGET_MS = 4500;
+// Learning mode: the camera is on the pipeline, the answer runs a little faster.
+const STRIP_ANSWER_BUDGET_MS = 3800;
+const STAGE_MS = 500;
 // Learning mode: each brick of the pipeline holds this long (slow motion:
 // the real stages take milliseconds) while the camera moves to it.
-const STRIP_STAGE_MS = 2200;
-const TOKEN_STATES = 24;
-const CURSOR_MS = 480;
+const STRIP_STAGE_MS = 2500;
+const TOKEN_STATES = 40;
+const CURSOR_MS = 650;
 const TOP_BAR_CURSOR_MS = 950;
 // Stages the Chat loader names ("Embedding the question…", …).
 const LOADER_STAGES = ["embed", "retrieval", "rerank", "generation"];
@@ -127,13 +123,12 @@ const director = {
     t += b && b.y + b.h / 2 < 120 ? TOP_BAR_CURSOR_MS : CURSOR_MS;
     await locator.click();
   },
-  async type(locator, text, { fast = false, slow = false } = {}) {
+  async type(locator, text) {
     if (quiet) return locator.fill(text);
     await locator.click();
     for (let i = 1; i <= text.length; i++) {
       await locator.fill(text.slice(0, i));
-      if (slow) await page.waitForTimeout(150);
-      await director.state(slow ? SLOW_CHAR_MS : fast ? FAST_CHAR_MS : CHAR_MS);
+      await director.state(CHAR_MS);
     }
   },
   async answer({ strip = false } = {}) {

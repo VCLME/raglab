@@ -1,6 +1,7 @@
 /**
  * One part of the app on screen: its screenshots played at their times,
- * inside a card the camera moves over, with the cursor and the captions.
+ * inside a card the camera moves over, with the cursor; the captions sit in
+ * a band of their own below, so they never cover the interface.
  */
 import React from "react";
 import { AbsoluteFill, Easing, Img, interpolate, staticFile, useCurrentFrame } from "remotion";
@@ -10,13 +11,18 @@ import type { Rect, Segment } from "./timeline";
 const VW = 1440;
 const VH = 900;
 const FW = 1920;
-const FH = 1080;
-// Where the camera's point of interest lands in the frame: centred for the
-// establishing shots, a little higher on a detail so the caption band stays clear.
+// The caption band at the bottom of the frame; the app lives in the stage above.
+const BAND = 200;
+const SH = 1080 - BAND;
+// Where the camera's point of interest lands: the middle of the stage.
 const ANCHOR_X = 960;
-const ANCHOR_Y = { overview: 540, focus: 470 };
-// Below this zoom the card would not fill the frame.
-const MIN_FOCUS_ZOOM = Math.max(FW / VW, FH / VH);
+const ANCHOR_Y = { overview: SH / 2, focus: SH / 2 };
+// The whole window, with a margin of paper around it.
+const OVERVIEW_ZOOM = Math.min((FW - 220) / VW, (SH - 70) / VH);
+// Below this zoom the card would not fill the stage.
+const MIN_FOCUS_ZOOM = Math.max(FW / VW, SH / VH);
+// Above it, the interface reads as pixels and the viewer loses the context.
+const MAX_ZOOM = 2.0;
 
 export type CameraKey = {
   at: number;
@@ -49,14 +55,14 @@ const clampTo = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo,
 
 function target(k: CameraKey): Cam {
   if (!k.focus) {
-    return { s: k.zoom ?? 1.1, cx: VW / 2, cy: VH / 2 + (k.dy ?? 0), rot: k.tilt ?? 0, ay: ANCHOR_Y.overview };
+    return { s: k.zoom ?? OVERVIEW_ZOOM, cx: VW / 2, cy: VH / 2 + (k.dy ?? 0), rot: k.tilt ?? 0, ay: ANCHOR_Y.overview };
   }
   const { x, y, w, h } = k.focus;
   const ay = ANCHOR_Y.focus;
-  const s = Math.max(MIN_FOCUS_ZOOM, k.zoom ?? Math.min(2.3, 1400 / w, 640 / h));
-  // On a detail the card always fills the frame: no paper at the edges.
+  const s = clampTo(k.zoom ?? Math.min(1600 / w, 760 / h), MIN_FOCUS_ZOOM, MAX_ZOOM);
+  // On a detail the card always fills the stage: no paper at the edges.
   const cx = clampTo(x + w / 2, ANCHOR_X / s, VW - (FW - ANCHOR_X) / s);
-  const cy = clampTo(y + h / 2 + (k.dy ?? 0), ay / s, VH - (FH - ay) / s);
+  const cy = clampTo(y + h / 2 + (k.dy ?? 0), ay / s, VH - (SH - ay) / s);
   return { s, cx, cy, rot: k.tilt ?? 0, ay };
 }
 
@@ -71,7 +77,7 @@ function cameraAt(keys: CameraKey[], ms: number): Cam {
     from = mix(from, to, ease(clamp01((k.at - t0) / dur)));
     to = target(k);
     t0 = k.at;
-    dur = k.dur ?? 950;
+    dur = k.dur ?? 1400;
   }
   return mix(from, to, ease(clamp01((ms - t0) / dur)));
 }
@@ -112,7 +118,7 @@ function Cursor({ seg, ms, cam }: { seg: Segment; ms: number; cam: Cam }) {
   if (i === -1) return null;
   const c = clicks[i];
   const prev = clicks[i - 1];
-  const travel = c.y < 120 ? 900 : 430;
+  const travel = c.y < 120 ? 900 : 600;
   // With no recent click, come from the page below (from further for the top bar).
   const fromPt = prev && c.t - prev.t < 4000 ? prev : c.y < 120 ? { x: c.x - 320, y: c.y + 460 } : { x: c.x + 160, y: c.y + 120 };
   const p = ease(clamp01((ms - c.t) / travel));
@@ -161,53 +167,43 @@ function Cursor({ seg, ms, cam }: { seg: Segment; ms: number; cam: Cam }) {
   );
 }
 
+/** The caption band: one line at a time, crossfading, centred under the stage. */
 export function Caption({ cues, ms }: { cues: CaptionCue[]; ms: number }) {
-  const shown = cues.filter((c) => c.at <= ms + 1);
+  const i = cues.findLastIndex((c) => c.at <= ms + 1);
   return (
-    <>
-      {shown.slice(-2).map((cue, k, arr) => {
-        const isLast = k === arr.length - 1;
-        const inP = Easing.out(Easing.cubic)(clamp01((ms - cue.at) / 520));
-        const next = cues.find((c) => c.at > cue.at);
-        const outP = next ? clamp01((ms - next.at) / 300) : 0;
-        if (!isLast && outP >= 1) return null;
+    <div style={{ position: "absolute", left: 0, right: 0, top: SH, height: BAND }}>
+      {cues.map((cue, k) => {
+        if (k !== i && k !== i - 1) return null;
+        const inP = Easing.out(Easing.cubic)(clamp01((ms - cue.at) / 600));
+        const next = cues[k + 1];
+        const outP = next ? clamp01((ms - next.at) / 350) : 0;
+        const opacity = k === i ? inP : 1 - outP;
+        if (opacity <= 0) return null;
         return (
           <div
             key={cue.at + cue.text}
             style={{
               position: "absolute",
-              left: 96,
-              bottom: 84,
-              maxWidth: 1240,
-              whiteSpace: "nowrap",
-              padding: "22px 30px 24px",
-              background: "oklch(0.975 0.006 85 / 0.95)",
-              border: `1px solid ${C.rule}`,
-              borderRadius: 14,
-              boxShadow: "0 18px 40px -22px oklch(0.2 0.02 60 / 0.35)",
-              opacity: inP * (1 - outP),
-              transform: `translateY(${(1 - inP) * 18}px)`,
+              inset: 0,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 12,
+              opacity,
+              transform: `translateY(${k === i ? (1 - inP) * 12 : 0}px)`,
             }}
           >
-            <div
-              style={{
-                fontFamily: FONT.code,
-                fontSize: 21,
-                letterSpacing: "0.16em",
-                textTransform: "uppercase",
-                color: C.accent,
-                marginBottom: 10,
-              }}
-            >
+            <div style={{ fontFamily: FONT.code, fontSize: 22, letterSpacing: "0.16em", textTransform: "uppercase", color: C.accent }}>
               {cue.kicker}
             </div>
-            <div style={{ fontFamily: FONT.text, fontWeight: 600, fontSize: 46, letterSpacing: "-0.02em", lineHeight: 1.1, color: C.ink }}>
+            <div style={{ fontFamily: FONT.text, fontWeight: 600, fontSize: 56, letterSpacing: "-0.02em", lineHeight: 1.1, color: C.ink, whiteSpace: "nowrap" }}>
               {cue.text}
             </div>
           </div>
         );
       })}
-    </>
+    </div>
   );
 }
 
@@ -216,9 +212,9 @@ export function AppScene({
   camera,
   captions,
   from = 0,
-  enterFrames = 18,
+  enterFrames = 24,
   duration,
-  exitFrames = 10,
+  exitFrames = 14,
   whip = [],
 }: {
   seg: Segment;
@@ -239,28 +235,31 @@ export function AppScene({
   const enter = Easing.out(Easing.cubic)(clamp01(frame / enterFrames));
   const exit = clamp01((duration - frame) / exitFrames);
   const tx = ANCHOR_X - VW / 2 - cam.s * (cam.cx - VW / 2);
-  const ty = cam.ay - VH / 2 - cam.s * (cam.cy - VH / 2) + (1 - enter) * 70;
+  const ty = cam.ay - VH / 2 - cam.s * (cam.cy - VH / 2) + (1 - enter) * 40;
   return (
-    <AbsoluteFill style={{ perspective: 2600, opacity: exit }}>
-      <div
-        style={{
-          position: "absolute",
-          left: 0,
-          top: 0,
-          width: VW,
-          height: VH,
-          transformOrigin: `${VW / 2}px ${VH / 2}px`,
-          transform: `translate(${tx}px, ${ty}px) scale(${cam.s}) rotateY(${cam.rot}deg)`,
-          borderRadius: 14,
-          overflow: "hidden",
-          background: "white",
-          opacity: enter,
-          boxShadow: `0 0 0 1px ${C.rule}, 0 50px 110px -40px oklch(0.2 0.02 60 / 0.45)`,
-        }}
-      >
-        <Screen seg={seg} ms={ms} whip={whip} />
+    <AbsoluteFill style={{ opacity: exit }}>
+      <div style={{ position: "absolute", left: 0, top: 0, width: FW, height: SH, overflow: "hidden", perspective: 2600 }}>
+        <div
+          style={{
+            position: "absolute",
+            left: 0,
+            top: 0,
+            width: VW,
+            height: VH,
+            transformOrigin: `${VW / 2}px ${VH / 2}px`,
+            transform: `translate(${tx}px, ${ty}px) scale(${cam.s}) rotateY(${cam.rot}deg)`,
+            borderRadius: 14,
+            overflow: "hidden",
+            background: "white",
+            opacity: enter,
+            boxShadow: `0 0 0 1px ${C.rule}, 0 40px 90px -40px oklch(0.2 0.02 60 / 0.4)`,
+          }}
+        >
+          <Screen seg={seg} ms={ms} whip={whip} />
+        </div>
+        <Cursor seg={seg} ms={ms} cam={cam} />
       </div>
-      <Cursor seg={seg} ms={ms} cam={cam} />
+      <div style={{ position: "absolute", left: 0, right: 0, top: SH, height: 1, background: C.rule }} />
       <Caption cues={captions} ms={ms} />
     </AbsoluteFill>
   );

@@ -13,15 +13,17 @@ const CONSUMER = /consommation/i;
 const LEXML = /lexml_pt/i;
 
 export const SCENARIO = {
-  // 1. A plain question in the Chat, answered from several articles, then its sources.
+  // 1. A plain question in the Chat whose answer is not the obvious one (no
+  //    withdrawal period at a fair, unlike online), from several articles.
   ask: {
     corpus: CONSUMER,
-    question: "I bought a laptop online and changed my mind. How many days do I have to cancel, and how quickly must I be refunded?",
+    question: "I bought a sofa at a trade fair and I regret it. Can I withdraw, like for an online purchase?",
   },
   // 2. Learning mode, in the same conversation: a follow-up question, the
   //    pipeline followed brick by brick, then three lessons.
   learning: {
-    question: "And who pays to send it back?",
+    // Names the fair: the Chat sends each question on its own.
+    question: "And if the seller at the fair never told me there was no withdrawal period?",
     lessons: [/^BM25/, /^Fusion/, /^Re-ranking/],
   },
   // 3. The Workshop (expert mode): a run through its menus, the citation

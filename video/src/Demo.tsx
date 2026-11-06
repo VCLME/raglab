@@ -1,7 +1,7 @@
 /**
  * The cut. `Demo` is the full film for the site (raglab opening, a plain
  * question and its sources, a follow-up in learning mode, the Workshop);
- * `DemoShort` the README GIF (the question, then the follow-up brick by brick).
+ * `DemoShort` the README GIF (the same story, shortened).
  */
 import React from "react";
 import { AbsoluteFill, Sequence } from "remotion";
@@ -29,20 +29,21 @@ const keys = (list: (Partial<CameraKey> | false)[]): CameraKey[] =>
 
 // ---- 1. raglab opens; a plain question and its sources ---------------------------------
 const askCamera = keys([
-  { at: 0, zoom: 1.0, tilt: -4 },
-  { at: at(ask, "home") + 1800, zoom: 1.06, tilt: 0, dur: 2200 },
-  { at: at(ask, "corpus") - 300, focus: ask.rects.corpus, zoom: 2.0, dur: 1000 },
-  { at: at(ask, "ask") - 200, focus: ask.rects.composer, zoom: 1.6, dur: 1000 },
-  { at: after(ask, "send", 450), focus: ask.rects.answer, dur: 1100 },
-  { at: at(ask, "sources") - 200, focus: ask.rects.chips, zoom: 2.0, dur: 900 },
-  { at: after(ask, "details", 650), focus: ask.rects.details, dur: 1000 },
-  { at: at(ask, "passages") + 200, focus: ask.rects.passages, zoom: 1.7, dur: 1100 },
+  // The whole window first, still, then a slow push in.
+  { at: 0 },
+  { at: at(ask, "home") + 2500, zoom: 1.0, dur: 3000 },
+  { at: at(ask, "corpus") - 400, focus: ask.rects.corpus, zoom: 1.7 },
+  { at: at(ask, "ask") - 300, focus: ask.rects.composer, zoom: 1.6 },
+  { at: after(ask, "send", 600), focus: ask.rects.answer, zoom: 1.45, dur: 1800 },
+  { at: at(ask, "sources") - 300, focus: ask.rects.chips, zoom: 1.8 },
+  { at: after(ask, "details", 800), focus: ask.rects.details, zoom: 1.45 },
+  { at: at(ask, "passages") + 300, focus: ask.rects.passages, zoom: 1.6, dur: 1800 },
 ]);
 const askCaptions: CaptionCue[] = [
-  { at: at(ask, "home") + 1200, kicker: "01 · Chat", text: "Your legal documents, one question away." },
-  { at: at(ask, "corpus"), kicker: "01 · Chat", text: "Pick a corpus: French consumer law." },
-  { at: at(ask, "ask"), kicker: "01 · Chat", text: "Ask in plain words, no article number needed." },
-  { at: at(ask, "answered") - 1500, kicker: "01 · Chat", text: "One answer, built from several articles." },
+  { at: at(ask, "home") + 1500, kicker: "01 · Chat", text: "Your legal documents, one question away." },
+  { at: at(ask, "corpus"), kicker: "01 · Chat", text: "Pick a corpus: the French Consumer Code." },
+  { at: at(ask, "ask"), kicker: "01 · Chat", text: "Ask in plain words, as you would ask a lawyer." },
+  { at: at(ask, "answered") - 1500, kicker: "01 · Chat", text: "Not the obvious answer: no withdrawal at a fair." },
   { at: at(ask, "sources"), kicker: "02 · Sources", text: "Every claim cites its passage." },
   { at: at(ask, "passages"), kicker: "02 · Sources", text: "The exact text, in force today." },
 ];
@@ -66,17 +67,16 @@ const bricks = Object.keys(learning.marks)
 
 const learningCamera = keys([
   // Wide enough to see the cursor travel up to the toggle.
-  { at: 0, zoom: 1.04 },
-  { at: after(learning, "learning", -300), focus: learning.rects.toggle, zoom: 1.7, dur: 1000 },
-  { at: after(learning, "learning", 700), zoom: 1.08, dur: 1000 },
-  { at: at(learning, "strip") + 900, focus: learning.rects.strip, dur: 1000 },
-  { at: at(learning, "follow-up") - 200, focus: learning.rects.composer, zoom: 1.5, dur: 900 },
+  { at: 0 },
+  { at: after(learning, "learning", -200), focus: learning.rects.toggle, zoom: 1.6, dur: 1200 },
+  { at: at(learning, "strip") + 600, focus: learning.rects.strip, zoom: 1.4, dur: 1600 },
+  { at: at(learning, "follow-up") - 300, focus: learning.rects.composer, zoom: 1.6 },
   // The camera travels along the diagram as each brick lights up.
-  ...bricks.map((b) => ({ at: b.at - 150, focus: b.rect, zoom: 2.4, dur: 650 })),
-  { at: at(learning, "answered") - 2600, focus: learning.rects.answer, dur: 1100 },
+  ...bricks.map((b) => ({ at: b.at - 200, focus: b.rect, zoom: 1.8, dur: 1100 })),
+  { at: at(learning, "answered") - 3200, focus: learning.rects.answer, zoom: 1.45, dur: 1800 },
   ...[0, 1, 2].flatMap((i) => [
-    { at: at(learning, `lesson-${i}`, NaN) - 300, focus: learning.rects[`node-${i}`], zoom: 2.2, dur: 800 },
-    { at: after(learning, `lesson-${i}`, 700), focus: learning.rects[`lesson-${i}`], dur: 1000 },
+    { at: at(learning, `lesson-${i}`, NaN) - 400, focus: learning.rects[`node-${i}`], zoom: 1.8 },
+    { at: after(learning, `lesson-${i}`, 900), focus: learning.rects[`lesson-${i}`], zoom: 1.45, dur: 1600 },
   ]),
 ]);
 const learningCaptions: CaptionCue[] = [
@@ -85,7 +85,7 @@ const learningCaptions: CaptionCue[] = [
   ...bricks
     .filter((b) => BRICKS[b.id])
     .map((b) => ({ at: b.at, kicker: "03 · Learning mode · slowed down", text: BRICKS[b.id] })),
-  { at: at(learning, "answered") - 2400, kicker: "03 · Learning mode", text: "The answer, in the language of the question." },
+  { at: at(learning, "answered") - 3000, kicker: "03 · Learning mode", text: "The answer, in the language of the question." },
   { at: at(learning, "lesson-0", NaN), kicker: "03 · BM25", text: "Exact words count: article numbers, names." },
   { at: at(learning, "lesson-1", NaN), kicker: "03 · Fusion", text: "Two rankings, merged into one." },
   { at: at(learning, "lesson-2", NaN), kicker: "03 · Re-ranking", text: "Before and after the cross-encoder." },
@@ -95,19 +95,16 @@ const learningCaptions: CaptionCue[] = [
 const W = workshop.rects;
 const tour: [number, number] = [at(workshop, "tour"), at(workshop, "tour-end")];
 const workshopCamera = keys([
-  { at: 0, zoom: 1.04 },
-  { at: after(workshop, "workshop", -300), focus: W.tab, zoom: 1.7, dur: 1000 },
-  { at: at(workshop, "overview"), zoom: 1.04, tilt: -3, dur: 900 },
-  { at: at(workshop, "overview") + 1000, focus: W.flow, zoom: 1.5, dur: 1200 },
-  // The run through the menus: wide and steady, the pages blur past.
-  { at: tour[0], zoom: 1.0, tilt: 0, dur: 600 },
-  { at: at(workshop, "graph"), focus: top(W.graph, 520), zoom: 1.4, dur: 900 },
-  { at: at(workshop, "graph-view", NaN), focus: W["graph-view"], dur: 1100 },
-  { at: at(workshop, "graph-view", NaN) + 2600, focus: W["graph-view"], zoom: 1.55, dur: 3000 },
-  { at: at(workshop, "corpus"), focus: top(W.corpus, 560), zoom: 1.35, dur: 900 },
-  { at: at(workshop, "folder"), focus: top(W.folder, 600), zoom: 1.35, dur: 700 },
-  { at: at(workshop, "lexml"), focus: top(W.lexml, 600), zoom: 1.35, dur: 700 },
-  { at: at(workshop, "official"), focus: top(W.official, 600), zoom: 1.35, dur: 700 },
+  { at: 0 },
+  { at: after(workshop, "workshop", -200), focus: W.tab, zoom: 1.6, dur: 1200 },
+  { at: at(workshop, "overview"), dur: 1600 },
+  { at: at(workshop, "overview") + 1800, focus: W.flow, zoom: 1.4, dur: 1800 },
+  // The run through the menus: the whole window, steady, the pages blur past.
+  { at: tour[0], dur: 1000 },
+  { at: at(workshop, "graph"), focus: top(W.graph, 560), zoom: 1.4 },
+  { at: at(workshop, "graph-view", NaN), focus: W["graph-view"], zoom: 1.4, dur: 1600 },
+  { at: at(workshop, "graph-view", NaN) + 2600, focus: W["graph-view"], zoom: 1.6, dur: 4000 },
+  { at: at(workshop, "corpus"), focus: top(W.corpus, 600), zoom: 1.35 },
 ]);
 const workshopCaptions: CaptionCue[] = [
   { at: at(workshop, "tab"), kicker: "04 · Expert mode", text: "One click to the Workshop." },
@@ -124,12 +121,12 @@ const workshopCaptions: CaptionCue[] = [
 const OVERLAP = 10;
 
 export const LEN = {
-  intro: 120,
+  intro: 160,
   ask: f(ask.duration),
   learning: f(learning.duration),
   workshop: f(workshop.duration),
-  more: 210,
-  outro: 150,
+  more: 270,
+  outro: 180,
 };
 export const DEMO_FRAMES = Object.values(LEN).reduce((a, b) => a + b, 0) - OVERLAP * (Object.keys(LEN).length - 1);
 
@@ -165,19 +162,28 @@ export function Demo() {
   );
 }
 
-// The GIF: the plain question and its answer, then the follow-up in learning
-// mode, brick by brick, until its answer (the README budget is 8 MB).
-const ASK_FROM = Math.max(0, at(ask, "ask") - 400);
-const ASK_TO = at(ask, "answered", ask.duration) + 3000;
+// The GIF: the whole story, shortened: the question and its answer, the
+// follow-up brick by brick, the Workshop to its graph (the README budget is 8 MB).
+const ASK_FROM = Math.max(0, at(ask, "ask") - 600);
+const ASK_TO = at(ask, "answered", ask.duration) + 2500;
 const LEARN_FROM = Math.max(0, at(learning, "toggle") - 200);
-const LEARN_TO = at(learning, "answered", learning.duration) + 1600;
-const SHORT = { intro: 45, ask: f(ASK_TO - ASK_FROM), learning: f(LEARN_TO - LEARN_FROM), outro: 70 };
-export const SHORT_FRAMES = Object.values(SHORT).reduce((a, b) => a + b, 0) - 3 * OVERLAP;
+const LEARN_TO = at(learning, "answered", learning.duration) + 2000;
+const WORK_FROM = 0;
+const WORK_TO = at(workshop, "graph-view", workshop.duration) + 3500;
+const SHORT = {
+  intro: 60,
+  ask: f(ASK_TO - ASK_FROM),
+  learning: f(LEARN_TO - LEARN_FROM),
+  workshop: f(WORK_TO - WORK_FROM),
+  outro: 110,
+};
+export const SHORT_FRAMES = Object.values(SHORT).reduce((a, b) => a + b, 0) - 4 * OVERLAP;
 
 export function DemoShort() {
   const askFrom = SHORT.intro - OVERLAP;
   const learningFrom = askFrom + SHORT.ask - OVERLAP;
-  const outroFrom = learningFrom + SHORT.learning - OVERLAP;
+  const workshopFrom = learningFrom + SHORT.learning - OVERLAP;
+  const outroFrom = workshopFrom + SHORT.workshop - OVERLAP;
   return (
     <AbsoluteFill>
       <Paper />
@@ -194,6 +200,16 @@ export function DemoShort() {
           captions={learningCaptions}
           from={LEARN_FROM}
           duration={SHORT.learning}
+        />
+      </Sequence>
+      <Sequence from={workshopFrom} durationInFrames={SHORT.workshop}>
+        <AppScene
+          seg={workshop}
+          camera={workshopCamera}
+          captions={workshopCaptions}
+          from={WORK_FROM}
+          duration={SHORT.workshop}
+          whip={[tour]}
         />
       </Sequence>
       <Sequence from={outroFrom} durationInFrames={SHORT.outro}>
