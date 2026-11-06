@@ -8,17 +8,13 @@ CLI record the same thing.
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass, field
 from typing import Any
 
 from raglab.config import Settings
 from raglab.domain.schemas import QueryResponse, RetrievedChunk
+from raglab.generation.citations import cited_ranks
 from raglab.generation.prompts import presented_passages, question_language
-
-# [Rank N] markers written by the writer (same pattern as the UI's AnswerText).
-_CITED_RANK = re.compile(r"\[(?:Rank|rank|Source\s+rank\s*=)\s*(\d+)\]")
-_TRAILING_SOURCES = re.compile(r"\n+\s*Sources?\s*:[\s\S]*$", re.IGNORECASE)
 
 # Request fields that shape retrieval and generation; resolved against the
 # server defaults by `resolved_options`.
@@ -41,12 +37,6 @@ OPTION_FIELDS = (
     "llm_model",
     "filters",
 )
-
-
-def cited_ranks(answer: str | None) -> set[int]:
-    if not answer:
-        return set()
-    return {int(match) for match in _CITED_RANK.findall(_TRAILING_SOURCES.sub("", answer))}
 
 
 def _plain(value: Any) -> Any:
