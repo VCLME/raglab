@@ -1,16 +1,16 @@
 /**
  * Renders the demo: out/demo.mp4 and out/demo.webm (the full film, for the
- * site) and out/demo.gif (the short cut, for the README), plus
+ * site) and out/demo.webp (the short cut, for the README), plus
  * out/demo.meta.json saying which shots they come from (publish.mjs checks
  * it). Takes the shots first when there are none, when the fixture is newer
  * than them, or with --shots.
  *
- *   node scripts/render.mjs [--shots] [--only mp4|webm|gif]
+ *   node scripts/render.mjs [--shots] [--only mp4|webm|webp]
  */
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, statSync } from "node:fs";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { CAPTURED, PLACEHOLDER, VIDEO_DIR, arg } from "./common.mjs";
 
@@ -30,12 +30,16 @@ const outputs = {
   // H.264 for every browser; CRF 23 keeps UI text sharp at a site-friendly size.
   mp4: ["Demo", "out/demo.mp4", "--codec=h264", "--crf=23", "--pixel-format=yuv420p"],
   webm: ["Demo", "out/demo.webm", "--codec=vp9", "--crf=38"],
-  // 6 fps (the shots are mostly still), 800 px wide, looping: the README GIF (under 8 MB).
-  gif: ["DemoShort", "out/demo.gif", "--codec=gif", "--every-nth-frame=5", "--scale=0.4167", "--number-of-gif-loops=0"],
+  // The README animation: the short cut as frames (960 px wide), then an
+  // animated WebP at 15 fps (scripts/webp.py), smooth and sharp
+  // where a GIF would need a low frame rate to stay small.
+  webp: ["DemoShort", "out/short", "--sequence", "--image-format=png", "--scale=0.5"],
 };
 for (const [name, [composition, file, ...flags]] of Object.entries(outputs)) {
   if (only && only !== name) continue;
+  if (name === "webp") await rm(join(VIDEO_DIR, file), { recursive: true, force: true });
   run("npx", ["remotion", "render", "src/index.ts", composition, file, ...flags, "--log=warn"]);
+  if (name === "webp") run("python", ["scripts/webp.py", "out/short", "out/demo.webp", "--fps", "30", "--step", "2", "--quality", "75"]);
 }
 
 const timeline = await readFile(TIMELINE, "utf8");

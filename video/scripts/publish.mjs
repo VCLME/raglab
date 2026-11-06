@@ -1,7 +1,7 @@
 /**
  * Copies the rendered demo where the README and the site read it, and puts
  * it in their hero (between the `demo:start` / `demo:end` comments):
- *   out/demo.gif  -> docs/images/demo.gif   (README)
+ *   out/demo.webp -> docs/images/demo.webp  (README)
  *   out/demo.mp4  -> site/assets/demo.mp4   (site, Safari)
  *   out/demo.webm -> site/assets/demo.webm  (site)
  * Refuses a render made from placeholder data.
@@ -13,7 +13,7 @@ import { copyFile, readFile, stat, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ROOT, VIDEO_DIR } from "./common.mjs";
 
-const README_DEMO = `[![raglab in action: a plain question answered from several articles, a follow-up in learning mode with the pipeline lighting up brick by brick, then the Workshop and its citation graph](docs/images/demo.gif)](https://vclme.github.io/raglab/)`;
+const README_DEMO = `[![raglab in action: a plain question answered from several articles, a follow-up in learning mode with the pipeline lighting up brick by brick, then the Workshop and its citation graph](docs/images/demo.webp)](https://vclme.github.io/raglab/)`;
 
 const SITE_DEMO = `  <figure>
     <video class="shot-media" width="1920" height="1080" autoplay muted loop playsinline preload="metadata" poster="assets/chat-welcome.png"
@@ -46,10 +46,10 @@ if (meta.placeholder || meta.fixture !== "fixtures/demo.json" || !meta.captured_
 if (meta.timeline_sha256 !== createHash("sha256").update(timeline).digest("hex")) {
   throw new Error("out/ was rendered from other shots: run `npm run render` again");
 }
-const gif = await stat(join(VIDEO_DIR, "out", "demo.gif"));
-if (gif.size > 8e6) throw new Error(`out/demo.gif is ${(gif.size / 1e6).toFixed(1)} MB, over the README's 8 MB budget`);
+const anim = await stat(join(VIDEO_DIR, "out", "demo.webp"));
+if (anim.size > 8e6) throw new Error(`out/demo.webp is ${(anim.size / 1e6).toFixed(1)} MB, over the README's 8 MB budget`);
 const targets = [
-  ["out/demo.gif", "docs/images/demo.gif"],
+  ["out/demo.webp", "docs/images/demo.webp"],
   ["out/demo.mp4", "site/assets/demo.mp4"],
   ["out/demo.webm", "site/assets/demo.webm"],
 ];

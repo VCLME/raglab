@@ -5,7 +5,7 @@
 
 **Private RAG you can measure.** raglab answers questions from your documents without them ever leaving your servers, proves its quality with before/after numbers on frozen benchmarks, and says "not in your documents" instead of inventing.
 
-<!-- demo:start (replaced by the demo GIF: cd video && npm run publish) -->
+<!-- demo:start (replaced by the demo animation: cd video && npm run publish) -->
 [![raglab in action: a plain question answered from several articles, a follow-up in learning mode with the pipeline lighting up brick by brick, then the Workshop and its citation graph](docs/images/demo.gif)](https://vclme.github.io/raglab/)
 <!-- demo:end -->
 

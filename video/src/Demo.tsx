@@ -1,7 +1,7 @@
 /**
  * The cut. `Demo` is the full film for the site (raglab opening, a plain
  * question and its sources, a follow-up in learning mode, the Workshop);
- * `DemoShort` the README GIF (the same story, shortened).
+ * `DemoShort` the README animation (the same story, shortened).
  */
 import React from "react";
 import { AbsoluteFill, Sequence } from "remotion";
@@ -33,11 +33,13 @@ const askCamera = keys([
   { at: 0 },
   { at: at(ask, "home") + 2500, zoom: 1.0, dur: 3000 },
   { at: at(ask, "corpus") - 400, focus: ask.rects.corpus, zoom: 1.7 },
-  { at: at(ask, "ask") - 300, focus: ask.rects.composer, zoom: 1.6 },
+  { at: at(ask, "ask") - 300, focus: ask.rects.composer, zoom: 1.45 },
   { at: after(ask, "send", 600), focus: ask.rects.answer, zoom: 1.45, dur: 1800 },
   { at: at(ask, "sources") - 300, focus: ask.rects.chips, zoom: 1.8 },
   { at: after(ask, "details", 800), focus: ask.rects.details, zoom: 1.45 },
   { at: at(ask, "passages") + 300, focus: ask.rects.passages, zoom: 1.6, dur: 1800 },
+  // Back to the whole window, so the next scene opens on the same shot.
+  { at: ask.duration - 2600, dur: 2000 },
 ]);
 const askCaptions: CaptionCue[] = [
   { at: at(ask, "home") + 1500, kicker: "01 · Chat", text: "Your legal documents, one question away." },
@@ -70,7 +72,7 @@ const learningCamera = keys([
   { at: 0 },
   { at: after(learning, "learning", -200), focus: learning.rects.toggle, zoom: 1.6, dur: 1200 },
   { at: at(learning, "strip") + 600, focus: learning.rects.strip, zoom: 1.4, dur: 1600 },
-  { at: at(learning, "follow-up") - 300, focus: learning.rects.composer, zoom: 1.6 },
+  { at: at(learning, "follow-up") - 300, focus: learning.rects.composer, zoom: 1.34 },
   // The camera travels along the diagram as each brick lights up.
   ...bricks.map((b) => ({ at: b.at - 200, focus: b.rect, zoom: 1.8, dur: 1100 })),
   { at: at(learning, "answered") - 3200, focus: learning.rects.answer, zoom: 1.45, dur: 1800 },
@@ -78,6 +80,7 @@ const learningCamera = keys([
     { at: at(learning, `lesson-${i}`, NaN) - 400, focus: learning.rects[`node-${i}`], zoom: 1.8 },
     { at: after(learning, `lesson-${i}`, 900), focus: learning.rects[`lesson-${i}`], zoom: 1.45, dur: 1600 },
   ]),
+  { at: learning.duration - 2600, dur: 2000 },
 ]);
 const learningCaptions: CaptionCue[] = [
   { at: at(learning, "toggle"), kicker: "03 · Learning mode", text: "Now open the pipeline behind the answers." },
@@ -99,18 +102,20 @@ const workshopCamera = keys([
   { at: after(workshop, "workshop", -200), focus: W.tab, zoom: 1.6, dur: 1200 },
   { at: at(workshop, "overview"), dur: 1600 },
   { at: at(workshop, "overview") + 1800, focus: W.flow, zoom: 1.4, dur: 1800 },
-  // The run through the menus: the whole window, steady, the pages blur past.
+  // The run through the menus: the whole window, steady.
   { at: tour[0], dur: 1000 },
   { at: at(workshop, "graph"), focus: top(W.graph, 560), zoom: 1.4 },
   { at: at(workshop, "graph-view", NaN), focus: W["graph-view"], zoom: 1.4, dur: 1600 },
   { at: at(workshop, "graph-view", NaN) + 2600, focus: W["graph-view"], zoom: 1.6, dur: 4000 },
   { at: at(workshop, "corpus"), focus: top(W.corpus, 600), zoom: 1.35 },
+  { at: workshop.duration - 2600, dur: 2000 },
 ]);
 const workshopCaptions: CaptionCue[] = [
   { at: at(workshop, "tab"), kicker: "04 · Expert mode", text: "One click to the Workshop." },
   { at: at(workshop, "overview") + 300, kicker: "04 · Workshop", text: "Control every step, from your data to the answer." },
   { at: tour[0], kicker: "04 · Workshop", text: "Chunking, vectors, evaluation, retrieval, models, databases." },
-  { at: at(workshop, "graph"), kicker: "04 · Workshop · Graph", text: "Cross-references between laws, as a graph." },
+  { at: at(workshop, "graph"), kicker: "04 · Workshop · Graph", text: "The citation graph, built from the texts." },
+  { at: at(workshop, "graph-view", NaN), kicker: "04 · Graph · Lei 13.445", text: "Each dot is an article; each arc, one citing another." },
   { at: at(workshop, "corpus"), kicker: "04 · Workshop · Corpus", text: "Import your data." },
   { at: at(workshop, "folder"), kicker: "04 · Import", text: "From a local folder." },
   { at: at(workshop, "lexml"), kicker: "04 · Import", text: "From LexML, Brazil's law portal." },
@@ -121,7 +126,7 @@ const workshopCaptions: CaptionCue[] = [
 const OVERLAP = 10;
 
 export const LEN = {
-  intro: 160,
+  intro: 180,
   ask: f(ask.duration),
   learning: f(learning.duration),
   workshop: f(workshop.duration),
@@ -137,9 +142,9 @@ export function Demo() {
     start += len - OVERLAP;
     return s;
   };
-  const scene = (seg: Segment, len: number, camera: CameraKey[], captions: CaptionCue[], whip: [number, number][] = []) => (
+  const scene = (seg: Segment, len: number, camera: CameraKey[], captions: CaptionCue[]) => (
     <Sequence from={next(len)} durationInFrames={len}>
-      <AppScene seg={seg} camera={camera} captions={captions} duration={len} whip={whip} />
+      <AppScene seg={seg} camera={camera} captions={captions} duration={len} />
     </Sequence>
   );
   return (
@@ -150,7 +155,7 @@ export function Demo() {
       </Sequence>
       {scene(ask, LEN.ask, askCamera, askCaptions)}
       {scene(learning, LEN.learning, learningCamera, learningCaptions)}
-      {scene(workshop, LEN.workshop, workshopCamera, workshopCaptions, [tour])}
+      {scene(workshop, LEN.workshop, workshopCamera, workshopCaptions)}
       <Sequence from={next(LEN.more)} durationInFrames={LEN.more}>
         <AndMore duration={LEN.more} />
       </Sequence>
@@ -162,7 +167,7 @@ export function Demo() {
   );
 }
 
-// The GIF: the whole story, shortened: the question and its answer, the
+// The README animation: the whole story, shortened: the question and its answer, the
 // follow-up brick by brick, the Workshop to its graph (the README budget is 8 MB).
 const ASK_FROM = Math.max(0, at(ask, "ask") - 600);
 const ASK_TO = at(ask, "answered", ask.duration) + 2500;
@@ -209,7 +214,6 @@ export function DemoShort() {
           captions={workshopCaptions}
           from={WORK_FROM}
           duration={SHORT.workshop}
-          whip={[tour]}
         />
       </Sequence>
       <Sequence from={outroFrom} durationInFrames={SHORT.outro}>

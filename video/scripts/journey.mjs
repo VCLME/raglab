@@ -91,7 +91,7 @@ export async function journey(page, d) {
   await page.waitForTimeout(500);
   await d.rect("passages", answer().locator(".chunk").first());
   await d.mark("passages");
-  await d.state(6500);
+  await d.state(8000);
 
   // ---- 2. Learning mode, in the same conversation: brick by brick ----------
   await d.segment("learning");
@@ -138,6 +138,8 @@ export async function journey(page, d) {
     await d.rect(`lesson-${i}`, page.locator(".edu-lesson"));
     await d.state(6500);
   }
+  // Time for the camera to pull back to the whole window.
+  await d.state(2600);
   await d.quiet(async () => {
     await learning.click();
     await page.evaluate(() => document.activeElement?.blur());
@@ -238,4 +240,6 @@ export async function journey(page, d) {
     await d.mark(label);
     await d.state(5200);
   }
+  // Time for the camera to pull back to the whole window.
+  await d.state(2600);
 }

@@ -87,28 +87,22 @@ function project(cam: Cam, x: number, y: number) {
   return { x: ANCHOR_X + cam.s * (x - cam.cx), y: cam.ay + cam.s * (y - cam.cy) };
 }
 
-/** How long a page change blurs inside a `whip` range (ms). */
-const WHIP_MS = 320;
-
-function Screen({ seg, ms, whip }: { seg: Segment; ms: number; whip: [number, number][] }) {
+function Screen({ seg, ms }: { seg: Segment; ms: number }) {
   const states = seg.states;
   let i = 0;
   while (i + 1 < states.length && states[i + 1].t <= ms) i++;
   const cur = states[i];
   const prev = states[i - 1];
-  // Inside a whip range, each page change dissolves through a sideways blur.
-  const whipping = !!prev && whip.some(([a, b]) => cur.t >= a && cur.t <= b);
   // A short dissolve for in-place changes; a cut when the page scrolled.
-  const cut = !prev || (prev.scroll !== cur.scroll && !whipping);
-  const fade = cut ? 1 : whipping ? WHIP_MS : Math.min(80, cur.t - prev.t);
+  const cut = !prev || prev.scroll !== cur.scroll;
+  const fade = cut ? 1 : Math.min(80, cur.t - prev.t);
   const alpha = cut ? 1 : clamp01((ms - cur.t) / Math.max(1, fade));
-  const blur = whipping ? 14 * Math.sin(Math.PI * clamp01((ms - cur.t) / WHIP_MS)) : 0;
   const style: React.CSSProperties = { position: "absolute", inset: 0, width: VW, height: VH };
   return (
-    <div style={{ position: "absolute", inset: 0, filter: blur > 0.3 ? `blur(${blur}px)` : undefined }}>
+    <>
       {prev && alpha < 1 ? <Img src={staticFile(prev.src)} style={style} /> : null}
       <Img src={staticFile(cur.src)} style={{ ...style, opacity: alpha }} />
-    </div>
+    </>
   );
 }
 
@@ -215,7 +209,6 @@ export function AppScene({
   enterFrames = 24,
   duration,
   exitFrames = 14,
-  whip = [],
 }: {
   seg: Segment;
   camera: CameraKey[];
@@ -226,8 +219,6 @@ export function AppScene({
   /** Length of the scene (frames): it fades out over its last `exitFrames`. */
   duration: number;
   exitFrames?: number;
-  /** Segment time ranges (ms) where page changes blur, for a quick run through. */
-  whip?: [number, number][];
 }) {
   const frame = useCurrentFrame();
   const ms = from + (frame * 1000) / FPS;
@@ -255,7 +246,7 @@ export function AppScene({
             boxShadow: `0 0 0 1px ${C.rule}, 0 40px 90px -40px oklch(0.2 0.02 60 / 0.4)`,
           }}
         >
-          <Screen seg={seg} ms={ms} whip={whip} />
+          <Screen seg={seg} ms={ms} />
         </div>
         <Cursor seg={seg} ms={ms} cam={cam} />
       </div>
