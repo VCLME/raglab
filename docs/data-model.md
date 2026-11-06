@@ -146,6 +146,14 @@ Champs principaux :
 - `metrics_json`
 - `created_at`
 
+### `conversations` et `messages`
+
+Historique des conversations du Chat et de la CLI (migration `0003_conversations`), écrit seulement avec `RAGLAB_CONVERSATION_HISTORY=true`. Un message par échange : question, réponse, statut, passages retrouvés avec leurs offsets et s'ils sont cités, contexte présenté au rédacteur, options résolues, fournisseur et modèle, durées, `request_id`, et un `tsvector` (index GIN) pour la recherche plein texte. Détails, API, CLI et conservation : [historique.md](historique.md).
+
+### `runtime_settings`
+
+Réglages basculés à l'exécution (Atelier, API, CLI) par-dessus leur variable `RAGLAB_*` : `key`, `value` (JSON), `updated_by`, `updated_at`. Aujourd'hui une clé, `conversation_history`. Migration `0003_conversations`.
+
 ## 3. Relations
 
 ```text
@@ -157,6 +165,7 @@ index_runs 1---n chunks
 chunks 1---1..n chunk_embeddings
 experiment_runs 1---n experiment_results
 index_runs 1---n experiment_results
+conversations 1---n messages
 ```
 
 ## 4. Décision MVP sur les embeddings

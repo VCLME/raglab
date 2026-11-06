@@ -16,6 +16,7 @@ from raglab.api.schemas import (
     ReadinessResponse,
 )
 from raglab.config import Settings
+from raglab.conversations.settings import history_enabled
 from raglab.graph import Neo4jGraphStore
 from raglab.llm.writer import get_writer
 from raglab.ollama.service import OllamaService
@@ -160,7 +161,10 @@ def generator_status(settings: Settings) -> GeneratorStatus | None:
 
 
 @router.get("/api/config", response_model=ConfigResponse)
-def config(settings: Settings = Depends(get_current_settings)) -> ConfigResponse:
+def config(
+    session: Session = Depends(get_db),
+    settings: Settings = Depends(get_current_settings),
+) -> ConfigResponse:
     return ConfigResponse(
         app_name=settings.app_name,
         environment=settings.environment,
@@ -199,4 +203,6 @@ def config(settings: Settings = Depends(get_current_settings)) -> ConfigResponse
         retrieval_dedup=settings.retrieval_dedup,
         llm_providers=settings.llm_provider_names,
         default_llm_provider=settings.default_llm_provider,
+        conversation_history=history_enabled(session, settings),
+        conversation_retention_days=settings.conversation_retention_days,
     )

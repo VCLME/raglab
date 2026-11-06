@@ -5,6 +5,7 @@ import { get } from "../api/client";
 import type { DatabaseConnection, DatabasesResponse } from "../api/types";
 import { ErrorBanner } from "../components/ErrorBanner";
 import { ExplainBanner } from "../components/ExplainBanner";
+import { HistorySettingCard } from "../components/HistorySettingCard";
 import { Spinner } from "../components/Spinner";
 import { StatusBadge } from "../components/StatusBadge";
 import { Tabs, tabPanelProps } from "../components/Tabs";
@@ -185,6 +186,8 @@ export function DatabasesPage() {
       <div {...tabPanelProps("databases", tab)}>
         {load.loading && !load.data ? <Spinner label={t("common.loading")} /> : null}
         {current ? <StorePanel key={current.kind} db={current} /> : null}
+        {/* The conversation history lives in PostgreSQL: switched on or off here. */}
+        {tab === "postgres" ? <HistorySettingCard /> : null}
       </div>
     </div>
   );

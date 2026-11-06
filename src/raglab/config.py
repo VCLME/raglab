@@ -349,6 +349,15 @@ class Settings(BaseSettings):
     ready_timeout_seconds: float = 3.0
     # Prometheus endpoint `/metrics` and the request-counting middleware.
     metrics_enabled: bool = True
+    # Server-side conversation history (tables conversations / messages):
+    # questions, answers, sources and options of each Chat / CLI turn, for
+    # the audit trail and the shared history. Off by default: it stores what
+    # users ask, which needs a deliberate choice of retention (docs/historique.md).
+    # The browser keeps its own history (IndexedDB) either way.
+    conversation_history: bool = False
+    # Conversations idle for longer are deleted when a turn is recorded and
+    # by `raglab history purge`; 0 keeps them until deleted by hand.
+    conversation_retention_days: int = Field(default=0, ge=0)
 
     @field_validator("llm_providers")
     @classmethod

@@ -222,11 +222,100 @@ class LexicalTermStats(Base):
     doc_freq: Mapped[int] = mapped_column(Integer, nullable=False)
 
 
+class Conversation(Base):
+    """A Chat or CLI conversation kept for the history and the audit trail.
+
+    Written only when RAGLAB_CONVERSATION_HISTORY is on. `corpus_name` and
+    `index_run_id` on messages are plain values, not foreign keys: deleting a
+    corpus or an index run must not rewrite what was asked and answered.
+    """
+
+    __tablename__ = "conversations"
+
+    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid4()))
+    title: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    corpus_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    # Who started it, as declared by the caller (X-Raglab-User header, OS
+    # user for the CLI), and through which door: ui, api or cli.
+    actor: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    channel: Mapped[str] = mapped_column(String(16), nullable=False, default="api")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+    messages: Mapped[list[Message]] = relationship(
+        back_populates="conversation",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        order_by="Message.position",
+    )
+
+
+class Message(Base):
+    """One turn: the question, the answer and what is needed to audit it."""
+
+    __tablename__ = "messages"
+    __table_args__ = (UniqueConstraint("conversation_id", "position", name="uq_messages_conversation_position"),)
+
+    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid4()))
+    conversation_id: Mapped[str] = mapped_column(
+        ForeignKey("conversations.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    position: Mapped[int] = mapped_column(Integer, nullable=False)
+    question: Mapped[str] = mapped_column(Text, nullable=False)
+    answer: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # completed, stopped (the client went away mid-answer) or failed.
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="completed")
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    corpus_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    index_run_id: Mapped[str | None] = mapped_column(UUID(as_uuid=False), nullable=True)
+    strategy: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    # Retrieved passages: chunk_id, document_id, file_name, source_path,
+    # char_start, char_end, rank, score and whether the answer cites it.
+    retrieved_json: Mapped[list[dict]] = mapped_column(JSONB, nullable=False, default=list)
+    # The writer's context as presented (generation.prompts.presented_passages).
+    presented_context: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
+    citation_json: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    routing_json: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    # Retrieval options as resolved against the server defaults.
+    options_json: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    llm_provider: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    llm_model: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    generator_notice: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    timings_ms: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    elapsed_ms: Mapped[float | None] = mapped_column(Float, nullable=True)
+    first_token_ms: Mapped[float | None] = mapped_column(Float, nullable=True)
+    request_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    # Text-search config the row is indexed with (raglab_french...) and the
+    # question + answer tsvector built with it (raglab.conversations.store).
+    ts_config: Mapped[str] = mapped_column(String(32), nullable=False)
+    search_tsv: Mapped[str | None] = mapped_column(TSVECTOR, nullable=True, deferred=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+    conversation: Mapped[Conversation] = relationship(back_populates="messages")
+
+
+class RuntimeSetting(Base):
+    """A setting changed at runtime (Atelier, API, CLI), overriding its
+    RAGLAB_* default until reset. One row per key; `value` is JSON."""
+
+    __tablename__ = "runtime_settings"
+
+    key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    value: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    updated_by: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+
 Index("ix_documents_corpus_id", Document.corpus_id)
 Index("ix_chunks_index_run_id", Chunk.index_run_id)
 Index("ix_chunks_document_id", Chunk.document_id)
 Index("ix_chunk_embeddings_embedding_space_id", ChunkEmbedding.embedding_space_id)
 Index("ix_chunks_lexical_tsv", Chunk.lexical_tsv, postgresql_using="gin")
+Index("ix_conversations_updated_at", Conversation.updated_at)
+Index("ix_conversations_corpus_name", Conversation.corpus_name)
+Index("ix_messages_conversation_id", Message.conversation_id)
+Index("ix_messages_search_tsv", Message.search_tsv, postgresql_using="gin")
 
 # HNSW indexes on chunk_embeddings.embedding are partial, one per embedding
 # dimension encountered at indexing time, created on demand via

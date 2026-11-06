@@ -24,6 +24,7 @@ Par où commencer selon ce que vous voulez faire. Le [README du dépôt](../READ
 |---|---|
 | [run-and-test.md](run-and-test.md) | installer, lancer en Docker ou en local, exécuter les tests |
 | [frontend-ui.md](frontend-ui.md) | les pages de l'interface (Chat, Atelier) |
+| [historique.md](historique.md) | l'historique des conversations : navigateur (IndexedDB) et serveur (piste d'audit PostgreSQL), recherche, conservation et suppression |
 | [real-rag-lexml-load.md](real-rag-lexml-load.md) | charger le corpus LexML historique (fiches) en une commande |
 
 ## Le mesurer

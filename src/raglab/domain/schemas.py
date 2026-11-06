@@ -189,6 +189,11 @@ class QueryResponse(BaseModel):
     # (serving another model, e.g. a benchmark's judge).
     llm_provider: str | None = None
     generator_notice: str | None = None
+    # Conversation history: the conversation and message this turn was
+    # recorded as; None when it was not recorded (no conversation_id, or
+    # RAGLAB_CONVERSATION_HISTORY off).
+    conversation_id: str | None = None
+    message_id: str | None = None
 
 
 class ExperimentCase(BaseModel):
