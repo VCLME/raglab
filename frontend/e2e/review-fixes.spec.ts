@@ -28,7 +28,7 @@ test("Learning mode: a stage picked after scrolling down opens its lesson on scr
   await page.getByRole("button", { name: "Mode pédagogique" }).click();
   for (let i = 0; i < 3; i++) {
     await ask(page);
-    await expect(page.locator(".bubble.assistant")).toHaveCount(i + 1);
+    await expect(page.locator(".turn-answer")).toHaveCount(i + 1);
   }
   await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
   await page.getByRole("button", { name: /^Recherche vectorielle/ }).click();
@@ -47,12 +47,13 @@ test("Learning mode: a stage picked after scrolling down opens its lesson on scr
 test("Chat: the bar does not reflow at the first answer; Send stays on the right", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto("/");
+  // On a phone the history is a drawer; its header keeps « Nouvelle conversation » at hand.
   const newConversation = page.getByRole("button", { name: "Nouvelle conversation" });
-  await expect(newConversation).toBeDisabled();
+  await expect(newConversation).toBeVisible();
   const before = (await page.locator(".settings-bar").boundingBox())!.height;
   await ask(page);
   await expect(page.getByText(/Le Président est élu/)).toBeVisible();
-  await expect(newConversation).toBeEnabled();
+  await expect(newConversation).toBeVisible();
   expect((await page.locator(".settings-bar").boundingBox())!.height).toBe(before);
   // No index echo in the composer (the Index picker already says it).
   await expect(page.locator(".composer").getByText(/^index :/)).toHaveCount(0);
@@ -87,7 +88,7 @@ test("Chat copy: real plurals, one form of address", async ({ page, api }) => {
   await page.goto("/");
   await ask(page);
   await expect(page.getByText("Sources · 1 fichier", { exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Afficher le chunk" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Détails · 1 chunk" })).toBeVisible();
   await expect(page.locator(".bubble.user .role")).toHaveText("Toi");
   await expect(page.getByText(/\(s\)/)).toHaveCount(0);
 });
@@ -106,7 +107,7 @@ test("Retrieval: fields are labelled, citations are chips that point to their ch
   const answer = page.locator(".answer-text");
   await expect(answer).toContainText("Le Président est élu");
   await expect(answer.getByText("[Rank 1]")).toHaveCount(0);
-  await page.getByTitle("Source rank 3 — titre_IV_parlement.txt").click();
+  await page.getByTitle("Source 3 · titre_IV_parlement.txt").click();
   const cited = page.locator("#chunk-rank-3");
   await expect(cited).toHaveClass(/active/);
   await expect(cited).toBeInViewport();

@@ -13,6 +13,8 @@ interface Props {
   // Target of the answer's [Rank N] citations, outlined when cited.
   anchorId?: string;
   active?: boolean;
+  // Chat: rank chip, file, final score and the passage, without the bar or the path.
+  compact?: boolean;
 }
 
 function ScoreCell({ label, rank, score, digits }: { label: string; rank?: number | null; score?: number | null; digits: number }) {
@@ -40,7 +42,7 @@ function finalScoreType(chunk: RetrievedChunk): "rerank" | "fused" | "lexical" |
   return "dense";
 }
 
-export function ChunkCard({ chunk, maxScore, showScores = false, anchorId, active = false }: Props) {
+export function ChunkCard({ chunk, maxScore, showScores = false, anchorId, active = false, compact = false }: Props) {
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
   const preview =
@@ -58,6 +60,54 @@ export function ChunkCard({ chunk, maxScore, showScores = false, anchorId, activ
       chunk.graph_rank != null ||
       chunk.fused_score != null ||
       chunk.rerank_rank != null);
+  const badges = (
+    <>
+      {chunk.citation_match ? (
+        <span className="badge ok chunk-badge" title={t("retrieval.citation_badge_title")}>
+          {t("retrieval.citation_badge")}
+        </span>
+      ) : null}
+      {chunk.graph_via ? (
+        <span className="badge info chunk-badge" title={chunk.graph_reason ?? undefined}>
+          {chunk.graph_pinned
+            ? t("retrieval.graph_badge_pinned", { via: chunk.graph_via })
+            : t("retrieval.graph_badge", { via: chunk.graph_via })}
+        </span>
+      ) : null}
+      <VersionBadge version={chunk.version} />
+    </>
+  );
+  const more =
+    chunk.chunk_text.length > 400 ? (
+      <button
+        className="ghost"
+        style={{ marginTop: 6, padding: "4px 8px", fontSize: 11 }}
+        onClick={() => setExpanded((v) => !v)}
+      >
+        {expanded ? t("retrieval.show_less") : t("retrieval.show_more")}
+      </button>
+    ) : null;
+
+  if (compact) {
+    return (
+      <li className={`chunk compact${active ? " active" : ""}`} id={anchorId} tabIndex={anchorId ? -1 : undefined}>
+        <div className="head">
+          <span className="cite-num">{chunk.rank}</span>
+          <strong className="chunk-file" title={chunk.source_path || chunk.file_name}>
+            {chunk.file_name}
+          </strong>
+          {badges}
+          <span className="chunk-final" title={t("retrieval.score_final_title", { type: scoreLabel })}>
+            <span className={`score-type ${scoreType}`}>{scoreLabel}</span>
+            {chunk.score.toFixed(3)}
+          </span>
+        </div>
+        <p className="chunk-text">{preview}</p>
+        {more}
+      </li>
+    );
+  }
+
   return (
     <div className={`chunk${active ? " active" : ""}`} id={anchorId} tabIndex={anchorId ? -1 : undefined}>
       <div className="head">
@@ -67,19 +117,7 @@ export function ChunkCard({ chunk, maxScore, showScores = false, anchorId, activ
           <span className={`score-type ${scoreType}`} title={t("retrieval.score_final_title", { type: scoreLabel })}>
             {scoreLabel}
           </span>
-          {chunk.citation_match ? (
-            <span className="badge ok" style={{ marginLeft: 8 }} title={t("retrieval.citation_badge_title")}>
-              {t("retrieval.citation_badge")}
-            </span>
-          ) : null}
-          {chunk.graph_via ? (
-            <span className="badge info" style={{ marginLeft: 8 }} title={chunk.graph_reason ?? undefined}>
-              {chunk.graph_pinned
-                ? t("retrieval.graph_badge_pinned", { via: chunk.graph_via })
-                : t("retrieval.graph_badge", { via: chunk.graph_via })}
-            </span>
-          ) : null}
-          <VersionBadge version={chunk.version} />
+          {badges}
         </span>
         <span className="muted" title={chunk.source_path}>
           {chunk.source_path.split(/[\/]/).slice(-2).join("/")}
@@ -105,15 +143,7 @@ export function ChunkCard({ chunk, maxScore, showScores = false, anchorId, activ
         <span style={{ width: `${scorePct}%` }} />
       </div>
       <pre>{preview}</pre>
-      {chunk.chunk_text.length > 400 ? (
-        <button
-          className="ghost"
-          style={{ marginTop: 6, padding: "4px 8px", fontSize: 11 }}
-          onClick={() => setExpanded((v) => !v)}
-        >
-          {expanded ? t("retrieval.show_less") : t("retrieval.show_more")}
-        </button>
-      ) : null}
+      {more}
     </div>
   );
 }

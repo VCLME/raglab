@@ -19,7 +19,18 @@ test("Atelier switches the server history on and off; the state survives a reloa
     return json(state)(route);
   });
   api.set("GET /api/config", (route) => json({ ...data.config, conversation_history: state.enabled })(route));
-  api.set("GET /api/conversations", json([]));
+  // Only listed by the Chat while it uses the server history.
+  api.set(
+    "GET /api/conversations",
+    json([
+      { id: "6d1f2c3a-4b5e-4f60-8a7b-9c0d1e2f3a4b", title: "Question posée depuis la CLI", corpus_name: data.CORPUS,
+        actor: null, channel: "cli", created_at: "2026-11-05T09:00:00Z", updated_at: "2026-11-05T09:00:00Z",
+        message_count: 1 },
+    ])
+  );
+  const chatList = page
+    .getByRole("complementary", { name: "Historique des conversations" })
+    .getByRole("navigation", { name: "Conversations" });
 
   await page.goto("/workshop/databases");
   const card = page.getByRole("region", { name: "Historique des conversations (serveur)" });
@@ -43,10 +54,7 @@ test("Atelier switches the server history on and off; the state survives a reloa
 
   // The Chat uses the server at once, without reloading the app.
   await page.getByRole("tab", { name: "Chat" }).click();
-  await page.getByRole("button", { name: "Historique" }).click();
-  const panel = page.getByRole("dialog", { name: "Historique des conversations" });
-  await expect(panel.getByRole("status")).toContainText("Enregistré sur le serveur");
-  await page.keyboard.press("Escape");
+  await expect(chatList.getByRole("button", { name: /^Question posée depuis la CLI/ })).toBeVisible();
 
   // Off: the Chat falls back to the browser; nothing is deleted.
   await page.goto("/workshop/databases");
@@ -63,6 +71,7 @@ test("Atelier switches the server history on and off; the state survives a reloa
   expect(puts).toEqual([true, false, null]);
 
   await page.goto("/");
-  await page.getByRole("button", { name: "Historique" }).click();
-  await expect(panel.getByRole("status")).toContainText("Gardé dans ce navigateur seulement");
+  await expect(page.getByRole("combobox", { name: /^Corpus/ })).toContainText(data.CORPUS);
+  await expect(chatList).toContainText("Aucune conversation pour l'instant");
+  await expect(chatList.getByRole("button", { name: /^Question posée depuis la CLI/ })).toHaveCount(0);
 });

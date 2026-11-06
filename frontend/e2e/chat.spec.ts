@@ -23,21 +23,25 @@ test.describe("Chat", () => {
     await expect(page.getByText("[Rank 1]")).toHaveCount(0);
     await expect(page.getByText("Sources · 2 fichiers")).toBeVisible();
 
-    const citation = page.getByTitle("Source rank 1 — titre_II_president.txt");
+    const citation = page.getByTitle("Source 1 · titre_II_president.txt");
     await expect(citation).toBeVisible();
-    await expect(page.getByRole("button", { name: "Afficher les 3 chunks" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Détails · 3 chunks" })).toBeVisible();
 
-    // Clicking the citation filters the passages down to its source file.
+    // Clicking the citation opens the details on the passages of its file, its own passage outlined.
     await citation.click();
-    const filtered = page.getByRole("button", { name: "Afficher les 2 chunks filtrés" });
-    await expect(filtered).toBeVisible();
-    await filtered.click();
+    await expect(page.getByRole("button", { name: "Masquer les détails" })).toBeVisible();
+    // The details also say what the question ran against.
+    await expect(page.locator(".answer-meta")).toContainText(`corpus${data.CORPUS}`);
+    await expect(page.locator(".answer-meta")).toContainText("run3f1c9a52");
+    await expect(page.locator(".chunk.compact.active")).toContainText("Article 6. Le Président de la République");
     await expect(page.getByText("Nul ne peut exercer plus de deux mandats consécutifs.")).toBeVisible();
     await expect(page.getByText(/Article 24\. Le Parlement vote la loi/)).toHaveCount(0);
+    // The source chip carries the number the citation shows.
+    await expect(page.locator(".source-chip.active .cite-num")).toHaveText(["1"]);
 
-    // A second click clears the highlight.
+    // A second click clears the selection.
     await citation.click();
-    await expect(page.getByRole("button", { name: "Masquer les 3 chunks" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Masquer les détails" })).toBeVisible();
     await expect(page.getByText(/Article 24\. Le Parlement vote la loi/)).toBeVisible();
   });
 

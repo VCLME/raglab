@@ -9,7 +9,7 @@ Le Chat garde ses conversations en deux couches :
 
 Les deux couches partagent **un seul identifiant par conversation et par échange** : il n'y a jamais deux copies d'une même conversation.
 
-![Panneau Historique du Chat](images/history-panel.png)
+![Colonne Conversations du Chat](images/history-panel.png)
 
 ## Réglages
 
@@ -39,26 +39,31 @@ L'historique serveur conserve **ce que les utilisateurs demandent**, mot pour mo
 - en local, mono-utilisateur, l'historique du navigateur suffit et ne quitte pas le poste ;
 - en entreprise, on active l'historique (interrupteur de l'Atelier, ou `RAGLAB_CONVERSATION_HISTORY=true` pour en faire le défaut) **et** on fixe `RAGLAB_CONVERSATION_RETENTION_DAYS` selon la politique de conservation (par exemple 90 ou 365 jours), puis on documente la finalité auprès des utilisateurs.
 
-Le Chat affiche toujours où vit l'historique (bandeau en tête du panneau), y compris la durée de conservation quand elle est fixée.
+Le Chat ne dit pas où vit l'historique quand tout va bien : la carte de l'Atelier le dit, avec la durée de conservation. La colonne ne parle que quand l'utilisateur doit savoir quelque chose : API injoignable, ou stockage du navigateur indisponible.
 
 ## Couche navigateur
 
 Chaque conversation est stockée dans IndexedDB avec ses échanges : question, réponse, passages cités (fichier, rang, score, extrait), options de recherche envoyées, corpus, index, fournisseur et modèle, durées, date. Elle survit au rechargement et fonctionne **API arrêtée**.
 
-Chaque accès au stockage est protégé : sans IndexedDB (certaines fenêtres privées, données de site bloquées, quota plein), l'historique vit en mémoire pour la session et le panneau le signale (« l'historique sera perdu au rechargement »). Le Chat fonctionne de la même façon.
+Chaque accès au stockage est protégé : sans IndexedDB (certaines fenêtres privées, données de site bloquées, quota plein), l'historique vit en mémoire pour la session et la colonne le signale (« l'historique sera perdu au rechargement »). Le Chat fonctionne de la même façon.
 
-### Le panneau Historique
+### La colonne Conversations
 
-Bouton **Historique** dans la barre du Chat :
+À gauche du Chat, comme dans ChatGPT, Claude ou Open WebUI :
 
-- liste des conversations, la plus récente en haut : titre (la première question), date, corpus, nombre d'échanges ;
-- **recherche** dans les questions et les réponses, sans tenir compte des accents ni de la casse, extraits surlignés ;
-- **rouvrir** une conversation : elle s'affiche en lecture seule (réponses, sources, chunks) avec un bouton **Continuer cette conversation** ;
-- **renommer** (crayon, Entrée pour valider, Échap pour annuler) et **supprimer** (corbeille, confirmation).
+- en tête : **Nouvelle conversation** et la **recherche** ;
+- les conversations, groupées par date de dernière activité (Aujourd'hui, Hier, 7 derniers jours, Plus ancien) : titre (la première question), corpus, nombre d'échanges ; celle qui est ouverte est surlignée ;
+- **recherche** dans les questions et les réponses, sans tenir compte des accents ni de la casse, extraits surlignés (les marqueurs `[Rank N]` en sont retirés) ;
+- **rouvrir** une conversation : elle s'affiche comme un chat normal (réponses, sources, chunks), composer en bas ; la question suivante la continue ;
+- **renommer** (crayon, Entrée pour valider, Échap pour annuler) et **supprimer** (corbeille, confirmation), au survol de la ligne (toujours visibles sur un écran tactile). Renommer la conversation ouverte garde le nouveau titre pour les échanges suivants.
+
+La colonne se replie (bouton en tête) et le reste après un rechargement ; la barre du Chat porte alors « Afficher l'historique » et « Nouvelle conversation ». Sous 1024 px de large, et sous 1560 px en mode pédagogique, elle devient un tiroir qui glisse depuis la gauche.
 
 ![Recherche dans l'historique](images/history-search.png)
 
-![Conversation rouverte en lecture seule](images/history-reopen.png)
+![Conversation rouverte, prête à continuer](images/history-reopen.png)
+
+![Le tiroir de l'historique sur téléphone](images/history-drawer-mobile.png)
 
 ## Couche serveur
 
@@ -125,22 +130,22 @@ raglab history status | enable | disable | reset
 | Situation | Comportement du Chat |
 |---|---|
 | Historique serveur actif, API joignable | la première question crée la conversation sur le serveur (`POST /api/conversations`), qui donne son id ; chaque échange est envoyé avec `conversation_id` et `message_id` ; la liste, la recherche, le renommage et la suppression passent par le serveur ; IndexedDB garde une copie hors ligne |
-| Historique serveur désactivé (par défaut ou depuis l'Atelier) | IndexedDB seul ; le panneau l'indique ; une bascule dans l'Atelier s'applique au Chat sans recharger la page |
-| API injoignable | IndexedDB seul « en attendant » ; le panneau l'indique et propose de réessayer |
+| Historique serveur désactivé (par défaut ou depuis l'Atelier) | IndexedDB seul, sans message ; une bascule dans l'Atelier s'applique au Chat sans recharger la page |
+| API injoignable | IndexedDB seul « en attendant » ; la colonne l'indique (« API injoignable : seules les conversations de ce navigateur sont listées. ») et propose de réessayer |
 | Conversation commencée hors ligne, continuée serveur revenu | adoptée par le serveur sous **son propre id** (`POST /api/conversations` avec `id`) ; les échanges posés hors ligne restent dans le navigateur, les suivants sont enregistrés |
-| Conversation supprimée ailleurs (CLI, autre navigateur) | sa copie locale disparaît à la prochaine ouverture du panneau |
+| Conversation supprimée ailleurs (CLI, autre navigateur) | sa copie locale disparaît au prochain chargement de la liste (ouverture du Chat ou du tiroir) |
 
 Une suppression faite API injoignable n'efface que la copie locale : la conversation réapparaît depuis le serveur à son retour.
 
 ## Conservation et suppression
 
 - **Durée** : `RAGLAB_CONVERSATION_RETENTION_DAYS` supprime les conversations inactives (dernier échange) depuis plus de N jours, à chaque échange enregistré ; `raglab history purge` l'applique à la demande (par exemple depuis une tâche planifiée), `--older-than-days` fixe une autre limite.
-- **Suppression** : `DELETE /api/conversations/{id}`, `raglab history delete <id>` ou la corbeille du panneau suppriment la conversation et tous ses messages, définitivement.
-- **Navigateur** : la copie locale se supprime depuis le panneau ; effacer les données du site dans le navigateur la supprime aussi.
+- **Suppression** : `DELETE /api/conversations/{id}`, `raglab history delete <id>` ou la corbeille de la colonne suppriment la conversation et tous ses messages, définitivement.
+- **Navigateur** : la copie locale se supprime depuis la colonne ; effacer les données du site dans le navigateur la supprime aussi.
 - **Ce qui n'est pas dans l'historique** : un appel API sans `conversation_id` n'est pas enregistré (seul l'événement `query.completed` est journalisé, sans le texte de la question), pas plus que les benchmarks.
 
 ## Tests
 
 - unitaires : `tests/test_conversation_record.py` (ce qu'un échange enregistre), `tests/api/test_api_conversations.py` (historique désactivé, conversation inconnue, identifiants renvoyés) ;
 - intégration PostgreSQL : `tests/test_conversations_postgres.py` (interrupteur à l'exécution par l'API et la CLI, désactivation sans suppression, positions, ids proposés par le client, recherche par langue et sans accents, filtres, renommage, suppression en cascade, conservation, API de bout en bout avec le flux SSE, CLI), sur une base `*_test` via `RAGLAB_TEST_DATABASE_URL` ;
-- bout en bout : `frontend/e2e/history.spec.ts` (navigateur seul avec rechargement, recherche, réouverture, reprise, renommage, suppression ; historique serveur avec un id unique ; API arrêtée) et `frontend/e2e/history-setting.spec.ts` (interrupteur de l'Atelier : activé, désactivé, état après rechargement, retour au défaut, effet sur le Chat).
+- bout en bout : `frontend/e2e/history.spec.ts` (navigateur seul avec rechargement, groupes par date, recherche, réouverture en chat normal, reprise, renommage pendant la conversation, suppression ; historique serveur avec un id unique ; API arrêtée ; colonne repliée après rechargement ; tiroir à 375 px) et `frontend/e2e/history-setting.spec.ts` (interrupteur de l'Atelier : activé, désactivé, état après rechargement, retour au défaut, effet sur le Chat).

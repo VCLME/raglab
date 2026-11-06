@@ -21,6 +21,20 @@ export function extractCitedRanks(answer: string): number[] {
   return Array.from(ranks);
 }
 
+/** The article a passage holds, as a citation reads it ("art. L221-18"); null when unknown. */
+export function articleLabel(chunk: RetrievedChunk | undefined): string | null {
+  const article = chunk?.version?.article?.trim();
+  if (!article) return null;
+  return /^art/i.test(article) ? article : `art. ${article}`;
+}
+
+interface RenderOptions {
+  /** The cited passage in focus: only its markers are active (otherwise all markers of `activeFile`). */
+  activeRank?: number | null;
+  /** Markers name the cited article when the passage has one (Chat). */
+  articleLabels?: boolean;
+}
+
 /**
  * The answer text with every [Rank N] turned into a citation button for the
  * chunk of that rank. Used by the Chat and the Retrieval pages.
@@ -29,7 +43,8 @@ export function renderAnswer(
   answer: string,
   chunks: RetrievedChunk[],
   activeFile: string | null,
-  onSelect: (chunk: RetrievedChunk) => void
+  onSelect: (chunk: RetrievedChunk) => void,
+  options: RenderOptions = {}
 ): ReactNode[] {
   const cleaned = stripTrailingSources(answer);
   const parts: ReactNode[] = [];
@@ -38,7 +53,8 @@ export function renderAnswer(
   let match: RegExpExecArray | null;
   while ((match = CITATION_REGEX.exec(cleaned)) !== null) {
     if (match.index > lastIndex) {
-      parts.push(cleaned.slice(lastIndex, match.index));
+      // The chip keeps its own small gap: no space before it, as a footnote.
+      parts.push(cleaned.slice(lastIndex, match.index).replace(/ +$/, ""));
     }
     const rank = Number(match[1]);
     const chunk = chunks.find((c) => c.rank === rank);
@@ -47,7 +63,14 @@ export function renderAnswer(
         key={`c-${match.index}-${rank}`}
         rank={rank}
         fileName={chunk?.file_name}
-        active={chunk ? activeFile === chunk.file_name : false}
+        label={options.articleLabels ? articleLabel(chunk) : null}
+        active={
+          !chunk
+            ? false
+            : options.activeRank != null
+            ? options.activeRank === rank
+            : activeFile === chunk.file_name
+        }
         onClick={() => {
           if (chunk) onSelect(chunk);
         }}

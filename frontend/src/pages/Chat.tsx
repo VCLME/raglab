@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useGpuWhy } from "../hooks/useGpuWhy";
 import { ApiError, extractErrorDetail, get, queryWithStreaming } from "../api/client";
-import type { CorpusSummary, IndexRunSummary, LlmModelsResponse, QueryResponse } from "../api/types";
+import type { CorpusSummary, IndexRunSummary, LlmModelsResponse, QueryResponse, RetrievedChunk } from "../api/types";
 import {
   ChatOptions,
   LEGAL_OPTIONS,
@@ -13,8 +13,8 @@ import {
 import { parseVersionsValue } from "../components/Versions";
 import { ChunkCard } from "../components/ChunkCard";
 import { extractCitedRanks, renderAnswer } from "../components/AnswerText";
-import { HistoryIcon, SendIcon, StopIcon } from "../components/Icon";
-import { HistoryPanel } from "../components/HistoryPanel";
+import { AlertIcon, ChevronDownIcon, NewChatIcon, SendIcon, SidebarIcon, StopIcon } from "../components/Icon";
+import { HistorySidebar } from "../components/HistorySidebar";
 import { PipelineStrip, type RouteInfo } from "../components/PipelineStrip";
 import { FieldLabelContext, Select } from "../components/Select";
 import { RoutingPanel } from "../components/RoutingPanel";
@@ -32,11 +32,13 @@ import {
   idlePipeline,
   prefersReducedMotion,
   startPipeline,
+  type NodeId,
   type PipelineState,
 } from "../edu/pipeline";
 import { useApiAction, useApiLoad } from "../hooks/useApi";
 import { useConfig } from "../hooks/useConfig";
 import { useEducationalMode } from "../hooks/useEducationalMode";
+import { useMediaQuery } from "../hooks/useMediaQuery";
 import { newId, useConversationHistory } from "../history/useConversationHistory";
 import type { ChatTurn, StoredConversation } from "../history/types";
 
@@ -54,7 +56,7 @@ function settled(turn: ChatTurn): ChatTurn {
 }
 
 function shortDate(iso: string | null): string {
-  if (!iso) return "—";
+  if (!iso) return "?";
   try {
     const d = new Date(iso);
     const pad = (n: number) => n.toString().padStart(2, "0");
@@ -67,12 +69,31 @@ function shortDate(iso: string | null): string {
 }
 
 function formatRunLabel(run: IndexRunSummary): string {
-  const parts = [run.strategy, run.embedding_model_name ?? "—", shortDate(run.started_at)];
+  // The model without its publisher ("multilingual-e5-small"), so the date still fits.
+  const model = run.embedding_model_name ? run.embedding_model_name.split("/").pop() : "?";
+  const parts = [run.strategy, model, shortDate(run.started_at)];
   return parts.join(" · ");
 }
 
 // Pause before closing each replayed stage, so the diagram can be followed.
 const REPLAY_STEP_MS = 280;
+
+// The history is a column beside the Chat from this width, a drawer below it.
+const SIDEBAR_QUERY = "(min-width: 1024px)";
+// The learning strip needs the width: the column docks beside it only on large screens.
+const SIDEBAR_EDU_QUERY = "(min-width: 1560px)";
+const SIDEBAR_KEY = "raglab.historySidebar";
+
+function readSidebarOpen(): boolean {
+  try {
+    return localStorage.getItem(SIDEBAR_KEY) !== "closed";
+  } catch {
+    return true;
+  }
+}
+
+// Length of the drawer's exit animation (styles.css, history-out).
+const DRAWER_EXIT_MS = 160;
 
 // While the API is not up yet (UI started first), lists are fetched again on this period.
 const RETRY_MS = 3000;
@@ -103,9 +124,29 @@ export function Chat() {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [highlight, setHighlight] = useState<Record<string, string | null>>({});
   const [conversation, setConversation] = useState<CurrentConversation | null>(null);
-  // A conversation reopened from the history stays read-only until « Continuer ».
-  const [readOnly, setReadOnly] = useState(false);
-  const [historyOpen, setHistoryOpen] = useState(false);
+  const wide = useMediaQuery(SIDEBAR_QUERY);
+  // No keyboard shortcut to advertise on a touch screen.
+  const touch = useMediaQuery("(pointer: coarse)");
+  const roomy = useMediaQuery(SIDEBAR_EDU_QUERY);
+  // Desktop: the column can be folded (remembered); narrower: an off-canvas drawer.
+  const [sidebarOpen, setSidebarOpen] = useState(readSidebarOpen);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  // The drawer slides out before it unmounts.
+  const [drawerClosing, setDrawerClosing] = useState(false);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const closeDrawer = useCallback(() => {
+    if (closeTimer.current) return;
+    if (prefersReducedMotion()) {
+      setDrawerOpen(false);
+      return;
+    }
+    setDrawerClosing(true);
+    closeTimer.current = setTimeout(() => {
+      closeTimer.current = null;
+      setDrawerClosing(false);
+      setDrawerOpen(false);
+    }, DRAWER_EXIT_MS);
+  }, []);
   const [historyNotice, setHistoryNotice] = useState<string | null>(null);
   const conversationRef = useRef<CurrentConversation | null>(null);
   conversationRef.current = conversation;
@@ -160,7 +201,7 @@ export function Chat() {
 
   const send = async (overrideQuestion?: string) => {
     const q = (overrideQuestion ?? question).trim();
-    if (!q || (!corpus && !routing) || readOnly) return;
+    if (!q || (!corpus && !routing)) return;
     const id = newId();
     const createdAt = new Date().toISOString();
     const picked = parseLlm(llm);
@@ -306,9 +347,28 @@ export function Chat() {
   // lesson the user just opened.
   const latest = turns[turns.length - 1];
   const followKey = `${turns.length}:${latest?.answer?.length ?? 0}:${latest?.chunks.length ?? 0}:${latest?.error ? 1 : 0}`;
+  // Someone who scrolled up to read is not pulled back down by the stream;
+  // a new question always brings the view to it.
+  const stickRef = useRef(true);
+  const followedTurns = useRef(0);
   useEffect(() => {
+    const onScroll = () => {
+      const gap = document.documentElement.scrollHeight - (window.scrollY + window.innerHeight);
+      stickRef.current = gap < 160;
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+  useEffect(() => {
+    const newTurn = turns.length !== followedTurns.current;
+    followedTurns.current = turns.length;
+    if (!newTurn && !stickRef.current) return;
     if (streamRef.current) {
-      streamRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
+      // Instant while tokens stream in: a smooth scroll per token would stutter.
+      streamRef.current.scrollIntoView({
+        behavior: latest?.streaming || prefersReducedMotion() ? "auto" : "smooth",
+        block: "end",
+      });
     }
   }, [followKey]);
 
@@ -328,15 +388,40 @@ export function Chat() {
     setHighlight({});
     setConversation(null);
     conversationRef.current = null;
-    setReadOnly(false);
     setHistoryNotice(null);
     action.reset();
+  };
+
+  // Wide enough again: the column takes over from the drawer.
+  const dockable = educational ? roomy : wide;
+  useEffect(() => {
+    if (dockable) setDrawerOpen(false);
+  }, [dockable]);
+
+  const showSidebar = (open: boolean) => {
+    setSidebarOpen(open);
+    try {
+      localStorage.setItem(SIDEBAR_KEY, open ? "open" : "closed");
+    } catch {
+      // private mode: keep the in-memory value
+    }
+  };
+
+  // On a phone, focusing the composer would pull the keyboard up over the conversation.
+  const focusComposer = () => {
+    if (wide) setTimeout(() => composerRef.current?.focus(), 0);
+  };
+
+  const newConversation = () => {
+    reset();
+    if (drawerOpen) closeDrawer();
+    focusComposer();
   };
 
   // Keep each finished turn in the browser (and its list), server or not.
   const { save } = history;
   useEffect(() => {
-    if (!conversation || readOnly || action.loading || turns.length === 0) return;
+    if (!conversation || action.loading || turns.length === 0) return;
     const stored: StoredConversation = {
       id: conversation.id,
       title: conversation.title,
@@ -347,14 +432,14 @@ export function Chat() {
       turns,
     };
     save(stored);
-  }, [conversation, readOnly, action.loading, turns, corpus, save]);
+  }, [conversation, action.loading, turns, corpus, save]);
 
   const openConversation = useCallback(
     async (id: string) => {
       schedulerRef.current?.cancel();
       abortRef.current?.abort();
       const loaded = await history.load(id);
-      setHistoryOpen(false);
+      closeDrawer();
       if (!loaded) {
         setHistoryNotice(t("history.not_found"));
         return;
@@ -365,18 +450,14 @@ export function Chat() {
       const opened = { id: loaded.id, origin: loaded.origin, title: loaded.title, created_at: loaded.created_at };
       conversationRef.current = opened;
       setConversation(opened);
-      setReadOnly(true);
       setHistoryNotice(null);
       action.reset();
       if (loaded.corpus && corpora.data?.some((c) => c.name === loaded.corpus)) setCorpus(loaded.corpus);
+      // Reopened as a normal chat: the next question continues it.
+      if (wide) setTimeout(() => composerRef.current?.focus(), 0);
     },
-    [history, t, action, corpora.data]
+    [history, t, action, corpora.data, wide, closeDrawer]
   );
-
-  const continueConversation = () => {
-    setReadOnly(false);
-    setTimeout(() => composerRef.current?.focus(), 0);
-  };
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
@@ -411,9 +492,38 @@ export function Chat() {
   const lastTurn = turns[turns.length - 1];
   const lastPipeline = lastTurn?.pipeline ?? idlePipeline();
 
+  const inline = dockable && sidebarOpen;
+  // Without the column: a slim header to reach the history and start afresh.
+  // Without the column, the settings bar carries the way to the history and a
+  // fresh start (no extra row: the learning strip already takes the height).
+  const showHistory = inline ? null : (
+    <button
+      type="button"
+      className="ghost icon-btn"
+      onClick={() => (dockable ? showSidebar(true) : setDrawerOpen(true))}
+      aria-label={t("history.show")}
+      aria-expanded={dockable ? false : drawerOpen}
+      title={t("history.show")}
+    >
+      <SidebarIcon size={17} />
+    </button>
+  );
+  const startAfresh = inline ? null : (
+    <button
+      type="button"
+      className="ghost icon-btn"
+      onClick={newConversation}
+      aria-label={t("chat.new_conversation")}
+      title={t("chat.new_conversation")}
+    >
+      <NewChatIcon size={17} />
+    </button>
+  );
+
   const page = (
     <div className="chat-page">
       <div className="settings-bar">
+        {showHistory}
         <div className="compact-field">
           <label id="chat-corpus-label">{t("chat.corpus_label")}</label>
           <FieldLabelContext.Provider value="chat-corpus-label">
@@ -463,20 +573,7 @@ export function Chat() {
             routing={routing}
             onRoutingChange={setRouting}
           />
-          <button
-            className="ghost sm"
-            onClick={() => setHistoryOpen(true)}
-            aria-haspopup="dialog"
-            aria-expanded={historyOpen}
-            title={t("history.open_title")}
-          >
-            <HistoryIcon size={15} />
-            {t("history.open")}
-          </button>
-          {/* Always there (disabled when empty) so the bar does not reflow at the first answer. */}
-          <button className="ghost sm" onClick={reset} disabled={turns.length === 0}>
-            {t("chat.new_conversation")}
-          </button>
+          {startAfresh}
         </div>
       </div>
 
@@ -492,27 +589,10 @@ export function Chat() {
         </p>
       ) : null}
 
-      {historyOpen ? (
-        <HistoryPanel
-          history={history}
-          currentId={conversation?.id ?? null}
-          retentionDays={config?.conversation_retention_days ?? 0}
-          onOpen={openConversation}
-          onDeleted={(id) => {
-            if (id === conversationRef.current?.id) reset();
-          }}
-          onClose={() => setHistoryOpen(false)}
-        />
-      ) : null}
-
       {empty ? (
         <div>
           <div className="welcome">
             <h1>{t("chat.welcome_title")}</h1>
-            <p className="muted">
-              {t("chat.welcome_subtitle")}
-              {suggestions.length > 0 ? ` ${t("chat.welcome_pick")}` : ""}
-            </p>
           </div>
         </div>
       ) : (
@@ -526,142 +606,156 @@ export function Chat() {
               onToggleDetails={() =>
                 setExpanded((prev) => ({ ...prev, [turn.id]: !prev[turn.id] }))
               }
-              onSelectSource={(file) =>
-                setHighlight((prev) => ({
-                  ...prev,
-                  [turn.id]: prev[turn.id] === file ? null : file,
-                }))
-              }
+              onShowDetails={() => setExpanded((prev) => ({ ...prev, [turn.id]: true }))}
+              onHighlight={(file) => setHighlight((prev) => ({ ...prev, [turn.id]: file }))}
             />
           ))}
         </div>
       )}
 
-      {readOnly ? (
-        <div className="archived-bar" role="status">
-          <span>
-            {t("history.archived", {
-              date: new Date(conversation?.created_at ?? Date.now()).toLocaleString(i18n.language, {
-                dateStyle: "medium",
-                timeStyle: "short",
-              }),
-            })}
-          </span>
-          <button className="sm" onClick={continueConversation}>
-            {t("history.continue")}
-          </button>
-        </div>
-      ) : (
-      <div className="composer">
-        <textarea
-          ref={composerRef}
-          value={question}
-          onChange={(e) => setQuestion(e.target.value)}
-          onKeyDown={onKeyDown}
-          placeholder={corpus || routing ? t("chat.placeholder") : t("chat.placeholder_empty")}
-          aria-label={t("chat.question_label")}
-          rows={2}
-        />
-        <div className="composer-row">
-          <div className="model-pick">
-            <Select
-              size="sm"
-              value={llm}
-              onChange={(e) => setLlm(e.target.value)}
-              title={
-                writer?.notice
-                  ? t(`chat.generator_notice_${writer.notice}`, { defaultValue: writer.notice })
-                  : t("chat.llm_title")
-              }
-              aria-label={t("chat.llm_label")}
-            >
-              <option value="">{defaultLlmLabel}</option>
-              {providers.map((p) => (
-                <optgroup key={p.name} label={p.label}>
-                  {p.available && p.models.length > 0 ? (
-                    p.models.map((m) => (
-                      <option key={m} value={llmValue(p.name, m)}>
-                        {m}
+      {/* Sticks to the bottom on an opaque band, so the answer never shows under it. */}
+      <div className="composer-dock">
+        <div className="composer">
+          <textarea
+            ref={composerRef}
+            value={question}
+            onChange={(e) => setQuestion(e.target.value)}
+            onKeyDown={onKeyDown}
+            placeholder={
+              corpus || routing ? t(touch ? "chat.placeholder_touch" : "chat.placeholder") : t("chat.placeholder_empty")
+            }
+            aria-label={t("chat.question_label")}
+            rows={2}
+          />
+          <div className="composer-row">
+            <div className="model-pick">
+              <Select
+                size="sm"
+                value={llm}
+                onChange={(e) => setLlm(e.target.value)}
+                title={
+                  writer?.notice
+                    ? t(`chat.generator_notice_${writer.notice}`, { defaultValue: writer.notice })
+                    : t("chat.llm_title")
+                }
+                aria-label={t("chat.llm_label")}
+              >
+                <option value="">{defaultLlmLabel}</option>
+                {providers.map((p) => (
+                  <optgroup key={p.name} label={p.label}>
+                    {p.available && p.models.length > 0 ? (
+                      p.models.map((m) => (
+                        <option key={m} value={llmValue(p.name, m)}>
+                          {m}
+                        </option>
+                      ))
+                    ) : (
+                      <option value={`${p.name}::`} disabled>
+                        {p.available ? t("chat.llm_no_models") : t("chat.llm_unreachable")}
                       </option>
-                    ))
-                  ) : (
-                    <option value={`${p.name}::`} disabled>
-                      {p.available ? t("chat.llm_no_models") : t("chat.llm_unreachable")}
-                    </option>
-                  )}
-                </optgroup>
-              ))}
-            </Select>
+                    )}
+                  </optgroup>
+                ))}
+              </Select>
+            </div>
+            {/* While a request runs, the same place stops it. */}
+            {action.loading ? (
+              <button className="send ghost" onClick={stop}>
+                {t("chat.stop")}
+                <StopIcon size={13} />
+              </button>
+            ) : (
+              <button
+                className="send"
+                onClick={() => send()}
+                disabled={!question.trim() || (!corpus && !routing) || noRuns}
+              >
+                {t("common.submit")}
+                <SendIcon size={15} />
+              </button>
+            )}
           </div>
-          {/* While a request runs, the same place stops it. */}
-          {action.loading ? (
-            <button className="send ghost" onClick={stop}>
-              {t("chat.stop")}
-              <StopIcon size={13} />
-            </button>
-          ) : (
-            <button
-              className="send"
-              onClick={() => send()}
-              disabled={!question.trim() || (!corpus && !routing) || noRuns}
-            >
-              {t("common.submit")}
-              <SendIcon size={15} />
-            </button>
-          )}
         </div>
       </div>
-      )}
 
       {/* Below the composer, until the first question or the first keystroke. */}
       {empty && suggestions.length > 0 && !question.trim() ? (
-        <div className="examples">
-          <p className="examples-label">{t("chat.examples_label")}</p>
-          <SuggestionChips suggestions={suggestions} onPick={(s) => send(s)} />
-        </div>
+        <SuggestionChips label={t("chat.examples_label")} suggestions={suggestions} onPick={(s) => send(s)} />
       ) : null}
     </div>
   );
 
-  if (!educational) return page;
-  // Decisions of the last request (from its response), or what the current
-  // options will do before the first question.
-  const planned = effectiveOptions(options, config, legalCorpus);
-  const answered = !!lastTurn?.index_run_id;
-  const route: RouteInfo = {
-    known: answered,
-    mode: (answered ? lastTurn?.retrieval_mode : null) ?? planned.mode,
-    rerank: (answered ? lastTurn?.rerank : null) ?? planned.rerank,
-    // Before a question, a re-ranking left off for lack of GPU already says why.
-    rerankNotice: answered
-      ? lastTurn?.rerank_notice ?? null
-      : config?.rerank_gpu === false && !planned.rerank
-      ? "skipped_no_gpu"
-      : null,
-    rerankCandidates: config?.rerank_candidates ?? 40,
-    legalCorpus,
-    citationsOn: planned.citations,
-    citation: answered ? lastTurn?.citation ?? null : null,
-    graphOn: (answered ? lastTurn?.graph : null) ?? planned.graph,
-    graphNotice: answered ? lastTurn?.graph_notice ?? null : null,
-    graphStats: answered ? lastTurn?.graph_stats ?? null : null,
-    versionsMode: parseVersionsValue(planned.versions).mode,
-    versions: answered ? lastTurn?.versions ?? null : null,
-  };
-  return (
-    <div className="edu-shell">
-      <PipelineStrip
-        state={lastPipeline}
-        question={lastTurn?.question}
-        lexemes={lastTurn?.lexemes}
-        rrfK={config?.rrf_k ?? 60}
-        lexicalWeight={config?.hybrid_lexical_weight ?? 0.5}
-        graphWeight={config?.graph_weight ?? 0.5}
-        route={route}
+  const sidebar =
+    inline || drawerOpen ? (
+      <HistorySidebar
+        history={history}
+        variant={inline ? "inline" : "drawer"}
+        currentId={conversation?.id ?? null}
+        onOpen={openConversation}
+        onNew={newConversation}
+        onDeleted={(id) => {
+          if (id === conversationRef.current?.id) reset();
+        }}
+        onRenamed={(id, title) => {
+          const current = conversationRef.current;
+          if (current?.id !== id) return;
+          const renamed = { ...current, title };
+          conversationRef.current = renamed;
+          setConversation(renamed);
+        }}
+        closing={drawerClosing}
+        onClose={() => (inline ? showSidebar(false) : closeDrawer())}
       />
-      {page}
+    ) : null;
+
+  return (
+    <div className={`chat-layout${inline ? " with-sidebar" : ""}`}>
+      {sidebar}
+      <div className="chat-main">{educational ? educationalShell() : page}</div>
     </div>
   );
+
+  // The learning mode puts the request's pipeline above the chat.
+  function educationalShell() {
+    // Decisions of the last request (from its response), or what the current
+    // options will do before the first question.
+    const planned = effectiveOptions(options, config, legalCorpus);
+    const answered = !!lastTurn?.index_run_id;
+    const route: RouteInfo = {
+      known: answered,
+      mode: (answered ? lastTurn?.retrieval_mode : null) ?? planned.mode,
+      rerank: (answered ? lastTurn?.rerank : null) ?? planned.rerank,
+      // Before a question, a re-ranking left off for lack of GPU already says why.
+      rerankNotice: answered
+        ? lastTurn?.rerank_notice ?? null
+        : config?.rerank_gpu === false && !planned.rerank
+        ? "skipped_no_gpu"
+        : null,
+      rerankCandidates: config?.rerank_candidates ?? 40,
+      legalCorpus,
+      citationsOn: planned.citations,
+      citation: answered ? lastTurn?.citation ?? null : null,
+      graphOn: (answered ? lastTurn?.graph : null) ?? planned.graph,
+      graphNotice: answered ? lastTurn?.graph_notice ?? null : null,
+      graphStats: answered ? lastTurn?.graph_stats ?? null : null,
+      versionsMode: parseVersionsValue(planned.versions).mode,
+      versions: answered ? lastTurn?.versions ?? null : null,
+    };
+    return (
+      <div className="edu-shell">
+        <PipelineStrip
+          state={lastPipeline}
+          question={lastTurn?.question}
+          lexemes={lastTurn?.lexemes}
+          rrfK={config?.rrf_k ?? 60}
+          lexicalWeight={config?.hybrid_lexical_weight ?? 0.5}
+          graphWeight={config?.graph_weight ?? 0.5}
+          route={route}
+        />
+        {page}
+      </div>
+    );
+  }
 }
 
 interface TurnProps {
@@ -669,7 +763,123 @@ interface TurnProps {
   expanded: boolean;
   highlight: string | null;
   onToggleDetails: () => void;
-  onSelectSource: (file: string) => void;
+  onShowDetails: () => void;
+  onHighlight: (file: string | null) => void;
+}
+
+// Stages of the latency receipt, in pipeline order.
+const RECEIPT_STAGES: NodeId[] = [
+  "routing",
+  "embed",
+  "retrieval",
+  "lexical",
+  "graph",
+  "fusion",
+  "rerank",
+  "versions",
+  "prompt",
+  "generation",
+];
+
+/** The stage a request is in, from its live pipeline: the last one still running. */
+function runningStage(pipeline: PipelineState | undefined): NodeId | null {
+  if (!pipeline) return null;
+  const running = RECEIPT_STAGES.filter((id) => pipeline.nodes[id]?.status === "running");
+  return running.length > 0 ? running[running.length - 1] : null;
+}
+
+/** `value`, but each shown value stays at least `holdMs` before the next replaces it. */
+function useHeld<T>(value: T, holdMs: number): T {
+  const [shown, setShown] = useState(value);
+  const since = useRef(Date.now());
+  useEffect(() => {
+    if (value === shown) return;
+    const wait = Math.max(0, holdMs - (Date.now() - since.current));
+    const timer = setTimeout(() => {
+      since.current = Date.now();
+      setShown(value);
+    }, wait);
+    return () => clearTimeout(timer);
+  }, [value, shown, holdMs]);
+  return shown;
+}
+
+// Shortest time a stage name stays on screen: replayed stages last a few ms.
+const STAGE_LABEL_HOLD_MS = 450;
+
+/**
+ * While raglab works: four small squares, the shape of the citation chips,
+ * fill one after the other like passages being retrieved, beside the stage
+ * the request is really in (from the stream's stage events).
+ */
+function ThinkingStatus({ pipeline }: { pipeline: PipelineState | undefined }) {
+  const { t } = useTranslation();
+  const stage = runningStage(pipeline);
+  const label = useHeld(
+    stage ? t(`chat.thinking_${stage}`, { defaultValue: t("chat.loading") }) : t("chat.loading"),
+    STAGE_LABEL_HOLD_MS
+  );
+  return (
+    <div className="inline-status thinking" role="status">
+      <span className="retrieval-mark" aria-hidden="true">
+        <span />
+        <span />
+        <span />
+        <span />
+      </span>
+      <span key={label} className="thinking-label">
+        {label}
+      </span>
+    </div>
+  );
+}
+
+/** "14:02" today, "04/11 14:02" another day. */
+function stampTime(iso: string | undefined, language: string): string | null {
+  if (!iso) return null;
+  const at = new Date(iso);
+  if (Number.isNaN(at.getTime())) return null;
+  const time = at.toLocaleTimeString(language, { hour: "2-digit", minute: "2-digit" });
+  if (at.toDateString() === new Date().toDateString()) return time;
+  return `${at.toLocaleDateString(language, { day: "2-digit", month: "2-digit" })} ${time}`;
+}
+
+function formatDay(iso: string | null | undefined, language: string): string {
+  const at = iso ? new Date(iso) : new Date();
+  return Number.isNaN(at.getTime()) ? iso ?? "" : at.toLocaleDateString(language, { dateStyle: "medium" });
+}
+
+/**
+ * Time spent per stage of the request, as one thin bar: the measurement of
+ * every answer, not only in the learning mode. Generation, usually the
+ * longest, takes the accent; the retrieval stages share the neutrals.
+ */
+function LatencyReceipt({ pipeline }: { pipeline: PipelineState | undefined }) {
+  const { t } = useTranslation();
+  if (!pipeline) return null;
+  const segments = RECEIPT_STAGES.map((id) => ({ id, ms: pipeline.nodes[id]?.duration_ms ?? 0 })).filter(
+    (s) => s.ms > 0
+  );
+  const total = segments.reduce((sum, s) => sum + s.ms, 0);
+  if (segments.length < 2 || total <= 0) return null;
+  const label = (s: { id: NodeId; ms: number }) =>
+    `${t(`edu.stages.${s.id}.short`)} ${s.ms < 10 ? s.ms.toFixed(1) : Math.round(s.ms)} ms`;
+  return (
+    <div
+      className="latency-receipt"
+      role="img"
+      aria-label={t("chat.receipt_label", { stages: segments.map(label).join(", ") })}
+    >
+      {segments.map((s) => (
+        <span
+          key={s.id}
+          className={`latency-segment ${s.id}`}
+          style={{ flexGrow: s.ms, minWidth: 3 }}
+          title={label(s)}
+        />
+      ))}
+    </div>
+  );
 }
 
 function ChatTurnView({
@@ -677,146 +887,209 @@ function ChatTurnView({
   expanded,
   highlight,
   onToggleDetails,
-  onSelectSource,
+  onShowDetails,
+  onHighlight,
 }: TurnProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const gpuWhy = useGpuWhy();
   const [showDetail, setShowDetail] = useState(false);
+  // The cited passage a citation marker points to, shown and outlined.
+  const [focusRank, setFocusRank] = useState<number | null>(null);
   // When the router declines, the retrieved passages are not sources.
   const declined = turn.routing ? !turn.routing.answer_from_documents : false;
   const sourceChunks = declined ? [] : turn.chunks;
   const visibleChunks = highlight
     ? sourceChunks.filter((c) => c.file_name === highlight)
     : sourceChunks;
+  const anchor = (rank: number) => `turn-${turn.id}-rank-${rank}`;
+
+  useEffect(() => {
+    if (focusRank == null || !expanded) return;
+    document.getElementById(anchor(focusRank))?.scrollIntoView({
+      block: "nearest",
+      behavior: prefersReducedMotion() ? "auto" : "smooth",
+    });
+  }, [focusRank, expanded]);
+
+  // A marker shows its own passage; clicking it again clears the selection.
+  const selectCitation = (chunk: RetrievedChunk) => {
+    if (highlight === chunk.file_name && focusRank === chunk.rank) {
+      setFocusRank(null);
+      onHighlight(null);
+      return;
+    }
+    setFocusRank(chunk.rank);
+    onHighlight(chunk.file_name);
+    onShowDetails();
+  };
+  // A source chip selects its whole file.
+  const selectSource = (file: string) => {
+    setFocusRank(null);
+    onHighlight(highlight === file ? null : file);
+  };
+
+  const time = stampTime(turn.created_at, i18n.language);
+  const versions = turn.versions && turn.versions.scope !== "none" ? turn.versions : null;
 
   return (
-    <>
+    <section className="turn">
       <div className="bubble user">
-        <div className="role">{t("chat.user_role")}</div>
+        <span className="role sr-only">{t("chat.user_role")}</span>
         {turn.question}
       </div>
 
-      {(turn.answer === null || turn.answer === "") && !turn.error && !turn.stopped ? (
-        <div className="inline-status" role="status">
-          <span className="dots">
-            <span />
-            <span />
-            <span />
-          </span>
-          {t("chat.loading")}
-        </div>
-      ) : null}
+      <div className="turn-body">
+        {(turn.answer === null || turn.answer === "") && !turn.error && !turn.stopped ? (
+          <ThinkingStatus pipeline={turn.pipeline} />
+        ) : null}
 
-      {turn.stopped && !turn.answer ? (
-        <div className="inline-status" role="status">
-          {t("chat.stopped")}
-        </div>
-      ) : null}
-
-      {turn.error ? (
-        <>
-          <div className="inline-status error">
-            <span>⚠</span>
-            {turn.error.message}
-            {turn.error.detail ? (
-              <button
-                className="detail-toggle"
-                onClick={() => setShowDetail((v) => !v)}
-              >
-                {showDetail ? t("chat.error_hide_detail") : t("chat.error_detail")}
-              </button>
-            ) : null}
+        {turn.stopped && !turn.answer ? (
+          <div className="inline-status" role="status">
+            {t("chat.stopped")}
           </div>
-          {showDetail && turn.error.detail ? (
-            <div className="inline-detail">{turn.error.detail}</div>
-          ) : null}
-        </>
-      ) : null}
+        ) : null}
 
-      {turn.answer ? (
-        <div className="bubble assistant" aria-busy={turn.streaming ? true : undefined}>
-          <div className="role">{t("chat.assistant_role")}</div>
-          <div className="answer-text" style={{ whiteSpace: "pre-wrap" }}>
-            {renderAnswer(turn.answer, turn.chunks, highlight, (chunk) => onSelectSource(chunk.file_name))}
-            {turn.streaming ? <span className="stream-caret" aria-hidden="true" /> : null}
-          </div>
-          {turn.stopped ? <p className="answer-stopped">{t("chat.stopped")}</p> : null}
-          {sourceChunks.length > 0 ? (
-            <div className="sources">
-              <div className="sources-label">
-                {t("chat.sources_header", {
-                  count: new Set(sourceChunks.map((c) => c.file_name)).size,
-                })}
-              </div>
-              <SourceList
-                chunks={sourceChunks}
-                onSelect={onSelectSource}
-                activeFile={highlight}
-                citedRanks={turn.answer ? extractCitedRanks(turn.answer) : undefined}
-              />
-              <button className="details-toggle" onClick={onToggleDetails}>
-                {t(`chat.chunks_${expanded ? "hide" : "show"}${highlight ? "_filtered" : ""}`, {
-                  count: visibleChunks.length,
-                })}
-              </button>
-              {expanded ? (
-                <div style={{ marginTop: 12 }}>
-                  {visibleChunks.map((c) => (
-                    <ChunkCard key={c.chunk_id} chunk={c} />
-                  ))}
-                </div>
+        {turn.error ? (
+          <>
+            <div className="inline-status error">
+              <AlertIcon size={15} />
+              {turn.error.message}
+              {turn.error.detail ? (
+                <button className="detail-toggle" onClick={() => setShowDetail((v) => !v)}>
+                  {showDetail ? t("chat.error_hide_detail") : t("chat.error_detail")}
+                </button>
               ) : null}
             </div>
-          ) : null}
-          {turn.routing ? <RoutingPanel routing={turn.routing} /> : null}
-          {turn.rerank_notice ? (
-            <p className="answer-notice" role="note">
-              {t(`chat.rerank_notice_${turn.rerank_notice}`, { defaultValue: turn.rerank_notice, why: gpuWhy })}
-            </p>
-          ) : null}
-          {turn.generator_notice ? (
-            <p className="answer-notice" role="note">
-              {t(`chat.generator_notice_${turn.generator_notice}`, { defaultValue: turn.generator_notice })}
-            </p>
-          ) : null}
-          <div className="answer-meta">
-            {turn.query_translation?.translated ? (
-              <span title={turn.query_translation.text}>
-                {t("chat.meta_translated", { lang: turn.query_translation.target_language })}
-              </span>
+            {showDetail && turn.error.detail ? <div className="inline-detail">{turn.error.detail}</div> : null}
+          </>
+        ) : null}
+
+        {turn.answer ? (
+          <article className="turn-answer" aria-busy={turn.streaming ? true : undefined}>
+            <span className="role sr-only">{t("chat.assistant_role")}</span>
+            <div className="answer-text">
+              {renderAnswer(turn.answer, turn.chunks, highlight, selectCitation, {
+                activeRank: focusRank,
+                articleLabels: true,
+              })}
+              {turn.streaming ? <span className="stream-caret" aria-hidden="true" /> : null}
+            </div>
+            {turn.stopped ? <p className="answer-stopped">{t("chat.stopped")}</p> : null}
+            {sourceChunks.length > 0 ? (
+              <section className="sources" aria-labelledby={`sources-${turn.id}`}>
+                <div className="sources-head">
+                  <span className="sources-label" id={`sources-${turn.id}`}>
+                    {t("chat.sources_header", {
+                      count: new Set(sourceChunks.map((c) => c.file_name)).size,
+                    })}
+                  </span>
+                  <button
+                    type="button"
+                    className={`details-toggle${expanded ? " open" : ""}`}
+                    onClick={onToggleDetails}
+                    aria-expanded={expanded}
+                  >
+                    {t(`chat.chunks_${expanded ? "hide" : "show"}${highlight ? "_filtered" : ""}`, {
+                      count: visibleChunks.length,
+                    })}
+                    <ChevronDownIcon size={14} />
+                  </button>
+                </div>
+                <SourceList
+                  chunks={sourceChunks}
+                  onSelect={selectSource}
+                  activeFile={highlight}
+                  citedRanks={turn.answer ? extractCitedRanks(turn.answer) : undefined}
+                />
+                {expanded ? (
+                  <div className="answer-details">
+                    <ol className="chunk-list">
+                      {visibleChunks.map((c) => (
+                        <ChunkCard
+                          key={c.chunk_id}
+                          chunk={c}
+                          compact
+                          anchorId={anchor(c.rank)}
+                          active={focusRank === c.rank}
+                        />
+                      ))}
+                    </ol>
+                {turn.streaming ? null : <LatencyReceipt pipeline={turn.pipeline} />}
+                <div className="answer-meta">
+                  {turn.query_translation?.translated ? (
+                    <span title={turn.query_translation.text}>
+                      {t("chat.meta_translated", { lang: turn.query_translation.target_language })}
+                    </span>
+                  ) : null}
+                  {turn.retrieval_mode ? (
+                    <span>
+                      <span className="meta-label">{t("chat.meta_mode")}</span>
+                      {t(`retrieval.mode_short_${turn.retrieval_mode}`, { defaultValue: turn.retrieval_mode })}
+                      {turn.rerank ? ` + ${t("chat.meta_rerank")}` : ""}
+                    </span>
+                  ) : null}
+                  {turn.citation ? (
+                    <span title={turn.citation.label}>
+                      <span className="meta-label">{t("chat.meta_citation")}</span>
+                      {turn.citation.label}
+                    </span>
+                  ) : null}
+                  {versions ? (
+                    <span>
+                      <span className="meta-label">{t("chat.meta_versions")}</span>
+                      {t(`chat.meta_versions_${versions.mode}`, { date: formatDay(versions.date, i18n.language) })}
+                    </span>
+                  ) : null}
+                  {turn.strategy ? (
+                    <span>
+                      <span className="meta-label">{t("chat.meta_strategy")}</span>
+                      <code>{turn.strategy}</code>
+                    </span>
+                  ) : null}
+                  {turn.first_token_ms != null ? (
+                    <span title={t("chat.meta_first_token_title")}>
+                      <span className="meta-label">{t("chat.meta_first_token_label")}</span>
+                      <code>{t("chat.meta_ms", { ms: Math.round(turn.first_token_ms).toLocaleString(i18n.language) })}</code>
+                    </span>
+                  ) : null}
+                  {turn.elapsed_ms != null ? (
+                    <span>
+                      <span className="meta-label">{t("chat.meta_total")}</span>
+                      <code>{t("chat.meta_ms", { ms: Math.round(turn.elapsed_ms).toLocaleString(i18n.language) })}</code>
+                    </span>
+                  ) : null}
+                  {turn.corpus ? (
+                    <span>
+                      <span className="meta-label">{t("chat.meta_corpus")}</span>
+                      {turn.corpus}
+                    </span>
+                  ) : null}
+                  {turn.index_run_id ? (
+                    <span title={turn.index_run_id}>
+                      <span className="meta-label">{t("chat.meta_run")}</span>
+                      <code>{turn.index_run_id.slice(0, 8)}</code>
+                    </span>
+                  ) : null}
+                  {time ? <span>{time}</span> : null}
+                </div>
+                  </div>
+                ) : null}
+              </section>
             ) : null}
-            {turn.retrieval_mode ? (
-              <span>
-                {t("chat.meta_mode")} <code>{turn.retrieval_mode}{turn.rerank ? " + rerank" : ""}</code>
-              </span>
+            {turn.routing ? <RoutingPanel routing={turn.routing} /> : null}
+            {turn.rerank_notice ? (
+              <p className="answer-notice" role="note">
+                {t(`chat.rerank_notice_${turn.rerank_notice}`, { defaultValue: turn.rerank_notice, why: gpuWhy })}
+              </p>
             ) : null}
-            {turn.citation ? (
-              <span title={turn.citation.label}>
-                {t("chat.meta_citation")} <code>{turn.citation.label}</code>
-              </span>
+            {turn.generator_notice ? (
+              <p className="answer-notice" role="note">
+                {t(`chat.generator_notice_${turn.generator_notice}`, { defaultValue: turn.generator_notice })}
+              </p>
             ) : null}
-            {turn.strategy ? (
-              <span>
-                {t("chat.meta_strategy")} <code>{turn.strategy}</code>
-              </span>
-            ) : null}
-            {turn.index_run_id ? (
-              <span title={turn.index_run_id}>
-                {t("chat.meta_index_run")}{" "}
-                <code>{turn.index_run_id.slice(0, 8)}</code>
-              </span>
-            ) : null}
-            {turn.first_token_ms != null ? (
-              <span title={t("chat.meta_first_token_title")}>
-                {t("chat.meta_first_token", { ms: turn.first_token_ms.toFixed(0) })}
-              </span>
-            ) : null}
-            {turn.elapsed_ms != null ? (
-              <span>{t("chat.meta_ms", { ms: turn.elapsed_ms.toFixed(0) })}</span>
-            ) : null}
-          </div>
-        </div>
-      ) : null}
-    </>
+          </article>
+        ) : null}
+      </div>
+    </section>
   );
 }
