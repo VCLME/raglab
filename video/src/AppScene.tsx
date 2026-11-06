@@ -93,10 +93,9 @@ function Screen({ seg, ms }: { seg: Segment; ms: number }) {
   while (i + 1 < states.length && states[i + 1].t <= ms) i++;
   const cur = states[i];
   const prev = states[i - 1];
-  // A short dissolve for in-place changes; a cut when the page scrolled.
-  const cut = !prev || prev.scroll !== cur.scroll;
-  const fade = cut ? 1 : Math.min(80, cur.t - prev.t);
-  const alpha = cut ? 1 : clamp01((ms - cur.t) / Math.max(1, fade));
+  // A short dissolve for in-place changes, a little longer when the page scrolled.
+  const fade = !prev ? 1 : Math.min(prev.scroll !== cur.scroll ? 220 : 80, cur.t - prev.t);
+  const alpha = !prev ? 1 : clamp01((ms - cur.t) / Math.max(1, fade));
   const style: React.CSSProperties = { position: "absolute", inset: 0, width: VW, height: VH };
   return (
     <>
@@ -209,6 +208,7 @@ export function AppScene({
   enterFrames = 24,
   duration,
   exitFrames = 14,
+  joined = false,
 }: {
   seg: Segment;
   camera: CameraKey[];
@@ -219,16 +219,18 @@ export function AppScene({
   /** Length of the scene (frames): it fades out over its last `exitFrames`. */
   duration: number;
   exitFrames?: number;
+  /** Follows a scene that ended on the same whole-window shot: dissolve in place, no movement. */
+  joined?: boolean;
 }) {
   const frame = useCurrentFrame();
   const ms = from + (frame * 1000) / FPS;
   const cam = cameraAt(camera, ms);
   const enter = Easing.out(Easing.cubic)(clamp01(frame / enterFrames));
-  const exit = clamp01((duration - frame) / exitFrames);
+  const exit = exitFrames > 0 ? clamp01((duration - frame) / exitFrames) : 1;
   const tx = ANCHOR_X - VW / 2 - cam.s * (cam.cx - VW / 2);
-  const ty = cam.ay - VH / 2 - cam.s * (cam.cy - VH / 2) + (1 - enter) * 40;
+  const ty = cam.ay - VH / 2 - cam.s * (cam.cy - VH / 2) + (joined ? 0 : (1 - enter) * 40);
   return (
-    <AbsoluteFill style={{ opacity: exit }}>
+    <AbsoluteFill style={{ opacity: exit * (joined ? enter : 1) }}>
       <div style={{ position: "absolute", left: 0, top: 0, width: FW, height: SH, overflow: "hidden", perspective: 2600 }}>
         <div
           style={{
@@ -242,7 +244,7 @@ export function AppScene({
             borderRadius: 14,
             overflow: "hidden",
             background: "white",
-            opacity: enter,
+            opacity: joined ? 1 : enter,
             boxShadow: `0 0 0 1px ${C.rule}, 0 40px 90px -40px oklch(0.2 0.02 60 / 0.4)`,
           }}
         >

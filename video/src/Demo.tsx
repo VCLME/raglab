@@ -122,8 +122,8 @@ const workshopCaptions: CaptionCue[] = [
   { at: at(workshop, "official"), kicker: "04 · Import", text: "From official sources: Légifrance, EUR-Lex." },
 ];
 
-// Scenes overlap by this much: one fades out while the next comes in.
-const OVERLAP = 10;
+// Scenes overlap by this much: one fades out (or dissolves) while the next comes in.
+const OVERLAP = 16;
 
 export const LEN = {
   intro: 180,
@@ -142,9 +142,19 @@ export function Demo() {
     start += len - OVERLAP;
     return s;
   };
-  const scene = (seg: Segment, len: number, camera: CameraKey[], captions: CaptionCue[]) => (
+  // Scene to scene, the window stays put: each scene ends on the whole window,
+  // the next starts there, and only the page dissolves.
+  const scene = (seg: Segment, len: number, camera: CameraKey[], captions: CaptionCue[], { joined = false, last = false } = {}) => (
     <Sequence from={next(len)} durationInFrames={len}>
-      <AppScene seg={seg} camera={camera} captions={captions} duration={len} />
+      <AppScene
+        seg={seg}
+        camera={camera}
+        captions={captions}
+        duration={len}
+        joined={joined}
+        enterFrames={joined ? OVERLAP : undefined}
+        exitFrames={last ? undefined : 0}
+      />
     </Sequence>
   );
   return (
@@ -154,8 +164,8 @@ export function Demo() {
         <Intro duration={LEN.intro} />
       </Sequence>
       {scene(ask, LEN.ask, askCamera, askCaptions)}
-      {scene(learning, LEN.learning, learningCamera, learningCaptions)}
-      {scene(workshop, LEN.workshop, workshopCamera, workshopCaptions)}
+      {scene(learning, LEN.learning, learningCamera, learningCaptions, { joined: true })}
+      {scene(workshop, LEN.workshop, workshopCamera, workshopCaptions, { joined: true, last: true })}
       <Sequence from={next(LEN.more)} durationInFrames={LEN.more}>
         <AndMore duration={LEN.more} />
       </Sequence>

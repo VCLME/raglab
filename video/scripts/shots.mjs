@@ -18,16 +18,16 @@ const OUT = join(VIDEO_DIR, "public", "shots");
 const DPR = 2;
 // Video pacing (ms): one typed character, the longest a streamed answer may
 // take on screen, the shortest a loader stage shows.
-const CHAR_MS = 60;
-const ANSWER_BUDGET_MS = 4500;
+const CHAR_MS = 50;
+const ANSWER_BUDGET_MS = 3800;
 // Learning mode: the camera is on the pipeline, the answer runs a little faster.
-const STRIP_ANSWER_BUDGET_MS = 3800;
+const STRIP_ANSWER_BUDGET_MS = 3200;
 const STAGE_MS = 500;
 // Learning mode: each brick of the pipeline holds this long (slow motion:
 // the real stages take milliseconds) while the camera moves to it.
-const STRIP_STAGE_MS = 2500;
+const STRIP_STAGE_MS = 2100;
 const TOKEN_STATES = 40;
-const CURSOR_MS = 650;
+const CURSOR_MS = 600;
 const TOP_BAR_CURSOR_MS = 950;
 // Stages the Chat loader names ("Embedding the question…", …).
 const LOADER_STAGES = ["embed", "retrieval", "rerank", "generation"];
