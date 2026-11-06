@@ -2668,27 +2668,33 @@ button.switch.on .switch-knob {
   min-width: 100%;
   justify-content: center;
 }
+/* Fork, parallel lanes, merge. The lane gap is mirrored in BranchWires. */
 .edu-branch {
-  position: relative;
+  display: flex;
+  align-items: center;
+}
+.edu-lanes {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
-/* Fork and merge bars joining the two lanes (from one lane centre to the other). */
-.edu-branch::before,
-.edu-branch::after {
-  content: "";
-  position: absolute;
-  top: 17px;
-  bottom: 17px;
-  width: 2px;
-  background: var(--border-strong);
+/* Fork and merge: one SVG path per lane (see BranchWires). */
+.edu-wires {
+  flex-shrink: 0;
+  overflow: visible;
 }
-.edu-branch::before {
-  left: 0;
+.edu-wires path {
+  fill: none;
+  stroke: var(--border-strong);
+  stroke-width: 2;
+  transition: stroke var(--dur) var(--ease-out);
 }
-.edu-branch::after {
-  right: 0;
+.edu-wires path.lit {
+  stroke: var(--accent);
+}
+/* Same dimming as the lane it leads to. */
+.edu-wires path.off {
+  opacity: 0.4;
 }
 .edu-lane {
   display: flex;
@@ -2723,8 +2729,13 @@ button.switch.on .switch-knob {
 .edu-arrow.wire {
   flex: 1 0 18px;
 }
-.edu-arrow.wire.tail::after {
+.edu-arrow.wire.tail::after,
+.edu-arrow.join::after {
   display: none;
+}
+/* Head wires stay short: the fork curve already carries the line. */
+.edu-arrow.wire:not(.tail) {
+  flex: 0 0 14px;
 }
 .edu-arrow {
   position: relative;
