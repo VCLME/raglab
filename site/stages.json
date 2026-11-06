@@ -122,13 +122,43 @@
   {
     "label": "audit-lot3-dedup-on",
     "name": "De-duplication v1 (rejected)",
-    "change": "+ drop passages repeating a kept one, identical wording elsewhere included; lost 4 questions where the same words belong to another provision",
+    "change": "+ drop passages repeating a kept one, identical wording elsewhere included; lost 6 questions (2 won) where the same words belong to another provision",
     "status": "audit lot 3 · rejected"
   },
   {
     "label": "audit-lot3-dedup-on-v2",
-    "name": "De-duplication (option)",
-    "change": "+ drop overlapping cuts of one document that add no number, negation or exception, and refill from 40 re-ranked candidates (retrieval only, off by default)",
-    "status": "audit lot 3 · option"
+    "name": "De-duplication v2 (replaced)",
+    "change": "+ drop overlapping cuts of one document (80 % overlap) that add no number, negation or exception; replaced by strict containment after a review counterexample (retrieval only)",
+    "status": "audit lot 3 · replaced"
+  },
+  {
+    "label": "clean-legi-v1",
+    "name": "Clean consumer-code index",
+    "change": "same pipeline on a rebuilt consumer-code index without the document a test had written (5 998 documents, checked against the frozen manifest; retrieval only)",
+    "status": "review lot 1 · comparison"
+  },
+  {
+    "label": "pinned-order-dedup-off",
+    "name": "De-duplication off (reference)",
+    "change": "production retrieval (query translation on), dedup off, after the pinned-order fix: passages identical to the lot 4 dedup-off run on all 715 questions (retrieval only)",
+    "status": "review lot 4 · comparison"
+  },
+  {
+    "label": "pinned-order-dedup-on",
+    "name": "De-duplication v3 (option)",
+    "change": "+ drop passages entirely contained in a kept one, refill from 40 re-ranked candidates; a cited article is ordered from the top-k alone, so questions with nothing dropped are unchanged (retrieval only, off by default)",
+    "status": "review lot 4 · option"
+  },
+  {
+    "label": "pipeline-2026-11-dedup-off",
+    "name": "Merged pipeline, production settings",
+    "change": "after the review fixes (#86–#88): production settings with query translation and Qwen3.6-35B-A3B answers, judged with the presented-context protocol (v2); dedup off",
+    "status": "review lot 4 · reference"
+  },
+  {
+    "label": "pipeline-2026-11-dedup-on",
+    "name": "Merged pipeline, de-duplication on",
+    "change": "same run with de-duplication on, before the pinned-order fix (#92): answer changes within the writer and judge noise",
+    "status": "review lot 4 · comparison"
   }
 ]

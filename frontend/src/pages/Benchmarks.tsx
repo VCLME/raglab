@@ -118,6 +118,8 @@ function LaunchTab({ onLaunched }: { onLaunched: () => void }) {
   // Versions option (9.10): "in_force" (the shipped default, measured);
   // "all" measures the naive baseline.
   const [versions, setVersions] = useState("in_force");
+  // De-duplication (experimental): "" leaves the server default.
+  const [dedup, setDedup] = useState<"" | "on" | "off">("");
 
   const action = useApiAction((body: unknown) =>
     post<{
@@ -176,6 +178,7 @@ function LaunchTab({ onLaunched }: { onLaunched: () => void }) {
         body.citations = citations;
         body.graph = graph;
         body.versions = versions;
+        if (dedup !== "") body.dedup = dedup === "on";
         if (retrievalMode === "hybrid") {
           if (lexicalWeight !== "") body.lexical_weight = Number(lexicalWeight);
           if (rrfK !== "") body.rrf_k = Number(rrfK);
@@ -249,6 +252,19 @@ function LaunchTab({ onLaunched }: { onLaunched: () => void }) {
             <input type="checkbox" checked={graph} onChange={(e) => setGraph(e.target.checked)} />
             {t("retrieval.graph_checkbox")}
           </label>
+        </FieldRow>
+      ) : null}
+      {backendChoice !== "neo4j" ? (
+        <FieldRow label={t("retrieval.dedup_label")} hint={t("retrieval.dedup_hint")}>
+          <Select
+            value={dedup}
+            onChange={(e) => setDedup(e.target.value as "" | "on" | "off")}
+            aria-label={t("retrieval.dedup_label")}
+          >
+            <option value="">{t("retrieval.mode_default")}</option>
+            <option value="on">{t("retrieval.rerank_on")}</option>
+            <option value="off">{t("retrieval.rerank_off")}</option>
+          </Select>
         </FieldRow>
       ) : null}
       {backendChoice !== "neo4j" ? (

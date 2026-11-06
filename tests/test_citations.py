@@ -78,6 +78,18 @@ def test_long_article_chunks_are_ordered_by_retrieval_rank():
     assert [c.chunk_id for c in merged] == ["art3", "art1", "art2", "art4", "other"]
 
 
+def test_article_chunks_ranked_beyond_the_window_keep_reading_order():
+    # With de-duplication the re-ranker returns its whole pool; the article
+    # must be ordered as from the top-k alone, or the option changes
+    # passages it does not drop.
+    pinned = [_chunk(f"art{i}", i) for i in range(1, 5)]
+    ranked = [_chunk("art3", 1), _chunk("other", 2), _chunk("art4", 3), _chunk("art2", 4)]
+    window = merge_with_citation(pinned, ranked, top_k=4, order_within=2)
+    alone = merge_with_citation(pinned, ranked[:2], top_k=4)
+    assert [c.chunk_id for c in window] == ["art3", "art1", "art2", "art4"]
+    assert [c.chunk_id for c in window] == [c.chunk_id for c in alone]
+
+
 @pytest.mark.parametrize(
     ("question", "expected"),
     [

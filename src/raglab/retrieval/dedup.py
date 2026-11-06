@@ -8,35 +8,25 @@ Dropping duplicates from the final five alone would leave the places empty,
 so the selection walks a deeper ranked pool (the re-ranker's 40 candidates)
 and keeps the first `top_k` distinct passages.
 
-A passage is dropped only when all of these hold against a passage already
-kept: same document and same version state, the spans overlap on at least
-`MIN_OVERLAP` of the dropped passage, and what it adds beyond the kept span
-carries no number, negation or exception word (so "25 %" vs "2,5 %", "não"
-or "salvo" never merge). Identical wording at another place (another article,
-another law, another version file) is kept: in legal text the provision that
-says it matters (measured: merging it lost 4 questions, see docs). Pinned
-citation passages are never dropped. Kept
+A passage is dropped only when, against a passage already kept, it shares
+the document and the version state and its span lies entirely inside the
+kept one: then it adds no character. Text a passage adds beyond a kept span
+is never judged useless, whatever it says ("These duties concern legal
+persons." carries no number, negation or exception and still says who is
+bound): v2 dropped such passages above 80 % overlap, which a review showed
+wrong. Identical wording at another place (another article, another law,
+another version file) is kept: in legal text the provision that says it
+matters (v1 merged it and lost questions, see docs). Pinned citation
+passages are never dropped. Kept
 passages keep their offsets, scores and ranks of origin; only `rank` is
 renumbered. Chunkers are untouched: this reads chunk spans and text.
 """
 
 from __future__ import annotations
 
-import re
 from typing import Any
 
 from raglab.domain.schemas import RetrievedChunk
-
-# Share of the dropped passage's span that must lie inside a kept one.
-MIN_OVERLAP = 0.8
-# What must not be lost: numbers (amounts, rates, dates, article numbers,
-# roman numerals of items), negations and exceptions, in fr / pt / en.
-_PROTECTED_RE = re.compile(
-    r"\d|\b[IVXLC]{1,6}\b|"
-    r"\b(?:n[ãa]o|nem|nunca|jamais|nenhum[a]?|ne|pas|sans|aucun[e]?|ni|not|no|never|none|without|"
-    r"salvo|exceto|ressalvad[oa]s?|sauf|except|unless|hormis|à l'exception|exception|exce[cç][aã]o)\b",
-    re.IGNORECASE,
-)
 
 
 def _version_key(chunk: RetrievedChunk) -> tuple[Any, ...]:
@@ -46,31 +36,20 @@ def _version_key(chunk: RetrievedChunk) -> tuple[Any, ...]:
     return (version.source, version.etat, version.in_force, version.revoked_lines, version.revoked_only)
 
 
-def _uncovered_text(chunk: RetrievedChunk, kept: RetrievedChunk) -> str | None:
-    """The part of `chunk` outside `kept`'s span, when they share a document
-    and the overlap covers at least MIN_OVERLAP of `chunk`; None otherwise."""
+def _contained(chunk: RetrievedChunk, kept: RetrievedChunk) -> bool:
+    """Whether `chunk`'s span lies entirely inside `kept`'s, in one document."""
     if chunk.document_id != kept.document_id:
-        return None
+        return False
     if None in (chunk.char_start, chunk.char_end, kept.char_start, kept.char_end):
-        return None
+        return False
     start, end = int(chunk.char_start), int(chunk.char_end)  # type: ignore[arg-type]
     kept_start, kept_end = int(kept.char_start), int(kept.char_end)  # type: ignore[arg-type]
-    length = end - start
-    overlap = min(end, kept_end) - max(start, kept_start)
-    if length <= 0 or overlap < MIN_OVERLAP * length:
-        return None
-    # Offsets index the document; the chunk text starts at char_start.
-    before = chunk.chunk_text[: max(0, kept_start - start)]
-    after = chunk.chunk_text[max(0, kept_end - start) :]
-    return before + " " + after
+    return end > start and kept_start <= start and end <= kept_end
 
 
 def redundant(chunk: RetrievedChunk, kept: RetrievedChunk) -> bool:
     """Whether `chunk` adds nothing that `kept` does not already give."""
-    if _version_key(chunk) != _version_key(kept):
-        return False
-    extra = _uncovered_text(chunk, kept)
-    return extra is not None and _PROTECTED_RE.search(extra) is None
+    return _version_key(chunk) == _version_key(kept) and _contained(chunk, kept)
 
 
 def select_distinct(ranked: list[RetrievedChunk], top_k: int) -> tuple[list[RetrievedChunk], dict[str, Any]]:

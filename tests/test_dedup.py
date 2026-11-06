@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from raglab.domain.schemas import RetrievedChunk
 from raglab.domain.versions import ChunkVersion
 from raglab.retrieval.dedup import redundant, select_distinct
@@ -31,21 +33,40 @@ def test_a_cut_inside_a_kept_passage_is_redundant():
     assert redundant(tail, whole)
 
 
-def test_what_a_passage_adds_beyond_the_overlap_is_protected():
-    long_text = "1º, incisos II e III). " + DOC
-    longer = _chunk("c", 0, len(long_text), text=long_text)
-    kept = _chunk("a", 23, len(long_text), text=DOC)
-    # 84 % overlap, but the extra part carries numbers: kept apart.
-    assert not redundant(longer, kept)
-    plain_text = "Seção única. " + DOC
-    plain = _chunk("d", 0, len(plain_text), text=plain_text)
-    assert redundant(plain, _chunk("a", 13, len(plain_text), text=DOC))
+LONG = (
+    "Member States shall ensure that the entities referred to in this Article take appropriate and proportionate "
+    "technical, operational and organisational measures to manage the risks posed to the security of network and "
+    "information systems which those entities use for their operations or for the provision of their services, and to "
+    "prevent or minimise the impact of incidents on recipients of their services and on other services."
+)
 
 
-def test_negations_and_exceptions_are_protected():
-    for extra in ("Não se aplica. ", "Salvo disposição. ", "Sauf exception. ", "Except where noted. "):
-        text = extra + DOC
-        assert not redundant(_chunk("x", 0, len(text), text=text), _chunk("a", len(extra), len(text), text=DOC))
+@pytest.mark.parametrize(
+    "extra",
+    [
+        # Review counterexample (about 92 % overlap): who is bound.
+        "These duties concern legal persons.",
+        # Activities, territories, conditions of application.
+        "This applies to cloud computing services only.",
+        "It applies in the outermost regions as well.",
+        "Where the entity is a micro enterprise, Article 21 applies instead.",
+        # Numbers, negations, exceptions.
+        "The deadline is 24 hours.",
+        "This does not apply to public administrations.",
+        "Except for entities covered by Regulation (EU) 2022/2554.",
+    ],
+)
+def test_text_added_beyond_a_kept_passage_is_never_dropped(extra):
+    """Only a cut entirely inside a kept span adds nothing; whatever a passage
+    adds, even without a number, negation or exception word, is kept."""
+    kept = _chunk("k", 0, len(LONG), text=LONG)
+    text = LONG + " " + extra
+    candidate = _chunk("c", 0, len(text), text=text)
+    assert len(LONG) / len(text) > 0.85
+    assert not redundant(candidate, kept)
+    # The same extra text before the kept span is kept too.
+    before = extra + " " + LONG
+    assert not redundant(_chunk("c", 0, len(before), text=before), _chunk("k", len(extra) + 1, len(before), text=LONG))
 
 
 def test_other_documents_and_other_versions_never_merge_on_overlap():
