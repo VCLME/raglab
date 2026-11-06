@@ -7,7 +7,7 @@ import React from "react";
 import { AbsoluteFill, Sequence } from "remotion";
 import { AppScene, type CameraKey, type CaptionCue } from "./AppScene";
 import { AndMore, Intro, Outro, Paper, PlaceholderBadge } from "./Brand";
-import { fApp } from "./theme";
+import { FILM_SPEED, fApp } from "./theme";
 import { at, clickAt, timeline, type Rect, type Segment } from "./timeline";
 
 const { ask, learning, workshop } = timeline.segments;
@@ -127,9 +127,9 @@ const OVERLAP = 16;
 
 export const LEN = {
   intro: 180,
-  ask: fApp(ask.duration),
-  learning: fApp(learning.duration),
-  workshop: fApp(workshop.duration),
+  ask: fApp(ask.duration, FILM_SPEED),
+  learning: fApp(learning.duration, FILM_SPEED),
+  workshop: fApp(workshop.duration, FILM_SPEED),
   more: 270,
   outro: 180,
 };
@@ -152,6 +152,7 @@ export function Demo() {
         captions={captions}
         duration={len}
         joined={joined}
+        speed={FILM_SPEED}
         enterFrames={joined ? OVERLAP : undefined}
         exitFrames={last ? undefined : 0}
       />

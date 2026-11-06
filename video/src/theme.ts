@@ -28,6 +28,9 @@ export const H = 1080;
 /** ms -> frames at the composition rate. */
 export const f = (ms: number) => Math.round((ms / 1000) * FPS);
 // The app footage plays this much faster than it was shot (the title cards do not).
+// The README animation is already cut down to the moves; the film keeps every
+// hold, so it plays faster to keep the same pace.
 export const SPEED = 1.25;
-/** Frames that `ms` of app footage takes on screen. */
-export const fApp = (ms: number) => f(ms / SPEED);
+export const FILM_SPEED = 1.5;
+/** Frames that `ms` of app footage takes on screen at `speed`. */
+export const fApp = (ms: number, speed = SPEED) => f(ms / speed);
