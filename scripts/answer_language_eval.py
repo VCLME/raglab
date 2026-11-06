@@ -190,6 +190,29 @@ def _mean(values: list[float]) -> float | None:
     return round(sum(values) / len(values), 3) if values else None
 
 
+def paired(runs: dict[str, Any], before: str, after: str) -> dict[str, Any]:
+    """`after` minus `before` on the same questions, all sets pooled: mean
+    difference per judge metric with its 95% paired-bootstrap interval."""
+    from raglab.benchmarks.compare import paired_bootstrap
+
+    result: dict[str, Any] = {"before": before, "after": after}
+    for metric in METRICS:
+        pairs = [
+            (a[metric], b[metric])
+            for name in SETS
+            for a, b in zip(runs[before][name]["details"], runs[after][name]["details"], strict=True)
+            if a.get(metric) is not None and b.get(metric) is not None
+        ]
+        if pairs:
+            low, high = paired_bootstrap([a for a, _ in pairs], [b for _, b in pairs])
+            result[metric] = {
+                "pairs": len(pairs),
+                "delta": round(sum(b - a for a, b in pairs) / len(pairs), 3),
+                "ci95": [round(low, 3), round(high, 3)],
+            }
+    return result
+
+
 def report() -> None:
     settings = get_settings()
     passages = load(WORK / "passages.json")
@@ -237,6 +260,11 @@ def report() -> None:
         "sets": {name: {"path": SETS[name][0], "corpus": SETS[name][1], "count": SETS[name][2]} for name in SETS},
         "judge": f"llamacpp:{settings.judge_model}",
         "runs": runs,
+        "paired": {
+            provider: paired(runs, f"verbatim-{provider}", f"omit-{provider}")
+            for provider in ("ollama", "llamacpp")
+            if f"verbatim-{provider}" in runs and f"omit-{provider}" in runs
+        },
     }
     save(RESULTS, payload)
     sys.stdout.reconfigure(encoding="utf-8")
@@ -249,6 +277,13 @@ def report() -> None:
                 f"| {run} | {name} | {s['answers_with_foreign_text']}/{s['questions']} | {s['refusals']} | "
                 f"{s['faithfulness']} | {s['answer_correctness']} |"
             )
+    for provider, block in payload["paired"].items():
+        for metric in METRICS:
+            if metric in block:
+                stats = block[metric]
+                print(
+                    f"{provider} {metric}: omit - verbatim = {stats['delta']} (95% {stats['ci95']}, n={stats['pairs']})"
+                )
 
 
 def main() -> None:

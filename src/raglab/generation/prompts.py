@@ -159,8 +159,9 @@ _SYSTEM = {
 # language: copied verbatim, a Portuguese or French quote opened the answer
 # (101 of 120 cross-language answers with Qwen3.6, 58 with qwen2.5:7b).
 # Asked to translate it ("translate"), the writers still copied it in 79 and
-# 35 answers; without a quote ("omit", the default) 1 and 5 answers of 120
-# kept foreign text (docs/benchmarks/prompt.md, answer-lang-en-v1).
+# 35 answers; without a quote ("omit", the default) 2 (both false positives)
+# and 5 answers of 120 kept foreign text, faithfulness and correctness
+# unchanged or better (docs/benchmarks/prompt.md, answer-lang-en-v1).
 CROSS_LANGUAGE_MODES = ("verbatim", "translate", "omit")
 _QUOTE_STEP = {
     "fr": "1. Cherche dans le contexte la ou les phrases qui répondent à la question et recopie-les entre guillemets, "
@@ -177,12 +178,10 @@ _TRANSLATED_QUOTE_STEP = {
     "translate them into English and give the translation in quotes, with their [Rank X].",
 }
 _PASSAGE_STEP = {
-    "fr": "1. Cherche dans le contexte le ou les passages qui répondent à la question (le contexte est en {source}) "
-    "et note leur [Rank X].",
-    "pt": "1. Procure no contexto o(s) trecho(s) que respondem à pergunta (o contexto está em {source}) "
-    "e anote o seu [Rank X].",
-    "en": "1. Find the passage(s) of the context that answer the question (the context is in {source}) "
-    "and note their [Rank X].",
+    # No "[Rank X]" here: qwen2.5:7b then wrote it literally in 10 answers of 120.
+    "fr": "1. Cherche dans le contexte le ou les passages qui répondent à la question ; le contexte est en {source}.",
+    "pt": "1. Procure no contexto o(s) trecho(s) que respondem à pergunta; o contexto está em {source}.",
+    "en": "1. Find the passage(s) of the context that answer the question; the context is in {source}.",
 }
 _ANSWER_STEP = {
     "fr": "2. Puis réponds en une ou deux phrases en t'appuyant sur ces citations, en citant chaque fait avec [Rank X].",

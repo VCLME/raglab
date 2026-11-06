@@ -63,7 +63,7 @@ def test_no_quote_when_the_passages_are_in_another_language():
     english = build_prompt_bundle(
         "What does art. 1 of Lei nº 13.445 regulate?", [_passage(_PT_PASSAGE)], no_context_answer="X."
     )
-    assert "(the context is in Portuguese) and note their [Rank X]" in english.system_prompt
+    assert "answer the question; the context is in Portuguese." in english.system_prompt
     assert "based on those passages" in english.system_prompt
     assert "Write the whole answer in English" in english.system_prompt
     assert "copy them in quotes" not in english.system_prompt
@@ -71,7 +71,7 @@ def test_no_quote_when_the_passages_are_in_another_language():
     french = build_prompt_bundle(
         "Que prévoit l'article 1 de cette loi ?", [_passage(_PT_PASSAGE)], no_context_answer="X."
     )
-    assert "(le contexte est en portugais) et note leur [Rank X]" in french.system_prompt
+    assert "répondent à la question ; le contexte est en portugais." in french.system_prompt
 
     translated = build_prompt_bundle(
         "What does art. 1 of Lei nº 13.445 regulate?",
