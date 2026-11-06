@@ -27,9 +27,9 @@ await mkdir(join(VIDEO_DIR, "out"), { recursive: true });
 
 const only = arg("only");
 const outputs = {
-  // H.264 for every browser; CRF 23 keeps UI text sharp at a site-friendly size.
-  mp4: ["Demo", "out/demo.mp4", "--codec=h264", "--crf=23", "--pixel-format=yuv420p"],
-  webm: ["Demo", "out/demo.webm", "--codec=vp9", "--crf=38"],
+  // H.264 for every browser; CRF 18 keeps UI text sharp, even on zooms.
+  mp4: ["Demo", "out/demo.mp4", "--codec=h264", "--crf=18", "--pixel-format=yuv420p"],
+  webm: ["Demo", "out/demo.webm", "--codec=vp9", "--crf=30"],
   // The README animation: the short cut as frames (960 px wide), then an
   // animated WebP at 15 fps (scripts/webp.py), smooth and sharp
   // where a GIF would need a low frame rate to stay small.

@@ -23,6 +23,8 @@ const OVERVIEW_ZOOM = Math.min((FW - 220) / VW, (SH - 70) / VH);
 const MIN_FOCUS_ZOOM = Math.max(FW / VW, SH / VH);
 // Above it, the interface reads as pixels and the viewer loses the context.
 const MAX_ZOOM = 2.0;
+// Frames for a caption to leave or arrive around an in-place scene change.
+const CAPTION_HANDOFF = 10;
 
 export type CameraKey = {
   at: number;
@@ -93,10 +95,9 @@ function Screen({ seg, ms }: { seg: Segment; ms: number }) {
   while (i + 1 < states.length && states[i + 1].t <= ms) i++;
   const cur = states[i];
   const prev = states[i - 1];
-  // A short dissolve for in-place changes; a cut when the page scrolled.
-  const cut = !prev || prev.scroll !== cur.scroll;
-  const fade = cut ? 1 : Math.min(80, cur.t - prev.t);
-  const alpha = cut ? 1 : clamp01((ms - cur.t) / Math.max(1, fade));
+  // A short dissolve for in-place changes, a little longer when the page scrolled.
+  const fade = !prev ? 1 : Math.min(prev.scroll !== cur.scroll ? 220 : 80, cur.t - prev.t);
+  const alpha = !prev ? 1 : clamp01((ms - cur.t) / Math.max(1, fade));
   const style: React.CSSProperties = { position: "absolute", inset: 0, width: VW, height: VH };
   return (
     <>
@@ -162,10 +163,10 @@ function Cursor({ seg, ms, cam }: { seg: Segment; ms: number; cam: Cam }) {
 }
 
 /** The caption band: one line at a time, crossfading, centred under the stage. */
-export function Caption({ cues, ms }: { cues: CaptionCue[]; ms: number }) {
+export function Caption({ cues, ms, opacity = 1 }: { cues: CaptionCue[]; ms: number; opacity?: number }) {
   const i = cues.findLastIndex((c) => c.at <= ms + 1);
   return (
-    <div style={{ position: "absolute", left: 0, right: 0, top: SH, height: BAND }}>
+    <div style={{ position: "absolute", left: 0, right: 0, top: SH, height: BAND, opacity }}>
       {cues.map((cue, k) => {
         if (k !== i && k !== i - 1) return null;
         const inP = Easing.out(Easing.cubic)(clamp01((ms - cue.at) / 600));
@@ -209,6 +210,7 @@ export function AppScene({
   enterFrames = 24,
   duration,
   exitFrames = 14,
+  joined = false,
 }: {
   seg: Segment;
   camera: CameraKey[];
@@ -219,16 +221,23 @@ export function AppScene({
   /** Length of the scene (frames): it fades out over its last `exitFrames`. */
   duration: number;
   exitFrames?: number;
+  /** Follows a scene that ended on the same whole-window shot: dissolve in place, no movement. */
+  joined?: boolean;
 }) {
   const frame = useCurrentFrame();
   const ms = from + (frame * 1000) / FPS;
   const cam = cameraAt(camera, ms);
   const enter = Easing.out(Easing.cubic)(clamp01(frame / enterFrames));
-  const exit = clamp01((duration - frame) / exitFrames);
+  const exit = exitFrames > 0 ? clamp01((duration - frame) / exitFrames) : 1;
+  // Scene to scene in place, the captions take turns: the old line leaves
+  // before the page dissolves, the new one comes once it has.
+  const band =
+    (exitFrames > 0 ? 1 : clamp01((duration - frame - CAPTION_HANDOFF) / CAPTION_HANDOFF)) *
+    (joined ? clamp01((frame - enterFrames) / CAPTION_HANDOFF) : 1);
   const tx = ANCHOR_X - VW / 2 - cam.s * (cam.cx - VW / 2);
-  const ty = cam.ay - VH / 2 - cam.s * (cam.cy - VH / 2) + (1 - enter) * 40;
+  const ty = cam.ay - VH / 2 - cam.s * (cam.cy - VH / 2) + (joined ? 0 : (1 - enter) * 40);
   return (
-    <AbsoluteFill style={{ opacity: exit }}>
+    <AbsoluteFill style={{ opacity: exit * (joined ? enter : 1) }}>
       <div style={{ position: "absolute", left: 0, top: 0, width: FW, height: SH, overflow: "hidden", perspective: 2600 }}>
         <div
           style={{
@@ -242,7 +251,7 @@ export function AppScene({
             borderRadius: 14,
             overflow: "hidden",
             background: "white",
-            opacity: enter,
+            opacity: joined ? 1 : enter,
             boxShadow: `0 0 0 1px ${C.rule}, 0 40px 90px -40px oklch(0.2 0.02 60 / 0.4)`,
           }}
         >
@@ -251,7 +260,7 @@ export function AppScene({
         <Cursor seg={seg} ms={ms} cam={cam} />
       </div>
       <div style={{ position: "absolute", left: 0, right: 0, top: SH, height: 1, background: C.rule }} />
-      <Caption cues={captions} ms={ms} />
+      <Caption cues={captions} ms={ms} opacity={band} />
     </AbsoluteFill>
   );
 }

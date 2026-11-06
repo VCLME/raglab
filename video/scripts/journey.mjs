@@ -62,36 +62,36 @@ export async function journey(page, d) {
   await page.waitForLoadState("networkidle");
   await page.waitForTimeout(500);
   await d.mark("home");
-  await d.state(6000);
+  await d.state(5000);
   await d.rect("corpus", corpus);
   await d.mark("corpus");
-  await pick(page, d, corpus, SCENARIO.ask.corpus, "corpus", { hold: 2400 });
-  await d.state(1800);
+  await pick(page, d, corpus, SCENARIO.ask.corpus, "corpus", { hold: 1800 });
+  await d.state(1200);
   await d.rect("composer", page.locator(".composer"));
   await d.mark("ask");
   await d.click(composer, "composer");
   await d.type(composer, SCENARIO.ask.question);
-  await d.state(1400);
+  await d.state(1000);
   await d.mark("send");
   await d.click(send, "send");
   await d.answer({ resend: () => resend(SCENARIO.ask.question) });
   await page.waitForTimeout(400);
   await d.rect("answer", answer());
   await d.mark("answered");
-  await d.state(7500);
+  await d.state(6200);
   // The sources: each passage the answer cites, in the details.
   await d.rect("chips", answer().locator(".source-chips").first());
   await d.mark("sources");
-  await d.state(4200);
+  await d.state(3400);
   await d.click(answer().getByRole("button", { name: /^Details/ }).first(), "details");
   await page.waitForTimeout(800);
   await d.rect("details", answer());
-  await d.state(4500);
+  await d.state(3500);
   await page.mouse.wheel(0, 300);
   await page.waitForTimeout(500);
   await d.rect("passages", answer().locator(".chunk").first());
   await d.mark("passages");
-  await d.state(8000);
+  await d.state(6800);
 
   // ---- 2. Learning mode, in the same conversation: brick by brick ----------
   await d.segment("learning");
@@ -102,25 +102,25 @@ export async function journey(page, d) {
   });
   await d.rect("toggle", learning);
   await d.mark("toggle");
-  await d.state(2600);
+  await d.state(1800);
   await d.click(learning, "learning");
   await page.waitForTimeout(700);
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.waitForTimeout(200);
   await d.rect("strip", page.locator(".edu-strip"));
   await d.mark("strip");
-  await d.state(5000);
+  await d.state(3800);
   await d.rect("composer", page.locator(".composer"));
   await d.mark("follow-up");
   await d.type(composer, SCENARIO.learning.question);
-  await d.state(1200);
+  await d.state(900);
   await d.mark("send");
   await d.click(send, "send");
   await d.answer({ strip: true, resend: () => resend(SCENARIO.learning.question) });
   await page.waitForTimeout(400);
   await d.rect("answer", answer());
   await d.mark("answered");
-  await d.state(7500);
+  await d.state(6000);
 
   // Three lessons: the pipeline explained on this very question.
   await page.evaluate(() => window.scrollTo(0, 0));
@@ -136,7 +136,7 @@ export async function journey(page, d) {
     await page.evaluate(() => window.scrollTo(0, 0));
     await page.waitForTimeout(200);
     await d.rect(`lesson-${i}`, page.locator(".edu-lesson"));
-    await d.state(6500);
+    await d.state(5400);
   }
   // Time for the camera to pull back to the whole window.
   await d.state(2600);
@@ -153,7 +153,7 @@ export async function journey(page, d) {
   const workshopTab = page.getByRole("tab", { name: /Workshop/ });
   await d.rect("tab", workshopTab);
   await d.mark("tab");
-  await d.state(2200);
+  await d.state(1500);
   await d.click(workshopTab, "workshop");
   await page.waitForLoadState("networkidle");
   await d.quiet(async () => {
@@ -165,7 +165,7 @@ export async function journey(page, d) {
   const flow = page.locator(".flow-step");
   await d.rect("flow", page.locator("ol").filter({ has: flow }).first());
   await d.mark("overview");
-  await d.state(6000);
+  await d.state(4800);
 
   const step = async (name, label) => {
     await d.click(flow.filter({ hasText: name }).first(), label);
@@ -181,7 +181,7 @@ export async function journey(page, d) {
     [/^Retrieval/, "tour-retrieval"],
   ]) {
     await step(name, label);
-    await d.state(1600);
+    await d.state(1300);
   }
   for (const [name, label] of [
     [/^Models$/, "tour-models"],
@@ -190,7 +190,7 @@ export async function journey(page, d) {
     await d.click(page.locator(".workshop-links a").filter({ hasText: name }).first(), label);
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(700);
-    await d.state(1600);
+    await d.state(1300);
   }
   await d.mark("tour-end");
 
@@ -198,7 +198,7 @@ export async function journey(page, d) {
   await step(/^Graph/, "graph");
   await d.rect("graph", page.locator("main").first());
   await d.mark("graph");
-  await d.state(2800);
+  await d.state(1800);
   // The law list loads after the graph status: wait for it.
   await page
     .locator("button.graph-law")
@@ -217,7 +217,7 @@ export async function journey(page, d) {
     await page.waitForTimeout(800);
     await d.rect("graph-view", page.locator(".graph-card").first());
     await d.mark("graph-view");
-    await d.state(8000);
+    await d.state(7000);
   }
 
   // Ingestion: your data in, three ways.
@@ -226,7 +226,7 @@ export async function journey(page, d) {
   await step(/^Corpus/, "corpus");
   await d.rect("corpus", page.locator("main").first());
   await d.mark("corpus");
-  await d.state(3000);
+  await d.state(2000);
   for (const [name, label] of [
     [/^Local folder/, "folder"],
     [/^LexML Brasil/, "lexml"],
@@ -238,7 +238,7 @@ export async function journey(page, d) {
     await page.waitForTimeout(600);
     await d.rect(label, page.locator("main").first());
     await d.mark(label);
-    await d.state(5200);
+    await d.state(4200);
   }
   // Time for the camera to pull back to the whole window.
   await d.state(2600);
