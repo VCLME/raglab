@@ -5,7 +5,7 @@
  */
 import React from "react";
 import { AbsoluteFill, Easing, Img, interpolate, staticFile, useCurrentFrame } from "remotion";
-import { C, FONT, FPS } from "./theme";
+import { C, FONT, FPS, SPEED } from "./theme";
 import type { Rect, Segment } from "./timeline";
 
 const VW = 1440;
@@ -215,7 +215,7 @@ export function AppScene({
   seg: Segment;
   camera: CameraKey[];
   captions: CaptionCue[];
-  /** Segment time (ms) of this scene's first frame. */
+  /** Segment time (ms) of this scene's first frame (time runs at SPEED). */
   from?: number;
   enterFrames?: number;
   /** Length of the scene (frames): it fades out over its last `exitFrames`. */
@@ -225,7 +225,7 @@ export function AppScene({
   joined?: boolean;
 }) {
   const frame = useCurrentFrame();
-  const ms = from + (frame * 1000) / FPS;
+  const ms = from + ((frame * 1000) / FPS) * SPEED;
   const cam = cameraAt(camera, ms);
   const enter = Easing.out(Easing.cubic)(clamp01(frame / enterFrames));
   const exit = exitFrames > 0 ? clamp01((duration - frame) / exitFrames) : 1;
