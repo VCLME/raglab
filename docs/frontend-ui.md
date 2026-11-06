@@ -357,7 +357,7 @@ En CI, le job `e2e` lance la suite et publie le rapport HTML en artefact en cas 
 
 ## Vidéo de démonstration (`video/`)
 
-Le film de démo du site (MP4 + WebM, 1920×1080, environ 3 min 15) et l'animation du README (WebP animé : la même histoire raccourcie, jusqu'au graphe de l'Atelier ; 960 px, 15 images/s, moins de 8 Mo) sont générés par du code : un script Playwright pilote la vraie interface (en anglais) et en capture chaque état, puis [Remotion](https://www.remotion.dev/) (React) anime ces captures : mouvements de caméra, curseur, sous-titres, carte du chiffre clé. Les réponses ne sont jamais inventées : l'API est enregistrée une fois sur une instance réelle, puis rejouée. Le rendu est donc identique d'une fois sur l'autre et n'a besoin ni de l'API ni du GPU.
+Le film de démo du site (MP4 + WebM, 1920×1080, environ 2 min 45, encodé en haute qualité : H.264 CRF 18, VP9 CRF 30) et l'animation du README (WebP animé : la même histoire raccourcie, jusqu'au graphe de l'Atelier ; 960 px, 15 images/s, moins de 8 Mo) sont générés par du code : un script Playwright pilote la vraie interface (en anglais) et en capture chaque état, puis [Remotion](https://www.remotion.dev/) (React) anime ces captures : mouvements de caméra, curseur, sous-titres, carte du chiffre clé. Les réponses ne sont jamais inventées : l'API est enregistrée une fois sur une instance réelle, puis rejouée. Le rendu est donc identique d'une fois sur l'autre et n'a besoin ni de l'API ni du GPU.
 
 Parcours filmé (questions dans `video/scenario.mjs`) :
 
@@ -368,7 +368,7 @@ Parcours filmé (questions dans `video/scenario.mjs`) :
 5. **Mode expert (Atelier)** : le curseur clique sur « Workshop » ; la barre des étapes, puis un passage rapide et flouté par ses menus (découpage, vecteurs, évaluation, retrieval, modèles, bases) ; le graphe de citations d'une loi (Lei 13.445) ; enfin trois façons d'importer ses données (dossier local, LexML, sources officielles).
 6. Une carte « And more » (dont le Recall@5 des questions citant un article, lu dans `benchmarks/results/` : `baseline-v1` → `full-v1`), puis la carte de fin : raglab, 100 % local, le lien GitHub.
 
-Mise en scène (règles reprises du skill video-shotcraft) : les sous-titres ont leur propre bande sous l'image de l'application et ne couvrent jamais l'interface ; caméra stable (pas d'inclinaison, zoom plafonné à ×2, mouvements de 1,4 s ou plus, retour au plan large avant chaque changement de scène plutôt qu'une coupe) ; chaque plan important reste immobile au moins une seconde ; la frappe et les réponses vont à une vitesse lisible.
+Mise en scène (règles reprises du skill video-shotcraft) : les sous-titres ont leur propre bande sous l'image de l'application et ne couvrent jamais l'interface ; caméra stable (pas d'inclinaison, zoom plafonné à ×2, mouvements de 1,4 s ou plus, retour au plan large avant chaque changement de scène, puis la page change sur place par fondu, sans coupe ; les sous-titres se passent le relais) ; chaque plan important reste immobile au moins une seconde ; la frappe et les réponses vont à une vitesse lisible.
 
 ```bash
 cd video

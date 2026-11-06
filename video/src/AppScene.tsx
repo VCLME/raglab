@@ -23,6 +23,8 @@ const OVERVIEW_ZOOM = Math.min((FW - 220) / VW, (SH - 70) / VH);
 const MIN_FOCUS_ZOOM = Math.max(FW / VW, SH / VH);
 // Above it, the interface reads as pixels and the viewer loses the context.
 const MAX_ZOOM = 2.0;
+// Frames for a caption to leave or arrive around an in-place scene change.
+const CAPTION_HANDOFF = 10;
 
 export type CameraKey = {
   at: number;
@@ -161,10 +163,10 @@ function Cursor({ seg, ms, cam }: { seg: Segment; ms: number; cam: Cam }) {
 }
 
 /** The caption band: one line at a time, crossfading, centred under the stage. */
-export function Caption({ cues, ms }: { cues: CaptionCue[]; ms: number }) {
+export function Caption({ cues, ms, opacity = 1 }: { cues: CaptionCue[]; ms: number; opacity?: number }) {
   const i = cues.findLastIndex((c) => c.at <= ms + 1);
   return (
-    <div style={{ position: "absolute", left: 0, right: 0, top: SH, height: BAND }}>
+    <div style={{ position: "absolute", left: 0, right: 0, top: SH, height: BAND, opacity }}>
       {cues.map((cue, k) => {
         if (k !== i && k !== i - 1) return null;
         const inP = Easing.out(Easing.cubic)(clamp01((ms - cue.at) / 600));
@@ -227,6 +229,11 @@ export function AppScene({
   const cam = cameraAt(camera, ms);
   const enter = Easing.out(Easing.cubic)(clamp01(frame / enterFrames));
   const exit = exitFrames > 0 ? clamp01((duration - frame) / exitFrames) : 1;
+  // Scene to scene in place, the captions take turns: the old line leaves
+  // before the page dissolves, the new one comes once it has.
+  const band =
+    (exitFrames > 0 ? 1 : clamp01((duration - frame - CAPTION_HANDOFF) / CAPTION_HANDOFF)) *
+    (joined ? clamp01((frame - enterFrames) / CAPTION_HANDOFF) : 1);
   const tx = ANCHOR_X - VW / 2 - cam.s * (cam.cx - VW / 2);
   const ty = cam.ay - VH / 2 - cam.s * (cam.cy - VH / 2) + (joined ? 0 : (1 - enter) * 40);
   return (
@@ -253,7 +260,7 @@ export function AppScene({
         <Cursor seg={seg} ms={ms} cam={cam} />
       </div>
       <div style={{ position: "absolute", left: 0, right: 0, top: SH, height: 1, background: C.rule }} />
-      <Caption cues={captions} ms={ms} />
+      <Caption cues={captions} ms={ms} opacity={band} />
     </AbsoluteFill>
   );
 }
