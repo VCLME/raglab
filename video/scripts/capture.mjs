@@ -30,8 +30,32 @@ const browser = await chromium.launch();
 const page = await (await browser.newContext({ viewport: VIEWPORT, locale: "en-US", baseURL: server.url })).newPage();
 
 let answered = 0;
+
+/** Wait (up to 5 min) for the stream the last question opened to finish; its record. */
+async function nextAnswer() {
+  for (let i = 0; i < 20 * 60 * 5; i++) {
+    const streams = server.recorded.filter((e) => e.events);
+    if (streams.length > answered && streams[streams.length - 1].ended) break;
+    await page.waitForTimeout(50);
+  }
+  const streams = server.recorded.filter((e) => e.events);
+  if (streams.length <= answered) throw new Error("the question opened no answer stream (see the API log above)");
+  answered = streams.length;
+  const last = streams.at(-1);
+  const end = last.events.at(-1);
+  if (!end || end.event !== "done") throw new Error(`the answer did not complete: ${JSON.stringify(end?.data ?? null)}`);
+  return last;
+}
+
 const director = {
   placeholder: false,
+  now: new Date(),
+  async setClock(date) {
+    await page.clock.setFixedTime(date);
+  },
+  async quiet(fn) {
+    await fn();
+  },
   async segment() {},
   async state() {},
   async mark() {},
@@ -42,26 +66,23 @@ const director = {
   async type(locator, text) {
     await locator.fill(text);
   },
-  async answer() {
-    // Wait (up to 5 min) for the stream this question opened to finish.
-    for (let i = 0; i < 20 * 60 * 5; i++) {
-      const streams = server.recorded.filter((e) => e.events);
-      if (streams.length > answered && streams[streams.length - 1].ended) break;
-      await page.waitForTimeout(50);
-    }
-    const streams = server.recorded.filter((e) => e.events);
-    if (streams.length <= answered) throw new Error("the question opened no answer stream (see the API log above)");
-    answered = streams.length;
-    const last = streams.at(-1);
-    const end = last?.events.at(-1);
-    if (!end || end.event !== "done") throw new Error(`the answer did not complete: ${JSON.stringify(end?.data ?? null)}`);
+  async answer({ any = false, resend } = {}) {
     // A small local model sometimes declines a question it answers on the next
-    // try: such a take is not kept (run the capture again), the answer is never edited.
-    if (NO_ANSWER.test(String(end.data.answer ?? ""))) {
-      throw new Error(`the model declined "${last.body.question}": run the capture again`);
+    // try. On camera, such a take is dropped from the record and the question
+    // asked again (up to 4 times); the answer kept is never edited.
+    for (let attempt = 1; ; attempt++) {
+      const last = await nextAnswer();
+      const end = last.events.at(-1);
+      const declined = NO_ANSWER.test(String(end.data.answer ?? ""));
+      const tokens = last.events.filter((e) => e.event === "token").length;
+      console.log(`answer: ${tokens} tokens in ${end.t} ms${declined ? " (declined)" : ""} - ${last.body.question}`);
+      await page.waitForTimeout(1200);
+      if (!declined || any) return;
+      if (!resend || attempt >= 4) throw new Error(`the model declined "${last.body.question}": run the capture again`);
+      server.recorded.splice(server.recorded.indexOf(last), 1);
+      answered -= 1;
+      await resend();
     }
-    console.log(`answer: ${last.events.filter((e) => e.event === "token").length} tokens in ${end.t} ms`);
-    await page.waitForTimeout(1200);
   },
 };
 

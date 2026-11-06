@@ -72,13 +72,28 @@ const box = async (locator) => {
   return b && { x: Math.round(b.x), y: Math.round(b.y), w: Math.round(b.width), h: Math.round(b.height) };
 };
 
+let quiet = false;
+
 const director = {
   placeholder,
+  now: CLOCK,
+  async setClock(date) {
+    await page.clock.setFixedTime(date);
+  },
+  async quiet(fn) {
+    quiet = true;
+    try {
+      await fn();
+    } finally {
+      quiet = false;
+    }
+  },
   async segment(name) {
     seg = segments[name] = { states: [], marks: {}, rects: {}, clicks: [], duration: 0 };
     t = 0;
   },
   async state(hold) {
+    if (quiet) return;
     const src = `shots/${String(++shot).padStart(4, "0")}.png`;
     await page.screenshot({ path: join(VIDEO_DIR, "public", src) });
     seg.states.push({ src, t: Math.round(t), scroll: await scrollKey() });
@@ -86,13 +101,16 @@ const director = {
     seg.duration = Math.round(t);
   },
   async mark(name) {
+    if (quiet) return;
     seg.marks[name] = Math.round(t);
   },
   async rect(name, locator) {
+    if (quiet) return;
     const b = await box(locator);
     if (b) seg.rects[name] = { ...b, t: Math.round(t) };
   },
   async click(locator, name) {
+    if (quiet) return locator.click();
     const before = await scrollKey();
     await locator.scrollIntoViewIfNeeded();
     // The page scrolled to bring the target in: show that before the cursor moves.
@@ -104,6 +122,7 @@ const director = {
     await locator.click();
   },
   async type(locator, text, { fast = false } = {}) {
+    if (quiet) return locator.fill(text);
     await locator.click();
     for (let i = 1; i <= text.length; i++) {
       await locator.fill(text.slice(0, i));
@@ -114,6 +133,11 @@ const director = {
     let held = null;
     for (let i = 0; i < 200 && !(held = server.held()); i++) await page.waitForTimeout(50);
     if (!held) throw new Error("the answer stream never opened");
+    if (quiet) {
+      server.release(held.events.length);
+      await page.waitForTimeout(600);
+      return;
+    }
     const events = held.events;
     const firstToken = events.findIndex((e) => e.event === "token");
     const tokenEnd = firstToken === -1 ? events.length : events.findLastIndex((e) => e.event === "token") + 1;

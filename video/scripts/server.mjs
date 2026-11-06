@@ -68,6 +68,22 @@ async function readBody(req) {
 }
 
 /** The key a request is matched on: method, path, and the question it asks. */
+/** Same JSON body, ignoring ids that change from one browser session to the next. */
+function sameRequest(a, b) {
+  const stable = (v) =>
+    Array.isArray(v)
+      ? v.map(stable)
+      : v && typeof v === "object"
+        ? Object.fromEntries(
+            Object.keys(v)
+              .filter((k) => k !== "conversation_id")
+              .sort()
+              .map((k) => [k, stable(v[k])])
+          )
+        : v;
+  return JSON.stringify(stable(a)) === JSON.stringify(stable(b));
+}
+
 function requestKey(method, url, body) {
   const path = url.split("?")[0];
   const question = body && typeof body === "object" ? body.question : undefined;
@@ -152,6 +168,10 @@ export async function startServer({ mode, dist, fixture, apiUrl, apiKey, port = 
     const key = requestKey(method, url, body);
     const path = url.split("?")[0];
     const sameKey = fixture.requests.filter((e) => requestKey(e.method, e.url, e.body) === key);
+    // The same question asked with other settings (the Workshop runs one
+    // question three times): the request whose body is identical wins.
+    const sameBody = sameKey.filter((e) => sameRequest(e.body, body));
+    if (sameBody.length) return sameBody[sameBody.length - 1];
     if (sameKey.length) return sameKey[sameKey.length - 1];
     // Placeholder fixtures answer every question with the same payload.
     const any = fixture.requests.find((e) => e.anyQuestion && e.method === method && e.url.split("?")[0] === path);

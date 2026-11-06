@@ -24,8 +24,6 @@ export type Timeline = {
 };
 
 export const timeline = raw as unknown as Timeline;
-export const chat = timeline.segments.chat;
-export const workshop = timeline.segments.workshop;
 
 /** A mark's time, or `fallback` when the journey skipped it. */
 export const at = (seg: Segment, name: string, fallback = 0) => seg.marks[name] ?? fallback;
